@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <IncludePath>$(ProgramFiles)\Windows Kits\10\Include\10.0.10586.0\um;$(ProgramFiles)\Windows Kits\10\Include\10.0.10586.0\shared;$(ProgramFiles)\Windows Kits\10\Include\10.0.10586.0\winrt;$(VC_IncludePath);</IncludePath>
+    <LibraryPath>$(ProgramFiles)\Windows Kits\10\Lib\10.0.10586.0\um\x64;$(ProgramFiles)\Windows Kits\10\Lib\10.0.10586.0\ucrt\x64;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);</LibraryPath>
+    <ExecutablePath>$(ProgramFiles)\Windows Kits\10\bin\x86;$(ExecutablePath)</ExecutablePath>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+    <UseNativeEnvironment>true</UseNativeEnvironment>
+  </PropertyGroup>
+  <ItemDefinitionGroup />
+  <ItemGroup />
+</Project>

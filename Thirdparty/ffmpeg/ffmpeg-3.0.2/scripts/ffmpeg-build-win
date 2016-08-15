@@ -1,0 +1,167 @@
+	#!/bin/bash
+#--------------------------------------------------------
+# FOLDERS CONFIG
+#--------------------------------------------------------
+
+#flags to comment out parts of the build
+
+build_ffmpeg=true
+build_redist=true
+
+# build_type: debug. release
+# bitness: 32, 64
+
+build_type=$1
+bitness=$2
+
+fldr_mingw32=/mingw32
+fldr_mingw64=/mingw64
+
+fldr_build=$PWD/build
+fldr_redist=$PWD/redist
+
+fldr_src_ffmpeg=$PWD/src/ffmpeg-3.0.2
+
+
+#--------------------------------------------------------
+# FLAGS CONFIG
+#--------------------------------------------------------
+
+if [ "$bitness" = "32" ]
+then
+   fldr_mingw=$fldr_mingw32
+   bld_arch=x86
+   lib_arch=X86
+   flg_output=win32 
+   host_def=i686-w64-mingw32
+   cross_def=i686-w64-mingw32
+   target_def=i686-w64-mingw32
+else
+   fldr_mingw=$fldr_mingw64
+   bld_arch=x86_64
+   lib_arch=X64
+   flg_output=x64
+   host_def=x86_64-w64-mingw32 
+   cross_def=i686-w64-mingw32
+   target_def=x86_64-w64-mingw32
+fi
+
+# switch apth to mingw
+export PATH=.:/local/bin:/bin:${fldr_mingw}/bin:$PATH
+
+if test "$build_type" == "release"
+then
+   echo ++release
+   debug_flags=--disable-debug
+
+else
+   echo ++debug
+#MM --disable-optimizations cause link failures. FFMPEG uses if(0) foo(); construct to exclude foo() function from the build. MSVC doesn't remove call to foo() in debug mode.
+#   debug_flags="--disable-optimizations --disable-mmx --disable-mmxext --disable-sse --disable-sse2 --disable-sse3 --disable-ssse3 --enable-debug=3 "
+#   debug_flags="--disable-optimizations --enable-debug=3  "
+#	debug_flags+=--extra-cflags="-Od"
+   debug_flags=--disable-debug
+fi
+
+echo fldr_mingw=$fldr_mingw
+echo build_type=$build_type
+echo bitness=$bitness
+echo lib_arch=$lib_arch
+echo fldr_build=$fldr_build
+echo host_def=$host_def
+echo debug_flags=$debug_flags
+
+
+LDFLAGS="$LDFLAGS -static-libgcc"
+
+
+#--------------------------------------------------------
+#create def and lib file from dll
+#--------------------------------------------------------
+function make_def_and_lib_from_dll
+{
+dllname=$1
+libname=$2
+
+rm ${libname}.txt
+rm ${libname}.def
+rm ${libname}
+
+dumpbin -exports ${dllname} > ${libname}.txt
+
+echo EXPORTS >> ${libname}.def
+
+sed -e '1,19d' ${libname}.txt |
+while read line; do
+eval array=($line) 
+if [ "${array[3]}" != "" ]
+then 
+	echo ${array[3]}>> ${libname}.def
+fi
+done
+
+lib.exe -MACHINE:${lib_arch} -DEF:"${libname}.def" -OUT:"${libname}" -NAME:"${dllname}"
+}
+
+
+
+#--------------------------------------------------------
+# FFMPEG
+#--------------------------------------------------------
+
+if [ "$build_ffmpeg" = "true" ]
+then
+
+export PKG_CONFIG_PATH=/local/lib/pkgconfig
+
+fld_build_full_path=$fldr_build/ffmpeg-$flg_output/$build_type
+
+mkdir -p $fld_build_full_path
+
+cd $fld_build_full_path
+
+make clean
+
+#Linux crosscompile
+#PATH=$fldr_mingw/bin:$PATH
+#$fldr_src_ffmpeg/configure --enable-memalign-hack --arch=$bld_arch --target-os=mingw32 --disable-static --enable-shared --pkg-config=pkg-config --enable-version3 --enable-avresample --enable-runtime-cpudetect --enable-gpl --enable-nonfree --extra-cflags="-I $fldr_mingw/include" --extra-ldflags="-L $fldr_mingw/lib -static-libgcc" --disable-debug --disable-iconv
+
+
+#MSVC2013 build 
+
+$fldr_src_ffmpeg/configure --toolchain=msvc --enable-memalign-hack --arch=$bld_arch --target-os=win32 --disable-static --enable-shared --pkg-config=pkg-config --enable-version3 --enable-avresample --enable-runtime-cpudetect --disable-iconv --extra-cflags="-Z7 -Ic:/msys${fldr_mingw}/include" --extra-ldflags="-DEBUG" $debug_flags
+#--extra-ldflags="-DEBUG $debug_flags"
+#-LIBPATH:C:\msys\mingw64\lib"
+
+make
+
+fi #build_ffmpeg=true
+
+#--------------------------------------------------------
+# MAKE REDIST
+#--------------------------------------------------------
+
+if [ "$build_redist" = "true" ]
+then
+fldr_include=$fldr_redist/$flg_output/$build_type/include
+fldr_lib=$fldr_redist/$flg_output/$build_type/lib
+fldr_bin=$fldr_redist/$flg_output/$build_type/bin
+
+echo include: $fldr_include
+
+mkdir -p $fldr_include
+mkdir -p $fldr_lib
+mkdir -p $fldr_bin
+
+cd $fldr_src_ffmpeg
+find ./ -type f -name "*.h" -exec cp --parents {}  $fldr_include/"$name" \;
+cd $fldr_build/ffmpeg-$flg_output/$build_type
+find ./ -name "*.dll" -type f -exec cp {}  $fldr_bin \;
+find ./ -name "*.exe" -type f -exec cp {}  $fldr_bin \;
+find ./ -name "*.pdb" -type f -exec cp {}  $fldr_bin \;
+find ./ -name "*.lib" -type f -exec cp {}  $fldr_lib \;
+cd $fldr_build/ffmpeg-$flg_output/$build_type
+find ./ -type f -name "*.h" -exec cp --parents {}  $fldr_include/"$name" \;
+
+fi # build_redist=true
+

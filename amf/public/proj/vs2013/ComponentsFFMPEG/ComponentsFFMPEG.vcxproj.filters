@@ -1,0 +1,205 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="public">
+    </Filter>
+    <Filter Include="public\common" />
+    <Filter Include="public\include" />
+    <Filter Include="public\include\components" />
+    <Filter Include="public\include\core" />
+    <Filter Include="public\src">
+      <UniqueIdentifier>{19ea3663-3a85-41d5-a90d-ff6016111a7d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\src\components" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\public\include\core\Buffer.h">
+      <Filter>public\include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Context.h">
+      <Filter>public\include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Data.h">
+      <Filter>public\include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Debug.h">
+      <Filter>public\include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Guid.h">
+      <Filter>public\include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Interface.h">
+      <Filter>public\include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Plane.h">
+      <Filter>public\include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Platform.h">
+      <Filter>public\include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\PropertyStorage.h">
+      <Filter>public\include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\PropertyStorageEx.h">
+      <Filter>public\include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Result.h">
+      <Filter>public\include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Surface.h">
+      <Filter>public\include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Variant.h">
+      <Filter>public\include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Version.h">
+      <Filter>public\include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\components\Component.h">
+      <Filter>public\include\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\components\ComponentCaps.h">
+      <Filter>public\include\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\AudioBuffer.h">
+      <Filter>public\include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Compute.h">
+      <Filter>public\include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Factory.h">
+      <Filter>public\include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Trace.h">
+      <Filter>public\include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\AMFFactory.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\Thread.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\ObservableImpl.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\AMFSTL.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\TraceAdapter.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\PropertyStorageExImpl.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\PropertyStorageImpl.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\IOCapsImpl.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\DataStreamFile.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\DataStreamMemory.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\AudioDecoderFFMPEGImpl.h">
+      <Filter>public\src\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\FileDemuxerFFMPEGImpl.h">
+      <Filter>public\src\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\H264Mp4ToAnnexB.h">
+      <Filter>public\src\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\components\FFMPEGAudioDecoder.h">
+      <Filter>public\include\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\components\FFMPEGComponents.h">
+      <Filter>public\include\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\components\FFMPEGFileDemuxer.h">
+      <Filter>public\include\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\components\FFMPEGAudioConverter.h">
+      <Filter>public\include\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\AudioConverterFFMPEGImpl.h">
+      <Filter>public\src\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\UtilsFFMPEG.h">
+      <Filter>public\src\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\components\FFMPEGAudioEncoder.h">
+      <Filter>public\include\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\AudioEncoderFFMPEGImpl.h">
+      <Filter>public\src\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\FileMuxerFFMPEGImpl.h">
+      <Filter>public\src\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\components\FFMPEGFileMuxer.h">
+      <Filter>public\include\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\components\MediaSource.h">
+      <Filter>public\include\components</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\public\common\AMFFactory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\Thread.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\Windows\ThreadWindows.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\AMFSTL.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\TraceAdapter.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\PropertyStorageExImpl.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\IOCapsImpl.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\DataStreamFactory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\DataStreamFile.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\DataStreamMemory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\AudioDecoderFFMPEGImpl.cpp">
+      <Filter>public\src\components</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\FileDemuxerFFMPEGImpl.cpp">
+      <Filter>public\src\components</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\H264Mp4ToAnnexB.cpp">
+      <Filter>public\src\components</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\ComponentFactory.cpp">
+      <Filter>public\src\components</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\AudioConverterFFMPEGImpl.cpp">
+      <Filter>public\src\components</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\UtilsFFMPEG.cpp">
+      <Filter>public\src\components</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\AudioEncoderFFMPEGImpl.cpp">
+      <Filter>public\src\components</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\FileMuxerFFMPEGImpl.cpp">
+      <Filter>public\src\components</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

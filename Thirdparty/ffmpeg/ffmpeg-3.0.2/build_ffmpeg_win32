@@ -1,0 +1,4 @@
+#!/bin/bash
+./get_sourcecode
+./scripts/ffmpeg-build-win release 32
+./scripts/ffmpeg-build-win debug 32
