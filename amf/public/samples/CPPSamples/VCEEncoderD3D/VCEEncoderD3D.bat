@@ -3,7 +3,7 @@ rem Notice Regarding Standards.  AMD does not provide a license or sublicense to
 rem any Intellectual Property Rights relating to any standards, including but not
 rem limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
 rem AVC/H.264; HEVC/H.265; AAC decode/FFMPEG; AAC encode/FFMPEG; VC-1; and MP3
-rem (collectively, the “Media Technologies”). For clarity, you will pay any
+rem (collectively, the "Media Technologies"). For clarity, you will pay any
 rem royalties due for such third party technologies, which may include the Media
 rem Technologies that are owed as a result of AMD providing the Software to you.
 rem 
