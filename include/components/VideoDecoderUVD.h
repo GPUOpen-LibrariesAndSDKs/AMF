@@ -3,7 +3,7 @@
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
 // AVC/H.264; HEVC/H.265; AAC decode/FFMPEG; AAC encode/FFMPEG; VC-1; and MP3
-// (collectively, the “Media Technologies”). For clarity, you will pay any
+// (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
 // 
@@ -67,6 +67,7 @@ enum AMF_TIMESTAMP_MODE_ENUM
 #define AMF_VIDEO_DECODER_EXTRADATA                    L"ExtraData"             // AMFInterface* -> AMFBuffer* - AVCC - size length + SPS/PPS; or as Annex B. Optional if stream is Annex B
 #define AMF_VIDEO_DECODER_FRAME_RATE                   L"FrameRate"             // amf_double; default = 0.0, optional property to restore duration in the output if needed
 #define AMF_TIMESTAMP_MODE                             L"TimestampMode"         // amf_int64(AMF_TIMESTAMP_MODE_ENUM)  - default AMF_TS_PRESENTATION - how input timestamps are treated
+#define AMF_VIDEO_DECODER_FULL_RANGE_COLOR             L"FullRangeColor"        //  bool; default = false; inidicates that YUV input is (0,255) 
 
 // dynamic/adaptive resolution change
 #define AMF_VIDEO_DECODER_ADAPTIVE_RESOLUTION_CHANGE   L"AdaptiveResolutionChange" // amf_bool; default = false; reuse allocated surfaces if new resolution is smaller
