@@ -1554,9 +1554,9 @@ namespace amf
         return *static_cast<AMFVariantStruct*>(this);
     }
     //-------------------------------------------------------------------------------------------------
-    inline void AMFVariant::ChangeType(AMF_VARIANT_TYPE type, const AMFVariant* pSrc)
+    inline void AMFVariant::ChangeType(AMF_VARIANT_TYPE newType, const AMFVariant* pSrc)
     {
-        AMFVariantChangeType(this, pSrc, type);
+        AMFVariantChangeType(this, pSrc, newType);
     }
     //-------------------------------------------------------------------------------------------------
     inline bool AMFVariant::Empty() const

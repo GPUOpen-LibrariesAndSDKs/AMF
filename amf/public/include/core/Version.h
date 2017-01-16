@@ -31,22 +31,28 @@
 //
 
 /**
- ***************************************************************************************************
- * @file  Version.h
- * @brief Version declaration
- ***************************************************************************************************
- */
+***************************************************************************************************
+* @file  Version.h
+* @brief Version declaration
+***************************************************************************************************
+*/
 #ifndef __AMFVersion_h__
 #define __AMFVersion_h__
 #pragma once
 
 #include "Platform.h"
 
-#define AMF_VERSION_MAJOR       1
-#define AMF_VERSION_MINOR       3
-#define AMF_VERSION_RELEASE     0
-#define AMF_VERSION_BUILD_NUM   5
+#define AMF_MAKE_FULL_VERSION(VERSION_MAJOR, VERSION_MINOR, VERSION_RELEASE, VERSION_BUILD_NUM)    ( (amf_uint64(VERSION_MAJOR) << 48ull) | (amf_uint64(VERSION_MINOR) << 32ull) | (amf_uint64(VERSION_RELEASE) << 16ull)  | amf_uint64(VERSION_BUILD_NUM))
+#define AMF_GET_MAJOR_VERSION(x)      ((x >> 48ull) & 0xFFFF)
+#define AMF_GET_MINOR_VERSION(x)      ((x >> 32ull) & 0xFFFF)
+#define AMF_GET_SUBMINOR_VERSION(x)   ((x >> 16ull) & 0xFFFF)
+#define AMF_GET_BUILD_VERSION(x)      ((x >>  0ull) & 0xFFFF)
 
-#define AMF_FULL_VERSION ( (amf_uint64(AMF_VERSION_MAJOR) << 48ull) | (amf_uint64(AMF_VERSION_MINOR) << 32ull) | (amf_uint64(AMF_VERSION_RELEASE) << 16ull)  | amf_uint64(AMF_VERSION_BUILD_NUM))
+#define AMF_VERSION_MAJOR       1
+#define AMF_VERSION_MINOR       4
+#define AMF_VERSION_RELEASE     0
+#define AMF_VERSION_BUILD_NUM   0
+
+#define AMF_FULL_VERSION AMF_MAKE_FULL_VERSION(AMF_VERSION_MAJOR, AMF_VERSION_MINOR, AMF_VERSION_RELEASE, AMF_VERSION_BUILD_NUM)
 
 #endif //#ifndef __AMFVersion_h__

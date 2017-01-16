@@ -75,6 +75,9 @@
     #define AMFPRId64   "I64d"
     #define LPRId64    L"I64d"
 
+    #define AMFPRIud64   "Iu64d"
+    #define LPRIud64    L"Iu64d"
+
     #define AMFPRIx64   "I64x"
     #define LPRIx64    L"I64x"
 
@@ -88,17 +91,14 @@
     #define AMF_NO_VTABLE           
 
     #if !defined(AMFPRId64)
-        #if defined(__x86_64)
-            #define AMFPRId64    "ld"
-            #define LPRId64     L"lld"
-            #define AMFPRIx64    "lx"
-            #define LPRIx64     L"llx"
-        #else
-            #define AMFPRId64    "lld"
-            #define LPRId64     L"lld"
-            #define AMFPRIx64    "llx"
-            #define LPRIx64     L"llx"
-        #endif
+        #define AMFPRId64    "lld"
+        #define LPRId64     L"lld"
+
+        #define AMFPRIud64    "ulld"
+        #define LPRIud64     L"ulld"
+
+        #define AMFPRIx64    "llx"
+        #define LPRIx64     L"llx"
     #endif
 
 #endif // WIN32

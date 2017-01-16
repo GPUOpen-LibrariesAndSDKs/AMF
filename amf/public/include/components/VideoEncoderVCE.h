@@ -105,6 +105,23 @@ enum AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_ENUM
     AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_B
 };
 
+enum AMF_VIDEO_ENCODER_PREENCODE_MODE_ENUM
+{
+    AMF_VIDEO_ENCODER_PREENCODE_DISABLED = 0,
+    AMF_VIDEO_ENCODER_PREENCODE_ENABLED,
+    AMF_VIDEO_ENCODER_PREENCODE_ENABLED_DOWNSCALEFACTOR_2,
+    AMF_VIDEO_ENCODER_PREENCODE_ENABLED_DOWNSCALEFACTOR_4
+};
+
+enum AMF_VIDEO_ENCODER_CODING_ENUM
+{
+    AMF_VIDEO_ENCODER_UNDEFINED = 0, // BASELINE = CALV; MAIN, HIGH = CABAC
+    AMF_VIDEO_ENCODER_CABAC,
+    AMF_VIDEO_ENCODER_CALV,
+
+};
+
+
 // Static properties - can be set before Init()
 
 #define AMF_VIDEO_ENCODER_FRAMESIZE                             L"FrameSize"                // AMFSize; default = 0,0; Frame size
@@ -116,22 +133,27 @@ enum AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_PROFILE_LEVEL                         L"ProfileLevel"             // amf_int64; default = 42; H264 profile level
 #define AMF_VIDEO_ENCODER_MAX_LTR_FRAMES                        L"MaxOfLTRFrames"           // amf_int64; default = 0; Max number of LTR frames
 #define AMF_VIDEO_ENCODER_SCANTYPE                              L"ScanType"                 // amf_int64(AMF_VIDEO_ENCODER_SCANTYPE_ENUM); default = AMF_VIDEO_ENCODER_SCANTYPE_PROGRESSIVE; indicates input stream type
+#define AMF_VIDEO_ENCODER_MAX_NUM_REFRAMES                      L"MaxNumRefFrames"          // amf_int64; Maximum number of reference frames
+#define AMF_VIDEO_ENCODER_ASPECT_RATIO                          L"AspectRatio"              // AMFRatio; default = 1, 1
+#define AMF_VIDEO_ENCODER_FULL_RANGE_COLOR                      L"FullRangeColor"           //  bool; default = false; inidicates that YUV input is (0,255) 
+
     // Quality preset property
 #define AMF_VIDEO_ENCODER_QUALITY_PRESET                        L"QualityPreset"            // amf_int64(AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM); default = depends on USAGE; Quality Preset 
 
 
-// dynamic properties - can be set at any time
+// Dynamic properties - can be set at any time
 
     // Rate control properties
 #define AMF_VIDEO_ENCODER_B_PIC_DELTA_QP                        L"BPicturesDeltaQP"         // amf_int64; default = depends on USAGE; B-picture Delta
-#define AMF_VIDEO_ENCODER_REF_B_PIC_DELTA_QP                    L"ReferenceBPicturesDeltaQP" //  amf_int64; default = depends on USAGE; Reference B-picture Delta
+#define AMF_VIDEO_ENCODER_REF_B_PIC_DELTA_QP                    L"ReferenceBPicturesDeltaQP"// amf_int64; default = depends on USAGE; Reference B-picture Delta
 
 #define AMF_VIDEO_ENCODER_ENFORCE_HRD                           L"EnforceHRD"               // bool; default = depends on USAGE; Enforce HRD
 #define AMF_VIDEO_ENCODER_FILLER_DATA_ENABLE                    L"FillerDataEnable"         // bool; default = false; Filler Data Enable
+#define AMF_VIDEO_ENCODER_ENABLE_VBAQ                           L"EnableVBAQ"               // bool; default = depends on USAGE; Enable VBAQ
 
 
 #define AMF_VIDEO_ENCODER_VBV_BUFFER_SIZE                       L"VBVBufferSize"            // amf_int64; default = depends on USAGE; VBV Buffer Size in bits
-#define AMF_VIDEO_ENCODER_INITIAL_VBV_BUFFER_FULLNESS           L"InitialVBVBufferFullness" //amf_int64; default =  64; Initial VBV Buffer Fullness 0=0% 64=100%
+#define AMF_VIDEO_ENCODER_INITIAL_VBV_BUFFER_FULLNESS           L"InitialVBVBufferFullness" // amf_int64; default =  64; Initial VBV Buffer Fullness 0=0% 64=100%
 
 #define AMF_VIDEO_ENCODER_MAX_AU_SIZE                           L"MaxAUSize"                // amf_int64; default = 60; Max AU Size in bits
 
@@ -144,8 +166,9 @@ enum AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_PEAK_BITRATE                          L"PeakBitrate"              // amf_int64; default = depends on USAGE; Peak bit rate in bits
 #define AMF_VIDEO_ENCODER_RATE_CONTROL_SKIP_FRAME_ENABLE        L"RateControlSkipFrameEnable"   // bool; default =  depends on USAGE; Rate Control Based Frame Skip 
 #define AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD                   L"RateControlMethod"        // amf_int64(AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_ENUM); default = depends on USAGE; Rate Control Method 
+#define AMF_VIDEO_ENCODER_RATE_CONTROL_PREANALYSIS_ENABLE       L"RateControlPreanalysisEnable"   // amf_int64(AMF_VIDEO_ENCODER_PREENCODE_MODE_ENUM); default =  AMF_VIDEO_ENCODER_PREENCODE_DISABLED; controls Pre-analysis assisted rate control 
 
-    // Picture control properties - 
+    // Picture control properties
 #define AMF_VIDEO_ENCODER_HEADER_INSERTION_SPACING              L"HeaderInsertionSpacing"   // amf_int64; default = depends on USAGE; Header Insertion Spacing; range 0-1000
 #define AMF_VIDEO_ENCODER_B_PIC_PATTERN                         L"BPicturesPattern"         // amf_int64; default = 3; B-picture Pattern (number of B-Frames)
 #define AMF_VIDEO_ENCODER_DE_BLOCKING_FILTER                    L"DeBlockingFilter"         // bool; default = depends on USAGE; De-blocking Filter
@@ -153,6 +176,7 @@ enum AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_IDR_PERIOD                            L"IDRPeriod"                // amf_int64; default = depends on USAGE; IDR Period in frames
 #define AMF_VIDEO_ENCODER_INTRA_REFRESH_NUM_MBS_PER_SLOT        L"IntraRefreshMBsNumberPerSlot" // amf_int64; default = depends on USAGE; Intra Refresh MBs Number Per Slot in Macroblocks
 #define AMF_VIDEO_ENCODER_SLICES_PER_FRAME                      L"SlicesPerFrame"           // amf_int64; default = 1; Number of slices Per Frame 
+#define AMF_VIDEO_ENCODER_CABAC_ENABLE                          L"CABACEnable"              // amf_int64(AMF_VIDEO_ENCODER_CODING_ENUM) default = AMF_VIDEO_ENCODER_UNDEFINED
 
     // Motion estimation
 #define AMF_VIDEO_ENCODER_MOTION_HALF_PIXEL                     L"HalfPixel"                // bool; default= true; Half Pixel 
@@ -162,7 +186,6 @@ enum AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_NUM_TEMPORAL_ENHANCMENT_LAYERS        L"NumOfTemporalEnhancmentLayers" // amf_int64; default = 0; range = 0, min(2, caps->GetMaxNumOfTemporalLayers()) number of temporal enhancment Layers (SVC)
 
 // Per-submittion properties - can be set on input surface interface
-
 #define AMF_VIDEO_ENCODER_END_OF_SEQUENCE                       L"EndOfSequence"            // bool; default = false; generate end of sequence
 #define AMF_VIDEO_ENCODER_END_OF_STREAM                         L"EndOfStream"              // bool; default = false; generate end of stream
 #define AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE                    L"ForcePictureType"         // amf_int64(AMF_VIDEO_ENCODER_PICTURE_TYPE_ENUM); default = AMF_VIDEO_ENCODER_PICTURE_TYPE_NONE; generate particular picture type
@@ -181,13 +204,12 @@ enum AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_ENUM
 
 #define AMF_VIDEO_ENCODER_HDCP_COUNTER                          L"HDCPCounter"              //  const void*
 
-//  Properties for multi-instance cloud gaming
+// Properties for multi-instance cloud gaming
 #define AMF_VIDEO_ENCODER_MAX_INSTANCES                         L"EncoderMaxInstances"      //  amf_uint32; default = 1; max number of encoder instances
 #define AMF_VIDEO_ENCODER_MULTI_INSTANCE_MODE                   L"MultiInstanceMode"        //  bool; default = false;
 #define AMF_VIDEO_ENCODER_CURRENT_QUEUE                         L"MultiInstanceCurrentQueue"//  amf_uin32; default = 0; 
 
 // VCE Encoder capabilities - exposed in AMFCaps interface
-
 #define AMF_VIDEO_ENCODER_CAP_MAX_BITRATE                       L"MaxBitrate"               // amf_int64; Maximum bit rate in bits
 #define AMF_VIDEO_ENCODER_CAP_NUM_OF_STREAMS                    L"NumOfStreams"             // amf_int64; maximum number of encode streams supported 
 #define AMF_VIDEO_ENCODER_CAP_MAX_PROFILE                       L"MaxProfile"               // AMF_VIDEO_ENCODER_PROFILE_ENUM
