@@ -182,6 +182,8 @@
     <ClCompile Include="..\common\CmdLogger.cpp" />
     <ClCompile Include="..\common\DeviceDX11.cpp" />
     <ClCompile Include="..\common\DeviceDX9.cpp" />
+    <ClCompile Include="..\common\EncoderParamsAVC.cpp" />
+    <ClCompile Include="..\common\EncoderParamsHEVC.cpp" />
     <ClCompile Include="..\common\ParametersStorage.cpp" />
     <ClCompile Include="..\common\Pipeline.cpp" />
     <ClCompile Include="..\common\TranscodePipeline.cpp" />
@@ -206,7 +208,8 @@
     <ClInclude Include="..\common\CmdLogger.h" />
     <ClInclude Include="..\common\DeviceDX11.h" />
     <ClInclude Include="..\common\DeviceDX9.h" />
-    <ClInclude Include="..\common\EncoderParams.h" />
+    <ClInclude Include="..\common\EncoderParamsAVC.h" />
+    <ClInclude Include="..\common\EncoderParamsHEVC.h" />
     <ClInclude Include="..\common\ParametersStorage.h" />
     <ClInclude Include="..\common\Pipeline.h" />
     <ClInclude Include="..\common\PipelineElement.h" />
@@ -235,6 +238,23 @@
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="TranscodeSpeed.bat">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy /Y %(FullPath) $(OutDir)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy /Y %(FullPath) $(OutDir)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy /Y %(FullPath) $(OutDir)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">xcopy /Y %(FullPath) $(OutDir)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Copy %(Filename)%(Extension)...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Copy %(Filename)%(Extension)...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Copy %(Filename)%(Extension)...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Copy %(Filename)%(Extension)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(OutDir)/%(Filename)%(Extension)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(OutDir)/%(Filename)%(Extension)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)/%(Filename)%(Extension)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)/%(Filename)%(Extension)</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="TranscodeIntraRefresh.bat">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy /Y %(FullPath) $(OutDir)</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy /Y %(FullPath) $(OutDir)</Command>

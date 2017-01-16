@@ -114,9 +114,5 @@ bool parseCmdLineParameters(ParametersStorage* pParams)
         }
         return true;
     }
-    else
-    {
-        LOG_INFO(pParams->GetParamUsage());
-    }
     return false;
 }

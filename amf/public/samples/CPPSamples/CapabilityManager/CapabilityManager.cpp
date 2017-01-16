@@ -36,6 +36,7 @@
 #include "public/common/AMFFactory.h"
 #include "public/include/components/VideoDecoderUVD.h"
 #include "public/include/components/VideoEncoderVCE.h"
+#include "public/include/components/VideoEncoderHEVC.h"
 #include "public/include/components/VideoConverter.h"
 #include "public/include/core/Context.h"
 #include "public/include/core/Debug.h"
@@ -173,7 +174,7 @@ bool QueryDecoderForCodec(const wchar_t *componentID, amf::AMFContext* pContext)
     }
 }
 
-bool QueryEncoderForCodec(const wchar_t *componentID, amf::AMFContext* pContext)
+bool QueryEncoderForCodecAVC(const wchar_t *componentID, amf::AMFContext* pContext)
 {
     std::wcout << L"\tCodec " << componentID << L"\n";
     amf::AMFCapsPtr encoderCaps;
@@ -237,6 +238,62 @@ bool QueryEncoderForCodec(const wchar_t *componentID, amf::AMFContext* pContext)
     }
 }
 
+bool QueryEncoderForCodecHEVC(const wchar_t *componentID, amf::AMFContext* pContext)
+{
+    std::wcout << L"\tCodec " << componentID << L"\n";
+    amf::AMFCapsPtr encoderCaps;
+    bool result = false;
+
+    amf::AMFComponentPtr pEncoder;
+    g_AMFFactory.GetFactory()->CreateComponent(pContext, componentID, &pEncoder);
+    if(pEncoder == NULL)
+    {
+        std::wcout << AccelTypeToString(amf::AMF_ACCEL_NOT_SUPPORTED) << L"\n";
+        return false;
+    }
+    if (pEncoder->GetCaps(&encoderCaps) == AMF_OK)
+    {
+        amf::AMF_ACCELERATION_TYPE accelType = encoderCaps->GetAccelerationType();
+        std::wcout << L"\t\tAcceleration Type:" << AccelTypeToString(accelType) << L"\n";
+
+        amf_uint32 maxProfile = 0;
+        encoderCaps->GetProperty(AMF_VIDEO_ENCODER_HEVC_CAP_MAX_PROFILE, &maxProfile);
+        std::wcout << L"\t\tmaximum profile:" <<maxProfile << L"\n";
+
+        amf_uint32 maxTier = 0;
+        encoderCaps->GetProperty(AMF_VIDEO_ENCODER_HEVC_CAP_MAX_TIER, &maxTier);
+        std::wcout << L"\t\tmaximum tier:" <<maxTier << L"\n";
+
+        amf_uint32 maxLevel = 0;
+        encoderCaps->GetProperty(AMF_VIDEO_ENCODER_HEVC_CAP_MAX_LEVEL, &maxLevel);
+        std::wcout << L"\t\tmaximum level:" <<maxLevel << L"\n";
+
+        amf_uint32 maxNumOfStreams = 0;
+        encoderCaps->GetProperty(AMF_VIDEO_ENCODER_HEVC_CAP_NUM_OF_STREAMS, &maxNumOfStreams);
+        std::wcout << L"\t\tMax Number of streams supported:" << maxNumOfStreams << L"\n";
+
+        std::wcout << L"\t\tEncoder input:\n";
+        amf::AMFIOCapsPtr inputCaps;
+        if (encoderCaps->GetInputCaps(&inputCaps) == AMF_OK)
+        {
+            result = QueryIOCaps(inputCaps);
+        }
+
+        std::wcout << L"\t\tEncoder output:\n";
+        amf::AMFIOCapsPtr outputCaps;
+        if (encoderCaps->GetOutputCaps(&outputCaps) == AMF_OK)
+        {
+            result = QueryIOCaps(outputCaps);
+        }
+        return true;
+    }
+    else
+    {
+        std::wcout << AccelTypeToString(amf::AMF_ACCEL_NOT_SUPPORTED) << L"\n";
+        return false;
+    }
+}
+
 void QueryDecoderCaps(amf::AMFContext* pContext)
 {
     std::wcout << L"Querying video decoder capabilities...\n";
@@ -250,7 +307,11 @@ bool QueryEncoderCaps(amf::AMFContext* pContext)
 {
     std::wcout << L"Querying video encoder capabilities...\n";
     
-    return  QueryEncoderForCodec(AMFVideoEncoderVCE_AVC, pContext) && QueryEncoderForCodec(AMFVideoEncoderVCE_SVC, pContext);
+    QueryEncoderForCodecAVC(AMFVideoEncoderVCE_AVC, pContext);
+    QueryEncoderForCodecAVC(AMFVideoEncoderVCE_SVC, pContext);
+    QueryEncoderForCodecHEVC(AMFVideoEncoder_HEVC, pContext);
+
+    return  true;
 }
 
 bool QueryConverterCaps(amf::AMFContext* pContext)
@@ -300,56 +361,68 @@ int _tmain(int argc, _TCHAR* argv[])
 
     g_AMFFactory.GetDebug()->AssertsEnable(false);
 
-    amf::AMFContextPtr pContext;
-    if (g_AMFFactory.GetFactory()->CreateContext(&pContext) == AMF_OK)
-    {
-        bool deviceInit = false;
-        int deviceIdx = 0;
-#ifdef _WIN32
+    for(int deviceIdx = 0; ;deviceIdx++)
+    { 
 
-        OSVERSIONINFO osvi;
-        memset(&osvi, 0, sizeof(osvi));
-        osvi.dwOSVersionInfoSize = sizeof(osvi);
-        GetVersionEx(&osvi);
+        amf::AMFContextPtr pContext;
+        if (g_AMFFactory.GetFactory()->CreateContext(&pContext) == AMF_OK)
+        {
+            bool deviceInit = false;
+        
+    #ifdef _WIN32
+
+            OSVERSIONINFO osvi;
+            memset(&osvi, 0, sizeof(osvi));
+            osvi.dwOSVersionInfoSize = sizeof(osvi);
+            GetVersionEx(&osvi);
   
-        if (osvi.dwMajorVersion >= 6)
-        {
-            if (osvi.dwMinorVersion >= 2)   //  Win 8 or Win Server 2012 or newer
+            if (osvi.dwMajorVersion >= 6)
             {
-                DeviceDX11  deviceDX11;
-                if (deviceDX11.Init(deviceIdx) == AMF_OK)
+                if (osvi.dwMinorVersion >= 2)   //  Win 8 or Win Server 2012 or newer
                 {
-                    deviceInit = (pContext->InitDX11(deviceDX11.GetDevice()) == AMF_OK);
+                    DeviceDX11  deviceDX11;
+                    if (deviceDX11.Init(deviceIdx) == AMF_OK)
+                    {
+                        deviceInit = (pContext->InitDX11(deviceDX11.GetDevice()) == AMF_OK);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    DeviceDX9   deviceDX9;
+                    if (deviceDX9.Init(true, deviceIdx, false, 1, 1) == AMF_OK || deviceDX9.Init(false, deviceIdx, false, 1, 1) == AMF_OK)    //  For DX9 try DX9Ex first and fall back to DX9 if Ex is not available
+                    {
+                        deviceInit = (pContext->InitDX9(deviceDX9.GetDevice()) == AMF_OK);
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
             }
-            else
+            else    //  Older than Vista - not supported
             {
-                DeviceDX9   deviceDX9;
-                if (deviceDX9.Init(true, deviceIdx, false, 1, 1) == AMF_OK || deviceDX9.Init(false, deviceIdx, false, 1, 1) == AMF_OK)    //  For DX9 try DX9Ex first and fall back to DX9 if Ex is not available
-                {
-                    deviceInit = (pContext->InitDX9(deviceDX9.GetDevice()) == AMF_OK);
-                }
+                std::wcerr << L"This version of Windows is too old\n";
+            }
+    #endif
+            if (deviceInit == true)
+            {
+                QueryDecoderCaps(pContext);
+                QueryEncoderCaps(pContext);
+                QueryConverterCaps(pContext);
+                result = true;
             }
         }
-        else    //  Older than Vista - not supported
+        else
         {
-            std::wcerr << L"This version of Windows is too old\n";
+            std::wcerr << L"Failed to instatiate Capability Manager.\n";
+            return -1;
         }
-#endif
-        if (deviceInit == true)
-        {
-            QueryDecoderCaps(pContext);
-            QueryEncoderCaps(pContext);
-            QueryConverterCaps(pContext);
-            result = true;
-        }
+        pContext.Release();
     }
-    else
-    {
-        std::wcerr << L"Failed to instatiate Capability Manager.\n";
-        return -1;
-    }
-    pContext.Release();
     g_AMFFactory.Terminate();
     return result ? 0 : 1;
 }

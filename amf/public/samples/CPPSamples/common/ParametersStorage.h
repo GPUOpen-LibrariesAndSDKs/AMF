@@ -52,7 +52,11 @@ enum ParamType
     ParamVideoProcessor
 };
 
+AMF_RESULT ParamConverterInt64(const std::wstring& value, amf::AMFVariant& valueOut);
+AMF_RESULT ParamConverterDouble(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterBoolean(const std::wstring& value, amf::AMFVariant& valueOut);
+AMF_RESULT ParamConverterRatio(const std::wstring& value, amf::AMFVariant& valueOut);
+AMF_RESULT ParamConverterRate(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterVideoPresenter(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterMemoryType(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterFormat(const std::wstring& value, amf::AMFVariant& valueOut);
@@ -96,7 +100,7 @@ public:
         ParamDescription() : m_Type(ParamUnknown), m_Converter(NULL)
         {
         }
-        ParamDescription(const std::wstring &name, ParamType type,const std::wstring &description, ParamConverter converter = NULL) : 
+        ParamDescription(const std::wstring &name, ParamType type,const std::wstring &description, ParamConverter converter) : 
             m_Name(name),
             m_Type(type),
             m_Description(description),
@@ -105,7 +109,7 @@ public:
         }
     };
     AMF_RESULT GetParamDescription(const wchar_t* name, ParamDescription& description);
-    AMF_RESULT SetParamDescription(const wchar_t* name, ParamType type, const wchar_t* description, ParamConverter converter = NULL);
+    AMF_RESULT SetParamDescription(const wchar_t* name, ParamType type, const wchar_t* description, ParamConverter converter);
     std::wstring  GetParamUsage();
 protected:
     virtual void OnParamChanged(const wchar_t* name) {}
@@ -157,3 +161,6 @@ AMF_RESULT ParametersStorage::GetParamWString(const wchar_t* name, _T& value)
 }
 
 AMF_RESULT PushParamsToPropertyStorage(ParametersStorage* pParams, ParamType ptype, amf::AMFPropertyStorage *storage);
+
+#define SETFRAMEPARAMFREQ_PARAM_NAME L"SETFRAMEPARAMFREQ"
+#define SETDYNAMICPARAMFREQ_PARAM_NAME L"SETDYNAMICPARAMFREQ"

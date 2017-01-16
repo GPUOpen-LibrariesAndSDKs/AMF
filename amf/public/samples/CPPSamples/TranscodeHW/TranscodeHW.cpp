@@ -8,6 +8,7 @@
 // Technologies that are owed as a result of AMD providing the Software to you.
 // 
 // MIT license 
+// 
 //
 // Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -124,25 +125,54 @@ private:
 static const wchar_t* PARAM_NAME_THREADCOUNT = L"THREADCOUNT";
 static const wchar_t* PARAM_NAME_PREVIEW_MODE = L"PREVIEWMODE";
 
+static AMF_RESULT ParamConverterCodec(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    std::wstring paramValue;
+
+    std::wstring uppValue = toUpper(value);
+    if(uppValue == L"AVC" || uppValue == L"H264" || uppValue == L"H.264")
+    {
+        paramValue = AMFVideoEncoderVCE_AVC;
+    } 
+    else if(uppValue == L"HEVC" || uppValue == L"H265" || uppValue == L"H.265")
+    {
+        paramValue = AMFVideoEncoder_HEVC;
+    } 
+    else 
+    {
+        LOG_ERROR(L"Invalid codec name \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = paramValue.c_str();
+    return AMF_OK;
+}
+
+static AMF_RESULT RegisterCodecParams(ParametersStorage* pParams)
+{
+    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_CODEC, ParamCommon, L"Codec name (AVC or H264, HEVC or H265)", ParamConverterCodec);
+    return AMF_OK;
+}
+
+
 AMF_RESULT RegisterParams(ParametersStorage* pParams)
 {
-    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_OUTPUT, ParamCommon, L"Output file name");
-    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_INPUT, ParamCommon,  L"Input file name");
+    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_OUTPUT, ParamCommon, L"Output file name", NULL);
+    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_INPUT, ParamCommon,  L"Input file name", NULL);
 
-    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_SCALE_WIDTH, ParamCommon, L"Frame width (integer, default = 0)");
-    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_SCALE_HEIGHT, ParamCommon, L"Frame height (integer, default = 0)");
+    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_SCALE_WIDTH, ParamCommon, L"Frame width (integer, default = 0)", ParamConverterInt64);
+    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_SCALE_HEIGHT, ParamCommon, L"Frame height (integer, default = 0)", ParamConverterInt64);
 
-    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_ADAPTERID, ParamCommon, L"Index of GPU adapter (number, default = 0)");
+    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_ADAPTERID, ParamCommon, L"Index of GPU adapter (number, default = 0)", NULL);
 
-    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_ENGINE, ParamCommon,  L"Specifiy engine type (DX9, DX11)");
+    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_ENGINE, ParamCommon,  L"Specifiy engine type (DX9, DX11)", NULL);
+    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_FRAMES, ParamCommon, L"Number of frames to render (in frames, default = 0 - means all )", ParamConverterInt64);
 
-    RegisterEncoderParams(pParams);
 
     // to demo frame-specific properties - will be applied to each N-th frame (force IDR)
-    pParams->SetParam(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, amf_int64(AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR) );
+    pParams->SetParam(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, amf_int64(AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR));
 
-    pParams->SetParamDescription(PARAM_NAME_THREADCOUNT, ParamCommon, L"Number of session run ip parallel (number, default = 1)");
-    pParams->SetParamDescription(PARAM_NAME_PREVIEW_MODE, ParamCommon, L"Preview Mode (bool, default = false)");
+    pParams->SetParamDescription(PARAM_NAME_THREADCOUNT, ParamCommon, L"Number of session run ip parallel (number, default = 1)", ParamConverterInt64);
+    pParams->SetParamDescription(PARAM_NAME_PREVIEW_MODE, ParamCommon, L"Preview Mode (bool, default = false)", ParamConverterInt64);
     return AMF_OK;
 }
 
@@ -170,13 +200,46 @@ int _tmain(int argc, _TCHAR* argv[])
 
     amf_increase_timer_precision();
     ParametersStorage params;
+    RegisterCodecParams(&params);
+
+    if (!parseCmdLineParameters(&params))
+    {
+        LOG_INFO(L"+++ AVC codec +++");
+        ParametersStorage paramsAVC;
+        RegisterCodecParams(&paramsAVC);
+        RegisterEncoderParamsAVC(&paramsAVC);
+        LOG_INFO(paramsAVC.GetParamUsage());
+
+        LOG_INFO(L"+++ HEVC codec +++");
+        ParametersStorage paramsHEVC;
+        RegisterCodecParams(&paramsHEVC);
+        RegisterEncoderParamsHEVC(&paramsHEVC);
+        LOG_INFO(paramsHEVC.GetParamUsage());
+        return -1;
+    }
+
+    std::wstring codec = AMFVideoEncoderVCE_AVC;
+    params.GetParamWString(TranscodePipeline::PARAM_NAME_CODEC, codec);
+    if(codec == AMFVideoEncoderVCE_AVC)
+    {
+        RegisterEncoderParamsAVC(&params);
+    }
+    else if(codec == AMFVideoEncoder_HEVC)
+    {
+        RegisterEncoderParamsHEVC(&params);
+    }
+    else
+    {
+        LOG_ERROR(L"Invalid codec ID");
+
+    }
     RegisterParams(&params);
 
+    // parse again with codec - dependent set of parameters
     if (!parseCmdLineParameters(&params))
     {
         return -1;
     }
-
     PreviewWindow previewWindow;
     bool previewMode = false;
     params.GetParam(PARAM_NAME_PREVIEW_MODE, previewMode);

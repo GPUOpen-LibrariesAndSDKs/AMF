@@ -48,7 +48,9 @@ void ChangeTextColor(LogType type)
         SetConsoleTextAttribute(hCmd, FOREGROUND_GREEN);
         break;
     case LogTypeError:
-        SetConsoleTextAttribute(hCmd, FOREGROUND_RED);
+//        SetConsoleTextAttribute(hCmd, FOREGROUND_RED);
+        SetConsoleTextAttribute(hCmd, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+        
         break;
     }
 #endif

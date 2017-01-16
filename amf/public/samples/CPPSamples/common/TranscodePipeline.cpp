@@ -42,6 +42,7 @@
 #pragma warning(disable:4355)
 
 
+const wchar_t* TranscodePipeline::PARAM_NAME_CODEC          = L"CODEC";
 const wchar_t* TranscodePipeline::PARAM_NAME_OUTPUT         = L"OUTPUT";
 const wchar_t* TranscodePipeline::PARAM_NAME_INPUT          = L"INPUT";
 
@@ -50,6 +51,7 @@ const wchar_t* TranscodePipeline::PARAM_NAME_SCALE_HEIGHT   = L"HEIGHT";
 const wchar_t* TranscodePipeline::PARAM_NAME_ADAPTERID      = L"ADAPTERID";
 
 const wchar_t* TranscodePipeline::PARAM_NAME_ENGINE            = L"ENGINE";
+const wchar_t* TranscodePipeline::PARAM_NAME_FRAMES            = L"FRAMES";
 
 
 
@@ -259,6 +261,10 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     pParams->GetParam(SETFRAMEPARAMFREQ_PARAM_NAME, frameParameterFreq);
     pParams->GetParam(SETDYNAMICPARAMFREQ_PARAM_NAME, dynamicParameterFreq);
 
+    amf_int64 frames = 0;
+    pParams->GetParam(PARAM_NAME_FRAMES, frames);
+    
+
     //---------------------------------------------------------------------------------------------
     // Init context and devices
 
@@ -313,6 +319,11 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
         CHECK_RETURN(pParser != NULL, AMF_FILE_NOT_OPEN, "BitStreamParser::Create");
 
         iVideoStreamIndex = 0;
+
+        if(frames != 0)
+        {
+            pParser->SetMaxFramesNumber((amf_size)frames);
+        }
         
     }
     else
@@ -326,6 +337,10 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
         res = m_pDemuxer->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
         CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxer->Init() failed");
 
+        if(frames != 0)
+        {
+            m_pDemuxer->SetProperty(FFMPEG_DEMUXER_FRAME_COUNT, frames);
+        }
 
         amf_int32 outputs = m_pDemuxer->GetOutputCount();
         for(amf_int32 output = 0; output < outputs; output++)
@@ -357,7 +372,7 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     {
         InitVideo(pParser, pVideoOutput, engineMemoryType, previewTarget, pParams);
     }
-    if(iAudioStreamIndex >= 0)
+    if(iAudioStreamIndex >= 0 && outStreamType == BitStreamUnknown) // do not process audio if we write elmentary stream
     {
         InitAudio(pAudioOutput);
     }
@@ -423,21 +438,43 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
                 outVideoStreamIndex = input;
 
                 pInput->SetProperty(FFMPEG_MUXER_STREAM_ENABLED, true);
-//                pInput->SetProperty(FFMPEG_MUXER_CODEC_ID, AV_CODEC_ID_H264); // default
                 amf_int32 bitrate = 0;
-                m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, &bitrate);
-                pInput->SetProperty(FFMPEG_MUXER_BIT_RATE, bitrate);
-                amf::AMFInterfacePtr pExtraData;
-                m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_EXTRADATA, &pExtraData);
-                pInput->SetProperty(FFMPEG_MUXER_EXTRA_DATA, pExtraData);
+                if(m_EncoderID == AMFVideoEncoderVCE_AVC || m_EncoderID == AMFVideoEncoderVCE_SVC)
+                { 
+#define AV_CODEC_ID_H264 28 // works with current FFmpeg only
+                    pInput->SetProperty(FFMPEG_MUXER_CODEC_ID, AV_CODEC_ID_H264); // default
+                    m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, &bitrate);
+                    pInput->SetProperty(FFMPEG_MUXER_BIT_RATE, bitrate);
+                    amf::AMFInterfacePtr pExtraData;
+                    m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_EXTRADATA, &pExtraData);
+                    pInput->SetProperty(FFMPEG_MUXER_EXTRA_DATA, pExtraData);
 
-                AMFSize frameSize;
-                m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, &frameSize);
-                pInput->SetProperty(FFMPEG_MUXER_VIDEO_FRAMESIZE, frameSize);
+                    AMFSize frameSize;
+                    m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, &frameSize);
+                    pInput->SetProperty(FFMPEG_MUXER_VIDEO_FRAMESIZE, frameSize);
 
-                AMFRate frameRate;
-                m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_FRAMERATE, &frameRate);
-                pInput->SetProperty(FFMPEG_MUXER_VIDEO_FRAME_RATE, frameRate);
+                    AMFRate frameRate;
+                    m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_FRAMERATE, &frameRate);
+                    pInput->SetProperty(FFMPEG_MUXER_VIDEO_FRAME_RATE, frameRate);
+                }
+                else
+                {
+#define AV_CODEC_ID_H265 174 // works with current FFmpeg only
+                    pInput->SetProperty(FFMPEG_MUXER_CODEC_ID, AV_CODEC_ID_H265);
+                    m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE, &bitrate);
+                    pInput->SetProperty(FFMPEG_MUXER_BIT_RATE, bitrate);
+                    amf::AMFInterfacePtr pExtraData;
+                    m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_HEVC_EXTRADATA, &pExtraData);
+                    pInput->SetProperty(FFMPEG_MUXER_EXTRA_DATA, pExtraData);
+
+                    AMFSize frameSize;
+                    m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE, &frameSize);
+                    pInput->SetProperty(FFMPEG_MUXER_VIDEO_FRAMESIZE, frameSize);
+
+                    AMFRate frameRate;
+                    m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, &frameRate);
+                    pInput->SetProperty(FFMPEG_MUXER_VIDEO_FRAME_RATE, frameRate);
+                }
             }
             else if(eStreamType == MUXER_AUDIO)
             {
@@ -784,18 +821,23 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, amf::AMFOut
     // Init Video Encoder
 
 
-    const wchar_t *encoderID = AMFVideoEncoderVCE_AVC;
-    amf_int64 usage = 0;
-    if(pParams->GetParam(AMF_VIDEO_ENCODER_USAGE, usage) == AMF_OK)
-    {
-        if(usage == amf_int64(AMF_VIDEO_ENCODER_USAGE_WEBCAM))
+    m_EncoderID = AMFVideoEncoderVCE_AVC;
+    pParams->GetParamWString(TranscodePipeline::PARAM_NAME_CODEC, m_EncoderID);
+
+    if(m_EncoderID == AMFVideoEncoderVCE_AVC)
+    { 
+        amf_int64 usage = 0;
+        if(pParams->GetParam(AMF_VIDEO_ENCODER_USAGE, usage) == AMF_OK)
         {
-            encoderID = AMFVideoEncoderVCE_SVC;
+            if(usage == amf_int64(AMF_VIDEO_ENCODER_USAGE_WEBCAM))
+            {
+                m_EncoderID = AMFVideoEncoderVCE_SVC;
+            }
         }
     }
 
-    res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, encoderID, &m_pEncoder);
-    CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << encoderID << L") failed");
+    res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, m_EncoderID.c_str(), &m_pEncoder);
+    CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << m_EncoderID << L") failed");
 
     // Usage is preset that will set many parameters
     PushParamsToPropertyStorage(pParams, ParamEncoderUsage, m_pEncoder); 
@@ -804,6 +846,17 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, amf::AMFOut
 
 //    m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(scaleWidth, scaleHeight));
 
+    if(frameRate.den != 0 && frameRate.num != 0)
+    { 
+        if(m_EncoderID == AMFVideoEncoderVCE_AVC || m_EncoderID == AMFVideoEncoderVCE_SVC)
+        { 
+            m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, frameRate);
+        }
+        else
+        {
+            m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, frameRate);
+        }
+    }
 
     res = m_pEncoder->Init(amf::AMF_SURFACE_NV12, scaleWidth, scaleHeight);
     CHECK_AMF_ERROR_RETURN(res, L"m_pEncoder->Init() failed");
@@ -811,9 +864,5 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, amf::AMFOut
     PushParamsToPropertyStorage(pParams, ParamEncoderDynamic, m_pEncoder);
 //    m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_EXTRADATA, NULL); //samll way - around  forces to regenerate extradata
 
-    if(frameRate.den != 0 && frameRate.num != 0)
-    { 
-        m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, frameRate);
-    }
     return AMF_OK;
 }

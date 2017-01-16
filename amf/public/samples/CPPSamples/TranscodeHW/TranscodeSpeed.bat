@@ -30,7 +30,7 @@ rem OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 rem THE SOFTWARE.
 rem
 
-TranscodeHW.exe -input %1 -output %2 -width 1920 -height 1080 -usage transcoding -qualitypreset speed -RateControlMethod cqp -targetBitrate 5000000 -FRAMES 1000 -engine dx9 -windowmode false -threadcount 1 -BPicturesPattern 0 -GOPSize 20 -QPI 30 -QPP 30
+TranscodeHW.exe -input %1 -output %2 -width 1920 -height 1080 -usage transcoding -qualitypreset speed -RateControlMethod cqp -targetBitrate 5000000 -FRAMES 1000 -engine dx9 -windowmode false -threadcount 1 -BPicturesPattern 0 -IDRPeriod 20 -QPI 30 -QPP 30
 
 
 

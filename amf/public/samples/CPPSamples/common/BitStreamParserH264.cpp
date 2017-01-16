@@ -127,7 +127,7 @@ protected:
         NalUnitTypeUnspecified31 = 31
     };
 
-    // ISO-IEC 14496-15-2004.pdf, page 14, table 1 - NAL unit types in elementary streams.
+    // ISO-IEC 14496-15-2004.pdf, page 14, table 1 " NAL unit types in elementary streams.
     struct SpsData
     {
         amf_uint8 ProfileIdc;
@@ -459,7 +459,7 @@ void     AvcParser::GetFrameRate(AMFRate *frameRate) const
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AvcParser::QueryOutput(amf::AMFData** ppData)
 {
-    if((m_bEof && m_ReadData.GetSize() == 0) || m_maxFramesNumber && m_PacketCount >= m_maxFramesNumber)
+    if((m_bEof && m_ReadData.GetSize() == 0) || (m_maxFramesNumber && m_PacketCount >= m_maxFramesNumber))
     {
         return AMF_EOF;
     }
@@ -523,7 +523,12 @@ AMF_RESULT AvcParser::QueryOutput(amf::AMFData** ppData)
         {
             bSliceFound = true;  
             AccessUnitSigns naluAccessUnitsSigns;
-            naluAccessUnitsSigns.Parse(m_ReadData.GetData() + naluOffset, naluSize, m_SpsMap, m_PpsMap);
+
+            m_EBSPtoRBSPData.SetSize(naluSize);
+            memcpy(m_EBSPtoRBSPData.GetData(), m_ReadData.GetData() + naluOffset, naluSize);
+            size_t newNaluSize = EBSPtoRBSP(m_EBSPtoRBSPData.GetData(),0, naluSize);
+
+            naluAccessUnitsSigns.Parse(m_EBSPtoRBSPData.GetData(), newNaluSize, m_SpsMap, m_PpsMap);
 
             if (m_currentAccessUnitsSigns.PicParameterSetId == amf_uint32(-1))
             {

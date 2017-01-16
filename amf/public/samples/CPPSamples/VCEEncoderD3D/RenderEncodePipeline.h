@@ -8,6 +8,7 @@
 // Technologies that are owed as a result of AMD providing the Software to you.
 // 
 // MIT license 
+// 
 //
 // Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -34,12 +35,14 @@
 
 #include "public/include/core/Context.h"
 #include "public/include/components/VideoEncoderVCE.h"
+#include "public/include/components/VideoEncoderHEVC.h"
 #include "public/include/components/VideoConverter.h"
 
 
 #include "../common/Pipeline.h"
 #include "../common/ParametersStorage.h"
-#include "../common/EncoderParams.h"
+#include "../common/EncoderParamsAVC.h"
+#include "../common/EncoderParamsHEVC.h"
 
 #include "../common/DeviceDX9.h"
 #include "../common/DeviceDX11.h"
@@ -56,6 +59,7 @@ public:
     RenderEncodePipeline();
     ~RenderEncodePipeline();
 public:
+    static const wchar_t* PARAM_NAME_CODEC;
     static const wchar_t* PARAM_NAME_OUTPUT;
     static const wchar_t* PARAM_NAME_RENDER;
 

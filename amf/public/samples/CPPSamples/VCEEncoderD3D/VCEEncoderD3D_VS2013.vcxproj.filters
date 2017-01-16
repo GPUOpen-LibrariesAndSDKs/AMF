@@ -69,9 +69,6 @@
     <ClInclude Include="..\common\CmdLineParser.h">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\EncoderParams.h">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\ParametersStorage.h">
       <Filter>common</Filter>
     </ClInclude>
@@ -101,6 +98,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\common\TraceAdapter.h">
       <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\EncoderParamsHEVC.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\EncoderParamsAVC.h">
+      <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -179,6 +182,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\common\TraceAdapter.cpp">
       <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\EncoderParamsHEVC.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\EncoderParamsAVC.cpp">
+      <Filter>common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

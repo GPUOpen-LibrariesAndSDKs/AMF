@@ -9,7 +9,6 @@
 // 
 // MIT license 
 // 
-//
 // Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -32,34 +31,5 @@
 //
 #pragma once
 
-#include "public/include/core/Context.h"
-
-
-extern "C"
-{
-    #include "libavformat/avformat.h"
-    #include "libavformat/url.h"
-    #include "libavcodec/avcodec.h"
-    #include "libavcodec/audioconvert.h"
-    #include "libavresample/avresample.h"
-    #include "libavutil/opt.h"
-}
-
-
-namespace amf
-{
-    void              AMF_STD_CALL   InitFFMPEG();
-
-    AMF_AUDIO_FORMAT  AMF_STD_CALL   GetAMFAudioFormat(AVSampleFormat inFormat);
-    AVSampleFormat    AMF_STD_CALL   GetFFMPEGAudioFormat(AMF_AUDIO_FORMAT inFormat);
-
-    amf_int32         AMF_STD_CALL   GetAudioSampleSize(AMF_AUDIO_FORMAT inFormat);
-    bool              AMF_STD_CALL   IsAudioPlanar(AMF_AUDIO_FORMAT inFormat);
-    
-}
-
-// there is no definition in FFMPEG for H264MVC so create an ID
-// based on the last element in their enumeration
-extern const amf_int  AV_CODEC_H264MVC;
-extern AVRational AMF_TIME_BASE_Q;
-extern AVRational FFMPEG_TIME_BASE_Q;
+#include "ParametersStorage.h"
+AMF_RESULT RegisterEncoderParamsAVC(ParametersStorage* pParams);

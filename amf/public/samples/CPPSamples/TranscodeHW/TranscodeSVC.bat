@@ -8,6 +8,7 @@ rem royalties due for such third party technologies, which may include the Media
 rem Technologies that are owed as a result of AMD providing the Software to you.
 rem 
 rem MIT license 
+rem  
 rem
 rem Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
 rem

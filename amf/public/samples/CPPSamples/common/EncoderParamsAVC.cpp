@@ -32,6 +32,7 @@
 #pragma once
 
 #include "public/include/components/VideoEncoderVCE.h"
+#include "EncoderParamsAVC.h"
 #include "CmdLogger.h"
 #include "ParametersStorage.h"
 
@@ -39,7 +40,7 @@
 #include <iterator>
 #include <cctype>
 
-static AMF_RESULT ParamConverterUsage(const std::wstring& value, amf::AMFVariant& valueOut)
+static AMF_RESULT ParamConverterUsageAVC(const std::wstring& value, amf::AMFVariant& valueOut)
 {
     AMF_VIDEO_ENCODER_USAGE_ENUM paramValue;
 
@@ -67,7 +68,7 @@ static AMF_RESULT ParamConverterUsage(const std::wstring& value, amf::AMFVariant
     valueOut = amf_int64(paramValue);
     return AMF_OK;
 }
-static AMF_RESULT ParamConverterQuality(const std::wstring& value, amf::AMFVariant& valueOut)
+static AMF_RESULT ParamConverterQualityAVC(const std::wstring& value, amf::AMFVariant& valueOut)
 {
     AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM paramValue;
 
@@ -86,7 +87,7 @@ static AMF_RESULT ParamConverterQuality(const std::wstring& value, amf::AMFVaria
     valueOut = amf_int64(paramValue);
     return AMF_OK;
 }
-static AMF_RESULT ParamConverterProfile(const std::wstring& value, amf::AMFVariant& valueOut)
+static AMF_RESULT ParamConverterProfileAVC(const std::wstring& value, amf::AMFVariant& valueOut)
 {
     AMF_VIDEO_ENCODER_PROFILE_ENUM paramValue;
     std::wstring uppValue = toUpper(value);
@@ -120,10 +121,11 @@ enum ProfileLevel
     PV41    = 41,
     PV42    = 42,
     PV50    = 50,
-    PV51    = 51
+    PV51    = 51,
+    PV52    = 52
 };
 
-static AMF_RESULT ParamConverterProfileLevel(const std::wstring& value, amf::AMFVariant& valueOut)
+static AMF_RESULT ParamConverterProfileLevelAVC(const std::wstring& value, amf::AMFVariant& valueOut)
 {
     ProfileLevel paramValue;
     std::wstring uppValue = toUpper(value);
@@ -157,6 +159,8 @@ static AMF_RESULT ParamConverterProfileLevel(const std::wstring& value, amf::AMF
         paramValue = PV50;
     } else if(uppValue == L"5.1" || uppValue == L"51") {
         paramValue = PV51;
+    } else if(uppValue == L"5.2" || uppValue == L"52") {
+        paramValue = PV52;
     } else {
         LOG_ERROR(L"ProfileLevel hasn't \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
@@ -164,7 +168,7 @@ static AMF_RESULT ParamConverterProfileLevel(const std::wstring& value, amf::AMF
     valueOut = amf_int64(paramValue);
     return AMF_OK;
 }
-static AMF_RESULT ParamConverterScanType(const std::wstring& value, amf::AMFVariant& valueOut)
+static AMF_RESULT ParamConverterScanTypeAVC(const std::wstring& value, amf::AMFVariant& valueOut)
 {
     AMF_VIDEO_ENCODER_SCANTYPE_ENUM paramValue;
     std::wstring uppValue = toUpper(value);
@@ -181,7 +185,7 @@ static AMF_RESULT ParamConverterScanType(const std::wstring& value, amf::AMFVari
     return AMF_OK;
 }
 
-static AMF_RESULT ParamConverterRateControl(const std::wstring& value, amf::AMFVariant& valueOut)
+static AMF_RESULT ParamConverterRateControlAVC(const std::wstring& value, amf::AMFVariant& valueOut)
 {
     AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_ENUM paramValue;
     std::wstring uppValue = toUpper(value);
@@ -203,7 +207,7 @@ static AMF_RESULT ParamConverterRateControl(const std::wstring& value, amf::AMFV
 }
 
 
-static AMF_RESULT ParamConverterPictureType(const std::wstring& value, amf::AMFVariant& valueOut)
+static AMF_RESULT ParamConverterPictureTypeAVC(const std::wstring& value, amf::AMFVariant& valueOut)
 {
     AMF_VIDEO_ENCODER_PICTURE_TYPE_ENUM paramValue;
     std::wstring uppValue = toUpper(value);
@@ -227,46 +231,89 @@ static AMF_RESULT ParamConverterPictureType(const std::wstring& value, amf::AMFV
     valueOut = amf_int64(paramValue);
     return AMF_OK;
 }
-static const wchar_t* SETFRAMEPARAMFREQ_PARAM_NAME = L"SETFRAMEPARAMFREQ";
-static const wchar_t* SETDYNAMICPARAMFREQ_PARAM_NAME = L"SETDYNAMICPARAMFREQ";
 
-
-static AMF_RESULT RegisterEncoderParams(ParametersStorage* pParams)
+static AMF_RESULT ParamPreAnalysisAVC(const std::wstring& value, amf::AMFVariant& valueOut)
 {
-    pParams->SetParamDescription(SETFRAMEPARAMFREQ_PARAM_NAME, ParamCommon, L"Frequency of applying frame parameters (in frames, default = 0 )");
-    pParams->SetParamDescription(SETDYNAMICPARAMFREQ_PARAM_NAME, ParamCommon, L"Frequency of applying dynamic parameters. (in frames, default = 0 )");
+    AMF_VIDEO_ENCODER_PREENCODE_MODE_ENUM paramValue;
+    std::wstring uppValue = toUpper(value);
+    if(uppValue == L"NONE" || uppValue == L"0" || uppValue == L"DISABLED")
+    {
+        paramValue =  AMF_VIDEO_ENCODER_PREENCODE_DISABLED;
+    } else if(uppValue == L"ENABLED" || uppValue == L"1") {
+        paramValue =  AMF_VIDEO_ENCODER_PREENCODE_ENABLED;
+    } else if(uppValue == L"ENABLED2" || uppValue == L"2") {
+        paramValue =  AMF_VIDEO_ENCODER_PREENCODE_ENABLED_DOWNSCALEFACTOR_2;
+    } else if(uppValue == L"ENABLED4" || uppValue == L"3") {
+        paramValue =  AMF_VIDEO_ENCODER_PREENCODE_ENABLED_DOWNSCALEFACTOR_4;
+    } else {
+        LOG_ERROR(L"AMF_VIDEO_ENCODER_PREENCODE_MODE_ENUM hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+
+static AMF_RESULT ParamEncoding(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_VIDEO_ENCODER_CODING_ENUM paramValue;
+    std::wstring uppValue = toUpper(value);
+    if(uppValue == L"NONE" || uppValue == L"0" || uppValue == L"UNDEFINED")
+    {
+        paramValue =  AMF_VIDEO_ENCODER_UNDEFINED;
+    } else if(uppValue == L"CABAC" || uppValue == L"1") {
+        paramValue =  AMF_VIDEO_ENCODER_CABAC;
+    } else if(uppValue == L"CALV" || uppValue == L"2") {
+        paramValue =  AMF_VIDEO_ENCODER_CALV;
+    } else {
+        LOG_ERROR(L"AMF_VIDEO_ENCODER_CODING_ENUM hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+
+
+AMF_RESULT RegisterEncoderParamsAVC(ParametersStorage* pParams)
+{
+    pParams->SetParamDescription(SETFRAMEPARAMFREQ_PARAM_NAME, ParamCommon, L"Frequency of applying frame parameters (in frames, default = 0 )", ParamConverterInt64);
+    pParams->SetParamDescription(SETDYNAMICPARAMFREQ_PARAM_NAME, ParamCommon, L"Frequency of applying dynamic parameters. (in frames, default = 0 )", ParamConverterInt64);
 
 
     // ------------- Encoder params usage---------------
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_USAGE, ParamEncoderUsage, L"Encoder usage type. Set many default parameters. (TRANSCONDING, ULTRALOWLATENCY, LOWLATENCY, WEBCAM, default = N/A)", ParamConverterUsage);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_USAGE, ParamEncoderUsage, L"Encoder usage type. Set many default parameters. (TRANSCONDING, ULTRALOWLATENCY, LOWLATENCY, WEBCAM, default = N/A)", ParamConverterUsageAVC);
     // ------------- Encoder params static---------------
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_PROFILE, ParamEncoderStatic, L"H264 profile (Main, Baseline,High, default = Main", ParamConverterProfile);
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_PROFILE_LEVEL, ParamEncoderStatic, L"H264 profile level (float or integer, default = 4.2 (or 42)", ParamConverterProfileLevel);
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_QUALITY_PRESET, ParamEncoderStatic, L"Quality Preset (BALANCED, SPEED, QUALITY default = depends on USAGE)", ParamConverterQuality);
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_SCANTYPE, ParamEncoderStatic, L"Scan Type (PROGRESSIVE, INTERLACED, default = PROGRESSIVE)", ParamConverterScanType);
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_MAX_LTR_FRAMES, ParamEncoderStatic, L"Max Of LTR frames (integer, default = 0)");
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_PROFILE, ParamEncoderStatic, L"H264 profile (Main, Baseline,High, default = Main", ParamConverterProfileAVC);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_PROFILE_LEVEL, ParamEncoderStatic, L"H264 profile level (float or integer, default = 4.2 (or 42)", ParamConverterProfileLevelAVC);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_QUALITY_PRESET, ParamEncoderStatic, L"Quality Preset (BALANCED, SPEED, QUALITY default = depends on USAGE)", ParamConverterQualityAVC);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_SCANTYPE, ParamEncoderStatic, L"Scan Type (PROGRESSIVE, INTERLACED, default = PROGRESSIVE)", ParamConverterScanTypeAVC);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_MAX_LTR_FRAMES, ParamEncoderStatic, L"Max Of LTR frames (integer, default = 0)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_MAX_NUM_REFRAMES, ParamEncoderStatic, L"Max Of Reference frames (integer, default = 4)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_ENABLE_VBAQ, ParamEncoderStatic, L"Eanble VBAQ (integer, default = 0)", ParamConverterBoolean);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_RATE_CONTROL_PREANALYSIS_ENABLE, ParamEncoderStatic, L"Rate Control Preanalysis Enable (integer, default = 0)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_ASPECT_RATIO, ParamEncoderStatic, L"Controls aspect ratio, defulat (1,1)", ParamConverterRatio);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_FULL_RANGE_COLOR, ParamEncoderStatic, L"Inidicates that YUV input is (0,255) (bool, default = false)", ParamConverterBoolean);
 
     // ------------- Encoder params dynamic ---------------
-//    pParams->SetParamDescription(AMF_VIDEO_ENCODER_WIDTH, ParamEncoderDynamic, L"Frame width (integer, default = 0)");
-//    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEIGHT, ParamEncoderDynamic, L"Frame height (integer, default = 0)");
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_B_PIC_DELTA_QP, ParamEncoderDynamic, L"B-picture Delta  (integer, default = depends on USAGE)");
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_REF_B_PIC_DELTA_QP, ParamEncoderDynamic, L"Reference B-picture Delta  (integer, default = depends on USAGE)");
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_FRAMERATE, ParamEncoderDynamic, L"Frame Rate (num,den), default = depends on USAGE)");
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_MAX_AU_SIZE, ParamEncoderDynamic, L"Max AU Size (in bits, default = 0)");
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_TARGET_BITRATE, ParamEncoderDynamic, L"Target bit rate (in bits, default = depends on USAGE)");
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_PEAK_BITRATE, ParamEncoderDynamic, L"Peak bit rate (in bits, default = depends on USAGE)");
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_B_PIC_PATTERN, ParamEncoderDynamic, L"B-picture Pattern (number of B-Frames, default = 3)");
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_IDR_PERIOD, ParamEncoderDynamic, L"IDR Period, (in frames, default = depends on USAGE) ");
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_SLICES_PER_FRAME, ParamEncoderDynamic, L"Slices Per Frame (integer, default = 1)");
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_INTRA_REFRESH_NUM_MBS_PER_SLOT, ParamEncoderDynamic, L"Intra Refresh MBs Number Per Slot (in Macroblocks, default = depends on USAGE)");
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_INITIAL_VBV_BUFFER_FULLNESS, ParamEncoderDynamic, L"Initial VBV Buffer Fullness (integer, 0=0% 64=100% , default = 64)");
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_VBV_BUFFER_SIZE, ParamEncoderDynamic, L"VBV Buffer Size (in bits, default = depends on USAGE)");
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_MIN_QP, ParamEncoderDynamic, L"Min QP (integer 0-51, default = depends on USAGE)");
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_MAX_QP, ParamEncoderDynamic, L"Max QP (integer 0-51, default = depends on USAGE)");
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_QP_I, ParamEncoderDynamic, L"QP I (integer 0-51, default = 22)");
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_QP_P, ParamEncoderDynamic, L"QP P (integer 0-51, default = 22)");
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_QP_B, ParamEncoderDynamic, L"QP B (integer 0-51, default = 22)");
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEADER_INSERTION_SPACING, ParamEncoderDynamic, L"");
+//    pParams->SetParamDescription(AMF_VIDEO_ENCODER_WIDTH, ParamEncoderDynamic, L"Frame width (integer, default = 0)", ParamConverterInt64);
+//    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEIGHT, ParamEncoderDynamic, L"Frame height (integer, default = 0)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_B_PIC_DELTA_QP, ParamEncoderDynamic, L"B-picture Delta  (integer, default = depends on USAGE)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_REF_B_PIC_DELTA_QP, ParamEncoderDynamic, L"Reference B-picture Delta  (integer, default = depends on USAGE)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_FRAMERATE, ParamEncoderDynamic, L"Frame Rate (num,den), default = depends on USAGE)", ParamConverterRate);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_MAX_AU_SIZE, ParamEncoderDynamic, L"Max AU Size (in bits, default = 0)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_TARGET_BITRATE, ParamEncoderDynamic, L"Target bit rate (in bits, default = depends on USAGE)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_PEAK_BITRATE, ParamEncoderDynamic, L"Peak bit rate (in bits, default = depends on USAGE)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_B_PIC_PATTERN, ParamEncoderDynamic, L"B-picture Pattern (number of B-Frames, default = 3)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_IDR_PERIOD, ParamEncoderDynamic, L"IDR Period, (in frames, default = depends on USAGE) ", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_SLICES_PER_FRAME, ParamEncoderDynamic, L"Slices Per Frame (integer, default = 1)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_INTRA_REFRESH_NUM_MBS_PER_SLOT, ParamEncoderDynamic, L"Intra Refresh MBs Number Per Slot (in Macroblocks, default = depends on USAGE)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_INITIAL_VBV_BUFFER_FULLNESS, ParamEncoderDynamic, L"Initial VBV Buffer Fullness (integer, 0=0% 64=100% , default = 64)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_VBV_BUFFER_SIZE, ParamEncoderDynamic, L"VBV Buffer Size (in bits, default = depends on USAGE)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_MIN_QP, ParamEncoderDynamic, L"Min QP (integer 0-51, default = depends on USAGE)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_MAX_QP, ParamEncoderDynamic, L"Max QP (integer 0-51, default = depends on USAGE)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_QP_I, ParamEncoderDynamic, L"QP I (integer 0-51, default = 22)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_QP_P, ParamEncoderDynamic, L"QP P (integer 0-51, default = 22)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_QP_B, ParamEncoderDynamic, L"QP B (integer 0-51, default = 22)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEADER_INSERTION_SPACING, ParamEncoderDynamic, L"Insertion spacing", ParamConverterInt64);
 
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_ENFORCE_HRD, ParamEncoderDynamic, L"Enforce HRD (true, false default = depends on USAGE)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_FILLER_DATA_ENABLE, ParamEncoderDynamic, L"Filler Data Enable (true, false default =  false)", ParamConverterBoolean);
@@ -275,17 +322,18 @@ static AMF_RESULT RegisterEncoderParams(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_B_REFERENCE_ENABLE, ParamEncoderDynamic, L"Enable B Refrence (true, false default =  true)" , ParamConverterBoolean);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_MOTION_HALF_PIXEL, ParamEncoderDynamic, L"Half Pixel (true, false default =  true)" , ParamConverterBoolean);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_MOTION_QUARTERPIXEL, ParamEncoderDynamic, L"Quarter Pixel (true, false default =  true" , ParamConverterBoolean);
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_NUM_TEMPORAL_ENHANCMENT_LAYERS, ParamEncoderDynamic, L"Num Of Temporal Enhancment Layers (SVC) (integer, default = 0, range = 0, min(2, caps->GetMaxNumOfTemporalLayers())");
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_NUM_TEMPORAL_ENHANCMENT_LAYERS, ParamEncoderDynamic, L"Num Of Temporal Enhancment Layers (SVC) (integer, default = 0, range = 0, min(2, caps->GetMaxNumOfTemporalLayers())", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_CABAC_ENABLE, ParamEncoderDynamic, L"Encoding method (UNDEFINED, CAABC, CALV) default =UNDEFINED", ParamEncoding);
 
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD, ParamEncoderDynamic, L"Rate Control Method (CQP, CBR, VBR, VBR_LAT default = depends on USAGE)", ParamConverterRateControl);
-
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD, ParamEncoderDynamic, L"Rate Control Method (CQP, CBR, VBR, VBR_LAT default = depends on USAGE)", ParamConverterRateControlAVC);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_RATE_CONTROL_PREANALYSIS_ENABLE, ParamEncoderDynamic, L"Pre-analysis assisted rate control (DISABLED, ENABLED, ENABLED2, ENABLED4 default = DISABLED", ParamPreAnalysisAVC);
 
     // ------------- Encoder params per frame ---------------
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_INSERT_SPS, ParamEncoderFrame, L"Insert SPS (true, false default =  false)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_INSERT_PPS, ParamEncoderFrame, L"Insert PPS (true, false default =  false)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_INSERT_AUD, ParamEncoderFrame, L"Insert AUD (true, false default =  false)", ParamConverterBoolean);
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_MARK_CURRENT_WITH_LTR_INDEX, ParamEncoderFrame, L"Mark With LTR Index (integer, default -1)");
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_FORCE_LTR_REFERENCE_BITFIELD, ParamEncoderFrame, L"Force LTR Reference Bitfield (bitfield default = 0)");
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, ParamEncoderFrame, L"Force Picture Type (NONE, SKIP, IDR, I, P, B, default = NONE)", ParamConverterPictureType);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_MARK_CURRENT_WITH_LTR_INDEX, ParamEncoderFrame, L"Mark With LTR Index (integer, default -1)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_FORCE_LTR_REFERENCE_BITFIELD, ParamEncoderFrame, L"Force LTR Reference Bitfield (bitfield default = 0)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, ParamEncoderFrame, L"Force Picture Type (NONE, SKIP, IDR, I, P, B, default = NONE)", ParamConverterPictureTypeAVC);
     return AMF_OK;
 }

@@ -8,6 +8,7 @@
 // Technologies that are owed as a result of AMD providing the Software to you.
 // 
 // MIT license 
+// 
 //
 // Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -43,28 +44,56 @@
 
 static const wchar_t* PARAM_NAME_THREADCOUNT = L"THREADCOUNT";
 
-AMF_RESULT RegisterParams(ParametersStorage* pParams)
+
+static AMF_RESULT ParamConverterCodec(const std::wstring& value, amf::AMFVariant& valueOut)
 {
-    pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_OUTPUT, ParamCommon, L"Output file name");
-    pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_RENDER, ParamCommon,  L"Specifies render type (DX9, DX9Ex, DX11, OpenGL, OpenCL, Host, OpenCLDX9, OpenCLDX11, OpenGLDX9, OpenGLDX11, OpenCLOpenGLDX9, OpenCLOpenGLDX11, HostDX9, HostDX11, DX11DX9)");
+    std::wstring paramValue;
 
-    pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_WIDTH, ParamCommon, L"Frame width (integer, default = 0)");
-    pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_HEIGHT, ParamCommon, L"Frame height (integer, default = 0)");
-    pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_FRAMES, ParamCommon, L"Number of frames to render (in frames, default = 100 )");
+    std::wstring uppValue = toUpper(value);
+    if(uppValue == L"AVC" || uppValue == L"H264" || uppValue == L"H.264")
+    {
+        paramValue = AMFVideoEncoderVCE_AVC;
+    } 
+    else if(uppValue == L"HEVC" || uppValue == L"H265" || uppValue == L"H.265")
+    {
+        paramValue = AMFVideoEncoder_HEVC;
+    } 
+    else 
+    {
+        LOG_ERROR(L"Invalid codec name \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = paramValue.c_str();
+    return AMF_OK;
+}
+static AMF_RESULT RegisterCodecParams(ParametersStorage* pParams)
+{
+    pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_CODEC, ParamCommon, L"Codec name (AVC or H264, HEVC or H265)", ParamConverterCodec);
+    return AMF_OK;
+}
 
-    pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_ADAPTERID, ParamCommon, L"Index of GPU adapter (number, default = 0)");
+static AMF_RESULT RegisterParams(ParametersStorage* pParams)
+{
+    
+    pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_OUTPUT, ParamCommon, L"Output file name", NULL);
+    pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_RENDER, ParamCommon,  L"Specifies render type (DX9, DX9Ex, DX11, OpenGL, OpenCL, Host, OpenCLDX9, OpenCLDX11, OpenGLDX9, OpenGLDX11, OpenCLOpenGLDX9, OpenCLOpenGLDX11, HostDX9, HostDX11, DX11DX9)", NULL);
+
+    pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_WIDTH, ParamCommon, L"Frame width (integer, default = 0)", ParamConverterInt64);
+    pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_HEIGHT, ParamCommon, L"Frame height (integer, default = 0)", ParamConverterInt64);
+    pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_FRAMES, ParamCommon, L"Number of frames to render (in frames, default = 100 )", ParamConverterInt64);
+
+    pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_ADAPTERID, ParamCommon, L"Index of GPU adapter (number, default = 0)", NULL);
     pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_WINDOW_MODE, ParamCommon, L"Render to window (true, false, default = false)", ParamConverterBoolean);
     pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_FULLSCREEN, ParamCommon, L"Full screen (true, false, default = false)", ParamConverterBoolean);
 
 	pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_QUERY_INST_COUNT, ParamCommon, L"If the flag is set, the number of independent VCE instances will be quried and printed.", ParamConverterBoolean);
-	pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_SELECT_INSTANCE, ParamCommon, L"If there are more than one VCE Instances, you can force which instance to use. Valid range is [0.. (number of instances - 1)] (integer, default = depends on usage).");
+	pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_SELECT_INSTANCE, ParamCommon, L"If there are more than one VCE Instances, you can force which instance to use. Valid range is [0.. (number of instances - 1)] (integer, default = depends on usage).", ParamConverterInt64);
 
-    RegisterEncoderParams(pParams);
 
     // to demo frame-specific properties - will be applied to each N-th frame (force IDR)
     // pParams->SetParam(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, amf_int64(AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR) );
 
-    pParams->SetParamDescription(PARAM_NAME_THREADCOUNT, ParamCommon, L"Number of session run ip parallel (number, default = 1)");
+    pParams->SetParamDescription(PARAM_NAME_THREADCOUNT, ParamCommon, L"Number of session run ip parallel (number, default = 1)", ParamConverterInt64);
     return AMF_OK;
 }
 
@@ -83,12 +112,49 @@ int _tmain(int argc, _TCHAR* argv[])
     amf_increase_timer_precision();
 
     ParametersStorage params;
+    RegisterCodecParams(&params);
+
+    // parse for codec name
+    if (!parseCmdLineParameters(&params))
+    {
+        LOG_INFO(L"+++ AVC codec +++");
+        ParametersStorage paramsAVC;
+        RegisterCodecParams(&paramsAVC);
+        RegisterEncoderParamsAVC(&paramsAVC);
+        LOG_INFO(paramsAVC.GetParamUsage());
+
+        LOG_INFO(L"+++ HEVC codec +++");
+        ParametersStorage paramsHEVC;
+        RegisterCodecParams(&paramsHEVC);
+        RegisterEncoderParamsHEVC(&paramsHEVC);
+        LOG_INFO(paramsHEVC.GetParamUsage());
+        return -1;
+    }
+
+    std::wstring codec = AMFVideoEncoderVCE_AVC;
+    params.GetParamWString(RenderEncodePipeline::PARAM_NAME_CODEC, codec);
+    if(codec == AMFVideoEncoderVCE_AVC)
+    {
+        RegisterEncoderParamsAVC(&params);
+    }
+    else if(codec == AMFVideoEncoder_HEVC)
+    {
+        RegisterEncoderParamsHEVC(&params);
+    }
+    else
+    {
+        LOG_ERROR(L"Invalid codec ID");
+
+    }
     RegisterParams(&params);
 
+    // parse again with codec - dependent set of parameters
     if (!parseCmdLineParameters(&params))
     {
         return -1;
     }
+
+
 
     amf_int32 threadCount = 1;
     params.GetParam(PARAM_NAME_THREADCOUNT, threadCount);

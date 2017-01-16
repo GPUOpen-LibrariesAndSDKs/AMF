@@ -8,6 +8,7 @@
 // Technologies that are owed as a result of AMD providing the Software to you.
 // 
 // MIT license 
+// 
 //
 // Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -826,7 +827,14 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
     }
 
     // performs some checks on the video and audio streams
-    m_ptsDuration = av_rescale_q(m_pInputContext->duration, FFMPEG_TIME_BASE_Q, AMF_TIME_BASE_Q);
+    if(m_pInputContext->duration != AV_NOPTS_VALUE)
+    { 
+        m_ptsDuration = av_rescale_q(m_pInputContext->duration, FFMPEG_TIME_BASE_Q, AMF_TIME_BASE_Q);
+    }
+    else
+    {
+        m_ptsDuration = 0;
+    }
     for (amf_uint32 i = 0; i < m_pInputContext->nb_streams; i++)
     {
         const AVStream* ist = m_pInputContext->streams[i];

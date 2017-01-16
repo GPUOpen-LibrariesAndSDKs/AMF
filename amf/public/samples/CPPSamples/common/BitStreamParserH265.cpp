@@ -74,7 +74,7 @@ public:
     virtual AMF_RESULT              ReInit();
 
 protected:
-    // ISO-IEC 14496-15-2004.pdf, page 14, table 1 - NAL unit types in elementary streams.
+    // ISO-IEC 14496-15-2004.pdf, page 14, table 1 " NAL unit types in elementary streams.
     enum NalUnitType
     {
       NAL_UNIT_CODED_SLICE_TRAIL_N = 0, // 0

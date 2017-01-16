@@ -42,9 +42,9 @@ const wchar_t* PlaybackPipeline::PARAM_NAME_FRAMERATE = L"FRAMERATE";
 PlaybackPipeline::PlaybackPipeline()
 {
     g_AMFFactory.Init();
-    SetParamDescription(PARAM_NAME_INPUT, ParamCommon,  L"Input file name");
+    SetParamDescription(PARAM_NAME_INPUT, ParamCommon,  L"Input file name", NULL);
     SetParamDescription(PARAM_NAME_PRESENTER, ParamCommon,  L"Specifies presenter engine type (DX9, DX11, OPENGL)", ParamConverterVideoPresenter);
-    SetParamDescription(PARAM_NAME_FRAMERATE, ParamCommon,  L"Forces Video Frame Rate (double)");
+    SetParamDescription(PARAM_NAME_FRAMERATE, ParamCommon,  L"Forces Video Frame Rate (double)", ParamConverterDouble);
 
 
 #if defined(METRO_APP)

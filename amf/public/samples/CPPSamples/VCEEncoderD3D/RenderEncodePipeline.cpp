@@ -8,6 +8,7 @@
 // Technologies that are owed as a result of AMD providing the Software to you.
 // 
 // MIT license 
+// 
 //
 // Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -152,6 +153,7 @@ protected:
     amf_int                 m_maxLatencyFrame;
 };
 
+const wchar_t* RenderEncodePipeline::PARAM_NAME_CODEC          = L"CODEC";
 const wchar_t* RenderEncodePipeline::PARAM_NAME_OUTPUT         = L"OUTPUT";
 const wchar_t* RenderEncodePipeline::PARAM_NAME_RENDER         = L"RENDER";
 
@@ -433,17 +435,21 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
     //---------------------------------------------------------------------------------------------
     // Init Video Encoder
 
-    const wchar_t *encoderID = AMFVideoEncoderVCE_AVC;
-    amf_int64 usage = 0;
-    if(pParams->GetParam(AMF_VIDEO_ENCODER_USAGE, usage) == AMF_OK)
-    {
-        if(usage == amf_int64(AMF_VIDEO_ENCODER_USAGE_WEBCAM))
+    std::wstring encoderID = AMFVideoEncoderVCE_AVC;
+    pParams->GetParamWString(RenderEncodePipeline::PARAM_NAME_CODEC, encoderID);
+
+    if(encoderID == AMFVideoEncoderVCE_AVC)
+    { 
+        amf_int64 usage = 0;
+        if(pParams->GetParam(AMF_VIDEO_ENCODER_USAGE, usage) == AMF_OK)
         {
-            encoderID = AMFVideoEncoderVCE_SVC;
+            if(usage == amf_int64(AMF_VIDEO_ENCODER_USAGE_WEBCAM))
+            {
+                encoderID = AMFVideoEncoderVCE_SVC;
+            }
         }
     }
-
-    res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, encoderID, &m_pEncoder);
+    res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, encoderID.c_str(), &m_pEncoder);
     CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << encoderID << L") failed");
 
 	// Usage is preset that will set many parameters
@@ -467,50 +473,51 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
 		selectedInstance = -1;
 	
 	// Query Number of Independent Instances
-	if ( toQuery || (selectedInstance >= 0) )
-    {
+    if(encoderID == AMFVideoEncoderVCE_AVC || encoderID == AMFVideoEncoderVCE_SVC)
+    { 
+	    if ( toQuery || (selectedInstance >= 0) )
+        {
 
-		if (encoderCaps)
-		{
-            encoderCaps->GetProperty(AMF_VIDEO_ENCODER_CAP_NUM_OF_HW_INSTANCES, &numOfInstances);
-			LOG_SUCCESS(L"Number of VCE Independent Instances are: " << numOfInstances);
-		}
-		else
-		{
-			LOG_ERROR(L"Unable to Query Number of VCE Independent Instances");
-			numOfInstances = 1;
-			selectedInstance = -1;
-		}
-	}
-
-	// Set the selected instance
-	if (selectedInstance >= 0)
-	{
-		if (selectedInstance >= numOfInstances)
-		{
-			LOG_ERROR(L"Invalid instance number is selected. The instance number can be from 0 to (Number of available instance - 1). Selected instance is: " << selectedInstance);
-			LOG_ERROR(L"Number of available instances are: " << numOfInstances);
-		}
-		else
-		{
-			if (m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MULTI_INSTANCE_MODE, true) == AMF_OK)
-			{
-				if (m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_CURRENT_QUEUE, selectedInstance) == AMF_OK)
-				{
-					LOG_SUCCESS(L"Selected Instance is: " << selectedInstance);
-				}
-				else
-				{
-					LOG_ERROR(L"Error while selecting instace number " << selectedInstance);
-				}
-			}
-			else
-			{
-				LOG_ERROR(L"Error while enabling Multi Instace Mode");
-			}
-		}
-	}
-
+		    if (encoderCaps)
+		    {
+                encoderCaps->GetProperty(AMF_VIDEO_ENCODER_CAP_NUM_OF_HW_INSTANCES, &numOfInstances);
+			    LOG_SUCCESS(L"Number of VCE Independent Instances are: " << numOfInstances);
+		    }
+		    else
+		    {
+			    LOG_ERROR(L"Unable to Query Number of VCE Independent Instances");
+			    numOfInstances = 1;
+			    selectedInstance = -1;
+		    }
+	    }
+	    // Set the selected instance
+	    if (selectedInstance >= 0)
+	    {
+		    if (selectedInstance >= numOfInstances)
+		    {
+			    LOG_ERROR(L"Invalid instance number is selected. The instance number can be from 0 to (Number of available instance - 1). Selected instance is: " << selectedInstance);
+			    LOG_ERROR(L"Number of available instances are: " << numOfInstances);
+		    }
+		    else
+		    {
+			    if (m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_MULTI_INSTANCE_MODE, true) == AMF_OK)
+			    {
+				    if (m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_CURRENT_QUEUE, selectedInstance) == AMF_OK)
+				    {
+					    LOG_SUCCESS(L"Selected Instance is: " << selectedInstance);
+				    }
+				    else
+				    {
+					    LOG_ERROR(L"Error while selecting instace number " << selectedInstance);
+				    }
+			    }
+			    else
+			    {
+				    LOG_ERROR(L"Error while enabling Multi Instace Mode");
+			    }
+		    }
+	    }
+    }
 	// Initialize the Encoder
 	res = m_pEncoder->Init(bFullScreen ? amf::AMF_SURFACE_NV12 : m_pVideoRender->GetFormat(), width, height);
 	CHECK_AMF_ERROR_RETURN(res, L"m_pEncoder->Init() failed");

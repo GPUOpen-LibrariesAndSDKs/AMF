@@ -36,6 +36,7 @@
 #include "public/include/components/VideoDecoderUVD.h"
 #include "public/include/components/VideoConverter.h"
 #include "public/include/components/VideoEncoderVCE.h"
+#include "public/include/components/VideoEncoderHEVC.h"
 
 #if !defined(METRO_APP)
 #include "DeviceDX9.h"
@@ -45,7 +46,8 @@
 #include "BitStreamParser.h"
 #include "Pipeline.h"
 #include "ParametersStorage.h"
-#include "EncoderParams.h"
+#include "EncoderParamsAVC.h"
+#include "EncoderParamsHEVC.h"
 #include "VideoPresenter.h"
 
 
@@ -56,6 +58,7 @@ public:
     TranscodePipeline();
     virtual ~TranscodePipeline();
 public:
+    static const wchar_t* PARAM_NAME_CODEC;
     static const wchar_t* PARAM_NAME_OUTPUT;
     static const wchar_t* PARAM_NAME_INPUT;
 
@@ -63,6 +66,7 @@ public:
     static const wchar_t* PARAM_NAME_SCALE_HEIGHT;
     static const wchar_t* PARAM_NAME_ADAPTERID;
     static const wchar_t* PARAM_NAME_ENGINE;
+    static const wchar_t* PARAM_NAME_FRAMES;
 
 
 
@@ -100,6 +104,7 @@ protected:
     amf::AMFComponentPtr            m_pDecoder;
     amf::AMFComponentPtr            m_pConverter;
     amf::AMFComponentPtr            m_pEncoder;
+    std::wstring                    m_EncoderID;
     StreamWriterPtr                 m_pStreamWriter;
 
     amf::AMFComponentPtr    m_pAudioDecoder;

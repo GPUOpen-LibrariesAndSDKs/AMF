@@ -183,7 +183,8 @@
     <ClInclude Include="..\common\DeviceDX9.h" />
     <ClInclude Include="..\common\DeviceOpenCL.h" />
     <ClInclude Include="..\common\DeviceOpenGL.h" />
-    <ClInclude Include="..\common\EncoderParams.h" />
+    <ClInclude Include="..\common\EncoderParamsAVC.h" />
+    <ClInclude Include="..\common\EncoderParamsHEVC.h" />
     <ClInclude Include="..\common\ParametersStorage.h" />
     <ClInclude Include="..\common\Pipeline.h" />
     <ClInclude Include="..\common\PipelineElement.h" />
@@ -228,6 +229,8 @@
     <ClCompile Include="..\common\DeviceDX9.cpp" />
     <ClCompile Include="..\common\DeviceOpenCL.cpp" />
     <ClCompile Include="..\common\DeviceOpenGL.cpp" />
+    <ClCompile Include="..\common\EncoderParamsAVC.cpp" />
+    <ClCompile Include="..\common\EncoderParamsHEVC.cpp" />
     <ClCompile Include="..\common\ParametersStorage.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>

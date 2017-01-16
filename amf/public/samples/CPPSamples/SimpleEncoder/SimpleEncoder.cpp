@@ -8,6 +8,7 @@
 // Technologies that are owed as a result of AMD providing the Software to you.
 // 
 // MIT license 
+// 
 //
 // Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -38,10 +39,15 @@
 #include <d3d11.h>
 #include "public/common/AMFFactory.h"
 #include "public/include/components/VideoEncoderVCE.h"
+#include "public/include/components/VideoEncoderHEVC.h"
 #include "public/common/Thread.h"
+#include "public/common/AMFSTL.h"
 
 
-// #define ENABLE_4K
+static wchar_t *pCodec = AMFVideoEncoderVCE_AVC;
+//static wchar_t *pCodec = AMFVideoEncoder_HEVC;
+
+ //#define ENABLE_4K
 
 static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX9;
 static amf::AMF_SURFACE_FORMAT formatIn   = amf::AMF_SURFACE_NV12;
@@ -109,24 +115,46 @@ int _tmain(int argc, _TCHAR* argv[])
         res = context->InitDX11(NULL); // can be DX11 device
     }
     // component: encoder
-    res = g_AMFFactory.GetFactory()->CreateComponent(context, AMFVideoEncoderVCE_AVC, &encoder);
-    res = encoder->SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_TRANSCONDING);
+    res = g_AMFFactory.GetFactory()->CreateComponent(context, pCodec, &encoder);
 
-    if(bMaximumSpeed)
-    {
-        res = encoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
-        res = encoder->SetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED);
-    }
+    if(amf_wstring(pCodec) == amf_wstring(AMFVideoEncoderVCE_AVC))
+    { 
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_TRANSCONDING);
 
-    res = encoder->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, bitRateIn);
-    res = encoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(widthIn, heightIn));
-    res = encoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, ::AMFConstructRate(frameRateIn, 1));
+        if(bMaximumSpeed)
+        {
+            res = encoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
+            res = encoder->SetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED);
+        }
+
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, bitRateIn);
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(widthIn, heightIn));
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, ::AMFConstructRate(frameRateIn, 1));
 
 #if defined(ENABLE_4K)
-    encoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_HIGH);
-    res = encoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE_LEVEL, 51);
-    encoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
+        encoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_HIGH);
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE_LEVEL, 51);
+        encoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
 #endif
+    }
+    else
+    {
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_USAGE, AMF_VIDEO_ENCODER_HEVC_USAGE_TRANSCONDING);
+
+        if(bMaximumSpeed)
+        {
+            res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET, AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED);
+        }
+
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE, bitRateIn);
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE, ::AMFConstructSize(widthIn, heightIn));
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, ::AMFConstructRate(frameRateIn, 1));
+
+#if defined(ENABLE_4K)
+        encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_TIER, AMF_VIDEO_ENCODER_HEVC_TIER_HIGH);
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_PROFILE_LEVEL, AMF_LEVEL_5_1);
+#endif
+    }
     res = encoder->Init(formatIn, widthIn, heightIn);
 
 

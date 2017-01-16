@@ -35,8 +35,8 @@
 
 #include "ParametersStorage.h"
 #include "CmdLogger.h"
-#include "VideoPresenter.h"
-#include "public/include/components/VideoEncoderVCE.h"
+//#include "VideoPresenter.h"
+//#include "public/include/components/VideoEncoderVCE.h"
 
 
 std::wstring AddIndexToPath(const std::wstring& path, amf_int32 index)
@@ -71,7 +71,7 @@ AMF_RESULT PushParamsToPropertyStorage(ParametersStorage* pParams, ParamType pty
             if(description.m_Type == ptype)
             {
                 err = storage->SetProperty(description.m_Name.c_str(), value); // use original name
-                LOG_AMF_ERROR(err, L"m_encoder->SetProperty(" << description.m_Name << L") failed " );
+                LOG_AMF_ERROR(err, L"storage->SetProperty(" << description.m_Name << L") failed " );
             }
         }
     }
@@ -312,6 +312,37 @@ AMF_RESULT ParamConverterBoolean(const std::wstring& value, amf::AMFVariant& val
         }
     }
     valueOut = paramValue;
+    return AMF_OK;
+}
+AMF_RESULT ParamConverterRatio(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    amf::AMFVariant valueIn(value.c_str());
+
+    AMFVariantChangeType(&valueOut, &valueIn, amf::AMF_VARIANT_RATIO);
+
+    return AMF_OK;
+}
+AMF_RESULT ParamConverterRate(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    amf::AMFVariant valueIn(value.c_str());
+
+    AMFVariantChangeType(&valueOut, &valueIn, amf::AMF_VARIANT_RATE);
+
+    return AMF_OK;
+}
+
+AMF_RESULT ParamConverterInt64(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    amf_int64 paraValue = 0;
+    amf::AMFVariant tmp(value.c_str());
+    valueOut = amf_int64(tmp);
+    return AMF_OK;
+}
+AMF_RESULT ParamConverterDouble(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    amf_int64 paraValue = 0;
+    amf::AMFVariant tmp(value.c_str());
+    valueOut = amf_double(tmp);
     return AMF_OK;
 }
 

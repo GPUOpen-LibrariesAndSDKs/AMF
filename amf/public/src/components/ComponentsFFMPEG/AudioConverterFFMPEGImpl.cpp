@@ -8,6 +8,7 @@
 // Technologies that are owed as a result of AMD providing the Software to you.
 // 
 // MIT license 
+// 
 //
 // Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -94,14 +95,14 @@ AMFAudioConverterFFMPEGImpl::AMFAudioConverterFFMPEGImpl(AMFContext* pContext)
         AMFPropertyInfoBool(FFMPEG_AUDIO_CONVERTER, L"Enable Debug", false, true),
 
         AMFPropertyInfoInt64(AUDIO_CONVERTER_IN_AUDIO_BIT_RATE, L"Compression Bit Rate", 128000, 0, INT_MAX, true),
-        AMFPropertyInfoInt64(AUDIO_CONVERTER_IN_AUDIO_SAMPLE_RATE, L"Sample Rate", 0, 0, 48000, true),
+        AMFPropertyInfoInt64(AUDIO_CONVERTER_IN_AUDIO_SAMPLE_RATE, L"Sample Rate", 0, 0, 256000, true),
         AMFPropertyInfoInt64(AUDIO_CONVERTER_IN_AUDIO_CHANNELS, L"Number of channels (0 - default)", 2, 0, 100, true),
         AMFPropertyInfoEnum(AUDIO_CONVERTER_IN_AUDIO_SAMPLE_FORMAT, L"Sample Format", AMFAF_UNKNOWN, AMF_SAMPLE_FORMAT_ENUM_DESCRIPTION, true),
         AMFPropertyInfoInt64(AUDIO_CONVERTER_IN_AUDIO_CHANNEL_LAYOUT, L"Channel layout (0 - default)", 0, 0, INT_MAX, true),
         AMFPropertyInfoInt64(AUDIO_CONVERTER_IN_AUDIO_BLOCK_ALIGN, L"Block Align", 0, 0, INT_MAX, true),
 
         AMFPropertyInfoInt64(AUDIO_CONVERTER_OUT_AUDIO_BIT_RATE, L"Compression Bit Rate", 128000, 0, INT_MAX, true),
-        AMFPropertyInfoInt64(AUDIO_CONVERTER_OUT_AUDIO_SAMPLE_RATE, L"Sample Rate", 0, 0, 48000, true),
+        AMFPropertyInfoInt64(AUDIO_CONVERTER_OUT_AUDIO_SAMPLE_RATE, L"Sample Rate", 0, 0, 256000, true),
         AMFPropertyInfoInt64(AUDIO_CONVERTER_OUT_AUDIO_CHANNELS, L"Number of channels (0 - default)", 2, 0, 100, true),
         AMFPropertyInfoEnum(AUDIO_CONVERTER_OUT_AUDIO_SAMPLE_FORMAT, L"Sample Format", AMFAF_UNKNOWN, AMF_SAMPLE_FORMAT_ENUM_DESCRIPTION, true),
         AMFPropertyInfoInt64(AUDIO_CONVERTER_OUT_AUDIO_CHANNEL_LAYOUT, L"Channel layout (0 - default)", 0, 0, INT_MAX, true),

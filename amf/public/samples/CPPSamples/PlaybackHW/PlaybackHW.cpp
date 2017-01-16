@@ -8,6 +8,7 @@
 // Technologies that are owed as a result of AMD providing the Software to you.
 // 
 // MIT license 
+// 
 //
 // Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -206,6 +207,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                 s_pPipeline->Play();
                 UpdateMenuItems(::GetMenu(hWnd));
             }
+        }
+        else
+        {
+            LOG_INFO(s_pPipeline->GetParamUsage());
         }
         //------------------------------------------------------------------------------------------------------------
 

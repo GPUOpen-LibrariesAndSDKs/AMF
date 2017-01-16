@@ -27,6 +27,17 @@
 // THE SOFTWARE.
 //
 
+New features are available in 
+Driver: Radeon Software Edition Crimson; 16.12.1 Software: 16.50 and later 
+
+1.4.0.0 (07.12.2016) version
+--------------------------
+    - Update of AMF SDK for RX 480, 470, 460
+    - AVC new Preanalysys parameter added
+    - Full range for color space converter and AVC encoder added
+    - HEVC encoder component added
+
+
 
 
 Driver: Radeon Software Edition Crimson; 16.7.3 Software: 16.30 and later 
