@@ -2,6 +2,8 @@
 
 AMF is a light-weight, portable multimedia framework that abstracts away most of the platform and API-specific details and allows for easy implementation of multimedia applications using a variety of technologies, such as DirectX 11, OpenGL, and OpenCL and facilitates an efficient interop between them.
 
+These features are a part of the initial 1.3 version of AMF.  Version 1.4 of the AMF SDK includes support for the H.265 encoder(HEVC) and bug fixes.
+
 <div>
   <a href="https://github.com/GPUOpen-LibrariesAndSDKs/AMF/releases/latest/"><img src="http://gpuopen-librariesandsdks.github.io/media/latest-release-button.svg" alt="Latest release" title="Latest release"></a>
 </div>
@@ -10,7 +12,8 @@ AMF is a light-weight, portable multimedia framework that abstracts away most of
 * Windows&reg; 7 (SP1 with the [Platform Update](https://msdn.microsoft.com/en-us/library/windows/desktop/jj863687.aspx)), Windows&reg; 8.1, or Windows&reg; 10
 * Visual Studio&reg; 2013 or Visual Studio&reg; 2015
 * Windows 10 SDK (Version 10586)
-* AMD Radeon Software Crimson Edition 16.7.3 (16.30.2311) or newer
+* Version 1.4: AMD Radeon Software Crimson Edition 17.1.1 (16.50.2611) or newer
+* Version 1.3: AMD Radeon Software Crimson Edition 16.7.3 (16.30.2311) or newer
 * Some samples require the AMD APP SDK (Version 3.0 or later)
 * Some samples require the Microsoft Foundation Class Library (MFC)
 
