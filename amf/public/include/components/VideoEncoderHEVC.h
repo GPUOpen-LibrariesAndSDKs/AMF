@@ -24,7 +24,7 @@
 #define __AMFVideoEncoderHW_HEVC_h__
 #pragma once
 
-#include "public/include/components/Component.h"
+#include "Component.h"
 
 #define AMFVideoEncoder_HEVC L"AMFVideoEncoderHW_HEVC"
 
