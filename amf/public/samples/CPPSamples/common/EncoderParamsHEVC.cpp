@@ -247,8 +247,8 @@ AMF_RESULT RegisterEncoderParamsHEVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_SKIP_FRAME_ENABLE, ParamEncoderDynamic, L"Rate Control Based Frame Skip (true, false default =  depends on USAGE)", ParamConverterBoolean);
     
     // Motion estimation
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_MOTION_HALF_PIXEL, ParamEncoderDynamic, L"Half Pixel (true, false default =  true)" , ParamConverterBoolean);
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_MOTION_QUARTERPIXEL, ParamEncoderDynamic, L"Quarter Pixel (true, false default =  true" , ParamConverterBoolean);
+	pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_MOTION_HALF_PIXEL, ParamEncoderStatic, L"Half Pixel (true, false default =  true)", ParamConverterBoolean);
+	pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_MOTION_QUARTERPIXEL, ParamEncoderStatic, L"Quarter Pixel (true, false default =  true", ParamConverterBoolean);
 
     // ------------- Encoder params per frame ---------------
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_INSERT_HEADER, ParamEncoderFrame, L"Insert Header (true, false default =  false)", ParamConverterBoolean);
@@ -256,5 +256,21 @@ AMF_RESULT RegisterEncoderParamsHEVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_MARK_CURRENT_WITH_LTR_INDEX, ParamEncoderFrame, L"Mark With LTR Index (integer, default -1)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_FORCE_LTR_REFERENCE_BITFIELD, ParamEncoderFrame, L"Force LTR Reference Bitfield (bitfield default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_FORCE_PICTURE_TYPE, ParamEncoderFrame, L"Force Picture Type (NONE, SKIP, IDR, I, P, B, default = NONE)", ParamConverterPictureTypeHEVC);
-    return AMF_OK;
+
+	// Experimental
+	pParams->SetParamDescription(L"NominalRange", ParamEncoderStatic, L"Full Range Color", ParamConverterBoolean);
+	pParams->SetParamDescription(L"EnableGOPAlignment", ParamEncoderStatic, L"GOP Alignment", ParamConverterBoolean);
+	pParams->SetParamDescription(L"GOPType", ParamEncoderStatic, L"GOP Type (0 = Fixed, 1 = MinMax)", ParamConverterInt64);
+	pParams->SetParamDescription(L"GOPSizeMin", ParamEncoderStatic, L"GOP Size Minimum", ParamConverterInt64);
+	pParams->SetParamDescription(L"GOPSizeMax", ParamEncoderStatic, L"GOP Size Maximum", ParamConverterInt64);
+	pParams->SetParamDescription(L"HevcInputQueueSize", ParamEncoderStatic, L"Input Queue Size (5 - 32)", ParamConverterInt64);
+	pParams->SetParamDescription(L"HevcMaxNumRefFrames", ParamEncoderStatic, L"Maximum Reference Frames", ParamConverterInt64);
+	pParams->SetParamDescription(L"QPCBOFFSET", ParamEncoderStatic, L"QP CB Offset (0 - 51)", ParamConverterInt64);
+	pParams->SetParamDescription(L"QPCROFFSET", ParamEncoderStatic, L"QP CR Offset (0 - 51)", ParamConverterInt64);
+	pParams->SetParamDescription(L"HevcHeaderInsertionMode", ParamEncoderStatic, L"Header Insertion Mode (0 = None, 1 = GOP Aligned, 2 = IDR Aligned)", ParamConverterInt64);
+	pParams->SetParamDescription(L"HevcSlicesPerFrame", ParamEncoderStatic, L"Slices Per Frame (1 - Inf, Def 1)", ParamConverterInt64);
+	pParams->SetParamDescription(L"SliceControlMode", ParamEncoderStatic, L"Slice Control Mode (Unknown)", ParamConverterInt64);
+	pParams->SetParamDescription(L"SliceControlSize", ParamEncoderStatic, L"Slice Control Size (Unknown)", ParamConverterInt64);
+	pParams->SetParamDescription(L"AspectRatio", ParamEncoderStatic, L"Aspect Ratio", ParamConverterRatio);
+	return AMF_OK;
 }
