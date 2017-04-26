@@ -44,12 +44,16 @@ class Pipeline;
 class PipelineElement
 {
 public:
-    virtual amf_int32 GetInputSlotCount() = 0;
-    virtual amf_int32 GetOutputSlotCount() = 0;
+    virtual amf_int32 GetInputSlotCount() const = 0;
+    virtual amf_int32 GetOutputSlotCount() const = 0;
     virtual AMF_RESULT SubmitInput(amf::AMFData* pData, amf_int32 slot) { return SubmitInput(pData); }
     virtual AMF_RESULT QueryOutput(amf::AMFData** ppData, amf_int32 slot) { return QueryOutput(ppData); }
     virtual AMF_RESULT SubmitInput(amf::AMFData* pData) { return AMF_NOT_SUPPORTED; }
     virtual AMF_RESULT QueryOutput(amf::AMFData** ppData) { return AMF_NOT_SUPPORTED; }
+
+    virtual AMF_RESULT Freeze() {amf::AMFLock lock(&m_cs); m_bFrozen = true; return AMF_OK;}
+    virtual AMF_RESULT UnFreeze() {amf::AMFLock lock(&m_cs); m_bFrozen = false; return AMF_OK;}
+    virtual AMF_RESULT Flush() { return AMF_OK; }
 
 
     virtual AMF_RESULT Drain(amf_int32 inputSlot) { return AMF_NOT_SUPPORTED; }
@@ -58,9 +62,11 @@ public:
 
     virtual ~PipelineElement(){}
 protected:
-    PipelineElement() : m_host(0){}
+    PipelineElement() : m_host(0), m_bFrozen(false){}
 
     Pipeline* m_host;
+    bool    m_bFrozen;
+    mutable amf::AMFCriticalSection m_cs;
 };
 //-------------------------------------------------------------------------------------------------
 typedef std::shared_ptr<PipelineElement> PipelineElementPtr;
@@ -79,11 +85,17 @@ public:
 //        LOG_DEBUG(L"Stream Writer: written frames:" << m_framesWritten << L"\n");
     }
 
-    virtual amf_int32 GetInputSlotCount() {return 1;}
-    virtual amf_int32 GetOutputSlotCount() { return 0; }
+    virtual amf_int32 GetInputSlotCount() const { return 1; }
+    virtual amf_int32 GetOutputSlotCount() const { return 0; }
 
     virtual AMF_RESULT SubmitInput(amf::AMFData* pData)
     {
+        amf::AMFLock lock(&m_cs);
+        if(m_bFrozen)
+        {
+            return AMF_INPUT_FULL;
+        }
+
         AMF_RESULT res = AMF_OK;
         if(pData)
         {
@@ -111,6 +123,7 @@ public:
     }
     virtual std::wstring       GetDisplayResult()
     {
+        amf::AMFLock lock(&m_cs);
         std::wstring ret;
 
         if(m_framesWritten > 0)
@@ -143,10 +156,16 @@ public:
 //        LOG_DEBUG(L"Stream Writer: written frames:" << m_framesWritten << L"\n");
     }
 
-    virtual amf_int32 GetOutputSlotCount() { return 0; }
+    virtual amf_int32 GetOutputSlotCount() const { return 0; }
 
     virtual AMF_RESULT SubmitInput(amf::AMFData* pData)
     {
+        amf::AMFLock lock(&m_cs);
+        if(m_bFrozen)
+        {
+            return AMF_INPUT_FULL;
+        }
+
         AMF_RESULT res = AMF_OK;
         if(pData)
         {
@@ -190,10 +209,16 @@ public:
     {
     }
 
-    virtual amf_int32 GetOutputSlotCount() { return 0; }
+    virtual amf_int32 GetOutputSlotCount() const { return 0; }
 
     virtual AMF_RESULT SubmitInput(amf::AMFData* pData)
     {
+        amf::AMFLock lock(&m_cs);
+        if(m_bFrozen)
+        {
+            return AMF_INPUT_FULL;
+        }
+
         if(!pData)
         {
             return AMF_EOF;
@@ -227,11 +252,16 @@ public:
     virtual ~Splitter()
     {
     }
-    virtual amf_int32 GetInputSlotCount() { return 1; }
-    virtual amf_int32 GetOutputSlotCount() { return m_iOutputCount; }
+    virtual amf_int32 GetInputSlotCount() const { return 1; }
+    virtual amf_int32 GetOutputSlotCount() const { return m_iOutputCount; }
     virtual AMF_RESULT SubmitInput(amf::AMFData* pData) 
     { 
         amf::AMFLock lock(&m_cs);
+        if(m_bFrozen)
+        {
+            return AMF_INPUT_FULL;
+        }
+
         if(m_Queue.size() >= m_QueueSize)
         {
             return AMF_INPUT_FULL;
@@ -246,6 +276,11 @@ public:
     virtual AMF_RESULT QueryOutput(amf::AMFData** ppData, amf_int32 slot) 
     {
         amf::AMFLock lock(&m_cs);
+        if(m_bFrozen)
+        {
+            return AMF_OK;
+        }
+
         if(slot >= m_iOutputCount)
         {
             LOG_ERROR(L"Bad slot=" << slot );
@@ -301,12 +336,18 @@ public:
         m_bEof = true;
         return AMF_OK; 
     }
+    virtual AMF_RESULT Flush() 
+    { 
+        amf::AMFLock lock(&m_cs);
+        m_Queue.clear(); 
+        return AMF_OK; 
+    }
+
 protected:
     bool                        m_bCopyData;
     amf_int32                   m_iOutputCount;
     amf_size                    m_QueueSize;
     std::list<Data>             m_Queue;
-    amf::AMFCriticalSection          m_cs;
     bool                        m_bEof;
 };
 //-------------------------------------------------------------------------------------------------
@@ -317,11 +358,16 @@ class AMFComponentElement : public PipelineElement
 public:
     AMFComponentElement(amf::AMFComponent *pComponent) : m_pComponent(pComponent){}
     virtual ~AMFComponentElement(){}
-    virtual amf_int32 GetInputSlotCount() {return 1;}
-    virtual amf_int32 GetOutputSlotCount() {return 1;}
+    virtual amf_int32 GetInputSlotCount() const { return 1; }
+    virtual amf_int32 GetOutputSlotCount() const { return 1; }
 
     virtual AMF_RESULT SubmitInput(amf::AMFData* pData) 
     {
+        if(m_bFrozen)
+        {
+            return AMF_INPUT_FULL;
+        }
+
         AMF_RESULT res = AMF_OK;
         if(pData == NULL) // EOF
         {
@@ -340,6 +386,11 @@ public:
 
     virtual AMF_RESULT QueryOutput(amf::AMFData** ppData)
     {
+        if(m_bFrozen)
+        {
+            return AMF_OK;
+        }
+
         AMF_RESULT res = AMF_OK;
         amf::AMFDataPtr data;
         res = m_pComponent->QueryOutput(&data);
@@ -360,6 +411,10 @@ public:
     {
         inputSlot;
         return m_pComponent->Drain(); 
+    }
+    virtual AMF_RESULT Flush()
+    {
+        return m_pComponent->Flush(); 
     }
 
 protected:
@@ -382,11 +437,16 @@ public:
         m_bEof.resize(slots, false);
     }
     virtual ~AMFComponentExElement(){}
-    virtual amf_int32 GetInputSlotCount() {return m_pComponent->GetInputCount();}
-    virtual amf_int32 GetOutputSlotCount() {return m_pComponent->GetOutputCount();}
+    virtual amf_int32 GetInputSlotCount() const { return m_pComponent->GetInputCount(); }
+    virtual amf_int32 GetOutputSlotCount() const { return m_pComponent->GetOutputCount(); }
 
     virtual AMF_RESULT SubmitInput(amf::AMFData* pData, amf_int32 slot)
     {
+        if(m_bFrozen)
+        {
+            return AMF_INPUT_FULL;
+        }
+
         amf::AMFInputPtr pInput;
         if(m_pComponent->GetInputCount() > 0)
         { 
@@ -426,6 +486,11 @@ public:
 
     virtual AMF_RESULT QueryOutput(amf::AMFData** ppData, amf_int32 slot) 
     { 
+        if(m_bFrozen)
+        {
+            return AMF_OK;
+        }
+
         amf::AMFOutputPtr pOutput;
         if(m_pComponent->GetOutputCount() > 0)
         { 
@@ -479,6 +544,10 @@ public:
             }
         }
         return AMF_EOF; 
+    }
+    virtual AMF_RESULT Flush()
+    {
+        return m_pComponent->Flush(); 
     }
 
 protected:

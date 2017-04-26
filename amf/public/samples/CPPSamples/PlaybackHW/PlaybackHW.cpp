@@ -57,10 +57,13 @@
 #define MAX_LOADSTRING 100
 
 // Global Variables:
+static HWND    hToolbar; 
 HINSTANCE hInst;                                // current instance
 TCHAR szTitle[MAX_LOADSTRING];                    // The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 static  UINT_PTR uiTimerID = 0;
+static  UINT_PTR uiTimerToolbarID = 0;
+static  bool bTrackingStarted = false;
 
 static PlaybackPipeline *s_pPipeline = NULL;
 
@@ -74,6 +77,8 @@ void                UpdateMenuItems(HMENU hMenu);
 HWND                CreateClientWindow(HWND hWndParent);
 void                ResizeClient(HWND hWndParent);
 void                UpdateCaption(HWND hWnd);
+void                ToggleToolbar(HWND hwnd);
+void                CloseToolbar();
 
 HWND                hClientWindow;
 
@@ -297,7 +302,6 @@ BOOL InitInstance(HINSTANCE hInstance, HWND* phWnd, int nCmdShow)
 
     uiTimerID = ::SetTimer(hWnd, 10000, 1000, NULL);
 
-
     ShowWindow(hWnd, nCmdShow);
     UpdateWindow(hWnd);
     UpdateMenuItems(::GetMenu(hWnd));
@@ -377,8 +381,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     s_pPipeline->Play();
                     UpdateMenuItems(::GetMenu(hWnd));
                 }
-            }else
-            if(s_pPipeline->GetState() == PipelineStateRunning)
+            }else if(s_pPipeline->GetState() == PipelineStateRunning)
             {
                 s_pPipeline->Play();
             }
@@ -405,6 +408,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_OPENGL);
             UpdateMenuItems(::GetMenu(hWnd));
             break;
+        case ID_TOOLBAR:
+            ToggleToolbar(hWnd);
+            break;
         default:
             return DefWindowProc(hWnd, message, wParam, lParam);
         }
@@ -426,6 +432,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     case WM_DESTROY:
         s_pPipeline->Terminate();
+        CloseToolbar();
         PostQuitMessage(0);
         break;
     default:
@@ -530,3 +537,88 @@ void                UpdateCaption(HWND hWnd)
     swprintf(text,L"%s | FPS( %.1f)",szTitle, FPS);
     ::SetWindowText(hWnd, text);
 }
+//-------------------------------------------------------------------------------------------------
+// toolbar
+//-------------------------------------------------------------------------------------------------
+#define MAX_SLIDER_VALUE 10000
+static INT_PTR CALLBACK ToolbarDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
+{
+    HWND hSlider = GetDlgItem(hwnd, IDC_SEEK);
+    switch(Message)
+    {
+    case WM_COMMAND:
+        switch(LOWORD(wParam))
+        {
+        case IDCANCEL:
+        case IDOK:
+             CloseToolbar();
+            break;
+        }
+        break;
+    case WM_INITDIALOG:
+        {
+            SendMessage(hSlider, TBM_SETRANGE , 0, MAKELPARAM(0, MAX_SLIDER_VALUE));
+            // configure slider
+
+        }
+        break;
+    case WM_HSCROLL:
+    {
+        if(LOWORD(wParam) == TB_THUMBTRACK)
+        { 
+            bTrackingStarted = true;
+        }
+        if(LOWORD(wParam) == TB_ENDTRACK)
+        { 
+            amf_int32 pos = (amf_int32)SendMessage(hSlider, TBM_GETPOS , 0, 0);
+            s_pPipeline->Seek(static_cast<amf_pts>(s_pPipeline->GetProgressSize() * double(pos) / double(MAX_SLIDER_VALUE)));
+            bTrackingStarted = false;
+        }
+        break;
+    }
+    case WM_TIMER:
+        if(wParam == uiTimerToolbarID && !bTrackingStarted)
+        { // update scroll
+            double duration =  s_pPipeline->GetProgressSize();
+            if(duration != 0)
+            { 
+                amf_int32 pos = amf_int32(s_pPipeline->GetProgressPosition() * double(MAX_SLIDER_VALUE) / duration);
+                SendMessage(hSlider, TBM_SETPOS , TRUE, pos);
+            }
+        }
+        break;
+    default:
+        return FALSE;
+    }
+    return TRUE;
+}
+//-------------------------------------------------------------------------------------------------
+void ToggleToolbar(HWND hwnd)
+{
+    if(hToolbar != NULL)
+    {
+        CloseToolbar();
+    }
+    else
+    { 
+        // modeless dialog
+        hToolbar = CreateDialog(hInst, MAKEINTRESOURCE(IDD_TOOLBAR_DLG),  hwnd,  (DLGPROC) ToolbarDlgProc );
+        uiTimerToolbarID = ::SetTimer(hToolbar, 10001, 200, NULL); // timer for slider update 
+        ShowWindow(hToolbar, SW_SHOW); 
+    }
+         
+}
+//-------------------------------------------------------------------------------------------------
+void CloseToolbar()
+{
+    if(hToolbar != NULL)
+    {
+        ::KillTimer(hToolbar, uiTimerToolbarID);
+        uiTimerToolbarID = 0;
+        DestroyWindow(hToolbar);
+        hToolbar = NULL;
+    }
+}
+//-------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------

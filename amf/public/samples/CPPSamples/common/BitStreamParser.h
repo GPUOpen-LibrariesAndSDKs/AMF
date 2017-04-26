@@ -56,8 +56,8 @@ class BitStreamParser : public PipelineElement
 public:
     virtual ~BitStreamParser();
 
-    virtual amf_int32               GetInputSlotCount() {return 0;}
-    virtual amf_int32               GetOutputSlotCount() { return 1; }
+    virtual amf_int32               GetInputSlotCount() const {return 0;}
+    virtual amf_int32               GetOutputSlotCount() const { return 1; }
 
     virtual int                     GetOffsetX() const = 0;
     virtual int                     GetOffsetY() const = 0;

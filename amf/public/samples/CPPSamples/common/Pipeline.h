@@ -39,6 +39,7 @@ enum PipelineState
     PipelineStateNotReady,
     PipelineStateReady,
     PipelineStateRunning,
+    PipelineStateFrozen,
     PipelineStateEof,
 };
 enum ConnectionThreading
@@ -64,7 +65,7 @@ public:
     virtual AMF_RESULT Stop();
     virtual AMF_RESULT Restart();
 
-    PipelineState GetState();
+    PipelineState GetState() const;
 
     virtual void DisplayResult();
     double GetFPS();
@@ -72,6 +73,10 @@ public:
     amf_int64 GetNumberOfProcessedFrames();
 
 protected:
+    virtual AMF_RESULT Freeze();
+    virtual AMF_RESULT UnFreeze();
+    virtual AMF_RESULT Flush();
+
     virtual void OnEof();
 
     amf_int64   m_startTime;
@@ -80,5 +85,5 @@ protected:
     typedef std::vector<PipelineConnectorPtr> ConnectorList;
     ConnectorList                       m_connectors;
     PipelineState                       m_state;
-    amf::AMFCriticalSection                  m_cs;
+    mutable amf::AMFCriticalSection     m_cs;
 };

@@ -175,6 +175,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\common\BackBufferPresenter.cpp" />
     <ClCompile Include="..\common\BitStreamParser.cpp" />
     <ClCompile Include="..\common\BitStreamParserH264.cpp" />
     <ClCompile Include="..\common\BitStreamParserH265.cpp" />
@@ -200,6 +201,7 @@
     <ClInclude Include="..\..\..\common\DataStreamMemory.h" />
     <ClInclude Include="..\..\..\common\Thread.h" />
     <ClInclude Include="..\..\..\common\TraceAdapter.h" />
+    <ClInclude Include="..\common\BackBufferPresenter.h" />
     <ClInclude Include="..\common\BitStreamParser.h" />
     <ClInclude Include="..\common\BitStreamParserH264.h" />
     <ClInclude Include="..\common\BitStreamParserH265.h" />

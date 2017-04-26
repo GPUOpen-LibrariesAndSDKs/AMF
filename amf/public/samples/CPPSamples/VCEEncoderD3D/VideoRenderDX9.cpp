@@ -33,7 +33,6 @@
 
 #include "VideoRenderDX9.h"
 #include "../common/CmdLogger.h"
-#include <CL/cl.h>
 
 struct Vertex
 {

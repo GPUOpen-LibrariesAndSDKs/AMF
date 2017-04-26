@@ -42,6 +42,9 @@
 #include "public/include/components/VideoEncoderHEVC.h"
 #include "public/common/Thread.h"
 #include "public/common/AMFSTL.h"
+#include "public/common/TraceAdapter.h"
+
+#define AMF_FACILITY L"SimpleEncoder"
 
 
 static wchar_t *pCodec = AMFVideoEncoderVCE_AVC;
@@ -97,6 +100,9 @@ int _tmain(int argc, _TCHAR* argv[])
     }
 
     ::amf_increase_timer_precision();
+
+    amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_CONSOLE, true);
+    amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, true);
     
 
     // initialize AMF
@@ -106,56 +112,79 @@ int _tmain(int argc, _TCHAR* argv[])
 
     // context
     res = g_AMFFactory.GetFactory()->CreateContext(&context);
+    AMF_RETURN_IF_FAILED(res, L"CreateContext() failed");
+
     if(memoryTypeIn == amf::AMF_MEMORY_DX9)
     {
         res = context->InitDX9(NULL); // can be DX9 or DX9Ex device
+        AMF_RETURN_IF_FAILED(res, L"InitDX9(NULL) failed");
     }
     if(memoryTypeIn == amf::AMF_MEMORY_DX11)
     {
         res = context->InitDX11(NULL); // can be DX11 device
+        AMF_RETURN_IF_FAILED(res, L"InitDX11(NULL) failed");
     }
     // component: encoder
     res = g_AMFFactory.GetFactory()->CreateComponent(context, pCodec, &encoder);
+    AMF_RETURN_IF_FAILED(res, L"CreateComponent(%s) failed", pCodec);
 
     if(amf_wstring(pCodec) == amf_wstring(AMFVideoEncoderVCE_AVC))
     { 
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_TRANSCONDING);
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_TRANSCONDING) failed");
 
         if(bMaximumSpeed)
         {
             res = encoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
+            // do not check error for AMF_VIDEO_ENCODER_B_PIC_PATTERN - can be not supported - check Capability Manager sample
             res = encoder->SetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED);
+            AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED) failed");
         }
 
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, bitRateIn);
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, %" LPRId64 L") failed", bitRateIn);
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(widthIn, heightIn));
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, %dx%d) failed", widthIn, heightIn);
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, ::AMFConstructRate(frameRateIn, 1));
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, %dx%d) failed", frameRateIn, 1);
 
 #if defined(ENABLE_4K)
-        encoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_HIGH);
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_HIGH);
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_HIGH) failed");
+
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE_LEVEL, 51);
-        encoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_PROFILE_LEVEL, 51)");
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0)");
 #endif
     }
     else
     {
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_USAGE, AMF_VIDEO_ENCODER_HEVC_USAGE_TRANSCONDING);
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_USAGE, AMF_VIDEO_ENCODER_HEVC_USAGE_TRANSCONDING)");
 
         if(bMaximumSpeed)
         {
             res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET, AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED);
+            AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET, AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED)");
         }
 
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE, bitRateIn);
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE, %" LPRId64 L") failed", bitRateIn);
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE, ::AMFConstructSize(widthIn, heightIn));
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE, %dx%d) failed", widthIn, heightIn);
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, ::AMFConstructRate(frameRateIn, 1));
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, %dx%d) failed", frameRateIn, 1);
 
 #if defined(ENABLE_4K)
-        encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_TIER, AMF_VIDEO_ENCODER_HEVC_TIER_HIGH);
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_TIER, AMF_VIDEO_ENCODER_HEVC_TIER_HIGH);
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_TIER, AMF_VIDEO_ENCODER_HEVC_TIER_HIGH) failed");
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_PROFILE_LEVEL, AMF_LEVEL_5_1);
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_PROFILE_LEVEL, AMF_LEVEL_5_1) failed");
 #endif
     }
     res = encoder->Init(formatIn, widthIn, heightIn);
+    AMF_RETURN_IF_FAILED(res, L"encoder->Init() failed");
 
 
     PollingThread thread(context, encoder, fileNameOut);
@@ -169,6 +198,7 @@ int _tmain(int argc, _TCHAR* argv[])
         {
             surfaceIn = NULL;
             res = context->AllocSurface(memoryTypeIn, formatIn, widthIn, heightIn, &surfaceIn);
+            AMF_RETURN_IF_FAILED(res, L"AllocSurface() failed");
             FillSurface(context, surfaceIn);
         }
         // encode
@@ -182,6 +212,8 @@ int _tmain(int argc, _TCHAR* argv[])
         }
         else
         {
+            AMF_RETURN_IF_FAILED(res, L"SubmitInput() failed");
+
             surfaceIn = NULL;
             submitted++;
         }

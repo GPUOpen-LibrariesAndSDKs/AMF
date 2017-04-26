@@ -65,7 +65,7 @@ enum AMF_AUDIO_PLAYBACK_STATUS
 class AudioPresenterWin: public AudioPresenter
 {
 public:
-    AudioPresenterWin(amf::AMFContext* pContext);
+    AudioPresenterWin();
     virtual ~AudioPresenterWin();
 
     virtual AMF_RESULT GetDescription(
@@ -75,28 +75,31 @@ public:
         amf_int64 &streamFormat,
         amf_int64 &streamLayout,
         amf_int64 &streamBlockAlign
-        );
+    ) const;
 
     // PipelineElement
-    virtual AMF_RESULT  SubmitInput(amf::AMFData* pData);
+    virtual AMF_RESULT SubmitInput(amf::AMFData* pData);
+    virtual AMF_RESULT Flush();
 
         
-    virtual AMF_RESULT          AMF_STD_CALL Init();
-    AMF_RESULT                  AMF_STD_CALL Terminate();
-    AMF_RESULT                  AMF_STD_CALL Present(amf::AMFAudioBuffer* pBuffer, amf_pts &sleeptime);
-    AMF_RESULT                  AMF_STD_CALL Pause();
-    AMF_RESULT                  AMF_STD_CALL Resume();
-    AMF_RESULT                  AMF_STD_CALL Step();
-    AMF_AUDIO_PLAYBACK_STATUS   AMF_STD_CALL GetStatus();
-    AMF_RESULT                  AMF_STD_CALL Reset();
+    virtual AMF_RESULT          Init();
+
+    AMF_RESULT                  Terminate();
+    AMF_RESULT                  Pause();
+    AMF_RESULT                  Resume(amf_pts currentTime);
+    AMF_RESULT                  Step();
+    AMF_AUDIO_PLAYBACK_STATUS   GetStatus();
+    AMF_RESULT                  Reset();
+
 
 protected:
-    AMF_RESULT                  AMF_STD_CALL InitDevice();
-    AMF_RESULT                  AMF_STD_CALL SelectFormat();
-    AMF_RESULT                  AMF_STD_CALL InitClient();
-    AMF_RESULT                  AMF_STD_CALL PushBuffer(amf::AMFAudioBufferPtr &buffer, amf_size &uiBufferDataOffset); // uiBufferDataOffset - in/out
+    virtual AMF_RESULT          AMF_STD_CALL Present(amf::AMFAudioBuffer* pBuffer, amf_pts &sleeptime);
 
-    amf::AMFCriticalSection                  m_ObjectLock;
+    AMF_RESULT                  InitDevice();
+    AMF_RESULT                  SelectFormat();
+    AMF_RESULT                  InitClient();
+    AMF_RESULT                  PushBuffer(amf::AMFAudioBufferPtr &buffer, amf_size &uiBufferDataOffset); // uiBufferDataOffset - in/out
+
     amf::amf_vector<amf::AMFAudioBufferPtr>  m_UnusedBuffers;
 
     amf_handle                  m_pDevice;

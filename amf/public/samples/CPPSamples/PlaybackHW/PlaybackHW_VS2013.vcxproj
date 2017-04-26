@@ -174,6 +174,7 @@
     <ClInclude Include="..\..\..\common\TraceAdapter.h" />
     <ClInclude Include="..\common\AudioPresenter.h" />
     <ClInclude Include="..\common\AudioPresenterWin.h" />
+    <ClInclude Include="..\common\BackBufferPresenter.h" />
     <ClInclude Include="..\common\BitStreamParser.h" />
     <ClInclude Include="..\common\BitStreamParserH264.h" />
     <ClInclude Include="..\common\BitStreamParserH265.h" />
@@ -183,6 +184,7 @@
     <ClInclude Include="..\common\Pipeline.h" />
     <ClInclude Include="..\common\PipelineElement.h" />
     <ClInclude Include="..\common\PlaybackPipeline.h" />
+    <ClInclude Include="..\common\PlaybackPipelineBase.h" />
     <ClInclude Include="..\common\VideoPresenter.h" />
     <ClInclude Include="..\common\VideoPresenterDX11.h" />
     <ClInclude Include="..\common\VideoPresenterDX9.h" />
@@ -212,6 +214,7 @@
     </ClCompile>
     <ClCompile Include="..\common\AudioPresenter.cpp" />
     <ClCompile Include="..\common\AudioPresenterWin.cpp" />
+    <ClCompile Include="..\common\BackBufferPresenter.cpp" />
     <ClCompile Include="..\common\BitStreamParser.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
@@ -230,6 +233,7 @@
     <ClCompile Include="..\common\ParametersStorage.cpp" />
     <ClCompile Include="..\common\Pipeline.cpp" />
     <ClCompile Include="..\common\PlaybackPipeline.cpp" />
+    <ClCompile Include="..\common\PlaybackPipelineBase.cpp" />
     <ClCompile Include="..\common\VideoPresenter.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>

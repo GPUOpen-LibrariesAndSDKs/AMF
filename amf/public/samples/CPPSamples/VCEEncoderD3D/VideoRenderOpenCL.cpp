@@ -81,12 +81,12 @@ AMF_RESULT VideoRenderOpenCL::Render(amf::AMFData** ppData)
     size_t  originY[3]={ 0, 0, 0};
     size_t  regionY[3]={(size_t)pSurface->GetPlane(amf::AMF_PLANE_Y)->GetWidth(), (size_t)pSurface->GetPlane(amf::AMF_PLANE_Y)->GetHeight(), 1};
 
-    status = clEnqueueFillImage(hCommandQueue, planeY, colorBlack, originY, regionY, 0, NULL, NULL);
+    status = m_Device.GetLoader().clEnqueueFillImage(hCommandQueue, planeY, colorBlack, originY, regionY, 0, NULL, NULL);
     CHECK_OPENCL_ERROR_RETURN(status, L"clEnqueueFillImage() failed");
     size_t  originUV[3]={ 0, 0, 0};
     size_t  regionUV[3]={(size_t)pSurface->GetPlane(amf::AMF_PLANE_UV)->GetWidth(), (size_t)pSurface->GetPlane(amf::AMF_PLANE_UV)->GetHeight(), 1};
 
-    status = clEnqueueFillImage(hCommandQueue, planeUV, colorBlack, originUV, regionUV, 0, NULL, NULL);
+    status = m_Device.GetLoader().clEnqueueFillImage(hCommandQueue, planeUV, colorBlack, originUV, regionUV, 0, NULL, NULL);
     CHECK_OPENCL_ERROR_RETURN(status, L"clEnqueueFillImage() failed");
 
     float color[4] ={1.0f, 0.0f, 0.0f, 0.0f};
@@ -94,17 +94,17 @@ AMF_RESULT VideoRenderOpenCL::Render(amf::AMFData** ppData)
     size_t  region[3]={SQUARE_SIZE, SQUARE_SIZE, 1};
 
 
-    status = clEnqueueFillImage(hCommandQueue, planeY, color,origin, region, 0, NULL, NULL);
+    status = m_Device.GetLoader().clEnqueueFillImage(hCommandQueue, planeY, color,origin, region, 0, NULL, NULL);
     CHECK_OPENCL_ERROR_RETURN(status, L"clEnqueueFillImage() failed");
 
     origin[0] = m_iAnimation / 2;
     origin[1] = m_iAnimation / 2;
     region [0] = SQUARE_SIZE / 2;
     region [1] = SQUARE_SIZE / 2;
-    status = clEnqueueFillImage(hCommandQueue, planeUV, color,origin, region, 0, NULL, NULL);
+    status = m_Device.GetLoader().clEnqueueFillImage(hCommandQueue, planeUV, color,origin, region, 0, NULL, NULL);
     CHECK_OPENCL_ERROR_RETURN(status, L"clEnqueueFillImage() failed");
 
-    clFinish(hCommandQueue);
+    m_Device.GetLoader().clFinish(hCommandQueue);
 
     m_iAnimation++;
     if(m_iAnimation + SQUARE_SIZE >= m_width  || m_iAnimation + SQUARE_SIZE >= m_height)

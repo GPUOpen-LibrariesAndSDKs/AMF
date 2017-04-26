@@ -33,61 +33,67 @@
 #include "AudioPresenter.h"
 #include "AudioPresenterWin.h"
 
-//#if !defined(METRO_APP)
-//#include "AudioPresenterDX9.h"
-//#include "AudioPresenterOpenGL.h"
-//#endif
-//#include "public/include/components/VideoConverter.h"
-
 using namespace amf;
 
+//-------------------------------------------------------------------------------------------------
+AudioPresenter::AudioPresenter()
+    : m_ptsSeek(-1LL)
+{}
 
-AudioPresenter::AudioPresenter(amf::AMFContext* pContext) 
-    : m_pContext(pContext)
-{
-}
-
+//-------------------------------------------------------------------------------------------------
 AudioPresenter::~AudioPresenter()
 {
 }
 
-
-#if defined(METRO_APP)
-AudioPresenterPtr AudioPresenter::Create(ISwapChainBackgroundPanelNative* pSwapChainPanel, AMFSize swapChainPanelSize, amf::AMFContext* pContext)
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT AudioPresenter::Seek(amf_pts pts)
 {
-    AudioPresenterPtr pPresenter;
-    pPresenter = AudioPresenterPtr(new AudioPresenterDX11(pSwapChainPanel, swapChainPanelSize, pContext));
-    return pPresenter;
-}
-#else
-AudioPresenterPtr AudioPresenter::Create(amf::AMFContext* pContext)
-{
-#if defined(_WIN32)
-    AudioPresenterPtr pPresenter = AudioPresenterPtr(new AudioPresenterWin(pContext));
-#else
-    AudioPresenterPtr pPresenter = AudioPresenterPtr(new AudioPresenter(pContext));
-#endif
-    return pPresenter;
-}
-#endif
-
-
-AMF_RESULT AudioPresenter::SubmitInput(amf::AMFData* pData)
-{
-    // check if we get new input - if we don't and we don't 
-    // have anything cached, there's nothing to process
-    if ((pData == NULL) && (m_pLastData == NULL))
-    {
-        return AMF_EOF;
-    }
-
-    // if we submit the same information, do nothing
-    if (m_pLastData == pData)
-    {
-        return AMF_ALREADY_INITIALIZED;
-    }
-
-    // there's not much to do in the base class
-    m_pLastData = AMFAudioBufferPtr(pData);
+    amf::AMFLock lock(&m_cs);
+    m_ptsSeek = pts;
     return AMF_OK;
+}
+
+//-------------------------------------------------------------------------------------------------
+bool AudioPresenter::HandleSeek(const AMFAudioBuffer* pBuffer, bool& bDiscard, amf_size& byteOffset)
+{
+    bDiscard = false;
+    byteOffset = 0;
+
+    amf::AMFLock lock(&m_cs);
+
+    if (m_ptsSeek == -1LL)
+    {
+        return false;
+    }
+
+    const amf_pts
+        pts = const_cast<AMFAudioBuffer*>(pBuffer)->GetPts(),
+        duration = const_cast<AMFAudioBuffer*>(pBuffer)->GetDuration();
+
+    if (m_ptsSeek >= pts + duration)
+    {
+        // discard whole buffer - it is too early
+        bDiscard = true;
+        return true;
+    }
+    else if (m_ptsSeek <= pts) // seek is done 
+    {
+        const amf_pts timeForSilence = pts - m_ptsSeek;
+        
+        // wait
+        if (timeForSilence > 2000)
+        {
+            amf_sleep(amf_long(timeForSilence / 10000)); // in ms
+        }
+    }
+    else  // if(m_ptsSeek >= pts && m_ptsSeek < pts + duration)  need to eat part of the buffer
+    {
+        const amf_pts timeToEat = m_ptsSeek - pts; // in 100s of nanosecond
+        amf_int64 samplesToEat = const_cast<AMFAudioBuffer*>(pBuffer)->GetSampleRate() * timeToEat / AMF_SECOND;
+        // bytes to eat
+        byteOffset = (amf_size)(samplesToEat * const_cast<AMFAudioBuffer*>(pBuffer)->GetSampleSize() * const_cast<AMFAudioBuffer*>(pBuffer)->GetChannelCount());
+    }
+
+    m_ptsSeek = -1LL;
+    return true;
 }

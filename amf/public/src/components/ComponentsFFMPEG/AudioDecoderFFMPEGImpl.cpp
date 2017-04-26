@@ -207,7 +207,8 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
     AMF_RETURN_IF_FAILED(GetProperty(AUDIO_DECODER_ENABLE_DECODING, &m_bDecodingEnabled));
 
     bool debug = false;
-    if (GetProperty(AUDIO_DECODER_ENABLE_DEBUGGING, &debug) == AMF_OK)
+    GetProperty(AUDIO_DECODER_ENABLE_DEBUGGING, &debug);
+    if (debug)
     {
         AMFTraceDebug(AMF_FACILITY, L"AMFAudioDecoderFFMPEG::InitContext() - Completed", m_pCodecContext->codec_id);
     }
@@ -243,6 +244,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::Terminate()
 
     m_audioFrameSubmitCount = 0;
     m_audioFrameQueryCount = 0;
+    m_bForceEof = false;
 
     return AMF_OK;
 }
@@ -434,7 +436,8 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
         m_audioFrameQueryCount++;
 
         bool debug = false;
-        if (GetProperty(AUDIO_DECODER_ENABLE_DEBUGGING, &debug) == AMF_OK)
+        GetProperty(AUDIO_DECODER_ENABLE_DEBUGGING, &debug);
+        if (debug)
         {
             AMFTraceDebug(AMF_FACILITY, L"AMFAudioDecoderFFMPEG::Process() - output block pts=%.2f", (double)pOutputAudioBuffer->GetPts() / AMF_SECOND);
         }

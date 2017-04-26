@@ -74,7 +74,9 @@ const char DX11_FullScreenQuad[] =
 "//--------------------------------------------------------------------------------------\n"
 "float4 PS( PS_INPUT input) : SV_Target                                                  \n"
 "{                                                                                       \n"
-"    return txDiffuse.Sample( samplerState, input.Tex );                                 \n"
+"   float4 color = txDiffuse.Sample( samplerState, input.Tex );                          \n"
+"   color.w = 1.0f;                                                                      \n"
+"   return color;                                                                        \n"
 "}                                                                                       \n"
 ;
 
@@ -99,7 +101,7 @@ VideoPresenterDX11::VideoPresenterDX11(ISwapChainBackgroundPanelNative* pSwapCha
 #else
 
 VideoPresenterDX11::VideoPresenterDX11(HWND hwnd, amf::AMFContext* pContext) :
-    VideoPresenter(hwnd, pContext),
+    BackBufferPresenter(hwnd, pContext),
     m_stereo(false),
     m_fScale(1.0f),
     m_fPixelAspectRatio(1.0f),
@@ -136,56 +138,62 @@ AMF_RESULT VideoPresenterDX11::Present(amf::AMFSurface* pSurface)
     {
         err;
     }
-    AMFRect rectClient;
-    #if defined(METRO_APP)
-        //TODO: calculate rect
     {
-        CComPtr<ID3D11Texture2D> pDestDxSurface;
-        if(FAILED(m_pSwapChain->GetBuffer( 0,  __uuidof(pDestDxSurface), reinterpret_cast<void**>(&pDestDxSurface))))
-        {
-            return AMF_DIRECTX_FAILED;
-        }
+        amf::AMFContext::AMFDX11Locker dxlock(m_pContext);
 
-        D3D11_TEXTURE2D_DESC desc;
-        pDestDxSurface->GetDesc(&desc);
-        rectClient.left = 0;
-        rectClient.top = 0;
-        rectClient.right = desc.Width;
-        rectClient.bottom = desc.Height;
-    }
-    #else
-        RECT tmpRectClient = {0, 0, 500, 500};
-        GetClientRect((HWND)m_hwnd, &tmpRectClient);
-        rectClient = AMFConstructRect(tmpRectClient.left, tmpRectClient.top, tmpRectClient.right, tmpRectClient.bottom);
-    #endif
+        AMFRect rectClient;
+        #if defined(METRO_APP)
+            //TODO: calculate rect
+        {
+            CComPtr<ID3D11Texture2D> pDestDxSurface;
+            if(FAILED(m_pSwapChain->GetBuffer( 0,  __uuidof(pDestDxSurface), reinterpret_cast<void**>(&pDestDxSurface))))
+            {
+                return AMF_DIRECTX_FAILED;
+            }
 
-    bool bResized = false;
-    CheckForResize(false, &bResized);
-    if(m_pConverter == NULL)
-    {
-        if(bResized)
-        {
-            ResizeSwapChain();
+            D3D11_TEXTURE2D_DESC desc;
+            pDestDxSurface->GetDesc(&desc);
+            rectClient.left = 0;
+            rectClient.top = 0;
+            rectClient.right = desc.Width;
+            rectClient.bottom = desc.Height;
         }
-        amf::AMFPlane* pPlane = pSurface->GetPlane(amf::AMF_PLANE_PACKED);
-        CComPtr<ID3D11Texture2D> pSrcDxSurface = (ID3D11Texture2D*)pPlane->GetNative();
-        if (pSrcDxSurface == NULL)
+        #else
+            RECT tmpRectClient = {0, 0, 500, 500};
+            GetClientRect((HWND)m_hwnd, &tmpRectClient);
+            rectClient = AMFConstructRect(tmpRectClient.left, tmpRectClient.top, tmpRectClient.right, tmpRectClient.bottom);
+        #endif
+
+        bool bResized = false;
+        CheckForResize(false, &bResized);
+        if(!m_bRenderToBackBuffer)
         {
-            return AMF_INVALID_POINTER;
-        }
-        CComPtr<ID3D11Texture2D> pDestDxSurface;
-        if(FAILED(m_pSwapChain->GetBuffer( 0,  __uuidof(pDestDxSurface), reinterpret_cast<void**>(&pDestDxSurface))))
-        {
-            return AMF_DIRECTX_FAILED;
-        }
+            if(bResized)
+            {
+                ResizeSwapChain();
+            }
+            amf::AMFPlane* pPlane = pSurface->GetPlane(amf::AMF_PLANE_PACKED);
+            CComPtr<ID3D11Texture2D> pSrcDxSurface = (ID3D11Texture2D*)pPlane->GetNative();
+            if (pSrcDxSurface == NULL)
+            {
+                return AMF_INVALID_POINTER;
+            }
+            CComPtr<ID3D11Texture2D> pDestDxSurface;
+            if(FAILED(m_pSwapChain->GetBuffer( 0,  __uuidof(pDestDxSurface), reinterpret_cast<void**>(&pDestDxSurface))))
+            {
+                return AMF_DIRECTX_FAILED;
+            }
     
-        AMFRect srcRect = {pPlane->GetOffsetX(), pPlane->GetOffsetY(), pPlane->GetOffsetX() + pPlane->GetWidth(), pPlane->GetOffsetY() + pPlane->GetHeight()};
-        AMFRect outputRect;
-        CalcOutputRect(&srcRect, &rectClient, &outputRect);
-        //in case of ROI we should specify SrcRect
-        err = BitBlt(pSurface->GetFrameType(), pSrcDxSurface, &srcRect, pDestDxSurface, &outputRect);
+            AMFRect srcRect = {pPlane->GetOffsetX(), pPlane->GetOffsetY(), pPlane->GetOffsetX() + pPlane->GetWidth(), pPlane->GetOffsetY() + pPlane->GetHeight()};
+            AMFRect outputRect;
+            CalcOutputRect(&srcRect, &rectClient, &outputRect);
+            //in case of ROI we should specify SrcRect
+            err = BitBlt(pSurface->GetFrameType(), pSrcDxSurface, &srcRect, pDestDxSurface, &outputRect);
+        }
     }
+    
     WaitForPTS(pSurface->GetPts());
+
 
     amf::AMFLock lock(&m_sect);
     
@@ -199,7 +207,8 @@ AMF_RESULT VideoPresenterDX11::Present(amf::AMFSurface* pSurface)
         }
         amf_sleep(1);
     }
-    if(m_pConverter != NULL)
+    
+    if(m_bRenderToBackBuffer)
     {
         m_uiAvailableBackBuffer--;
     }
@@ -208,7 +217,7 @@ AMF_RESULT VideoPresenterDX11::Present(amf::AMFSurface* pSurface)
 
 AMF_RESULT VideoPresenterDX11::BitBlt(amf::AMF_FRAME_TYPE eFrameType, ID3D11Texture2D* pSrcSurface, AMFRect* pSrcRect, ID3D11Texture2D* pDstSurface, AMFRect* pDstRect)
 {
-    //return BitBltCopy(pSrcSurface, pSrcRect, pDstSurface, pDstRect);
+//    return BitBltCopy(pSrcSurface, pSrcRect, pDstSurface, pDstRect);
     return BitBltRender(eFrameType, pSrcSurface, pSrcRect, pDstSurface, pDstRect);
 }
 
@@ -270,9 +279,18 @@ AMF_RESULT VideoPresenterDX11::BitBltRender(amf::AMF_FRAME_TYPE eFrameType, ID3D
     {
         AMFRect dstRect = {0, 0, (amf_int32)dstDesc.Width, (amf_int32)dstDesc.Height};
         UpdateVertices(newSourceRect, srcSize, dstRect);
+        m_sourceVertexRect = newSourceRect;
     }
 
     // setup all states
+
+    // setup shaders
+    spContext->VSSetShader( m_pVertexShader, NULL, 0 );
+    spContext->VSSetConstantBuffers( 0, 1, &m_pCBChangesOnResize.p );
+    spContext->PSSetShader(m_pPixelShader, NULL, 0 );
+    spContext->PSSetConstantBuffers(0, 1, &m_pCBChangesOnResize.p);
+    spContext->PSSetSamplers( 0, 1, &m_pSampler.p );
+
 
     spContext->OMSetDepthStencilState(m_pDepthStencilState, 1);
     spContext->RSSetState(m_pRasterizerState);
@@ -288,22 +306,15 @@ AMF_RESULT VideoPresenterDX11::BitBltRender(amf::AMF_FRAME_TYPE eFrameType, ID3D
     UINT offset = 0;
     spContext->IASetVertexBuffers( 0, 1, &m_pVertexBuffer.p, &stride, &offset );
 
-    // setup shaders
-    spContext->VSSetShader( m_pVertexShader, NULL, 0 );
-    spContext->VSSetConstantBuffers( 0, 1, &m_pCBChangesOnResize.p );
-    spContext->PSSetShader(m_pPixelShader, NULL, 0 );
-    spContext->PSSetConstantBuffers(0, 1, &m_pCBChangesOnResize.p);
-    spContext->PSSetSamplers( 0, 1, &m_pSampler.p );
 
     // render left
-    if( (eFrameType & amf::AMF_FRAME_LEFT_FLAG) == amf::AMF_FRAME_LEFT_FLAG || 
-        (eFrameType & amf::AMF_FRAME_STEREO_FLAG) == 0 )
+    if( (eFrameType & amf::AMF_FRAME_LEFT_FLAG) == amf::AMF_FRAME_LEFT_FLAG || (eFrameType & amf::AMF_FRAME_STEREO_FLAG) == 0  || eFrameType == amf::AMF_FRAME_UNKNOWN)
     {
         DrawFrame(m_pCopyTexture_L != NULL ? m_pCopyTexture_L : pSrcSurface , true);
     }
 
     // render right
-    if((eFrameType & amf::AMF_FRAME_RIGHT_FLAG) == amf::AMF_FRAME_RIGHT_FLAG)
+    if((eFrameType & amf::AMF_FRAME_RIGHT_FLAG) == amf::AMF_FRAME_RIGHT_FLAG && eFrameType != amf::AMF_FRAME_UNKNOWN)
     {
         DrawFrame(m_pCopyTexture_R != NULL ? m_pCopyTexture_R : pSrcSurface , false);
     }
@@ -399,6 +410,11 @@ AMF_RESULT VideoPresenterDX11::DrawFrame(ID3D11Texture2D* pSrcSurface, bool bLef
 
     spContext->Draw( 4, 0 );
 
+    ID3D11RenderTargetView *pNULLRT = NULL;
+    spContext->OMSetRenderTargets( 1, &pNULLRT, NULL );
+
+    ID3D11ShaderResourceView* pNULL = NULL;
+    spContext->PSSetShaderResources( 0, 1, &pNULL);
     return AMF_OK;
 }
 
@@ -896,13 +912,17 @@ AMF_RESULT VideoPresenterDX11::UpdateVertices(AMFRect srcRect, AMFSize srcSize, 
 AMF_RESULT AMF_STD_CALL VideoPresenterDX11::AllocSurface(amf::AMF_MEMORY_TYPE type, amf::AMF_SURFACE_FORMAT format,
             amf_int32 width, amf_int32 height, amf_int32 hPitch, amf_int32 vPitch, amf::AMFSurface** ppSurface)
 {
-    if(m_pConverter == NULL)
+    if(!m_bRenderToBackBuffer)
     {
         return AMF_NOT_IMPLEMENTED;
     }
     // wait till buffers are released
     while( m_uiAvailableBackBuffer + 1 >= m_uiBackBufferCount)
     {
+        if(m_bFrozen)
+        {
+            return AMF_INPUT_FULL;
+        }
         amf_sleep(1);
     }
 
@@ -914,7 +934,7 @@ AMF_RESULT AMF_STD_CALL VideoPresenterDX11::AllocSurface(amf::AMF_MEMORY_TYPE ty
             amf_sleep(1);
         }
         ResizeSwapChain();
-        UpdateConverter();
+        UpdateProcessor();
         m_bResizeSwapChain = false;
     }
 
@@ -956,7 +976,7 @@ AMF_RESULT              VideoPresenterDX11::SetInputFormat(amf::AMF_SURFACE_FORM
     m_eInputFormat = format;
     return AMF_OK;
 }
-DXGI_FORMAT VideoPresenterDX11::GetDXGIFormat() 
+DXGI_FORMAT VideoPresenterDX11::GetDXGIFormat() const
 { 
     DXGI_FORMAT format = DXGI_FORMAT_B8G8R8A8_UNORM;
     switch(GetInputFormat())

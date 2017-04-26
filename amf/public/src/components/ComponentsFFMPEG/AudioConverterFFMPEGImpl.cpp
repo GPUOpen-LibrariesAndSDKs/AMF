@@ -231,6 +231,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::Terminate()
     m_audioFrameQueryCount = 0;
 
     m_uiTempBufferSize = 0;
+    m_bEof = false;
 
     return AMF_OK;
 }
@@ -349,8 +350,16 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::QueryOutput(AMFData** ppDa
         iSamplesIn     = (amf_int64) m_pInputData->GetSize() / (m_inChannels * iSampleSizeIn);
         pMemIn   = static_cast<uint8_t*>(m_pInputData->GetNative());
     }
-    
-    amf_int64 iSamplesOut    = avresample_get_out_samples(m_pResampler, (int)iSamplesIn);
+
+    amf_int64 iSamplesOut    = 0;
+    if (NULL != m_pResampler)
+    {
+        iSamplesOut = avresample_get_out_samples(m_pResampler, (int)iSamplesIn);
+    }
+    else
+    {
+        iSamplesOut = iSamplesIn;
+    }
 
     amf_int64 new_size       = (amf_int64) iSamplesOut * m_outChannels * iSampleSizeOut;
     if (m_uiTempBufferSize < (amf_uint) new_size)

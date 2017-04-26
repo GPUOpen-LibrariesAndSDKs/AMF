@@ -31,9 +31,9 @@
 //
 #pragma once
 
-#include "VideoPresenter.h"
+#include "BackBufferPresenter.h"
 
-class VideoPresenterOpenGL : public VideoPresenter
+class VideoPresenterOpenGL : public BackBufferPresenter
 {
 public:
     VideoPresenterOpenGL(HWND hwnd, amf::AMFContext* pContext);
@@ -41,8 +41,8 @@ public:
 
     virtual AMF_RESULT Present(amf::AMFSurface* pSurface);
 
-    virtual amf::AMF_MEMORY_TYPE GetMemoryType() { return amf::AMF_MEMORY_OPENGL; }
-    virtual amf::AMF_SURFACE_FORMAT GetInputFormat() { return amf::AMF_SURFACE_BGRA; }
+    virtual amf::AMF_MEMORY_TYPE GetMemoryType() const { return amf::AMF_MEMORY_OPENGL; }
+    virtual amf::AMF_SURFACE_FORMAT GetInputFormat() const { return amf::AMF_SURFACE_BGRA; }
     virtual AMF_RESULT              SetInputFormat(amf::AMF_SURFACE_FORMAT format)
     {
         return format == amf::AMF_SURFACE_BGRA ? AMF_OK : AMF_FAIL;
@@ -50,6 +50,7 @@ public:
 
     virtual AMF_RESULT Init(amf_int32 width, amf_int32 height);
     virtual AMF_RESULT Terminate();
+    virtual bool                SupportAllocator() const { return false; }
 
 private:
 

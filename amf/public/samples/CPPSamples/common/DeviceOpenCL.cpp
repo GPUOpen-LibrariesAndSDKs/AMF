@@ -35,20 +35,25 @@
 #include <CL/cl_d3d11.h>
 #include <CL/cl_dx9_media_sharing.h>
 #include <CL/cl_gl.h>
-
-#pragma comment(lib, "opencl.lib")
-#pragma warning(disable: 4996)
+#include "public/common/Thread.h"
 
 #pragma warning(disable: 4996)
+
+#pragma warning(disable: 4996)
+
+OpenCLLoader        DeviceOpenCL::m_Loader;
+
 DeviceOpenCL::DeviceOpenCL() :
     m_hCommandQueue(0),
     m_hContext(0)
 {
+    m_Loader.Init();
 }
 
 DeviceOpenCL::~DeviceOpenCL()
 {
     Terminate();
+    m_Loader.Terminate();
 }
 
 AMF_RESULT DeviceOpenCL::Init(IDirect3DDevice9* pD3DDevice9, ID3D11Device* pD3DDevice11, HGLRC hContextOGL, HDC hDC)
@@ -67,7 +72,7 @@ AMF_RESULT DeviceOpenCL::Init(IDirect3DDevice9* pD3DDevice9, ID3D11Device* pD3DD
 
     if(pD3DDevice11 != NULL)
     {
-        clGetDeviceIDsFromD3D11KHR_fn pClGetDeviceIDsFromD3D11KHR = static_cast<clGetDeviceIDsFromD3D11KHR_fn>(clGetExtensionFunctionAddressForPlatform(platformID, "clGetDeviceIDsFromD3D11KHR"));
+        clGetDeviceIDsFromD3D11KHR_fn pClGetDeviceIDsFromD3D11KHR = static_cast<clGetDeviceIDsFromD3D11KHR_fn>(GetLoader().clGetExtensionFunctionAddressForPlatform(platformID, "clGetDeviceIDsFromD3D11KHR"));
         if(pClGetDeviceIDsFromD3D11KHR == NULL)
         {
             LOG_ERROR(L"Cannot resolve ClGetDeviceIDsFromD3D11KHR function");
@@ -84,7 +89,7 @@ AMF_RESULT DeviceOpenCL::Init(IDirect3DDevice9* pD3DDevice9, ID3D11Device* pD3DD
     }
     if(pD3DDevice9 != NULL)
     {
-        clGetDeviceIDsFromDX9MediaAdapterKHR_fn pclGetDeviceIDsFromDX9MediaAdapterKHR = static_cast<clGetDeviceIDsFromDX9MediaAdapterKHR_fn>(clGetExtensionFunctionAddressForPlatform(platformID, "clGetDeviceIDsFromDX9MediaAdapterKHR"));
+        clGetDeviceIDsFromDX9MediaAdapterKHR_fn pclGetDeviceIDsFromDX9MediaAdapterKHR = static_cast<clGetDeviceIDsFromDX9MediaAdapterKHR_fn>(GetLoader().clGetExtensionFunctionAddressForPlatform(platformID, "clGetDeviceIDsFromDX9MediaAdapterKHR"));
         if(pclGetDeviceIDsFromDX9MediaAdapterKHR == NULL)
         {
             LOG_ERROR(L"Cannot resolve clGetDeviceIDsFromDX9MediaAdapterKHR function");
@@ -103,7 +108,7 @@ AMF_RESULT DeviceOpenCL::Init(IDirect3DDevice9* pD3DDevice9, ID3D11Device* pD3DD
     }
     if(hContextOGL != NULL)
     {
-        clGetGLContextInfoKHR_fn pclGetGLContextInfoKHR = static_cast<clGetGLContextInfoKHR_fn>(clGetExtensionFunctionAddressForPlatform(platformID, "clGetGLContextInfoKHR"));
+        clGetGLContextInfoKHR_fn pclGetGLContextInfoKHR = static_cast<clGetGLContextInfoKHR_fn>(GetLoader().clGetExtensionFunctionAddressForPlatform(platformID, "clGetGLContextInfoKHR"));
         if(pclGetGLContextInfoKHR == NULL)
         {
             LOG_ERROR(L"Cannot resolve clGetGLContextInfoKHR function");
@@ -139,7 +144,7 @@ AMF_RESULT DeviceOpenCL::Init(IDirect3DDevice9* pD3DDevice9, ID3D11Device* pD3DD
 
     if(interoppedDeviceID == NULL)
     {
-        status = clGetDeviceIDs((cl_platform_id)platformID, CL_DEVICE_TYPE_GPU, 1, (cl_device_id*)&interoppedDeviceID, NULL);
+        status = GetLoader().clGetDeviceIDs((cl_platform_id)platformID, CL_DEVICE_TYPE_GPU, 1, (cl_device_id*)&interoppedDeviceID, NULL);
         CHECK_OPENCL_ERROR_RETURN(status, L"clGetDeviceIDs() failed");
         m_hDeviceIDs.push_back(interoppedDeviceID);
     }
@@ -147,14 +152,14 @@ AMF_RESULT DeviceOpenCL::Init(IDirect3DDevice9* pD3DDevice9, ID3D11Device* pD3DD
     {
         wglMakeCurrent(hDC, hContextOGL);
     }
-    m_hContext = clCreateContext(&cps[0], 1, &interoppedDeviceID, NULL, NULL, &status);
+    m_hContext = GetLoader().clCreateContext(&cps[0], 1, &interoppedDeviceID, NULL, NULL, &status);
     if(hContextOGL != 0)
     {
         wglMakeCurrent(NULL, NULL);
     }
     CHECK_OPENCL_ERROR_RETURN(status, L"clCreateContext() failed");
 
-    m_hCommandQueue = clCreateCommandQueue(m_hContext, interoppedDeviceID, (cl_command_queue_properties)NULL, &status);
+    m_hCommandQueue = GetLoader().clCreateCommandQueue(m_hContext, interoppedDeviceID, (cl_command_queue_properties)NULL, &status);
     CHECK_OPENCL_ERROR_RETURN(status, L"clCreateCommandQueue() failed");
     return AMF_OK;
 }
@@ -163,20 +168,20 @@ AMF_RESULT DeviceOpenCL::Terminate()
 {
     if(m_hCommandQueue != 0)
     {
-        clReleaseCommandQueue(m_hCommandQueue);
+        GetLoader().clReleaseCommandQueue(m_hCommandQueue);
         m_hCommandQueue = NULL;
     }
     if(m_hDeviceIDs.size() != 0)
     {
         for(std::vector<cl_device_id>::iterator it= m_hDeviceIDs.begin(); it != m_hDeviceIDs.end(); it++)
         {
-            clReleaseDevice(*it);
+            GetLoader().clReleaseDevice(*it);
         }
         m_hDeviceIDs.clear();;
     }
     if(m_hContext != 0)
     {
-        clReleaseContext(m_hContext);
+        GetLoader().clReleaseContext(m_hContext);
         m_hContext = NULL;
     }
     return AMF_OK;
@@ -185,7 +190,7 @@ AMF_RESULT DeviceOpenCL::FindPlatformID(cl_platform_id &platform)
 {
     cl_int status = 0;
     cl_uint numPlatforms = 0;
-    status = clGetPlatformIDs(0, NULL, &numPlatforms);
+    status = GetLoader().clGetPlatformIDs(0, NULL, &numPlatforms);
     CHECK_OPENCL_ERROR_RETURN(status, L"clGetPlatformIDs() failed");
     if(numPlatforms == 0)
     {
@@ -194,13 +199,13 @@ AMF_RESULT DeviceOpenCL::FindPlatformID(cl_platform_id &platform)
     }
     std::vector<cl_platform_id> platforms;
     platforms.resize(numPlatforms);
-    status = clGetPlatformIDs(numPlatforms, &platforms[0], NULL);
+    status = GetLoader().clGetPlatformIDs(numPlatforms, &platforms[0], NULL);
     CHECK_OPENCL_ERROR_RETURN(status, L"clGetPlatformIDs() failed");
     bool bFound = false;
     for(cl_uint i = 0; i < numPlatforms; ++i)
     {
         char pbuf[1000];
-        status = clGetPlatformInfo(platforms[i], CL_PLATFORM_VENDOR, sizeof(pbuf), pbuf, NULL);
+        status = GetLoader().clGetPlatformInfo(platforms[i], CL_PLATFORM_VENDOR, sizeof(pbuf), pbuf, NULL);
         CHECK_OPENCL_ERROR_RETURN(status, L"clGetPlatformInfo() failed");
         if(!strcmp(pbuf, "Advanced Micro Devices, Inc."))
         {
@@ -211,3 +216,9 @@ AMF_RESULT DeviceOpenCL::FindPlatformID(cl_platform_id &platform)
     }
     return AMF_FAIL;
 }
+
+OpenCLLoader& DeviceOpenCL::GetLoader()
+{
+    return m_Loader;
+}
+

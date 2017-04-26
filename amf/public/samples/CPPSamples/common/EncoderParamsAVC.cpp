@@ -241,10 +241,6 @@ static AMF_RESULT ParamPreAnalysisAVC(const std::wstring& value, amf::AMFVariant
         paramValue =  AMF_VIDEO_ENCODER_PREENCODE_DISABLED;
     } else if(uppValue == L"ENABLED" || uppValue == L"1") {
         paramValue =  AMF_VIDEO_ENCODER_PREENCODE_ENABLED;
-    } else if(uppValue == L"ENABLED2" || uppValue == L"2") {
-        paramValue =  AMF_VIDEO_ENCODER_PREENCODE_ENABLED_DOWNSCALEFACTOR_2;
-    } else if(uppValue == L"ENABLED4" || uppValue == L"3") {
-        paramValue =  AMF_VIDEO_ENCODER_PREENCODE_ENABLED_DOWNSCALEFACTOR_4;
     } else {
         LOG_ERROR(L"AMF_VIDEO_ENCODER_PREENCODE_MODE_ENUM hasn't \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
@@ -272,7 +268,6 @@ static AMF_RESULT ParamEncoding(const std::wstring& value, amf::AMFVariant& valu
     return AMF_OK;
 }
 
-
 AMF_RESULT RegisterEncoderParamsAVC(ParametersStorage* pParams)
 {
     pParams->SetParamDescription(SETFRAMEPARAMFREQ_PARAM_NAME, ParamCommon, L"Frequency of applying frame parameters (in frames, default = 0 )", ParamConverterInt64);
@@ -289,7 +284,7 @@ AMF_RESULT RegisterEncoderParamsAVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_MAX_LTR_FRAMES, ParamEncoderStatic, L"Max Of LTR frames (integer, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_MAX_NUM_REFRAMES, ParamEncoderStatic, L"Max Of Reference frames (integer, default = 4)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_ENABLE_VBAQ, ParamEncoderStatic, L"Eanble VBAQ (integer, default = 0)", ParamConverterBoolean);
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_RATE_CONTROL_PREANALYSIS_ENABLE, ParamEncoderStatic, L"Rate Control Preanalysis Enable (integer, default = 0)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_RATE_CONTROL_PREANALYSIS_ENABLE, ParamEncoderStatic, L"Rate Control Preanalysis Enabled (EANBLED, DISABLED, default = DISABLED)", ParamPreAnalysisAVC);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_ASPECT_RATIO, ParamEncoderStatic, L"Controls aspect ratio, defulat (1,1)", ParamConverterRatio);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_FULL_RANGE_COLOR, ParamEncoderStatic, L"Inidicates that YUV input is (0,255) (bool, default = false)", ParamConverterBoolean);
 
@@ -326,7 +321,6 @@ AMF_RESULT RegisterEncoderParamsAVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_CABAC_ENABLE, ParamEncoderDynamic, L"Encoding method (UNDEFINED, CAABC, CALV) default =UNDEFINED", ParamEncoding);
 
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD, ParamEncoderDynamic, L"Rate Control Method (CQP, CBR, VBR, VBR_LAT default = depends on USAGE)", ParamConverterRateControlAVC);
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_RATE_CONTROL_PREANALYSIS_ENABLE, ParamEncoderDynamic, L"Pre-analysis assisted rate control (DISABLED, ENABLED, ENABLED2, ENABLED4 default = DISABLED", ParamPreAnalysisAVC);
 
     // ------------- Encoder params per frame ---------------
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_INSERT_SPS, ParamEncoderFrame, L"Insert SPS (true, false default =  false)", ParamConverterBoolean);

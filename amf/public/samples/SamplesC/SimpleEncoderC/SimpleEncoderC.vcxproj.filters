@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\common\AMFFactoryC.c">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\ThreadWindowsC.c">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\TraceAdapterC.c">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="SimpleEncoderC.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="common">
+      <UniqueIdentifier>{b5547b29-096b-423b-b3ca-eb5f4b180eee}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\common\AMFFactoryC.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\ThreadC.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\TraceAdapterC.h">
+      <Filter>common</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

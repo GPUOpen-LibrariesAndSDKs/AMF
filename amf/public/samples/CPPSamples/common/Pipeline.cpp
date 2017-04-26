@@ -50,6 +50,7 @@ public:
     amf_int32               m_iThisSlot;
     amf::AMFPreciseWaiter   m_waiter;
     bool                    m_bEof;
+    bool                    m_bFrozen;
     
 
     Slot(ConnectionThreading eThreading, PipelineConnector *connector, amf_int32 thisSlot);
@@ -60,6 +61,10 @@ public:
     virtual bool IsEof(){return m_bEof;}
     virtual void OnEof();
     virtual void Restart(){m_bEof = false;}
+
+    virtual AMF_RESULT Freeze() { m_bFrozen = true; return AMF_OK;}
+    virtual AMF_RESULT UnFreeze(){ m_bFrozen = false; return AMF_OK;}
+    virtual AMF_RESULT Flush() = 0;
 
 };
 //-------------------------------------------------------------------------------------------------
@@ -75,6 +80,7 @@ public:
     virtual void Run();
     AMF_RESULT Drain();
     AMF_RESULT SubmitInput(amf::AMFData* pData, amf_ulong ulTimeout, bool poll);
+    virtual AMF_RESULT Flush() {return AMF_OK;}
 };
 typedef std::shared_ptr<InputSlot> InputSlotPtr;
 //-------------------------------------------------------------------------------------------------
@@ -91,6 +97,7 @@ public:
     AMF_RESULT QueryOutput(amf::AMFData** ppData, amf_ulong ulTimeout);
     AMF_RESULT Poll();
     virtual void Restart();
+    virtual AMF_RESULT Flush();
 };
 typedef std::shared_ptr<OutputSlot> OutputSlotPtr;
 //-------------------------------------------------------------------------------------------------
@@ -123,6 +130,10 @@ public:
 
     amf_int64 GetSubmitFramesProcessed(){return m_iSubmitFramesProcessed;}
     amf_int64 GetPollFramesProcessed(){return m_iPollFramesProcessed;}
+
+    AMF_RESULT Freeze();
+    AMF_RESULT UnFreeze();
+    AMF_RESULT Flush();
 
 protected:
     Pipeline*               m_pPipeline;
@@ -242,7 +253,7 @@ void Pipeline::OnEof()
     m_stopTime = amf_high_precision_clock();
 }
 //-------------------------------------------------------------------------------------------------
-PipelineState Pipeline::GetState()
+PipelineState Pipeline::GetState() const
 {
     amf::AMFLock lock(&m_cs);
     return m_state;
@@ -324,13 +335,46 @@ AMF_RESULT Pipeline::Restart()
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
+AMF_RESULT Pipeline::Freeze()
+{
+    amf::AMFLock lock(&m_cs);
+    for(ConnectorList::iterator it = m_connectors.begin(); it != m_connectors.end(); it++)
+    {
+        (*it)->Freeze();
+    }
+    m_state = PipelineStateFrozen;
+    return AMF_OK;
+}
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT Pipeline::UnFreeze()
+{
+    amf::AMFLock lock(&m_cs);
+    for(ConnectorList::iterator it = m_connectors.begin(); it != m_connectors.end(); it++)
+    {
+        (*it)->UnFreeze();
+    }
+    m_state = PipelineStateRunning;
+    return AMF_OK;
+}
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT Pipeline::Flush()
+{
+    amf::AMFLock lock(&m_cs);
+    for(ConnectorList::iterator it = m_connectors.begin(); it != m_connectors.end(); it++)
+    {
+        (*it)->Flush();
+    }
+    return AMF_OK;
+}
+//-------------------------------------------------------------------------------------------------
 // class Slot
 //-------------------------------------------------------------------------------------------------
 Slot::Slot(ConnectionThreading eThreading, PipelineConnector *connector, amf_int32 thisSlot) :
     m_eThreading(eThreading),
     m_pConnector(connector),
     m_iThisSlot(thisSlot),
-    m_bEof(false)
+    m_bEof(false),
+    m_bFrozen(false)
 {
 }
 //-------------------------------------------------------------------------------------------------
@@ -365,12 +409,17 @@ void InputSlot::Run()
     AMF_RESULT res = AMF_OK;
     while(!StopRequested())
     {
+        if(m_bFrozen)
+        {
+            m_waiter.Wait(1);
+            continue;
+        }
         if(!IsEof()) // after EOF thread waits for stop
         {
             amf::AMFDataPtr data;
 
             res = m_pUpstreamOutputSlot->QueryOutput(&data, 50);
-            if((res == AMF_OK && data != NULL)  || res == AMF_EOF)
+            if(((res == AMF_OK && data != NULL)  || res == AMF_EOF) && !m_bFrozen)
             {
                 res = SubmitInput(data, 50, false);
             }
@@ -414,6 +463,10 @@ AMF_RESULT InputSlot::Drain()
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT InputSlot::SubmitInput(amf::AMFData* pData, amf_ulong ulTimeout, bool poll)
 {
+    if(m_bFrozen)
+    {
+        return AMF_OK;
+    }
     AMF_RESULT  res = AMF_OK;
     if(pData == NULL)
     {
@@ -425,6 +478,10 @@ AMF_RESULT InputSlot::SubmitInput(amf::AMFData* pData, amf_ulong ulTimeout, bool
         while(!StopRequested())
         {
             res = m_pConnector->m_pElement->SubmitInput(pData, m_iThisSlot);
+            if(m_bFrozen)
+            {
+                break;
+            }
             if(res == AMF_EOF)
             {
 //                OnEof();
@@ -439,6 +496,10 @@ AMF_RESULT InputSlot::SubmitInput(amf::AMFData* pData, amf_ulong ulTimeout, bool
                 if(poll)
                 {
                     res = m_pConnector->PollAll(); // no poll thread: poll right here
+                    if(m_bFrozen)
+                    {
+                        break;
+                    }
                     if(res != AMF_OK && res != AMF_REPEAT && res != AMF_RESOLUTION_UPDATED)
                     {
                         break;
@@ -475,6 +536,11 @@ AMF_RESULT InputSlot::SubmitInput(amf::AMFData* pData, amf_ulong ulTimeout, bool
     {
         return res;
     }
+    if(m_bFrozen)
+    {
+        return AMF_OK;
+    }
+
     // poll output
     AMF_RESULT resPoll = m_pConnector->PollAll();
 
@@ -495,6 +561,12 @@ void OutputSlot::Run()
     AMF_RESULT res  = AMF_OK;
     while(!StopRequested())
     {
+        if(m_bFrozen)
+        {
+            m_waiter.Wait(1);
+            continue;
+        }
+
         if(!IsEof()) // after EOF thread waits for stop
         {
             res = Poll();
@@ -513,6 +585,10 @@ void OutputSlot::Run()
 AMF_RESULT OutputSlot::QueryOutput(amf::AMFData** ppData, amf_ulong ulTimeout) 
 {
     AMF_RESULT res = AMF_OK;
+    if(m_bFrozen)
+    {
+        return AMF_OK;
+    }
 
     if(m_eThreading == CT_ThreadPoll || m_eThreading == CT_Direct)
     {
@@ -529,6 +605,10 @@ AMF_RESULT OutputSlot::QueryOutput(amf::AMFData** ppData, amf_ulong ulTimeout)
     amf_ulong id=0;
     if(m_dataQueue.Get(id, data, ulTimeout))
     {
+        if(m_bFrozen)
+        {
+            return AMF_OK;
+        }
         *ppData=data.Detach();
         if(*ppData == NULL)
         {
@@ -546,9 +626,19 @@ AMF_RESULT OutputSlot::Poll()
 
     while(!StopRequested())
     {
+        if(m_bFrozen)
+        {
+            break;
+        }
+
         amf::AMFDataPtr data;
 
         res = m_pConnector->m_pElement->QueryOutput(&data, m_iThisSlot);
+        if(m_bFrozen)
+        {
+            break;
+        }
+
         if(res == AMF_EOF) // EOF is sent as NULL data to the next element
         {
             OnEof();
@@ -564,6 +654,10 @@ AMF_RESULT OutputSlot::Poll()
             {
                 while(!StopRequested())
                 {
+                    if(m_bFrozen)
+                    {
+                        break;
+                    }
                     amf_ulong id=0;
                     if(m_dataQueue.Add(id, data, 0, 50))
                     {
@@ -603,6 +697,12 @@ void OutputSlot::Restart()
 {
     m_dataQueue.Clear();
     Slot::Restart();
+}
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT OutputSlot::Flush()
+{
+    m_dataQueue.Clear();
+    return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
 // class PipelineConnector
@@ -737,7 +837,45 @@ void PipelineConnector::AddOutputSlot(OutputSlotPtr pSlot)
 {
     m_OutputSlots.push_back(pSlot);
 }
-
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT PipelineConnector::Freeze()
+{
+    for(amf_size i = 0; i < m_OutputSlots.size(); i++)
+    {
+        m_OutputSlots[i]->Freeze();
+    }
+    for(amf_size i = 0; i < m_InputSlots.size(); i++)
+    {
+        m_InputSlots[i]->Freeze();
+    }
+    return m_pElement->Freeze();
+}
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT PipelineConnector::UnFreeze()
+{
+    for(amf_size i = 0; i < m_OutputSlots.size(); i++)
+    {
+        m_OutputSlots[i]->UnFreeze();
+    }
+    for(amf_size i = 0; i < m_InputSlots.size(); i++)
+    {
+        m_InputSlots[i]->UnFreeze();
+    }
+    return m_pElement->UnFreeze();
+}
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT PipelineConnector::Flush()
+{
+    for(amf_size i = 0; i < m_OutputSlots.size(); i++)
+    {
+        m_OutputSlots[i]->Flush();
+    }
+    for(amf_size i = 0; i < m_InputSlots.size(); i++)
+    {
+        m_InputSlots[i]->Flush();
+    }
+    return m_pElement->Flush();
+}
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------

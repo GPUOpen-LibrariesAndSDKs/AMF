@@ -229,6 +229,10 @@ AMF_RESULT RegisterEncoderParamsHEVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD, ParamEncoderStatic, L"Rate Control Method (CQP, CBR, VBR, VBR_LAT default = depends on USAGE)", ParamConverterRateControlHEVC);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_PREANALYSIS_ENABLE, ParamEncoderStatic, L"Enable Preanalysis(true, false default = depends on USAGE)", ParamConverterBoolean);
 
+    // Motion estimation
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_MOTION_HALF_PIXEL, ParamEncoderStatic, L"Half Pixel (true, false default =  true)" , ParamConverterBoolean);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_MOTION_QUARTERPIXEL, ParamEncoderStatic, L"Quarter Pixel (true, false default =  true" , ParamConverterBoolean);
+
     // ------------- Encoder params dynamic ---------------
 //    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_WIDTH, ParamEncoderDynamic, L"Frame width (integer, default = 0)");
 //    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_HEIGHT, ParamEncoderDynamic, L"Frame height (integer, default = 0)");
@@ -246,10 +250,6 @@ AMF_RESULT RegisterEncoderParamsHEVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_QP_P, ParamEncoderDynamic, L"QP P (integer 0-51, default = 22)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_SKIP_FRAME_ENABLE, ParamEncoderDynamic, L"Rate Control Based Frame Skip (true, false default =  depends on USAGE)", ParamConverterBoolean);
     
-    // Motion estimation
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_MOTION_HALF_PIXEL, ParamEncoderDynamic, L"Half Pixel (true, false default =  true)" , ParamConverterBoolean);
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_MOTION_QUARTERPIXEL, ParamEncoderDynamic, L"Quarter Pixel (true, false default =  true" , ParamConverterBoolean);
-
     // ------------- Encoder params per frame ---------------
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_INSERT_HEADER, ParamEncoderFrame, L"Insert Header (true, false default =  false)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_INSERT_AUD, ParamEncoderFrame, L"Insert AUD (true, false default =  false)", ParamConverterBoolean);

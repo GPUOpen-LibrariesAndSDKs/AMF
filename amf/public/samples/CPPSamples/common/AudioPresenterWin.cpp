@@ -68,9 +68,8 @@ _COM_SMARTPTR_TYPEDEF(IMMDeviceCollection, __uuidof(IMMDeviceCollection));
 
 
 
-AudioPresenterWin::AudioPresenterWin(amf::AMFContext* pContext) 
-  : AudioPresenter(pContext),
-    m_pDevice(NULL),
+AudioPresenterWin::AudioPresenterWin() 
+  : m_pDevice(NULL),
     m_pAudioClient(NULL),
     m_pMixFormat(NULL),
     m_pRenderClient(NULL),
@@ -86,34 +85,20 @@ AudioPresenterWin::~AudioPresenterWin()
     Terminate();
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AudioPresenterWin::SubmitInput(amf::AMFData* pData)
+AMF_RESULT AudioPresenterWin::Init()
 {
-    // get the base class to do processing first and
-    // see that it succeeds
-    AMF_RESULT err = AudioPresenter::SubmitInput(pData);
-    if (err != AMF_OK)
-    {
-        return err;
-    }
+    amf::AMFLock lock(&m_cs);
 
-    amf_pts  ptsSleepTime = 0;
-    err = Present(m_pLastData, ptsSleepTime);
-    if(ptsSleepTime > 0)
-    {
-        amf_sleep(amf_long(ptsSleepTime / 10000)); // to milliseconds
-    }
-    m_pLastData.Release();
-    return err;
-}
-//-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL  AudioPresenterWin::Init()
-{
     if(m_eEngineState!=AMFAPS_UNKNOWN_STATUS)
     {
         return AMF_OK;
     }
     AMF_RESULT err=AMF_OK;
     err=InitDevice();
+    if(err != AMF_OK)
+    {
+        return err;
+    }
     AMF_RETURN_IF_FAILED(err,L"Init() - InitDevice failed");
     err=SelectFormat();
     AMF_RETURN_IF_FAILED(err,L"Init() - SelectFormat failed");
@@ -124,8 +109,10 @@ AMF_RESULT AMF_STD_CALL  AudioPresenterWin::Init()
     return err;
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL  AudioPresenterWin::Terminate()
+AMF_RESULT AudioPresenterWin::Terminate()
 {
+    amf::AMFLock lock(&m_cs);
+
     AMF_RESULT err=AMF_OK;
 
     m_UnusedBuffers.clear();
@@ -157,7 +144,7 @@ AMF_RESULT AMF_STD_CALL  AudioPresenterWin::Terminate()
     return err;
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL  AudioPresenterWin::InitDevice()
+AMF_RESULT AudioPresenterWin::InitDevice()
 {
     AMF_RESULT err=AMF_OK;
 
@@ -185,7 +172,7 @@ AMF_RESULT AMF_STD_CALL  AudioPresenterWin::InitDevice()
     return err;
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL  AudioPresenterWin::SelectFormat()
+AMF_RESULT AudioPresenterWin::SelectFormat()
 {
     AMF_RETURN_IF_FALSE(m_pAudioClient!=NULL,AMF_NOT_INITIALIZED, L"SelectFormat() - Audio Client not Initialized");
 
@@ -219,7 +206,7 @@ AMF_RESULT AMF_STD_CALL  AudioPresenterWin::SelectFormat()
 //-------------------------------------------------------------------------------------------------
 #define REFTIMES_PER_SEC  10000000
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL  AudioPresenterWin::InitClient()
+AMF_RESULT AudioPresenterWin::InitClient()
 {
     AMF_RETURN_IF_FALSE(m_pAudioClient!=NULL,AMF_NOT_INITIALIZED, L"InitClient() - Audio Client not Initialized");
 
@@ -251,16 +238,54 @@ AMF_RESULT AMF_STD_CALL  AudioPresenterWin::InitClient()
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL  AudioPresenterWin::Present(AMFAudioBuffer *buffer,amf_pts &sleeptime)
+AMF_RESULT AudioPresenterWin::SubmitInput(amf::AMFData* pData)
+{
+    amf::AMFLock lock(&m_cs);
+
+    if (m_bFrozen)
+    {
+        return AMF_INPUT_FULL;
+    }
+    // check if we get new input - if we don't and we don't 
+    // have anything cached, there's nothing to process
+    if (pData == NULL)
+    {
+        return AMF_EOF;
+    }
+    AMF_RESULT err = AMF_OK;
+
+    // there's not much to do in the base class
+    amf::AMFAudioBufferPtr pAudioBuffer(pData);
+
+    amf_pts  ptsSleepTime = 0;
+    err = Present(pAudioBuffer, ptsSleepTime);
+    if (ptsSleepTime > 0)
+    {
+        amf_sleep(amf_long(ptsSleepTime / 10000)); // to milliseconds
+    }
+
+    return err;
+}
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT AudioPresenterWin::Present(AMFAudioBuffer *buffer,amf_pts &sleeptime)
 {
     AMF_RETURN_IF_FALSE(m_pRenderClient!=NULL && m_pAudioClient!=NULL,AMF_NOT_INITIALIZED, L"Present() - Audio Client");
-    HRESULT hr=S_OK;
-    AMF_RESULT err=AMF_OK;
+    HRESULT hr = S_OK;
+    AMF_RESULT err = AMF_OK;
+
+    AMFAudioBufferPtr localBuffer;
 
     AMF_RETURN_IF_FALSE(m_eEngineState==AMFAPS_STOPPED_STATUS || m_eEngineState==AMFAPS_PLAYING_STATUS || m_eEngineState==AMFAPS_PAUSED_STATUS,AMF_WRONG_STATE, L"Present() - Wrong State");
-    if(m_eEngineState==AMFAPS_PAUSED_STATUS)
+    if(m_eEngineState == AMFAPS_PAUSED_STATUS)
     {
-        return err;
+        return AMF_INPUT_FULL;
+    }
+    // handle seek
+    bool bDiscard = false;
+    HandleSeek(buffer, bDiscard, m_uiLastBufferDataOffset);
+    if (bDiscard)
+    {
+        return AMF_OK;
     }
 
     IAudioClient *pAudioClient=(IAudioClient *)m_pAudioClient;
@@ -271,8 +296,9 @@ AMF_RESULT AMF_STD_CALL  AudioPresenterWin::Present(AMFAudioBuffer *buffer,amf_p
     {
         hr = pAudioClient->Start();  // Start playing.
         CHECK_HR(hr);
-        m_eEngineState=AMFAPS_PLAYING_STATUS;
+        m_eEngineState = AMFAPS_PLAYING_STATUS;
     }
+
     // process leftover
     if(m_UnusedBuffers.size() < 10)
     {
@@ -317,7 +343,7 @@ AMF_RESULT AMF_STD_CALL  AudioPresenterWin::Present(AMFAudioBuffer *buffer,amf_p
     return err;
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL  AudioPresenterWin::PushBuffer(AMFAudioBufferPtr &buffer,amf_size &uiBufferDataOffset)
+AMF_RESULT AudioPresenterWin::PushBuffer(AMFAudioBufferPtr &buffer,amf_size &uiBufferDataOffset)
 {
     AMF_RETURN_IF_FALSE(m_pRenderClient!=NULL && m_pAudioClient!=NULL,AMF_NOT_INITIALIZED, L"PushBuffer() - Render Client or Audio Client not Initialized");
     HRESULT hr=S_OK;
@@ -360,9 +386,10 @@ AMF_RESULT AMF_STD_CALL  AudioPresenterWin::PushBuffer(AMFAudioBufferPtr &buffer
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL  AudioPresenterWin::Pause()
+AMF_RESULT AudioPresenterWin::Pause()
 {
-    AMF_RETURN_IF_FALSE(m_pRenderClient!=NULL && m_pAudioClient!=NULL,AMF_NOT_INITIALIZED, L"Pause() - Render Client ot AudioClient not Initialized");
+    amf::AMFLock lock(&m_cs);
+    AMF_RETURN_IF_FALSE(m_pRenderClient!=NULL && m_pAudioClient!=NULL,AMF_NOT_INITIALIZED, L"Pause() - Render Client or AudioClient not Initialized");
     HRESULT hr=S_OK;
     AMF_RESULT err=AMF_OK;
 
@@ -374,42 +401,49 @@ AMF_RESULT AMF_STD_CALL  AudioPresenterWin::Pause()
     return err;
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL  AudioPresenterWin::Resume()
+AMF_RESULT AudioPresenterWin::Resume(amf_pts currentTime)
 {
+    amf::AMFLock lock(&m_cs);
     AMF_RETURN_IF_FALSE(m_pRenderClient!=NULL && m_pAudioClient!=NULL,AMF_NOT_INITIALIZED, L"Resume() - Render Client or Audio Client not Initialized");
     HRESULT hr=S_OK;
     AMF_RESULT err=AMF_OK;
 
     IAudioClient *pAudioClient=(IAudioClient *)m_pAudioClient;
-    if(m_eEngineState==AMFAPS_PAUSED_STATUS){
-        hr=pAudioClient->Start();
-        m_eEngineState=AMFAPS_PLAYING_STATUS;
+    if(m_eEngineState==AMFAPS_PAUSED_STATUS)
+    {
+        Reset();
+        Seek(currentTime);
     }
     return err;
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL  AudioPresenterWin::Step()
+AMF_RESULT AudioPresenterWin::Step()
 {
+    amf::AMFLock lock(&m_cs);
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
-AMF_AUDIO_PLAYBACK_STATUS AMF_STD_CALL  AudioPresenterWin::GetStatus()
+AMF_AUDIO_PLAYBACK_STATUS AudioPresenterWin::GetStatus()
 {
+    amf::AMFLock lock(&m_cs);
     return m_eEngineState;
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL  AudioPresenterWin::Reset()
+AMF_RESULT AudioPresenterWin::Reset()
 {
+    amf::AMFLock lock(&m_cs);
+
     m_UnusedBuffers.clear();
     IAudioClient *pAudioClient=(IAudioClient *)m_pAudioClient;
     pAudioClient->Stop();
     pAudioClient->Reset();
     pAudioClient->Start();
-    m_eEngineState=AMFAPS_PLAYING_STATUS;
+    m_uiLastBufferDataOffset = 0;
+    m_eEngineState = AMFAPS_PLAYING_STATUS;
     
     return AMF_OK;
 }
-
+//-------------------------------------------------------------------------------------------------
 AMF_RESULT AudioPresenterWin::GetDescription(
     amf_int64 &streamBitRate,
     amf_int64 &streamSampleRate,
@@ -417,8 +451,14 @@ AMF_RESULT AudioPresenterWin::GetDescription(
     amf_int64 &streamFormat,
     amf_int64 &streamLayout,
     amf_int64 &streamBlockAlign
-    )
+) const
 {
+    amf::AMFLock lock(&m_cs);
+
+    if(m_pMixFormat == nullptr)
+    {
+        return AMF_NOT_INITIALIZED;
+    }
     WAVEFORMATEX *pMixFormat=(WAVEFORMATEX *)m_pMixFormat;
 
     streamBitRate = (amf_int64)pMixFormat->wBitsPerSample * pMixFormat->nSamplesPerSec * pMixFormat->nChannels;
@@ -446,5 +486,12 @@ AMF_RESULT AudioPresenterWin::GetDescription(
     streamBlockAlign = pMixFormat->nBlockAlign;
     return AMF_OK;
 }
-
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT AudioPresenterWin::Flush()
+{
+    amf::AMFLock lock(&m_cs);
+    Reset();
+    return AMF_OK;
+}
+//-------------------------------------------------------------------------------------------------
 #endif //#if defined(_WIN32)

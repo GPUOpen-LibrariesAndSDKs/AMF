@@ -31,69 +31,20 @@
 //
 #pragma once
 
-#include "public/include/core/Context.h"
-#include "public/include/components/Component.h"
-#include "public/include/components/VideoDecoderUVD.h"
-#include "public/include/components/VideoConverter.h"
-#include "public/include/components/FFMPEGComponents.h"
-#include "public/include/components/FFMPEGAudioDecoder.h"
-#include "public/include/components/FFMPEGAudioConverter.h"
-#include "public/include/components/FFMPEGFileDemuxer.h"
-#include "BitStreamParser.h"
-#include "VideoPresenter.h"
-#include "AudioPresenter.h"
-#include "ParametersStorage.h"
-#include "Pipeline.h"
+#include "PlaybackPipelineBase.h"
 
-class PlaybackPipeline : public Pipeline, public ParametersStorage
+class PlaybackPipeline : public PlaybackPipelineBase
 {
-    class PipelineElementDemuxer;
 public:
     PlaybackPipeline();
-    virtual ~PlaybackPipeline();
-public:
-    static const wchar_t* PARAM_NAME_INPUT;
-    static const wchar_t* PARAM_NAME_PRESENTER;
-    static const wchar_t* PARAM_NAME_FRAMERATE;
-#if !defined(METRO_APP)
     AMF_RESULT Init(HWND hwnd);
-#else
-    AMF_RESULT Init(const wchar_t* path, IRandomAccessStream^ inputStream, ISwapChainBackgroundPanelNative* pSwapChainPanel, AMFSize swapChainPanelSize);
-#endif
-
-    virtual AMF_RESULT Play();
-    virtual AMF_RESULT Pause();
-    virtual AMF_RESULT Step();
-    virtual AMF_RESULT Stop();
-
-    void Terminate();
-
-    double     GetProgressSize();
-    double     GetProgressPosition();
-    double     GetFPS();
-    amf_int64  GetFramesDropped();
 
 protected:
+    AMF_RESULT InitContext(amf::AMF_MEMORY_TYPE type) override;
+    AMF_RESULT CreateVideoPresenter(amf::AMF_MEMORY_TYPE type, amf_int64 bitRate, double fps) override;
+    AMF_RESULT CreateAudioPresenter() override;
 
-    virtual void  OnParamChanged(const wchar_t* name);
-    virtual void  UpdateVideoProcessorProperties(const wchar_t* name);
-    virtual AMF_RESULT  InitVideoProcessor(bool bUseDirectOutput, amf_int32 videoWidth, amf_int32 videoHeight);
-    virtual AMF_RESULT  InitVideoDecoder(const wchar_t *pDecoderID, amf_int32 videoWidth, amf_int32 videoHeight, amf::AMFBuffer* pExtraData);
-    virtual AMF_RESULT  InitAudio(amf::AMFOutput* pOutput);
-    virtual AMF_RESULT  InitVideo(BitStreamParserPtr pParser, amf::AMFOutput* pOutput, amf::AMF_MEMORY_TYPE presenterEngine, HWND hwnd, bool bUseDirectOutput);
-
-
-    amf::AMFDataStreamPtr   m_pStream;
-    amf::AMFContextPtr      m_pContext;
-    
-    amf::AMFComponentPtr    m_pDecoder;
-    amf::AMFComponentPtr    m_pConverter;
-    VideoPresenterPtr       m_pPresenter;
-    amf::AMFComponentExPtr  m_pDemuxer;
-
-    amf::AMFComponentPtr    m_pAudioDecoder;
-    amf::AMFComponentPtr    m_pAudioConverter;
-    AudioPresenterPtr       m_pAudioPresenter;
+    HWND m_hwnd;
 };
 
 typedef std::shared_ptr<PlaybackPipeline> PlaybackPipelinePtr;

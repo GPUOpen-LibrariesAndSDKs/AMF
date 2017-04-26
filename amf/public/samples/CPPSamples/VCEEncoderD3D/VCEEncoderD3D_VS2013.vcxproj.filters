@@ -105,6 +105,9 @@
     <ClInclude Include="..\common\EncoderParamsAVC.h">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\OpenCLLoader.h">
+      <Filter>common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\common\CmdLogger.cpp">
@@ -187,6 +190,9 @@
       <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="..\common\EncoderParamsAVC.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\OpenCLLoader.cpp">
       <Filter>common</Filter>
     </ClCompile>
   </ItemGroup>

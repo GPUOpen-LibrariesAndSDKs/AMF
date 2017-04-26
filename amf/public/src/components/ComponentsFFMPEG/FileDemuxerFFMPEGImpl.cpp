@@ -527,7 +527,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::QueryOutput(AMFData** ppData)
 {  
     // this mode is available if streaming mode (reading from individual 
     // streams) is disabled - by default this is disabled...
-    AMF_RETURN_IF_FALSE(!m_bStreamingMode, AMF_NOT_SUPPORTED, L"QueryOutput() - Bulk packet output has been not been set");
+    AMF_RETURN_IF_FALSE(!m_bStreamingMode, AMF_NOT_SUPPORTED, L"QueryOutput() - Bulk packet output has not been set");
 
 
     AMFLock lock(&m_sync);

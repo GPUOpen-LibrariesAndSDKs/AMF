@@ -30,23 +30,17 @@
 // THE SOFTWARE.
 //
 #include "VideoPresenter.h"
-#include "VideoPresenterDX11.h"
-#if !defined(METRO_APP)
-#include "VideoPresenterDX9.h"
-#include "VideoPresenterOpenGL.h"
-#endif
 #include "public/include/components/VideoConverter.h"
 
-VideoPresenter::VideoPresenter(HWND hwnd, amf::AMFContext* pContext) : 
-    m_hwnd(hwnd),
-    m_pContext(pContext),
+VideoPresenter::VideoPresenter() :
     m_startTime(-1LL),
     m_startPts(-1LL),
     m_state(ModePlaying),
     m_iFrameCount(0),
     m_FpsStatStartTime(0),
     m_iFramesDropped(0),
-    m_dLastFPS(0)
+    m_dLastFPS(0),
+    m_currentTime(0)
 {
     amf_increase_timer_precision();
     memset(&m_InputFrameSize, 0, sizeof(m_InputFrameSize));
@@ -55,36 +49,16 @@ VideoPresenter::~VideoPresenter()
 {
 }
 
-#if defined(METRO_APP)
-VideoPresenterPtr VideoPresenter::Create(ISwapChainBackgroundPanelNative* pSwapChainPanel, AMFSize swapChainPanelSize, amf::AMFContext* pContext)
+AMF_RESULT VideoPresenter::Reset()
 {
-    VideoPresenterPtr pPresenter;
-    pPresenter = VideoPresenterPtr(new VideoPresenterDX11(pSwapChainPanel, swapChainPanelSize, pContext));
-    return pPresenter;
-}
-#else
-VideoPresenterPtr VideoPresenter::Create(amf::AMF_MEMORY_TYPE type, HWND hwnd, amf::AMFContext* pContext)
-{
-    AMF_RESULT res = AMF_OK;
-    VideoPresenterPtr pPresenter;
-    switch(type)
-    {
-    case amf::AMF_MEMORY_DX9:
-        pPresenter = VideoPresenterPtr(new VideoPresenterDX9(hwnd, pContext));
-        break;
-    case amf::AMF_MEMORY_OPENGL:
-        pPresenter = VideoPresenterPtr(new VideoPresenterOpenGL(hwnd, pContext));
-        break;
-    case amf::AMF_MEMORY_DX11:
-        pPresenter = VideoPresenterPtr(new VideoPresenterDX11(hwnd, pContext));
-        break;    
-    default:
-        break;
-    }
-    return pPresenter;
-}
-#endif
+    m_iFrameCount = 0;
+    m_FpsStatStartTime = 0;
+    m_iFramesDropped = 0;
+    m_startTime = -1LL;
+    m_startPts = -1LL;
 
+    return AMF_OK;
+}
 AMF_RESULT VideoPresenter::Init(amf_int32 width, amf_int32 height)
 {
     m_iFrameCount = 0;
@@ -97,14 +71,20 @@ AMF_RESULT VideoPresenter::Init(amf_int32 width, amf_int32 height)
 
 AMF_RESULT VideoPresenter::Terminate()
 {
-    SetConverter(NULL);
+    SetProcessor(NULL);
     return AMF_OK;
 }
 
 AMF_RESULT VideoPresenter::SubmitInput(amf::AMFData* pData)
 {
+    if(m_bFrozen)
+    {
+        return AMF_OK;
+    }
+
     if(pData)
     {
+        m_currentTime = pData->GetPts();
         switch(m_state)
         {
         case ModeStep:
@@ -122,6 +102,8 @@ AMF_RESULT VideoPresenter::SubmitInput(amf::AMFData* pData)
 
 AMF_RESULT VideoPresenter::CalcOutputRect(const AMFRect* pSrcRect, const AMFRect* pDstRect, AMFRect* pTargetRect)
 {
+    amf::AMFLock lock(&m_cs);
+
     amf_double dDstRatio = pDstRect->Height() / (amf_double)pDstRect->Width();
     amf_double dSrcRatio = pSrcRect->Height() / (amf_double)pSrcRect->Width();
 
@@ -176,7 +158,7 @@ bool VideoPresenter::WaitForPTS(amf_pts pts)
             }
         }
 //        wchar_t buf[1000];
-//        swprintf(buf,L"+++ Present Frame #%d pts=%d time=%d diff=%d\n",(int)m_iFrameCount, (int)pts, (int)currTime, int(diff));
+//        swprintf(buf,L"+++ Present Frame #%d pts=%d time=%d diff=%5.2f\n",(int)m_iFrameCount, (int)pts, (int)currTime, float(diff) / 10000.);
 //        ::OutputDebugStringW(buf);
 
             // update FPS = alpha filter
@@ -198,29 +180,58 @@ bool VideoPresenter::WaitForPTS(amf_pts pts)
 
     return bRet;
 }
-AMF_RESULT VideoPresenter::SetConverter(amf::AMFComponent *converter)
+
+AMF_RESULT VideoPresenter::SetProcessor(amf::AMFComponent *processor)
 {
-    if(m_pConverter != NULL)
+    amf::AMFLock lock(&m_cs);
+    if(m_pProcessor != NULL)
     {
-        m_pConverter->SetOutputDataAllocatorCB(NULL);
+        m_pProcessor->SetOutputDataAllocatorCB(NULL);
     }
-    m_pConverter = converter;
-    if(m_pConverter != NULL)
+
+    m_pProcessor = processor;
+    if(m_pProcessor != NULL)
     {
-        m_pConverter->SetOutputDataAllocatorCB(this);
+        m_pProcessor->SetOutputDataAllocatorCB(this);
     }
-    UpdateConverter();
+    UpdateProcessor();
     return AMF_OK;
+
 }
-void        VideoPresenter::UpdateConverter()
+
+void        VideoPresenter::UpdateProcessor()
 {
-    if(m_pConverter != NULL)
+    amf::AMFLock lock(&m_cs);
+    if(m_pProcessor != NULL)
     {
         AMFRect srcRect = {0, 0, m_InputFrameSize.width, m_InputFrameSize.height};
         AMFRect outputRect;
         CalcOutputRect(&srcRect, &m_rectClient, &outputRect);
-        m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, ::AMFConstructSize(m_rectClient.Width(),m_rectClient.Height()));
-        m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_RECT, outputRect);
+        m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, ::AMFConstructSize(m_rectClient.Width(),m_rectClient.Height()));
+        m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_RECT, outputRect);
     }
+}
+
+AMF_RESULT VideoPresenter::Freeze()
+{
+    amf::AMFLock lock(&m_cs);
+    return PipelineElement::Freeze();
+}
+
+AMF_RESULT VideoPresenter::UnFreeze()
+{
+    amf::AMFLock lock(&m_cs);
+    m_startTime = -1LL;
+    m_startPts = -1LL;
+    return PipelineElement::UnFreeze();
+}
+
+AMF_RESULT VideoPresenter::Resume() 
+{ 
+    amf::AMFLock lock(&m_cs);
+    m_state = ModePlaying; 
+    m_startTime = -1LL;
+    m_startPts = -1LL;
+    return AMF_OK;
 }
 

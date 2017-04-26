@@ -34,20 +34,20 @@
 #include <iostream>
 #include <iomanip>
 
-void ChangeTextColor(LogType type)
+void ChangeTextColor(LogLevel level)
 {
 #if !defined(METRO_APP)
     HANDLE hCmd = GetStdHandle(STD_OUTPUT_HANDLE);
 
-    switch(type)
+	switch (level)
     {
-    case LogTypeInfo:
+    case LogLevelInfo:
         SetConsoleTextAttribute(hCmd, FOREGROUND_INTENSITY);
         break;
-    case LogTypeSuccess:
+    case LogLevelSuccess:
         SetConsoleTextAttribute(hCmd, FOREGROUND_GREEN);
         break;
-    case LogTypeError:
+    case LogLevelError:
 //        SetConsoleTextAttribute(hCmd, FOREGROUND_RED);
         SetConsoleTextAttribute(hCmd, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
         
@@ -58,7 +58,7 @@ void ChangeTextColor(LogType type)
 
 amf::AMFCriticalSection      s_std_out_cs;
 
-void WriteLog(const wchar_t* message, LogType type)
+void WriteLog(const wchar_t* message, LogLevel level)
 {
 #if 0
     std::wstringstream messageStream;
@@ -75,12 +75,12 @@ void WriteLog(const wchar_t* message, LogType type)
     AMFLock lock(&s_std_out_cs);
     ChangeTextColor(type);
     wprintf(messageStream.str().c_str());
-    ChangeTextColor(LogTypeInfo);
+    ChangeTextColor(LogLevelInfo);
 #else
     amf::AMFLock lock(&s_std_out_cs);
-    ChangeTextColor(type);
+    ChangeTextColor(level);
     wprintf(message);
-    ChangeTextColor(LogTypeInfo);
+    ChangeTextColor(LogLevelInfo);
 #endif
 }
 

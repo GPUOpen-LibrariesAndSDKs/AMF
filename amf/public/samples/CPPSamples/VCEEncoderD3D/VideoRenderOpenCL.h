@@ -34,6 +34,7 @@
 #pragma once
 
 #include "VideoRender.h"
+#include "../common/DeviceOpenCL.h"
 
 
 class VideoRenderOpenCL : public VideoRender
@@ -48,6 +49,7 @@ public:
     virtual amf::AMF_SURFACE_FORMAT GetFormat() { return amf::AMF_SURFACE_NV12; }
 
 protected:
+    DeviceOpenCL            m_Device;
     amf_int32               m_iAnimation;
     amf::AMF_MEMORY_TYPE    m_encoderType;
 };

@@ -47,22 +47,19 @@ using namespace Windows::UI::Xaml;
 using namespace Windows::UI::Xaml::Controls;
 #endif
 
-
-
 class AudioPresenter;
 typedef std::shared_ptr<AudioPresenter> AudioPresenterPtr;
-
-
 
 class AudioPresenter: public PipelineElement
 {
 public:
     virtual ~AudioPresenter();
 
-    virtual AMF_RESULT            AMF_STD_CALL Init() = 0;
+    virtual AMF_RESULT  Init() = 0;
+    virtual AMF_RESULT  Seek(amf_pts pts);
 
-    virtual amf_int32   GetInputSlotCount()   {  return 1;  }
-    virtual amf_int32   GetOutputSlotCount()  {  return 0;  }
+    virtual amf_int32   GetInputSlotCount() const   {  return 1;  }
+    virtual amf_int32   GetOutputSlotCount() const  {  return 0;  }
 
     virtual AMF_RESULT GetDescription(
         amf_int64 &streamBitRate,
@@ -71,21 +68,15 @@ public:
         amf_int64 &streamFormat,
         amf_int64 &streamLayout,
         amf_int64 &streamBlockAlign
-    ) = 0;
+    ) const = 0;
 
-    virtual AMF_RESULT  SubmitInput(amf::AMFData* pData);
+    virtual AMF_RESULT Resume(amf_pts currentTime) = 0;
+    virtual AMF_RESULT Pause() = 0;
 
-
-#if defined(METRO_APP)
-    static AudioPresenterPtr Create(ISwapChainBackgroundPanelNative* pSwapChainPanel, AMFSize swapChainPanelSize, amf::AMFContext* pContext);
-#else
-    static AudioPresenterPtr Create(amf::AMFContext* pContext);
-#endif
-
+    bool HandleSeek(const amf::AMFAudioBuffer* pAudioBuffer, bool& bDiscard, amf_size& byteOffset);
 
 protected:
-    AudioPresenter(amf::AMFContext* pContext);
+    AudioPresenter();
 
-    amf::AMFContext*        m_pContext;
-    amf::AMFAudioBufferPtr  m_pLastData;
+    amf_pts m_ptsSeek;
 };

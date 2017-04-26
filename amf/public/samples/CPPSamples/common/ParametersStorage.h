@@ -57,6 +57,7 @@ AMF_RESULT ParamConverterDouble(const std::wstring& value, amf::AMFVariant& valu
 AMF_RESULT ParamConverterBoolean(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterRatio(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterRate(const std::wstring& value, amf::AMFVariant& valueOut);
+AMF_RESULT ParamConverterSize(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterVideoPresenter(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterMemoryType(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterFormat(const std::wstring& value, amf::AMFVariant& valueOut);
@@ -75,18 +76,18 @@ public:
     ParametersStorage();
 
     AMF_RESULT  SetParam(const wchar_t* name, amf::AMFVariantStruct value);
-    AMF_RESULT  GetParam(const wchar_t* name, amf::AMFVariantStruct* value);
+    AMF_RESULT  GetParam(const wchar_t* name, amf::AMFVariantStruct* value) const;
     AMF_RESULT  SetParamAsString(const std::wstring& name, const std::wstring& value);
 
     template<typename _T>
     AMF_RESULT  SetParam(const wchar_t* name, const _T& value);
     template<typename _T>
-    AMF_RESULT  GetParam(const wchar_t* name, _T& value);
+    AMF_RESULT  GetParam(const wchar_t* name, _T& value) const;
     template<typename _T>
-    AMF_RESULT GetParamWString(const wchar_t* name, _T& value);
+    AMF_RESULT GetParamWString(const wchar_t* name, _T& value) const;
 
-    amf_size    GetParamCount();
-    AMF_RESULT  GetParamAt(amf_size index, std::wstring& name, amf::AMFVariantStruct* value);
+    amf_size    GetParamCount() const;
+    AMF_RESULT  GetParamAt(amf_size index, std::wstring& name, amf::AMFVariantStruct* value) const;
 
     typedef AMF_RESULT (*ParamConverter)(const std::wstring& value, amf::AMFVariant& valueOut);
 
@@ -120,7 +121,7 @@ protected:
     
     ParametersMap m_parameters;
     typedef std::map<std::wstring, ParamDescription> ParamDescriptionMap; // name / description
-    amf::AMFCriticalSection m_csSect;
+    mutable amf::AMFCriticalSection m_csSect;
 
     ParamDescriptionMap m_descriptionMap;
 };
@@ -138,7 +139,7 @@ AMF_RESULT ParametersStorage::SetParam(const wchar_t* name, const _T& value)
 }
 
 template<typename _T> inline
-AMF_RESULT ParametersStorage::GetParam(const wchar_t* name, _T& value)
+AMF_RESULT ParametersStorage::GetParam(const wchar_t* name, _T& value) const
 {
     amf::AMFVariant var;
     AMF_RESULT err = GetParam(name, static_cast<amf::AMFVariantStruct*>(&var));
@@ -149,7 +150,7 @@ AMF_RESULT ParametersStorage::GetParam(const wchar_t* name, _T& value)
     return err;
 }
 template<typename _T> inline
-AMF_RESULT ParametersStorage::GetParamWString(const wchar_t* name, _T& value)
+AMF_RESULT ParametersStorage::GetParamWString(const wchar_t* name, _T& value) const
 {
     amf::AMFVariant var;
     AMF_RESULT err = GetParam(name, static_cast<amf::AMFVariantStruct*>(&var));

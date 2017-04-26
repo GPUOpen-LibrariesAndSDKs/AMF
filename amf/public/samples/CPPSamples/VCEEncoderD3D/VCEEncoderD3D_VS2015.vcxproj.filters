@@ -1,0 +1,211 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Test">
+      <UniqueIdentifier>{c7429d74-33f1-4011-ba8c-2dde03dd5e90}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common">
+      <UniqueIdentifier>{28c0ab5d-050f-42a7-8d99-8f05a5fa5d5c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RenderEncoder">
+      <UniqueIdentifier>{230e6fee-f48a-46bc-9be6-2d7382fb5f4c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="windows">
+      <UniqueIdentifier>{ec9b3fde-30a1-430f-8e38-49336c4bb505}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public">
+      <UniqueIdentifier>{a302de70-d4da-4524-a938-b69ba6dcb93a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\common">
+      <UniqueIdentifier>{1bafa27b-88c0-4801-805e-e1c1c12ce1f3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\common\ByteArray.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\CmdLogger.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\DeviceDX9.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\DeviceDX11.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\DeviceOpenCL.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\DeviceOpenGL.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderWindow.h">
+      <Filter>RenderEncoder</Filter>
+    </ClInclude>
+    <ClInclude Include="VideoRender.h">
+      <Filter>RenderEncoder</Filter>
+    </ClInclude>
+    <ClInclude Include="VideoRenderDX9.h">
+      <Filter>RenderEncoder</Filter>
+    </ClInclude>
+    <ClInclude Include="VideoRenderDX11.h">
+      <Filter>RenderEncoder</Filter>
+    </ClInclude>
+    <ClInclude Include="VideoRenderOpenCL.h">
+      <Filter>RenderEncoder</Filter>
+    </ClInclude>
+    <ClInclude Include="VideoRenderOpenGL.h">
+      <Filter>RenderEncoder</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderEncodePipeline.h">
+      <Filter>RenderEncoder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\Pipeline.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\PipelineElement.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\CmdLineParser.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\ParametersStorage.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>windows</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>windows</Filter>
+    </ClInclude>
+    <ClInclude Include="VideoRenderHost.h">
+      <Filter>RenderEncoder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\AMFFactory.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\Thread.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\AMFSTL.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\DataStreamFile.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\DataStreamMemory.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\TraceAdapter.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\EncoderParamsHEVC.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\EncoderParamsAVC.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\OpenCLLoader.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\common\CmdLogger.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="VCEEncoderD3D.cpp" />
+    <ClCompile Include="..\common\DeviceDX9.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\DeviceDX11.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\DeviceOpenCL.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\DeviceOpenGL.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderWindow.cpp">
+      <Filter>RenderEncoder</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoRender.cpp">
+      <Filter>RenderEncoder</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoRenderDX9.cpp">
+      <Filter>RenderEncoder</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoRenderDX11.cpp">
+      <Filter>RenderEncoder</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoRenderOpenCL.cpp">
+      <Filter>RenderEncoder</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoRenderOpenGL.cpp">
+      <Filter>RenderEncoder</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderEncodePipeline.cpp">
+      <Filter>RenderEncoder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\Pipeline.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\CmdLineParser.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\ParametersStorage.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>windows</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoRenderHost.cpp">
+      <Filter>RenderEncoder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\AMFFactory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\Thread.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\Windows\ThreadWindows.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\AMFSTL.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\DataStreamFactory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\DataStreamFile.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\DataStreamMemory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\TraceAdapter.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\EncoderParamsHEVC.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\EncoderParamsAVC.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\OpenCLLoader.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="VCEEncoderD3D.bat">
+      <Filter>Test</Filter>
+    </CustomBuild>
+    <CustomBuild Include="VCEEncoderD3DPerformanceTest.bat">
+      <Filter>Test</Filter>
+    </CustomBuild>
+    <CustomBuild Include="VCEEncoderD3D_SVC_dx9.bat">
+      <Filter>Test</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="VCEEncoderD3D.rc">
+      <Filter>windows</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>

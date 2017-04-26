@@ -52,8 +52,8 @@ public:
     virtual amf::AMF_SURFACE_FORMAT GetFormat() = 0;
 
 
-    virtual amf_int32 GetInputSlotCount() { return 0; }
-    virtual amf_int32 GetOutputSlotCount() { return 1; }
+    virtual amf_int32 GetInputSlotCount() const { return 0; }
+    virtual amf_int32 GetOutputSlotCount() const { return 1; }
 
     static VideoRenderPtr Create(amf_int width, amf_int height, bool bInterlaced, amf_int frames, amf::AMF_MEMORY_TYPE type, amf::AMF_MEMORY_TYPE encodertype, amf::AMFContext* pContext);
 protected:

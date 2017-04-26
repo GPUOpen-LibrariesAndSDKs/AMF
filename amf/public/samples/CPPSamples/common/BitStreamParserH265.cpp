@@ -670,6 +670,10 @@ void     HevcParser::GetFrameRate(AMFRate *frameRate) const
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT HevcParser::QueryOutput(amf::AMFData** ppData)
 {
+    if(m_bFrozen)
+    {
+        return AMF_OK;
+    }
     if((m_bEof && m_ReadData.GetSize() == 0) || m_maxFramesNumber && m_PacketCount >= m_maxFramesNumber)
     {
         return AMF_EOF;

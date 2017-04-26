@@ -40,25 +40,25 @@
 #include "public/common/Thread.h"
 #include "public/common/AMFFactory.h"
 
-enum LogType
+enum LogLevel
 { 
-    LogTypeInfo, 
-    LogTypeSuccess, 
-    LogTypeError 
+    LogLevelInfo, 
+    LogLevelSuccess, 
+    LogLevelError 
 };
 
-void WriteLog(const wchar_t* message, LogType type);
+void WriteLog(const wchar_t* message, LogLevel level);
 
-#define LOG_WRITE(a, type)\
+#define LOG_WRITE(a, level)\
     { \
         std::wstringstream messageStream12345;\
         messageStream12345 << a;\
-        WriteLog(messageStream12345.str().c_str(), type);\
+        WriteLog(messageStream12345.str().c_str(), level);\
     }
 
-#define LOG_INFO(a) LOG_WRITE(a << std::endl, LogTypeInfo)
-#define LOG_SUCCESS(a) LOG_WRITE(a << std::endl, LogTypeSuccess)
-#define LOG_ERROR(a) LOG_WRITE(a << std::endl, LogTypeError)
+#define LOG_INFO(a) LOG_WRITE(a << std::endl, LogLevelInfo)
+#define LOG_SUCCESS(a) LOG_WRITE(a << std::endl, LogLevelSuccess)
+#define LOG_ERROR(a) LOG_WRITE(a << std::endl, LogLevelError)
 
 #ifdef _DEBUG
     #define LOG_DEBUG(a)     LOG_INFO(a)
@@ -70,7 +70,7 @@ void WriteLog(const wchar_t* message, LogType type);
     { \
         if( (err) != AMF_OK) \
         { \
-            LOG_WRITE(text << L" Error:" << g_AMFFactory.GetTrace()->GetResultText((err)) << std::endl, LogTypeError);\
+            LOG_WRITE(text << L" Error:" << g_AMFFactory.GetTrace()->GetResultText((err)) << std::endl, LogLevelError);\
         } \
     }
 
@@ -96,7 +96,7 @@ void WriteLog(const wchar_t* message, LogType type);
     { \
         if(FAILED(err)) \
         {  \
-            LOG_WRITE(text << L" HRESULT Error: " << std::hex << err << std::endl, LogTypeError); \
+            LOG_WRITE(text << L" HRESULT Error: " << std::hex << err << std::endl, LogLevelError); \
             return AMF_FAIL; \
         } \
     }
@@ -105,7 +105,7 @@ void WriteLog(const wchar_t* message, LogType type);
     { \
         if(err) \
         {  \
-            LOG_WRITE(text << L" OpenCL Error: " << err<< std::endl, LogTypeError); \
+            LOG_WRITE(text << L" OpenCL Error: " << err<< std::endl, LogLevelError); \
             return AMF_FAIL; \
         } \
     }
@@ -127,11 +127,11 @@ public:
         g_AMFFactory.GetTrace()->UnregisterWriter(L"AMFCustomTraceWriter");
         g_AMFFactory.Terminate();
     }
-    virtual void Write(const wchar_t* scope, const wchar_t* message)
+    virtual void AMF_CDECL_CALL Write(const wchar_t* scope, const wchar_t* message)
     {
-        WriteLog(message, LogTypeInfo);
+        WriteLog(message, LogLevelInfo);
     }
-    virtual void Flush()
+    virtual void AMF_CDECL_CALL Flush()
     {
     }
 };

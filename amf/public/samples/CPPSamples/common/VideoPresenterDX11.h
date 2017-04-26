@@ -31,7 +31,7 @@
 //
 #pragma once
 
-#include "VideoPresenter.h"
+#include "BackBufferPresenter.h"
 
 #include <atlbase.h>
 #include <d3d11.h>
@@ -52,7 +52,7 @@ struct CBNeverChanges
 
 
 
-class VideoPresenterDX11 : public VideoPresenter
+class VideoPresenterDX11 : public BackBufferPresenter
 {
 public:
 #if defined(METRO_APP)
@@ -64,11 +64,11 @@ public:
 
     virtual AMF_RESULT Present(amf::AMFSurface* pSurface);
 
-    virtual amf::AMF_MEMORY_TYPE GetMemoryType() { return amf::AMF_MEMORY_DX11; }
+    virtual amf::AMF_MEMORY_TYPE GetMemoryType() const { return amf::AMF_MEMORY_DX11; }
 //    virtual amf::AMF_SURFACE_FORMAT GetInputFormat() { return amf::AMF_SURFACE_BGRA; }
-    virtual amf::AMF_SURFACE_FORMAT GetInputFormat() { return m_eInputFormat; }
+    virtual amf::AMF_SURFACE_FORMAT GetInputFormat() const{ return m_eInputFormat; }
     virtual AMF_RESULT              SetInputFormat(amf::AMF_SURFACE_FORMAT format);
-    virtual DXGI_FORMAT             GetDXGIFormat();
+    virtual DXGI_FORMAT             GetDXGIFormat() const;
 
     virtual AMF_RESULT Init(amf_int32 width, amf_int32 height);
     virtual AMF_RESULT Terminate();

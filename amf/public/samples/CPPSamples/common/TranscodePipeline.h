@@ -48,7 +48,7 @@
 #include "ParametersStorage.h"
 #include "EncoderParamsAVC.h"
 #include "EncoderParamsHEVC.h"
-#include "VideoPresenter.h"
+#include "BackBufferPresenter.h"
 
 
 class TranscodePipeline : public Pipeline
@@ -115,5 +115,5 @@ protected:
 
     SplitterPtr                     m_pSplitter;
     amf::AMFComponentPtr            m_pConverter2;
-    VideoPresenterPtr               m_pPresenter;
+    BackBufferPresenterPtr          m_pPresenter;
 };

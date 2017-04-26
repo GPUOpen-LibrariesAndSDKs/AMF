@@ -82,15 +82,15 @@ ParametersStorage::ParametersStorage()
 {
 }
 
-amf_size    ParametersStorage::GetParamCount()
+amf_size    ParametersStorage::GetParamCount() const
 {
     amf::AMFLock lock(&m_csSect);
     return m_parameters.size();
 }
-AMF_RESULT  ParametersStorage::GetParamAt(amf_size index, std::wstring& name, amf::AMFVariantStruct* value)
+AMF_RESULT  ParametersStorage::GetParamAt(amf_size index, std::wstring& name, amf::AMFVariantStruct* value) const
 {
     amf::AMFLock lock(&m_csSect);
-    for(ParametersMap::iterator it = m_parameters.begin(); it != m_parameters.end(); it++)
+    for(ParametersMap::const_iterator it = m_parameters.begin(); it != m_parameters.end(); it++)
     {
         if(index == 0)
         {
@@ -118,11 +118,11 @@ AMF_RESULT ParametersStorage::SetParam(const wchar_t* name, amf::AMFVariantStruc
     OnParamChanged(nameUpper.c_str());
     return AMF_OK;
 }
-AMF_RESULT ParametersStorage::GetParam(const wchar_t* name, amf::AMFVariantStruct* value)
+AMF_RESULT ParametersStorage::GetParam(const wchar_t* name, amf::AMFVariantStruct* value) const
 {
     amf::AMFLock lock(&m_csSect);
     std::wstring nameUpper = toUpper(name);
-    ParametersMap::iterator found = m_parameters.find(nameUpper);
+    ParametersMap::const_iterator found = m_parameters.find(nameUpper);
     if(found == m_parameters.end())
     {
         return AMF_NOT_FOUND;
@@ -328,6 +328,12 @@ AMF_RESULT ParamConverterRate(const std::wstring& value, amf::AMFVariant& valueO
 
     AMFVariantChangeType(&valueOut, &valueIn, amf::AMF_VARIANT_RATE);
 
+    return AMF_OK;
+}
+AMF_RESULT ParamConverterSize(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    amf::AMFVariant valueIn(value.c_str());
+    AMFVariantChangeType(&valueOut, &valueIn, amf::AMF_VARIANT_SIZE);
     return AMF_OK;
 }
 

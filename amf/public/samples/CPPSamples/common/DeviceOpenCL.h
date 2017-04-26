@@ -35,9 +35,11 @@
 #include <d3d11.h>
 #include <gl/gl.h>
 #include <gl/glext.h>
+#define CL_USE_DEPRECATED_OPENCL_2_0_APIS
 #include <CL/cl.h>
 #include "public/include/core/Result.h"
 #include <vector>
+#include "OpenCLLoader.h"
 
 class DeviceOpenCL
 {
@@ -49,10 +51,12 @@ public:
     AMF_RESULT Terminate();
 
     cl_command_queue            GetCommandQueue() { return m_hCommandQueue; }
+    OpenCLLoader& GetLoader();
 private:
     AMF_RESULT FindPlatformID(cl_platform_id &platform);
 
     cl_command_queue            m_hCommandQueue;
     cl_context                  m_hContext;
     std::vector<cl_device_id>   m_hDeviceIDs;
+    static  OpenCLLoader        m_Loader;
 };

@@ -36,7 +36,7 @@
 #pragma comment(lib, "opengl32.lib")
 
 VideoPresenterOpenGL::VideoPresenterOpenGL(HWND hwnd, amf::AMFContext* pContext) :
-    VideoPresenter(hwnd, pContext),
+    BackBufferPresenter(hwnd, pContext),
     m_initialized(false)
 {
 }

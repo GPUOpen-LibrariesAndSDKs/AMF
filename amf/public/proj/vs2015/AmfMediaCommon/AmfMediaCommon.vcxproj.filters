@@ -1,0 +1,106 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\common\AMFFactory.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\AMFSTL.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\DataStreamFactory.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\DataStreamFile.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\DataStreamMemory.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\IOCapsImpl.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\PropertyStorageExImpl.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\Thread.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\TraceAdapter.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\Windows\ThreadWindows.cpp">
+      <Filter>common\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\BitStreamParser.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\BitStreamParserH264.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\BitStreamParserH265.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\ParametersStorage.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\Pipeline.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\CmdLogger.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\PlaybackPipelineBase.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\AudioPresenter.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\VideoPresenter.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\common\AMFFactory.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\AMFSTL.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\ByteArray.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\DataStream.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\DataStreamFile.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\DataStreamMemory.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\InterfaceImpl.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\IOCapsImpl.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\ObservableImpl.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\PropertyStorageExImpl.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\PropertyStorageImpl.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\Thread.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\TraceAdapter.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\BitStreamParser.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\BitStreamParserH264.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\BitStreamParserH265.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\ParametersStorage.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\Pipeline.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\PipelineElement.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\CmdLogger.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\PlaybackPipelineBase.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\AudioPresenter.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\VideoPresenter.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="common">
+      <UniqueIdentifier>{c56f3e7d-dbf5-434c-bb2d-bba2a0e91cee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common\Windows">
+      <UniqueIdentifier>{f9245bde-522f-45c6-a062-81185ffb9704}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="AMF_UE4.Build.cs" />
+  </ItemGroup>
+</Project>

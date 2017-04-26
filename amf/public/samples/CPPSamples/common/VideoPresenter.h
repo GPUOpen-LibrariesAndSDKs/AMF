@@ -34,16 +34,6 @@
 #include "public/include/core/Context.h"
 #include "PipelineElement.h"
 
-#if defined(METRO_APP)
-#include <collection.h>
-#include <windows.ui.xaml.media.dxinterop.h>
-using namespace Platform;
-using namespace Windows::UI;
-using namespace Windows::UI::Core;
-using namespace Windows::UI::Xaml;
-using namespace Windows::UI::Xaml::Controls;
-#endif
-
 class VideoPresenter;
 typedef std::shared_ptr<VideoPresenter> VideoPresenterPtr;
 
@@ -59,59 +49,60 @@ public:
     };
     virtual ~VideoPresenter();
 
-    virtual amf_int32 GetInputSlotCount() {return 1;}
-    virtual amf_int32 GetOutputSlotCount() {return 0;}
+    virtual amf_int32 GetInputSlotCount() const { return 1; }
+    virtual amf_int32 GetOutputSlotCount() const { return 0; }
 
     virtual AMF_RESULT SubmitInput(amf::AMFData* pData);
 
     virtual AMF_RESULT              Present(amf::AMFSurface* pSurface) = 0;
-    virtual amf::AMF_MEMORY_TYPE    GetMemoryType() = 0;
-    virtual amf::AMF_SURFACE_FORMAT GetInputFormat() = 0;
+    virtual amf::AMF_MEMORY_TYPE    GetMemoryType() const = 0;
+    virtual amf::AMF_SURFACE_FORMAT GetInputFormat() const = 0;
     virtual AMF_RESULT              SetInputFormat(amf::AMF_SURFACE_FORMAT format) = 0;
 
     virtual AMF_RESULT              Init(amf_int32 width, amf_int32 height);
     virtual AMF_RESULT              Terminate();
+    virtual AMF_RESULT              Reset();
+    virtual amf_pts                 GetCurrentTime() { return m_currentTime; }
 
-    virtual double              GetFPS(){return m_dLastFPS;}
-    virtual amf_int64           GetFramesDropped(){return m_iFramesDropped;}
+    virtual double              GetFPS() const { return m_dLastFPS; }
+    virtual amf_int64           GetFramesDropped() const {return m_iFramesDropped; }
+    virtual bool                SupportAllocator() const { return true; }
 
-    AMF_RESULT Resume() { m_state = ModePlaying; return AMF_OK;}
+    AMF_RESULT Resume();
     AMF_RESULT Pause() { m_state = ModePaused; return AMF_OK; }
     AMF_RESULT Step() { m_state = ModeStep; return AMF_OK;}
-    Mode       GetMode() { return m_state;}
+    Mode       GetMode() const { return m_state;}
 
+    virtual AMF_RESULT SetProcessor(amf::AMFComponent* pProcessor);
 
-    virtual AMF_RESULT SetConverter(amf::AMFComponent *converter);
     // amf::AMFInterface interface
-    virtual amf_long AMF_STD_CALL Acquire(){return 1;}
-    virtual amf_long AMF_STD_CALL Release(){return 1;}
-    virtual AMF_RESULT AMF_STD_CALL QueryInterface(const amf::AMFGuid& interfaceID,void** ppInterface){return AMF_NOT_IMPLEMENTED;}
+    virtual amf_long AMF_STD_CALL Acquire() { return 1; }
+    virtual amf_long AMF_STD_CALL Release() { return 1; }
+    virtual AMF_RESULT AMF_STD_CALL QueryInterface(const amf::AMFGuid& interfaceID, void** ppInterface) { return AMF_NOT_IMPLEMENTED; }
 
     // amf::AMFDataAllocatorCB interface
-    virtual AMF_RESULT AMF_STD_CALL AllocBuffer(amf::AMF_MEMORY_TYPE type, amf_size size, amf::AMFBuffer** ppBuffer){return AMF_NOT_IMPLEMENTED;}
+    virtual AMF_RESULT AMF_STD_CALL AllocBuffer(amf::AMF_MEMORY_TYPE type, amf_size size, amf::AMFBuffer** ppBuffer) { return AMF_NOT_IMPLEMENTED; }
     virtual AMF_RESULT AMF_STD_CALL AllocSurface(amf::AMF_MEMORY_TYPE type, amf::AMF_SURFACE_FORMAT format,
-            amf_int32 width, amf_int32 height, amf_int32 hPitch, amf_int32 vPitch, amf::AMFSurface** ppSurface){return AMF_NOT_IMPLEMENTED;}
+            amf_int32 width, amf_int32 height, amf_int32 hPitch, amf_int32 vPitch, amf::AMFSurface** ppSurface) {return AMF_NOT_IMPLEMENTED; }
 
     // amf::AMFSurfaceObserver interface
-    virtual void AMF_STD_CALL OnSurfaceDataRelease(amf::AMFSurface* pSurface){}
+    virtual void AMF_STD_CALL OnSurfaceDataRelease(amf::AMFSurface* pSurface) {}
 
-public:
-#if defined(METRO_APP)
-    static VideoPresenterPtr Create(ISwapChainBackgroundPanelNative* pSwapChainPanel, AMFSize swapChainPanelSize, amf::AMFContext* pContext);
-#else
-    static VideoPresenterPtr Create(amf::AMF_MEMORY_TYPE type, HWND hwnd, amf::AMFContext* pContext);
-#endif
+	// Get frame width and height
+    amf_int32 GetFrameWidth() const     { return m_InputFrameSize.width; }
+    amf_int32 GetFrameHeight() const    { return m_InputFrameSize.height; }
+
 
 protected:
-    VideoPresenter(HWND hwnd, amf::AMFContext* pContext);
+    VideoPresenter();
+    virtual AMF_RESULT Freeze();
+    virtual AMF_RESULT UnFreeze();
 
-    AMF_RESULT CalcOutputRect(const AMFRect* pSrcRect, const AMFRect* pDstRect, AMFRect* pTargetRect);
+    virtual AMF_RESULT CalcOutputRect(const AMFRect* pSrcRect, const AMFRect* pDstRect, AMFRect* pTargetRect);
     bool WaitForPTS(amf_pts pts); // returns false if frame is too late and should be dropped
 
-    void        UpdateConverter();
+    void        UpdateProcessor();
 
-    HWND                                m_hwnd;
-    amf::AMFContext*                    m_pContext;
     amf_pts                             m_startTime;
     amf_pts                             m_startPts;
     amf::AMFPreciseWaiter               m_waiter;
@@ -124,7 +115,9 @@ protected:
 
     double                              m_dLastFPS;
     int                                 m_instance;
-    amf::AMFComponentPtr                m_pConverter;
+    amf::AMFComponentPtr                m_pProcessor;
     Mode                                m_state;
     AMFRect                             m_rectClient;
+    
+    amf_pts                             m_currentTime;
 };

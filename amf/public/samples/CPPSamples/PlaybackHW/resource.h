@@ -1,35 +1,3 @@
-// 
-// Notice Regarding Standards.  AMD does not provide a license or sublicense to
-// any Intellectual Property Rights relating to any standards, including but not
-// limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
-// AVC/H.264; HEVC/H.265; AAC decode/FFMPEG; AAC encode/FFMPEG; VC-1; and MP3
-// (collectively, the "Media Technologies"). For clarity, you will pay any
-// royalties due for such third party technologies, which may include the Media
-// Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
-//
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
 // Used by PlaybackHW.rc
@@ -44,6 +12,7 @@
 #define IDI_SMALL                       108
 #define IDC_PLAYBACKHW                  109
 #define IDR_MAINFRAME                   128
+#define IDD_TOOLBAR_DLG                 130
 #define IDD_PROGRESS_DLG                131
 #define IDC_BRIGHTNESS_EDIT             1001
 #define IDC_BRIGHTNESS_SPIN             1002
@@ -62,6 +31,7 @@
 #define IDC_TEMPORAL_DENOISE_EDIT       1015
 #define IDC_PROGRESS_BAR                1015
 #define IDC_TEMPORAL_DENOISE_SPIN       1016
+#define IDC_SEEK                        1016
 #define IDC_DEBLOCKING_CHECK            1017
 #define IDC_DEBLOCKING_EDIT             1018
 #define IDC_DEBLOCKING_SPIN             1019
@@ -103,6 +73,7 @@
 #define ID_PLAYBACK_PAUSE               32786
 #define ID_PLAYBACK_STEP                32788
 #define ID_PLAYBACK_STOP                32789
+#define ID_TOOLBAR                      32793
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -110,9 +81,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        130
-#define _APS_NEXT_COMMAND_VALUE         32793
-#define _APS_NEXT_CONTROL_VALUE         1016
+#define _APS_NEXT_RESOURCE_VALUE        131
+#define _APS_NEXT_COMMAND_VALUE         32794
+#define _APS_NEXT_CONTROL_VALUE         1017
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

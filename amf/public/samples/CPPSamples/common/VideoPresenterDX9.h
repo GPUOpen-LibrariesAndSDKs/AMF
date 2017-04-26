@@ -31,19 +31,20 @@
 //
 #pragma once
 
-#include "VideoPresenter.h"
+#include "BackBufferPresenter.h"
 
 #include <comdef.h>
 #include <d3d9.h>
 
-class VideoPresenterDX9 : public VideoPresenter
+class VideoPresenterDX9 : public BackBufferPresenter
 {
 public:
     VideoPresenterDX9(HWND hwnd, amf::AMFContext* pContext);
     virtual ~VideoPresenterDX9();
+
     virtual AMF_RESULT Present(amf::AMFSurface* pSurface);
-    virtual amf::AMF_MEMORY_TYPE GetMemoryType() { return amf::AMF_MEMORY_DX9; }
-    virtual amf::AMF_SURFACE_FORMAT GetInputFormat() { return amf::AMF_SURFACE_BGRA; }
+    virtual amf::AMF_MEMORY_TYPE GetMemoryType() const { return amf::AMF_MEMORY_DX9; }
+    virtual amf::AMF_SURFACE_FORMAT GetInputFormat() const { return amf::AMF_SURFACE_BGRA; }
     virtual AMF_RESULT              SetInputFormat(amf::AMF_SURFACE_FORMAT format)
     {
         return format == amf::AMF_SURFACE_BGRA ? AMF_OK : AMF_FAIL;

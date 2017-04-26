@@ -575,11 +575,12 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     if(m_pSplitter != NULL)
     {
         PipelineElementPtr pConverterElement = PipelineElementPtr(new AMFComponentElement(m_pConverter));
-#if !defined(METRO_APP)
-        m_pPresenter = VideoPresenter::Create(engineMemoryType, previewTarget, m_pContext);
-#else
-        m_pPresenter = VideoPresenter::Create(previewTarget, swapChainPanelSize, m_pContext);
-#endif
+
+        CHECK_AMF_ERROR_RETURN(
+            BackBufferPresenter::Create(m_pPresenter, engineMemoryType, previewTarget, m_pContext),
+            "Failed to create a video presenter"
+        );
+
         AMFSize frame;
         m_pDecoder->GetProperty(AMF_VIDEO_DECODER_CURRENT_SIZE, &frame);
         m_pPresenter->Init(frame.width, frame.height);
@@ -808,12 +809,12 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, amf::AMFOut
 
     if(hwnd != NULL)
     { 
-    // Init Presenter
-#if !defined(METRO_APP)
-        m_pPresenter = VideoPresenter::Create(presenterEngine, hwnd, m_pContext);
-#else
-        m_pPresenter = VideoPresenter::Create(pSwapChainPanel, swapChainPanelSize, m_pContext);
-#endif
+        // Init Presenter
+        CHECK_AMF_ERROR_RETURN(
+            BackBufferPresenter::Create(m_pPresenter, presenterEngine, hwnd, m_pContext),
+            "Failed to create a video presenter"
+        );
+
         m_pPresenter->Init(scaleWidth, scaleHeight);
     }
 

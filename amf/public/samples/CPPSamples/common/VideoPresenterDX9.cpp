@@ -32,7 +32,7 @@
 #include "VideoPresenterDX9.h"
 
 VideoPresenterDX9::VideoPresenterDX9(HWND hwnd, amf::AMFContext* pContext) :
-    VideoPresenter(hwnd, pContext),
+    BackBufferPresenter(hwnd, pContext),
     m_uiAvailableBackBuffer(0),
     m_uiBackBufferCount(4)
 {
@@ -166,18 +166,18 @@ AMF_RESULT VideoPresenterDX9::Present(amf::AMFSurface* pSurface)
     if(rectClient.Width() > 0 &&  rectClient.Height() > 0 && ((presentationParameters.BackBufferHeight != rectClient.bottom - rectClient.top) ||
        (presentationParameters.BackBufferWidth != rectClient.right - rectClient.left)))
     {
-        if(m_pConverter != NULL)
+        if(m_bRenderToBackBuffer)
         {
             m_bResizeSwapChain = true;
         }
         else
         {
             err = CreatePresentationSwapChain();
-            UpdateConverter();
+            UpdateProcessor();
 
         }
     }
-    if(m_pConverter != NULL && rectClient.Width() > 0 &&  rectClient.Height() > 0 && (
+    if(m_bRenderToBackBuffer && rectClient.Width() > 0 &&  rectClient.Height() > 0 && (
         pSurface->GetPlaneAt(0)->GetWidth() != rectClient.Width() ||
         pSurface->GetPlaneAt(0)->GetHeight() != rectClient.Height())
       )
@@ -189,7 +189,7 @@ AMF_RESULT VideoPresenterDX9::Present(amf::AMFSurface* pSurface)
         return AMF_OK; //allocator changed size drop surface with oldsize
     }
 
-    if(m_pConverter == NULL)
+    if(!m_bRenderToBackBuffer)
     {
         amf::AMFPlane* pPlane = pSurface->GetPlane(amf::AMF_PLANE_PACKED);
         IDirect3DSurface9Ptr pSrcDxSurface = (IDirect3DSurface9*)pPlane->GetNative();
@@ -233,7 +233,7 @@ AMF_RESULT VideoPresenterDX9::Present(amf::AMFSurface* pSurface)
        }
        amf_sleep(1);
     }
-    if(m_pConverter != NULL)
+    if(m_bRenderToBackBuffer)
     {
         m_uiAvailableBackBuffer--;
     }
@@ -250,13 +250,17 @@ AMF_RESULT VideoPresenterDX9::BitBlt(IDirect3DSurface9* pSrcSurface, AMFRect* pS
 AMF_RESULT AMF_STD_CALL VideoPresenterDX9::AllocSurface(amf::AMF_MEMORY_TYPE type, amf::AMF_SURFACE_FORMAT format,
             amf_int32 width, amf_int32 height, amf_int32 hPitch, amf_int32 vPitch, amf::AMFSurface** ppSurface)
 {
-    if(m_pConverter == NULL)
+    if(!m_bRenderToBackBuffer)
     {
         return AMF_NOT_IMPLEMENTED;
     }
     // wait till buffers are released
     while( m_uiAvailableBackBuffer + 1 >= m_uiBackBufferCount)
     {
+        if(m_bFrozen)
+        {
+            return AMF_INPUT_FULL;
+        }
         amf_sleep(1);
     }
 
@@ -268,7 +272,7 @@ AMF_RESULT AMF_STD_CALL VideoPresenterDX9::AllocSurface(amf::AMF_MEMORY_TYPE typ
             amf_sleep(1);
         }
         CreatePresentationSwapChain();
-        UpdateConverter();
+        UpdateProcessor();
         m_bResizeSwapChain  = false;
     }
 
