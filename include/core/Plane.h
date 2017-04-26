@@ -36,10 +36,12 @@
 
 #include "Interface.h"
 
+#if defined(__cplusplus)
 namespace amf
 {
+#endif
     //---------------------------------------------------------------------------------------------
-    enum AMF_PLANE_TYPE
+    typedef enum AMF_PLANE_TYPE
     {
         AMF_PLANE_UNKNOWN       = 0,
         AMF_PLANE_PACKED        = 1,             // for all packed formats: BGRA, YUY2, etc
@@ -47,10 +49,11 @@ namespace amf
         AMF_PLANE_UV            = 3,
         AMF_PLANE_U             = 4,
         AMF_PLANE_V             = 5,
-    };
+    } AMF_PLANE_TYPE;
     //---------------------------------------------------------------------------------------------
     // AMFPlane interface
     //---------------------------------------------------------------------------------------------
+#if defined(__cplusplus)
     class AMF_NO_VTABLE AMFPlane : public AMFInterface
     {
     public:
@@ -72,6 +75,38 @@ namespace amf
     //----------------------------------------------------------------------------------------------
     typedef AMFInterfacePtr_T<AMFPlane> AMFPlanePtr;
     //----------------------------------------------------------------------------------------------
+#else // #if defined(__cplusplus)
+    AMF_DECLARE_IID(AMFPlane, 0xbede1aa6, 0xd8fa, 0x4625, 0x94, 0x65, 0x6c, 0x82, 0xc4, 0x37, 0x71, 0x2e)
+    typedef struct AMFPlane AMFPlane;
+    typedef struct AMFPlaneVtbl
+    {
+        // AMFInterface interface
+        amf_long            (AMF_STD_CALL *Acquire)(AMFPlane* pThis);
+        amf_long            (AMF_STD_CALL *Release)(AMFPlane* pThis);
+        enum AMF_RESULT     (AMF_STD_CALL *QueryInterface)(AMFPlane* pThis, const struct AMFGuid *interfaceID, void** ppInterface);
+
+        // AMFPlane interface
+        AMF_PLANE_TYPE      (AMF_STD_CALL *GetType)(AMFPlane* pThis);
+        void*               (AMF_STD_CALL *GetNative)(AMFPlane* pThis);
+        amf_int32           (AMF_STD_CALL *GetPixelSizeInBytes)(AMFPlane* pThis);
+        amf_int32           (AMF_STD_CALL *GetOffsetX)(AMFPlane* pThis);
+        amf_int32           (AMF_STD_CALL *GetOffsetY)(AMFPlane* pThis);
+        amf_int32           (AMF_STD_CALL *GetWidth)(AMFPlane* pThis);
+        amf_int32           (AMF_STD_CALL *GetHeight)(AMFPlane* pThis);
+        amf_int32           (AMF_STD_CALL *GetHPitch)(AMFPlane* pThis);
+        amf_int32           (AMF_STD_CALL *GetVPitch)(AMFPlane* pThis);
+        amf_bool            (AMF_STD_CALL *IsTiled)(AMFPlane* pThis);
+
+    } AMFPlaneVtbl;
+
+    struct AMFPlane
+    {
+        const AMFPlaneVtbl *pVtbl;
+    };
+#endif // #if defined(__cplusplus)
+
+#if defined(__cplusplus)
 } // namespace amf
+#endif
 
 #endif //#ifndef __AMFPlane_h__

@@ -145,15 +145,15 @@ namespace amf
         {}
         virtual amf_long AMF_STD_CALL Acquire()
         {
-            return AcquireInternal();
+            return AMFInterfaceBase::AcquireInternal();
         }
         virtual amf_long AMF_STD_CALL Release()
         {
-            return ReleaseInternal();
+            return AMFInterfaceBase::ReleaseInternal();
         }
         virtual amf_long AMF_STD_CALL RefCount()
         {
-            return RefCountInternal();
+            return AMFInterfaceBase::RefCountInternal();
         }
 
         AMF_BEGIN_INTERFACE_MAP
@@ -181,15 +181,15 @@ namespace amf
         {}
         virtual amf_long AMF_STD_CALL Acquire()
         {
-            return AcquireInternal();
+            return AMFInterfaceBase::AcquireInternal();
         }
         virtual amf_long AMF_STD_CALL Release()
         {
-            return ReleaseInternal();
+            return AMFInterfaceBase::ReleaseInternal();
         }
         virtual amf_long AMF_STD_CALL RefCount()
         {
-            return RefCountInternal();
+            return AMFInterfaceBase::RefCountInternal();
         }
 
         AMF_BEGIN_INTERFACE_MAP

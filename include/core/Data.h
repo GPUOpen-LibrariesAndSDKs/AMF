@@ -36,19 +36,21 @@
 
 #include "PropertyStorage.h"
 
+#if defined(__cplusplus)
 namespace amf
 {
+#endif
     //----------------------------------------------------------------------------------------------
-    enum AMF_DATA_TYPE
+    typedef enum AMF_DATA_TYPE
     {
         AMF_DATA_BUFFER             = 0,
         AMF_DATA_SURFACE            = 1,
         AMF_DATA_AUDIO_BUFFER       = 2,
         AMF_DATA_USER               = 1000,
         // all extensions will be AMF_DATA_USER+i
-    };
+    } AMF_DATA_TYPE;
     //----------------------------------------------------------------------------------------------
-    enum AMF_MEMORY_TYPE
+    typedef enum AMF_MEMORY_TYPE
     {
         AMF_MEMORY_UNKNOWN          = 0,
         AMF_MEMORY_HOST             = 1,
@@ -60,19 +62,20 @@ namespace amf
         AMF_MEMORY_GRALLOC          = 7,
         AMF_MEMORY_COMPUTE_FOR_DX9  = 8,
         AMF_MEMORY_COMPUTE_FOR_DX11 = 9,
-    };
+    } AMF_MEMORY_TYPE;
 
     //----------------------------------------------------------------------------------------------
-    enum AMF_DX_VERSION
+    typedef enum AMF_DX_VERSION
     {
         AMF_DX9                     = 90,
         AMF_DX9_EX                  = 91,
         AMF_DX11_0                  = 110,
         AMF_DX11_1                  = 111 
-    };
+    } AMF_DX_VERSION;
     //----------------------------------------------------------------------------------------------
     // AMFData interface
     //----------------------------------------------------------------------------------------------
+#if defined(__cplusplus)
     class AMF_NO_VTABLE AMFData : public AMFPropertyStorage
     {
     public:
@@ -86,7 +89,7 @@ namespace amf
 
         virtual AMF_DATA_TYPE       AMF_STD_CALL GetDataType() = 0;
 
-        virtual bool                AMF_STD_CALL IsReusable() = 0;
+        virtual amf_bool            AMF_STD_CALL IsReusable() = 0;
 
         virtual void                AMF_STD_CALL SetPts(amf_pts pts) = 0;
         virtual amf_pts             AMF_STD_CALL GetPts() = 0;
@@ -98,6 +101,59 @@ namespace amf
     //----------------------------------------------------------------------------------------------
     typedef AMFInterfacePtr_T<AMFData> AMFDataPtr;
     //----------------------------------------------------------------------------------------------
+
+#else // #if defined(__cplusplus)
+    typedef struct AMFData AMFData;
+    AMF_DECLARE_IID(AMFData, 0xa1159bf6, 0x9104, 0x4107, 0x8e, 0xaa, 0xc5, 0x3d, 0x5d, 0xba, 0xc5, 0x11)
+
+    typedef struct AMFDataVtbl
+    {
+        // AMFInterface interface
+        amf_long            (AMF_STD_CALL *Acquire)(AMFData* pThis);
+        amf_long            (AMF_STD_CALL *Release)(AMFData* pThis);
+        enum AMF_RESULT     (AMF_STD_CALL *QueryInterface)(AMFData* pThis, const struct AMFGuid *interfaceID, void** ppInterface);
+
+        // AMFPropertyStorage interface
+        AMF_RESULT          (AMF_STD_CALL *SetProperty)(AMFData* pThis, const wchar_t* name, AMFVariantStruct value);
+        AMF_RESULT          (AMF_STD_CALL *GetProperty)(AMFData* pThis, const wchar_t* name, AMFVariantStruct* pValue);
+        amf_bool            (AMF_STD_CALL *HasProperty)(AMFData* pThis, const wchar_t* name);
+        amf_size            (AMF_STD_CALL *GetPropertyCount)(AMFData* pThis);
+        AMF_RESULT          (AMF_STD_CALL *GetPropertyAt)(AMFData* pThis, amf_size index, wchar_t* name, amf_size nameSize, AMFVariantStruct* pValue);
+        AMF_RESULT          (AMF_STD_CALL *Clear)(AMFData* pThis);
+        AMF_RESULT          (AMF_STD_CALL *AddTo)(AMFData* pThis, AMFPropertyStorage* pDest, amf_bool overwrite, amf_bool deep);
+        AMF_RESULT          (AMF_STD_CALL *CopyTo)(AMFData* pThis, AMFPropertyStorage* pDest, amf_bool deep);
+        void                (AMF_STD_CALL *AddObserver)(AMFData* pThis, AMFPropertyStorageObserver* pObserver);
+        void                (AMF_STD_CALL *RemoveObserver)(AMFData* pThis, AMFPropertyStorageObserver* pObserver);
+
+        // AMFData interface
+
+        AMF_MEMORY_TYPE     (AMF_STD_CALL *GetMemoryType)(AMFData* pThis);
+
+        AMF_RESULT          (AMF_STD_CALL *Duplicate)(AMFData* pThis, AMF_MEMORY_TYPE type, AMFData** ppData);
+        AMF_RESULT          (AMF_STD_CALL *Convert)(AMFData* pThis, AMF_MEMORY_TYPE type); // optimal interop if possilble. Copy through host memory if needed
+        AMF_RESULT          (AMF_STD_CALL *Interop)(AMFData* pThis, AMF_MEMORY_TYPE type); // only optimal interop if possilble. No copy through host memory for GPU objects
+
+        AMF_DATA_TYPE       (AMF_STD_CALL *GetDataType)(AMFData* pThis);
+
+        amf_bool            (AMF_STD_CALL *IsReusable)(AMFData* pThis);
+
+        void                (AMF_STD_CALL *SetPts)(AMFData* pThis, amf_pts pts);
+        amf_pts             (AMF_STD_CALL *GetPts)(AMFData* pThis);
+        void                (AMF_STD_CALL *SetDuration)(AMFData* pThis, amf_pts duration);
+        amf_pts             (AMF_STD_CALL *GetDuration)(AMFData* pThis);
+
+    } AMFDataVtbl;
+
+    struct AMFData
+    {
+        const AMFDataVtbl *pVtbl;
+    };
+
+
+#endif // #if defined(__cplusplus)
+
+#if defined(__cplusplus)
 } // namespace
+#endif
 
 #endif //#ifndef __AMFData_h__

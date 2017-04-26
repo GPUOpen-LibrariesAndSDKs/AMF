@@ -129,7 +129,7 @@ namespace amf
 
     template<typename _Kty, class _Ty, class _Pr = std::less<_Kty> >
     class amf_map
-        : public std::map<_Kty, _Ty, _Pr, amf_allocator<_Ty> >
+        : public std::map<_Kty, _Ty, _Pr, amf_allocator<std::pair<const _Kty, _Ty>> >
     {};
 
     template<typename _Kty, class _Pr = std::less<_Kty> >

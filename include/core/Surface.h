@@ -37,13 +37,16 @@
 #include "Data.h"
 #include "Plane.h"
 
-#pragma warning( push )
-#pragma warning(disable : 4263)
-#pragma warning(disable : 4264)
-
+#if defined(_MSC_VER)
+    #pragma warning( push )
+    #pragma warning(disable : 4263)
+    #pragma warning(disable : 4264)
+#endif
+#if defined(__cplusplus)
 namespace amf
 {
-    enum AMF_SURFACE_FORMAT
+#endif
+    typedef enum AMF_SURFACE_FORMAT
     {
         AMF_SURFACE_UNKNOWN     = 0,
         AMF_SURFACE_NV12,               ///< 1 - planar Y width x height + packed UV width/2 x height/2 - 8 bit per component
@@ -60,12 +63,12 @@ namespace amf
 
         AMF_SURFACE_FIRST = AMF_SURFACE_NV12,
         AMF_SURFACE_LAST = AMF_SURFACE_RGBA_F16
-    };
+    } AMF_SURFACE_FORMAT;
 
     //----------------------------------------------------------------------------------------------
     // frame type
     //----------------------------------------------------------------------------------------------
-    enum AMF_FRAME_TYPE
+    typedef enum AMF_FRAME_TYPE
     {
         // flags
         AMF_FRAME_STEREO_FLAG                           = 0x10000000,
@@ -97,20 +100,37 @@ namespace amf
         AMF_FRAME_INTERLEAVED_ODD_FIRST_STEREO_LEFT     = AMF_FRAME_INTERLEAVED_FLAG | AMF_FRAME_ODD_FLAG | AMF_FRAME_LEFT_FLAG,
         AMF_FRAME_INTERLEAVED_ODD_FIRST_STEREO_RIGHT    = AMF_FRAME_INTERLEAVED_FLAG | AMF_FRAME_ODD_FLAG | AMF_FRAME_RIGHT_FLAG,
         AMF_FRAME_INTERLEAVED_ODD_FIRST_STEREO_BOTH     = AMF_FRAME_INTERLEAVED_FLAG | AMF_FRAME_ODD_FLAG | AMF_FRAME_BOTH_FLAG,
-    };
+    } AMF_FRAME_TYPE;
 
     //----------------------------------------------------------------------------------------------
     // AMFSurfaceObserver interface - callback; is called before internal release resources.
     //----------------------------------------------------------------------------------------------
+#if defined(__cplusplus)
     class AMFSurface;
     class AMF_NO_VTABLE AMFSurfaceObserver
     {
     public:
         virtual void AMF_STD_CALL OnSurfaceDataRelease(AMFSurface* pSurface) = 0;
     };
+#else // #if defined(__cplusplus)
+    typedef struct AMFSurface AMFSurface;
+    typedef struct AMFSurfaceObserver AMFSurfaceObserver;
+
+    typedef struct AMFSurfaceObserverVtbl
+    {
+        void                (AMF_STD_CALL *OnSurfaceDataRelease)(AMFSurfaceObserver* pThis, AMFSurface* pSurface);
+    } AMFSurfaceObserverVtbl;
+
+    struct AMFSurfaceObserver
+    {
+        const AMFSurfaceObserverVtbl *pVtbl;
+    };
+#endif // #if defined(__cplusplus)
+
     //----------------------------------------------------------------------------------------------
     // AMFSurface interface
     //----------------------------------------------------------------------------------------------
+#if defined(__cplusplus)
     class AMF_NO_VTABLE AMFSurface : public AMFData
     {
     public:
@@ -138,7 +158,75 @@ namespace amf
     //----------------------------------------------------------------------------------------------
     typedef AMFInterfacePtr_T<AMFSurface> AMFSurfacePtr;
     //----------------------------------------------------------------------------------------------
-}
-#pragma warning( pop )
+#else // #if defined(__cplusplus)
+        AMF_DECLARE_IID(AMFSurface, 0x3075dbe3, 0x8718, 0x4cfa, 0x86, 0xfb, 0x21, 0x14, 0xc0, 0xa5, 0xa4, 0x51)
+    typedef struct AMFSurfaceVtbl
+    {
+        // AMFInterface interface
+        amf_long            (AMF_STD_CALL *Acquire)(AMFSurface* pThis);
+        amf_long            (AMF_STD_CALL *Release)(AMFSurface* pThis);
+        enum AMF_RESULT     (AMF_STD_CALL *QueryInterface)(AMFSurface* pThis, const struct AMFGuid *interfaceID, void** ppInterface);
 
+        // AMFPropertyStorage interface
+        AMF_RESULT          (AMF_STD_CALL *SetProperty)(AMFSurface* pThis, const wchar_t* name, AMFVariantStruct value);
+        AMF_RESULT          (AMF_STD_CALL *GetProperty)(AMFSurface* pThis, const wchar_t* name, AMFVariantStruct* pValue);
+        amf_bool            (AMF_STD_CALL *HasProperty)(AMFSurface* pThis, const wchar_t* name);
+        amf_size            (AMF_STD_CALL *GetPropertyCount)(AMFSurface* pThis);
+        AMF_RESULT          (AMF_STD_CALL *GetPropertyAt)(AMFSurface* pThis, amf_size index, wchar_t* name, amf_size nameSize, AMFVariantStruct* pValue);
+        AMF_RESULT          (AMF_STD_CALL *Clear)(AMFSurface* pThis);
+        AMF_RESULT          (AMF_STD_CALL *AddTo)(AMFSurface* pThis, AMFPropertyStorage* pDest, amf_bool overwrite, amf_bool deep);
+        AMF_RESULT          (AMF_STD_CALL *CopyTo)(AMFSurface* pThis, AMFPropertyStorage* pDest, amf_bool deep);
+        void                (AMF_STD_CALL *AddObserver)(AMFSurface* pThis, AMFPropertyStorageObserver* pObserver);
+        void                (AMF_STD_CALL *RemoveObserver)(AMFSurface* pThis, AMFPropertyStorageObserver* pObserver);
+
+        // AMFData interface
+
+        AMF_MEMORY_TYPE     (AMF_STD_CALL *GetMemoryType)(AMFSurface* pThis);
+
+        AMF_RESULT          (AMF_STD_CALL *Duplicate)(AMFSurface* pThis, AMF_MEMORY_TYPE type, AMFData** ppData);
+        AMF_RESULT          (AMF_STD_CALL *Convert)(AMFSurface* pThis, AMF_MEMORY_TYPE type); // optimal interop if possilble. Copy through host memory if needed
+        AMF_RESULT          (AMF_STD_CALL *Interop)(AMFSurface* pThis, AMF_MEMORY_TYPE type); // only optimal interop if possilble. No copy through host memory for GPU objects
+
+        AMF_DATA_TYPE       (AMF_STD_CALL *GetDataType)(AMFSurface* pThis);
+
+        amf_bool            (AMF_STD_CALL *IsReusable)(AMFSurface* pThis);
+
+        void                (AMF_STD_CALL *SetPts)(AMFSurface* pThis, amf_pts pts);
+        amf_pts             (AMF_STD_CALL *GetPts)(AMFSurface* pThis);
+        void                (AMF_STD_CALL *SetDuration)(AMFSurface* pThis, amf_pts duration);
+        amf_pts             (AMF_STD_CALL *GetDuration)(AMFSurface* pThis);
+
+        // AMFSurface interface
+
+        AMF_SURFACE_FORMAT  (AMF_STD_CALL *GetFormat)(AMFSurface* pThis);
+
+        // do not store planes outside. should be used together with Surface
+        amf_size            (AMF_STD_CALL *GetPlanesCount)(AMFSurface* pThis);
+        AMFPlane*           (AMF_STD_CALL *GetPlaneAt)(AMFSurface* pThis, amf_size index);
+        AMFPlane*           (AMF_STD_CALL *GetPlane)(AMFSurface* pThis, AMF_PLANE_TYPE type);
+
+        AMF_FRAME_TYPE      (AMF_STD_CALL *GetFrameType)(AMFSurface* pThis);
+        void                (AMF_STD_CALL *SetFrameType)(AMFSurface* pThis, AMF_FRAME_TYPE type);
+
+        AMF_RESULT          (AMF_STD_CALL *SetCrop)(AMFSurface* pThis, amf_int32 x,amf_int32 y, amf_int32 width, amf_int32 height);
+        AMF_RESULT          (AMF_STD_CALL *CopySurfaceRegion)(AMFSurface* pThis, AMFSurface* pDest, amf_int32 dstX, amf_int32 dstY, amf_int32 srcX, amf_int32 srcY, amf_int32 width, amf_int32 height);
+
+
+        // Observer management
+        void                (AMF_STD_CALL *AddObserver_Surface)(AMFSurface* pThis, AMFSurfaceObserver* pObserver);
+        void                (AMF_STD_CALL *RemoveObserver_Surface)(AMFSurface* pThis, AMFSurfaceObserver* pObserver);
+
+    } AMFSurfaceVtbl;
+
+    struct AMFSurface
+    {
+        const AMFSurfaceVtbl *pVtbl;
+    };
+#endif // #if defined(__cplusplus)
+#if defined(__cplusplus)
+}
+#endif
+#if defined(_MSC_VER)
+    #pragma warning( pop )
+#endif
 #endif //#ifndef __AMFSurface_h__

@@ -33,17 +33,24 @@
 #ifndef __AMFVariant_h__
 #define __AMFVariant_h__
 #pragma once
-#pragma warning(disable: 4996)
+#if defined(_MSC_VER)
+    #pragma warning(disable: 4996)
+#endif
 
 #include "Interface.h"
+#if defined(__cplusplus)
 #include <locale.h>
+#include <wchar.h>
+#endif
 
+#if defined(__cplusplus)
 namespace amf
 {
+#endif
     //----------------------------------------------------------------------------------------------
     // variant types
     //----------------------------------------------------------------------------------------------
-    enum AMF_VARIANT_TYPE
+    typedef enum AMF_VARIANT_TYPE
     {
         AMF_VARIANT_EMPTY       = 0,
 
@@ -59,51 +66,65 @@ namespace amf
         AMF_VARIANT_COLOR       = 9,
 
         AMF_VARIANT_STRING      = 10,  // value is char*
-        AMF_VARIANT_WSTRING     = 11,  // value is wchar*
+        AMF_VARIANT_WSTRING     = 11,  // value is wchar_t*
         AMF_VARIANT_INTERFACE   = 12,  // value is AMFInterface*
-    };
+    } AMF_VARIANT_TYPE;
     //----------------------------------------------------------------------------------------------
     // variant struct
    //----------------------------------------------------------------------------------------------
-    struct AMFVariantStruct
+    typedef struct AMFVariantStruct
     {
-        AMF_VARIANT_TYPE    type;
+        AMF_VARIANT_TYPE            type;
         union
         {
-            amf_bool        boolValue;
-            amf_int64       int64Value;
-            amf_double      doubleValue;
-            char*           stringValue;
-            wchar_t*        wstringValue;
-            AMFInterface*   pInterface;
-            AMFRect         rectValue;
-            AMFSize         sizeValue;
-            AMFPoint        pointValue;
-            AMFRate         rateValue;
-            AMFRatio        ratioValue;
-            AMFColor        colorValue;
+            amf_bool                boolValue;
+            amf_int64               int64Value;
+            amf_double              doubleValue;
+            char*                   stringValue;
+            wchar_t*                wstringValue;
+            AMFInterface*           pInterface;
+            struct AMFRect          rectValue;
+            struct AMFSize          sizeValue;
+            struct AMFPoint         pointValue;
+            struct AMFRate          rateValue;
+            struct AMFRatio         ratioValue;
+            struct AMFColor         colorValue;
         };
-    };
+    } AMFVariantStruct;
     //----------------------------------------------------------------------------------------------
     // variant accessors
     //----------------------------------------------------------------------------------------------
 
-    inline AMF_VARIANT_TYPE     AMF_STD_CALL AMFVariantGetType(const AMFVariantStruct* _variant) { return (_variant)->type; }
-    inline AMF_VARIANT_TYPE&    AMF_STD_CALL AMFVariantGetType(AMFVariantStruct* _variant) { return (_variant)->type; }
-    inline amf_bool             AMF_STD_CALL AMFVariantGetBool(const AMFVariantStruct* _variant) { return (_variant)->boolValue; }
-    inline amf_int64            AMF_STD_CALL AMFVariantGetInt64(const AMFVariantStruct* _variant) { return (_variant)->int64Value; }
-    inline amf_double           AMF_STD_CALL AMFVariantGetDouble(const AMFVariantStruct* _variant) { return (_variant)->doubleValue; }
-    inline const char*          AMF_STD_CALL AMFVariantGetString(const AMFVariantStruct* _variant) { return (_variant)->stringValue; }
-    inline const wchar_t*       AMF_STD_CALL AMFVariantGetWString(const AMFVariantStruct* _variant) { return (_variant)->wstringValue; }
-    inline const AMFInterface*  AMF_STD_CALL AMFVariantGetInterface(const AMFVariantStruct* _variant) { return (_variant)->pInterface; }
-    inline AMFInterface*        AMF_STD_CALL AMFVariantGetInterface(AMFVariantStruct* _variant) { return (_variant)->pInterface; }
+    AMF_INLINE AMF_VARIANT_TYPE     AMF_STD_CALL AMFVariantGetType(const AMFVariantStruct* _variant) { return (_variant)->type; }
+#if defined(__cplusplus)
+    AMF_INLINE AMF_VARIANT_TYPE&    AMF_STD_CALL AMFVariantGetType(AMFVariantStruct* _variant) { return (_variant)->type; }
+#endif
+    AMF_INLINE amf_bool             AMF_STD_CALL AMFVariantGetBool(const AMFVariantStruct* _variant) { return (_variant)->boolValue; }
+    AMF_INLINE amf_int64            AMF_STD_CALL AMFVariantGetInt64(const AMFVariantStruct* _variant) { return (_variant)->int64Value; }
+    AMF_INLINE amf_double           AMF_STD_CALL AMFVariantGetDouble(const AMFVariantStruct* _variant) { return (_variant)->doubleValue; }
+    AMF_INLINE const char*          AMF_STD_CALL AMFVariantGetString(const AMFVariantStruct* _variant) { return (_variant)->stringValue; }
+    AMF_INLINE const wchar_t*       AMF_STD_CALL AMFVariantGetWString(const AMFVariantStruct* _variant) { return (_variant)->wstringValue; }
+#if defined(__cplusplus)
+    AMF_INLINE const AMFInterface*  AMF_STD_CALL AMFVariantGetInterface(const AMFVariantStruct* _variant) { return (_variant)->pInterface; }
+#endif
+    AMF_INLINE AMFInterface*        AMF_STD_CALL AMFVariantGetInterface(AMFVariantStruct* _variant) { return (_variant)->pInterface; }
 
-    inline const AMFRect &       AMF_STD_CALL AMFVariantGetRect (const AMFVariantStruct* _variant) { return (_variant)->rectValue; }
-    inline const AMFSize &       AMF_STD_CALL AMFVariantGetSize (const AMFVariantStruct* _variant) { return (_variant)->sizeValue; }
-    inline const AMFPoint&       AMF_STD_CALL AMFVariantGetPoint(const AMFVariantStruct* _variant) { return (_variant)->pointValue; }
-    inline const AMFRate &       AMF_STD_CALL AMFVariantGetRate (const AMFVariantStruct* _variant) { return (_variant)->rateValue; }
-    inline const AMFRatio&       AMF_STD_CALL AMFVariantGetRatio(const AMFVariantStruct* _variant) { return (_variant)->ratioValue; }
-    inline const AMFColor&       AMF_STD_CALL AMFVariantGetColor(const AMFVariantStruct* _variant) { return (_variant)->colorValue; }
+#if defined(__cplusplus)
+    AMF_INLINE const AMFRect &      AMF_STD_CALL AMFVariantGetRect (const AMFVariantStruct* _variant) { return (_variant)->rectValue; }
+    AMF_INLINE const AMFSize &      AMF_STD_CALL AMFVariantGetSize (const AMFVariantStruct* _variant) { return (_variant)->sizeValue; }
+    AMF_INLINE const AMFPoint&      AMF_STD_CALL AMFVariantGetPoint(const AMFVariantStruct* _variant) { return (_variant)->pointValue; }
+    AMF_INLINE const AMFRate &      AMF_STD_CALL AMFVariantGetRate (const AMFVariantStruct* _variant) { return (_variant)->rateValue; }
+    AMF_INLINE const AMFRatio&      AMF_STD_CALL AMFVariantGetRatio(const AMFVariantStruct* _variant) { return (_variant)->ratioValue; }
+    AMF_INLINE const AMFColor&      AMF_STD_CALL AMFVariantGetColor(const AMFVariantStruct* _variant) { return (_variant)->colorValue; }
+#else // #if defined(__cplusplus)
+    AMF_INLINE const AMFRect        AMF_STD_CALL AMFVariantGetRect (const AMFVariantStruct* _variant) { return (_variant)->rectValue; }
+    AMF_INLINE const AMFSize        AMF_STD_CALL AMFVariantGetSize (const AMFVariantStruct* _variant) { return (_variant)->sizeValue; }
+    AMF_INLINE const AMFPoint       AMF_STD_CALL AMFVariantGetPoint(const AMFVariantStruct* _variant) { return (_variant)->pointValue; }
+    AMF_INLINE const AMFRate        AMF_STD_CALL AMFVariantGetRate (const AMFVariantStruct* _variant) { return (_variant)->rateValue; }
+    AMF_INLINE const AMFRatio       AMF_STD_CALL AMFVariantGetRatio(const AMFVariantStruct* _variant) { return (_variant)->ratioValue; }
+    AMF_INLINE const AMFColor       AMF_STD_CALL AMFVariantGetColor(const AMFVariantStruct* _variant) { return (_variant)->colorValue; }
+#endif // #if defined(__cplusplus)
+
 
     #define AMFVariantEmpty(_variant)     0
     #define AMFVariantBool(_variant)      (_variant)->boolValue
@@ -123,30 +144,41 @@ namespace amf
     //----------------------------------------------------------------------------------------------
     // variant hleper functions
     //----------------------------------------------------------------------------------------------
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantInit(AMFVariantStruct* pVariant);
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantClear(AMFVariantStruct* pVariant);
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantCompare(const AMFVariantStruct* pFirst, const AMFVariantStruct* pSecond, bool& equal);
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantCopy(AMFVariantStruct* pDest, const AMFVariantStruct* pSrc);
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantChangeType(AMFVariantStruct* pDest, const AMFVariantStruct* pSrc, AMF_VARIANT_TYPE newType);
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignBool(AMFVariantStruct* pDest, bool value);
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignInt64(AMFVariantStruct* pDest, amf_int64 value);
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignDouble(AMFVariantStruct* pDest, amf_double value);
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignString(AMFVariantStruct* pDest, const char* value);
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignWString(AMFVariantStruct* pDest, const wchar_t* value);
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignInterface(AMFVariantStruct* pDest, AMFInterface* value);
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignRect(AMFVariantStruct* pDest, const AMFRect& value);
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignSize(AMFVariantStruct* pDest, const AMFSize& value);
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignPoint(AMFVariantStruct* pDest, const AMFPoint& value);
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignRate(AMFVariantStruct* pDest, const AMFRate& value);
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignRatio(AMFVariantStruct* pDest, const AMFRatio& value);
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignColor(AMFVariantStruct* pDest, const AMFColor& value);
-    inline char*      AMF_CDECL_CALL AMFVariantDuplicateString(const char* from);
-    inline void       AMF_CDECL_CALL AMFVariantFreeString(char* from);
-    inline wchar_t*   AMF_CDECL_CALL AMFVariantDuplicateWString(const wchar_t* from);
-    inline void       AMF_CDECL_CALL AMFVariantFreeWString(wchar_t* from);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantInit(AMFVariantStruct* pVariant);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantClear(AMFVariantStruct* pVariant);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantCompare(const AMFVariantStruct* pFirst, const AMFVariantStruct* pSecond, amf_bool* equal);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantCopy(AMFVariantStruct* pDest, const AMFVariantStruct* pSrc);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignBool(AMFVariantStruct* pDest, amf_bool value);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignInt64(AMFVariantStruct* pDest, amf_int64 value);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignDouble(AMFVariantStruct* pDest, amf_double value);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignString(AMFVariantStruct* pDest, const char* value);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignWString(AMFVariantStruct* pDest, const wchar_t* value);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignInterface(AMFVariantStruct* pDest, AMFInterface* value);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignRect(AMFVariantStruct* pDest, const AMFRect* value);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignSize(AMFVariantStruct* pDest, const AMFSize* value);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignPoint(AMFVariantStruct* pDest, const AMFPoint* value);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignRate(AMFVariantStruct* pDest, const AMFRate* value);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignRatio(AMFVariantStruct* pDest, const AMFRatio* value);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignColor(AMFVariantStruct* pDest, const AMFColor* value);
 
+#if defined(__cplusplus)
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignRect(AMFVariantStruct* pDest, const AMFRect& value);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignSize(AMFVariantStruct* pDest, const AMFSize& value);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignPoint(AMFVariantStruct* pDest, const AMFPoint& value);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignRate(AMFVariantStruct* pDest, const AMFRate& value);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignRatio(AMFVariantStruct* pDest, const AMFRatio& value);
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignColor(AMFVariantStruct* pDest, const AMFColor& value);
+
+    AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantChangeType(AMFVariantStruct* pDest, const AMFVariantStruct* pSrc, AMF_VARIANT_TYPE newType);
+#endif
+    AMF_INLINE char*            AMF_CDECL_CALL AMFVariantDuplicateString(const char* from);
+    AMF_INLINE void             AMF_CDECL_CALL AMFVariantFreeString(char* from);
+    AMF_INLINE wchar_t*         AMF_CDECL_CALL AMFVariantDuplicateWString(const wchar_t* from);
+    AMF_INLINE void             AMF_CDECL_CALL AMFVariantFreeWString(wchar_t* from);
+
+#if defined(__cplusplus)
     //----------------------------------------------------------------------------------------------
-    // inline Variant helper class
+    // AMF_INLINE Variant helper class
     //----------------------------------------------------------------------------------------------
     class AMFVariant : public AMFVariantStruct
     {
@@ -164,21 +196,21 @@ namespace amf
 
         AMFVariant(const AMFVariant& other) { AMFVariantInit(this); AMFVariantCopy(this, const_cast<AMFVariantStruct*>(static_cast<const AMFVariantStruct*>(&other))); }
 
-        explicit inline AMFVariant(amf_bool value)          { AMFVariantInit(this); AMFVariantAssignBool(this, value); }
-        explicit inline AMFVariant(amf_int64 value)         { AMFVariantInit(this); AMFVariantAssignInt64(this, value); }
-        explicit inline AMFVariant(amf_uint64 value)        { AMFVariantInit(this); AMFVariantAssignInt64(this, (amf_int64)value); }
-        explicit inline AMFVariant(amf_int32 value)         { AMFVariantInit(this); AMFVariantAssignInt64(this, value); }
-        explicit inline AMFVariant(amf_uint32 value)        { AMFVariantInit(this); AMFVariantAssignInt64(this, value); }
-        explicit inline AMFVariant(amf_double value)        { AMFVariantInit(this); AMFVariantAssignDouble(this, value); }
-        explicit inline AMFVariant(const AMFRect & value)   { AMFVariantInit(this); AMFVariantAssignRect(this, value); }
-        explicit inline AMFVariant(const AMFSize & value)   { AMFVariantInit(this); AMFVariantAssignSize(this, value); }
-        explicit inline AMFVariant(const AMFPoint& value)   { AMFVariantInit(this); AMFVariantAssignPoint(this, value); }
-        explicit inline AMFVariant(const AMFRate & value)   { AMFVariantInit(this); AMFVariantAssignRate(this, value); }
-        explicit inline AMFVariant(const AMFRatio& value)   { AMFVariantInit(this); AMFVariantAssignRatio(this, value); }
-        explicit inline AMFVariant(const AMFColor& value)   { AMFVariantInit(this); AMFVariantAssignColor(this, value); }
-        explicit inline AMFVariant(const char* value)       { AMFVariantInit(this); AMFVariantAssignString(this, value); }
-        explicit inline AMFVariant(const wchar_t* value)    { AMFVariantInit(this); AMFVariantAssignWString(this, value); }
-        explicit inline AMFVariant(AMFInterface* pValue)    { AMFVariantInit(this); AMFVariantAssignInterface(this, pValue); }
+        explicit AMF_INLINE AMFVariant(amf_bool value)          { AMFVariantInit(this); AMFVariantAssignBool(this, value); }
+        explicit AMF_INLINE AMFVariant(amf_int64 value)         { AMFVariantInit(this); AMFVariantAssignInt64(this, value); }
+        explicit AMF_INLINE AMFVariant(amf_uint64 value)        { AMFVariantInit(this); AMFVariantAssignInt64(this, (amf_int64)value); }
+        explicit AMF_INLINE AMFVariant(amf_int32 value)         { AMFVariantInit(this); AMFVariantAssignInt64(this, value); }
+        explicit AMF_INLINE AMFVariant(amf_uint32 value)        { AMFVariantInit(this); AMFVariantAssignInt64(this, value); }
+        explicit AMF_INLINE AMFVariant(amf_double value)        { AMFVariantInit(this); AMFVariantAssignDouble(this, value); }
+        explicit AMF_INLINE AMFVariant(const AMFRect & value)   { AMFVariantInit(this); AMFVariantAssignRect(this, &value); }
+        explicit AMF_INLINE AMFVariant(const AMFSize & value)   { AMFVariantInit(this); AMFVariantAssignSize(this, &value); }
+        explicit AMF_INLINE AMFVariant(const AMFPoint& value)   { AMFVariantInit(this); AMFVariantAssignPoint(this, &value); }
+        explicit AMF_INLINE AMFVariant(const AMFRate & value)   { AMFVariantInit(this); AMFVariantAssignRate(this, &value); }
+        explicit AMF_INLINE AMFVariant(const AMFRatio& value)   { AMFVariantInit(this); AMFVariantAssignRatio(this, &value); }
+        explicit AMF_INLINE AMFVariant(const AMFColor& value)   { AMFVariantInit(this); AMFVariantAssignColor(this, &value); }
+        explicit AMF_INLINE AMFVariant(const char* value)       { AMFVariantInit(this); AMFVariantAssignString(this, value); }
+        explicit AMF_INLINE AMFVariant(const wchar_t* value)    { AMFVariantInit(this); AMFVariantAssignWString(this, value); }
+        explicit AMF_INLINE AMFVariant(AMFInterface* pValue)    { AMFVariantInit(this); AMFVariantAssignInterface(this, pValue); }
 
         ~AMFVariant() { AMFVariantClear(this); }
 
@@ -192,12 +224,12 @@ namespace amf
         AMFVariant& operator=(amf_int32         value)      { AMFVariantAssignInt64(this, value);  return *this;}
         AMFVariant& operator=(amf_uint32        value)      { AMFVariantAssignInt64(this, value);  return *this;}
         AMFVariant& operator=(amf_double        value)      { AMFVariantAssignDouble(this, value);  return *this;}
-        AMFVariant& operator=(const AMFRect &   value)      { AMFVariantAssignRect(this, value);  return *this;}
-        AMFVariant& operator=(const AMFSize &   value)      { AMFVariantAssignSize(this, value);  return *this;}
-        AMFVariant& operator=(const AMFPoint&   value)      { AMFVariantAssignPoint(this, value);  return *this;}
-        AMFVariant& operator=(const AMFRate &   value)      { AMFVariantAssignRate(this, value);  return *this;}
-        AMFVariant& operator=(const AMFRatio&   value)      { AMFVariantAssignRatio(this, value);  return *this;}
-        AMFVariant& operator=(const AMFColor&   value)      { AMFVariantAssignColor(this, value);  return *this;}
+        AMFVariant& operator=(const AMFRect &   value)      { AMFVariantAssignRect(this, &value);  return *this;}
+        AMFVariant& operator=(const AMFSize &   value)      { AMFVariantAssignSize(this, &value);  return *this;}
+        AMFVariant& operator=(const AMFPoint&   value)      { AMFVariantAssignPoint(this, &value);  return *this;}
+        AMFVariant& operator=(const AMFRate &   value)      { AMFVariantAssignRate(this, &value);  return *this;}
+        AMFVariant& operator=(const AMFRatio&   value)      { AMFVariantAssignRatio(this, &value);  return *this;}
+        AMFVariant& operator=(const AMFColor&   value)      { AMFVariantAssignColor(this, &value);  return *this;}
         AMFVariant& operator=(const char*       value)      { AMFVariantAssignString(this, value);  return *this;}
         AMFVariant& operator=(const wchar_t*    value)      { AMFVariantAssignWString(this, value);  return *this;}
         AMFVariant& operator=(AMFInterface*     value)      { AMFVariantAssignInterface(this, value);  return *this;}
@@ -219,22 +251,22 @@ namespace amf
         operator AMFColor() const          { return ToColor();      }
         operator AMFInterface*() const     { return ToInterface();  }
 
-        inline amf_bool         ToBool() const      { return Empty() ? false        : GetValue<amf_bool,   AMF_VARIANT_BOOL>(AMFVariantGetBool); }
-        inline amf_int64        ToInt64() const     { return Empty() ? 0            : GetValue<amf_int64,  AMF_VARIANT_INT64>(AMFVariantGetInt64); }
-        inline amf_uint64       ToUInt64() const    { return Empty() ? 0            : GetValue<amf_uint64, AMF_VARIANT_INT64>(AMFVariantGetInt64); }
-        inline amf_int32        ToInt32() const     { return Empty() ? 0            : GetValue<amf_int32,  AMF_VARIANT_INT64>(AMFVariantGetInt64); }
-        inline amf_uint32       ToUInt32() const    { return Empty() ? 0            : GetValue<amf_uint32, AMF_VARIANT_INT64>(AMFVariantGetInt64); }
-        inline amf_double       ToDouble() const    { return Empty() ? 0            : GetValue<amf_double, AMF_VARIANT_DOUBLE>(AMFVariantGetDouble); }
-        inline amf_float        ToFloat() const     { return Empty() ? 0            : GetValue<amf_float,  AMF_VARIANT_DOUBLE>(AMFVariantGetDouble); }
-        inline AMFRect          ToRect () const     { return Empty() ? AMFRect()    : GetValue<AMFRect,  AMF_VARIANT_RECT>(AMFVariantGetRect); }
-        inline AMFSize          ToSize () const     { return Empty() ? AMFSize()    : GetValue<AMFSize,  AMF_VARIANT_SIZE>(AMFVariantGetSize); }
-        inline AMFPoint         ToPoint() const     { return Empty() ? AMFPoint()   : GetValue<AMFPoint, AMF_VARIANT_POINT>(AMFVariantGetPoint); }
-        inline AMFRate          ToRate () const     { return Empty() ? AMFRate()    : GetValue<AMFRate,  AMF_VARIANT_RATE>(AMFVariantGetRate); }
-        inline AMFRatio         ToRatio() const     { return Empty() ? AMFRatio()   : GetValue<AMFRatio, AMF_VARIANT_RATIO>(AMFVariantGetRatio); }
-        inline AMFColor         ToColor() const     { return Empty() ? AMFColor()   : GetValue<AMFColor, AMF_VARIANT_COLOR>(AMFVariantGetColor); }
-        inline AMFInterface*    ToInterface() const { return AMFVariantGetType(this) == AMF_VARIANT_INTERFACE ? this->pInterface : NULL; }
-        inline String           ToString() const;
-        inline WString          ToWString() const;
+        AMF_INLINE amf_bool         ToBool() const      { return Empty() ? false        : GetValue<amf_bool,   AMF_VARIANT_BOOL>(AMFVariantGetBool); }
+        AMF_INLINE amf_int64        ToInt64() const     { return Empty() ? 0            : GetValue<amf_int64,  AMF_VARIANT_INT64>(AMFVariantGetInt64); }
+        AMF_INLINE amf_uint64       ToUInt64() const    { return Empty() ? 0            : GetValue<amf_uint64, AMF_VARIANT_INT64>(AMFVariantGetInt64); }
+        AMF_INLINE amf_int32        ToInt32() const     { return Empty() ? 0            : GetValue<amf_int32,  AMF_VARIANT_INT64>(AMFVariantGetInt64); }
+        AMF_INLINE amf_uint32       ToUInt32() const    { return Empty() ? 0            : GetValue<amf_uint32, AMF_VARIANT_INT64>(AMFVariantGetInt64); }
+        AMF_INLINE amf_double       ToDouble() const    { return Empty() ? 0            : GetValue<amf_double, AMF_VARIANT_DOUBLE>(AMFVariantGetDouble); }
+        AMF_INLINE amf_float        ToFloat() const     { return Empty() ? 0            : GetValue<amf_float,  AMF_VARIANT_DOUBLE>(AMFVariantGetDouble); }
+        AMF_INLINE AMFRect          ToRect () const     { return Empty() ? AMFRect()    : GetValue<AMFRect,  AMF_VARIANT_RECT>(AMFVariantGetRect); }
+        AMF_INLINE AMFSize          ToSize () const     { return Empty() ? AMFSize()    : GetValue<AMFSize,  AMF_VARIANT_SIZE>(AMFVariantGetSize); }
+        AMF_INLINE AMFPoint         ToPoint() const     { return Empty() ? AMFPoint()   : GetValue<AMFPoint, AMF_VARIANT_POINT>(AMFVariantGetPoint); }
+        AMF_INLINE AMFRate          ToRate () const     { return Empty() ? AMFRate()    : GetValue<AMFRate,  AMF_VARIANT_RATE>(AMFVariantGetRate); }
+        AMF_INLINE AMFRatio         ToRatio() const     { return Empty() ? AMFRatio()   : GetValue<AMFRatio, AMF_VARIANT_RATIO>(AMFVariantGetRatio); }
+        AMF_INLINE AMFColor         ToColor() const     { return Empty() ? AMFColor()   : GetValue<AMFColor, AMF_VARIANT_COLOR>(AMFVariantGetColor); }
+        AMF_INLINE AMFInterface*    ToInterface() const { return AMFVariantGetType(this) == AMF_VARIANT_INTERFACE ? this->pInterface : NULL; }
+        AMF_INLINE String           ToString() const;
+        AMF_INLINE WString          ToWString() const;
 
         bool operator==(const AMFVariantStruct& other) const;
         bool operator==(const AMFVariantStruct* pOther) const;
@@ -293,6 +325,15 @@ namespace amf
             Free();
         }
 
+        char& operator[](size_t index)
+        {
+            if (index >= size())
+            {
+                resize(index);
+            }
+            return m_Str[index];
+        }
+
         String& operator=(const String& p_other)
         {
             Free();
@@ -308,13 +349,13 @@ namespace amf
             return *this;
         }
 #endif
-        bool operator==(const String& p_other)
+        bool operator==(const String& p_other) const
         {
-            if(c_str() == 0)
+            if (m_Str == NULL && p_other.m_Str == NULL)
             {
                 return true;
             }
-            if(p_other.c_str() == 0)
+            else if ((m_Str == NULL && p_other.m_Str != NULL) || (m_Str != NULL && p_other.m_Str == NULL))
             {
                 return false;
             }
@@ -329,6 +370,9 @@ namespace amf
             }
             return (size_t)strlen(m_Str);
         }
+
+        AMF_INLINE size_t length() const { return size(); }
+        
         void resize(size_t sizeAlloc)
         {
             if(sizeAlloc == 0)
@@ -404,13 +448,22 @@ namespace amf
             return *this;
         }
 #endif
-        bool operator==(const WString& p_other)
+        wchar_t& operator[](size_t index)
         {
-            if(c_str() == 0)
+            if (index >= size())
+            {
+                resize(index);
+            }
+            return m_Str[index];
+        }
+
+        bool operator==(const WString& p_other) const
+        {
+            if (m_Str == NULL && p_other.m_Str == NULL)
             {
                 return true;
             }
-            if(p_other.c_str() == 0)
+            else if ((m_Str == NULL && p_other.m_Str != NULL) || (m_Str != NULL && p_other.m_Str == NULL))
             {
                 return false;
             }
@@ -426,6 +479,9 @@ namespace amf
             }
             return (size_t)wcslen(m_Str);
         }
+
+        AMF_INLINE size_t length() const { return size(); }
+        
         void resize(size_t sizeAlloc)
         {
             if(sizeAlloc == 0)
@@ -462,9 +518,9 @@ namespace amf
         WString temp = GetValue<WString, AMF_VARIANT_WSTRING>(AMFVariantGetWString);
         return WString(temp.c_str());
     }
-
+#endif // defined(__cplusplus)
     //----------------------------------------------------------------------------------------------
-    // inline implementation of helper functions 
+    // AMF_INLINE implementation of helper functions 
     //----------------------------------------------------------------------------------------------
     #define AMF_VARIANT_RETURN_IF_INVALID_POINTER(p) \
        { \
@@ -474,102 +530,130 @@ namespace amf
             } \
        }
     //-------------------------------------------------------------------------------------------------
-    AMF_RESULT AMF_CDECL_CALL AMFVariantInit(AMFVariantStruct* pVariant)
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantInit(AMFVariantStruct* pVariant)
     {
         AMF_VARIANT_RETURN_IF_INVALID_POINTER(pVariant);
-        AMFVariantGetType(pVariant) = AMF_VARIANT_EMPTY;
+        pVariant->type = AMF_VARIANT_EMPTY;
         return AMF_OK;
     }
     //-------------------------------------------------------------------------------------------------
-    AMF_RESULT AMF_CDECL_CALL AMFVariantClear(AMFVariantStruct* pVariant)
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantClear(AMFVariantStruct* pVariant)
     {
-        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pVariant);
         AMF_RESULT errRet = AMF_OK;
+        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pVariant);
 
         switch(AMFVariantGetType(pVariant))
         {
         case AMF_VARIANT_STRING:
             amf_variant_free(AMFVariantString(pVariant));
-            AMFVariantGetType(pVariant) = AMF_VARIANT_EMPTY;
+            pVariant->type = AMF_VARIANT_EMPTY;
             break;
 
         case AMF_VARIANT_WSTRING:
             amf_variant_free(AMFVariantWString(pVariant));
-            AMFVariantGetType(pVariant) = AMF_VARIANT_EMPTY;
+            pVariant->type = AMF_VARIANT_EMPTY;
             break;
 
         case AMF_VARIANT_INTERFACE:
             if(AMFVariantInterface(pVariant) != NULL)
             {
+#if defined(__cplusplus)
                 AMFVariantInterface(pVariant)->Release();
+#else
+                AMFVariantInterface(pVariant)->pVtbl->Release(AMFVariantInterface(pVariant));
+#endif
                 AMFVariantInterface(pVariant) = NULL;
             }
-            AMFVariantGetType(pVariant) = AMF_VARIANT_EMPTY;
+            pVariant->type = AMF_VARIANT_EMPTY;
             break;
 
         default:
-            AMFVariantGetType(pVariant) = AMF_VARIANT_EMPTY;
+            pVariant->type = AMF_VARIANT_EMPTY;
             break;
         }
         return errRet;
     }
     //-------------------------------------------------------------------------------------------------
-    AMF_RESULT AMF_CDECL_CALL AMFVariantCompare(const AMFVariantStruct* pFirst, const AMFVariantStruct* pSecond, bool& bEqual)
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantCompare(const AMFVariantStruct* pFirst, const AMFVariantStruct* pSecond, amf_bool* bEqual)
     {
+        AMF_RESULT errRet = AMF_OK;
         AMF_VARIANT_RETURN_IF_INVALID_POINTER(pFirst);
         AMF_VARIANT_RETURN_IF_INVALID_POINTER(pSecond);
-        AMF_RESULT errRet = AMF_OK;
     
         if(pFirst == pSecond)
         {
-            bEqual = true;
+            *bEqual = true;
         }
         else if(AMFVariantGetType(pFirst) != AMFVariantGetType(pSecond))
         {
-            bEqual = false;
+            *bEqual = false;
         }
         else
         {
             switch(AMFVariantGetType(pFirst))
             {
             case AMF_VARIANT_EMPTY:
-                bEqual = true;
+                *bEqual = true;
                 break;
             case AMF_VARIANT_BOOL:
-                bEqual = AMFVariantGetBool(pFirst) == AMFVariantBool(pSecond);
+                *bEqual = AMFVariantGetBool(pFirst) == AMFVariantBool(pSecond);
                 break;
             case AMF_VARIANT_INT64:
-                bEqual = AMFVariantGetInt64(pFirst) == AMFVariantInt64(pSecond);
+                *bEqual = AMFVariantGetInt64(pFirst) == AMFVariantInt64(pSecond);
                 break;
             case AMF_VARIANT_DOUBLE:
-                bEqual = AMFVariantGetDouble(pFirst) == AMFVariantDouble(pSecond);
+                *bEqual = AMFVariantGetDouble(pFirst) == AMFVariantDouble(pSecond);
                 break;
             case AMF_VARIANT_RECT:
-                bEqual = AMFVariantGetRect(pFirst) == AMFVariantGetRect(pSecond);
+#if defined(__cplusplus)
+                *bEqual = AMFVariantGetRect(pFirst) == AMFVariantGetRect(pSecond);
+#else
+                *bEqual = memcmp(&pFirst->rectValue, &pSecond->rectValue, sizeof(AMFRect)) == 0;
+#endif
                 break;
             case AMF_VARIANT_SIZE:
-                bEqual = AMFVariantGetSize(pFirst) == AMFVariantGetSize(pSecond);
+#if defined(__cplusplus)
+                *bEqual = AMFVariantGetSize(pFirst) == AMFVariantGetSize(pSecond);
+#else
+                *bEqual = memcmp(&pFirst->sizeValue, &pSecond->sizeValue, sizeof(AMFSize)) == 0;
+#endif
                 break;
             case AMF_VARIANT_POINT:
-                bEqual = AMFVariantGetPoint(pFirst) == AMFVariantGetPoint(pSecond);
+#if defined(__cplusplus)
+                *bEqual = AMFVariantGetPoint(pFirst) == AMFVariantGetPoint(pSecond);
+#else
+                *bEqual = memcmp(&pFirst->pointValue, &pSecond->pointValue, sizeof(AMFPoint)) == 0;
+#endif
                 break;
             case AMF_VARIANT_RATE:
-                bEqual = AMFVariantGetRate(pFirst) == AMFVariantGetRate(pSecond);
+#if defined(__cplusplus)
+                *bEqual = AMFVariantGetRate(pFirst) == AMFVariantGetRate(pSecond);
+#else
+                *bEqual = memcmp(&pFirst->rateValue, &pSecond->rateValue, sizeof(AMFRate)) == 0;
+#endif
                 break;
             case AMF_VARIANT_RATIO:
-                bEqual = AMFVariantGetRatio(pFirst) == AMFVariantGetRatio(pSecond);
+#if defined(__cplusplus)
+                *bEqual = AMFVariantGetRatio(pFirst) == AMFVariantGetRatio(pSecond);
+#else
+                *bEqual = memcmp(&pFirst->ratioValue, &pSecond->ratioValue, sizeof(AMFRatio)) == 0;
+#endif
                 break;
             case AMF_VARIANT_COLOR:
-                bEqual = AMFVariantGetColor(pFirst) == AMFVariantGetColor(pSecond);
+#if defined(__cplusplus)
+                *bEqual = AMFVariantGetColor(pFirst) == AMFVariantGetColor(pSecond);
+#else
+                *bEqual = memcmp(&pFirst->colorValue, &pSecond->colorValue, sizeof(AMFColor)) == 0;
+#endif
                 break;
             case AMF_VARIANT_STRING:
-                bEqual = strcmp(AMFVariantString(pFirst), AMFVariantString(pSecond)) == 0;
+                *bEqual = strcmp(AMFVariantString(pFirst), AMFVariantString(pSecond)) == 0;
                 break;
             case AMF_VARIANT_WSTRING:
-                bEqual = wcscmp(AMFVariantWString(pFirst), AMFVariantWString(pSecond)) == 0;
+                *bEqual = wcscmp(AMFVariantWString(pFirst), AMFVariantWString(pSecond)) == 0;
                 break;
             case AMF_VARIANT_INTERFACE:
-                bEqual = AMFVariantInterface(pFirst) == AMFVariantInterface(pSecond);
+                *bEqual = AMFVariantInterface(pFirst) == AMFVariantInterface(pSecond);
                 break;
             default:
                 errRet = AMF_INVALID_ARG;
@@ -579,11 +663,11 @@ namespace amf
         return errRet;
     }
     //-------------------------------------------------------------------------------------------------
-    AMF_RESULT AMF_CDECL_CALL AMFVariantCopy(AMFVariantStruct* pDest, const AMFVariantStruct* pSrc)
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantCopy(AMFVariantStruct* pDest, const AMFVariantStruct* pSrc)
     {
+        AMF_RESULT errRet = AMF_OK;
         AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
         AMF_VARIANT_RETURN_IF_INVALID_POINTER(pSrc);
-        AMF_RESULT errRet = AMF_OK;
         if(pDest != pSrc)
         {
             switch(AMFVariantGetType(pSrc))
@@ -601,22 +685,22 @@ namespace amf
                 errRet = AMFVariantAssignDouble(pDest, AMFVariantDouble(pSrc));
                 break;
             case AMF_VARIANT_RECT:
-                errRet = AMFVariantAssignRect(pDest, AMFVariantGetRect(pSrc));
+                errRet = AMFVariantAssignRect(pDest, &pSrc->rectValue);
                 break;
             case AMF_VARIANT_SIZE:
-                errRet = AMFVariantAssignSize(pDest, AMFVariantGetSize(pSrc));
+                errRet = AMFVariantAssignSize(pDest, &pSrc->sizeValue);
                 break;
             case AMF_VARIANT_POINT:
-                errRet = AMFVariantAssignPoint(pDest, AMFVariantGetPoint(pSrc));
+                errRet = AMFVariantAssignPoint(pDest, &pSrc->pointValue);
                 break;
             case AMF_VARIANT_RATE:
-                errRet = AMFVariantAssignRate(pDest, AMFVariantGetRate(pSrc));
+                errRet = AMFVariantAssignRate(pDest, &pSrc->rateValue);
                 break;
             case AMF_VARIANT_RATIO:
-                errRet = AMFVariantAssignRatio(pDest, AMFVariantGetRatio(pSrc));
+                errRet = AMFVariantAssignRatio(pDest, &pSrc->ratioValue);
                 break;
             case AMF_VARIANT_COLOR:
-                errRet = AMFVariantAssignColor(pDest, AMFVariantGetColor(pSrc));
+                errRet = AMFVariantAssignColor(pDest, &pSrc->colorValue);
                 break;
             case AMF_VARIANT_STRING:
                 errRet = AMFVariantAssignString(pDest, AMFVariantString(pSrc));
@@ -634,71 +718,72 @@ namespace amf
         }
         return errRet;
     }
-    #define AMFVariantTypeEmpty      AMF_VARIANT_EMPTY
+    #define AMFVariantTypeEmpty         AMF_VARIANT_EMPTY
 
-    #define AMFVariantTypeBool      AMF_VARIANT_BOOL
-    #define AMFVariantTypeInt64     AMF_VARIANT_INT64
-    #define AMFVariantTypeDouble    AMF_VARIANT_DOUBLE
+    #define AMFVariantTypeBool          AMF_VARIANT_BOOL
+    #define AMFVariantTypeInt64         AMF_VARIANT_INT64
+    #define AMFVariantTypeDouble        AMF_VARIANT_DOUBLE
 
-    #define AMFVariantTypeRect      AMF_VARIANT_RECT
-    #define AMFVariantTypeSize      AMF_VARIANT_SIZE
-    #define AMFVariantTypePoint     AMF_VARIANT_POINT
-    #define AMFVariantTypeRate      AMF_VARIANT_RATE
-    #define AMFVariantTypeRatio     AMF_VARIANT_RATIO
-    #define AMFVariantTypeColor     AMF_VARIANT_COLOR
+    #define AMFVariantTypeRect          AMF_VARIANT_RECT
+    #define AMFVariantTypeSize          AMF_VARIANT_SIZE
+    #define AMFVariantTypePoint         AMF_VARIANT_POINT
+    #define AMFVariantTypeRate          AMF_VARIANT_RATE
+    #define AMFVariantTypeRatio         AMF_VARIANT_RATIO
+    #define AMFVariantTypeColor         AMF_VARIANT_COLOR
 
-    #define AMFVariantTypeString    AMF_VARIANT_STRING
-    #define AMFVariantTypeWString   AMF_VARIANT_WSTRING
-    #define AMFVariantTypeInterface  AMF_VARIANT_INTERFACE
+    #define AMFVariantTypeString        AMF_VARIANT_STRING
+    #define AMFVariantTypeWString       AMF_VARIANT_WSTRING
+    #define AMFVariantTypeInterface     AMF_VARIANT_INTERFACE
 
+#if defined(__cplusplus)
     
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignString(AMFVariantStruct* pDest, const AMFVariant::String& value)
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignString(AMFVariantStruct* pDest, const AMFVariant::String& value)
     {
         return AMFVariantAssignString(pDest, value.c_str());
     }
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignWString(AMFVariantStruct* pDest, const AMFVariant::WString& value)
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignWString(AMFVariantStruct* pDest, const AMFVariant::WString& value)
     {
         return AMFVariantAssignWString(pDest, value.c_str());
     }
+        
+    AMF_INLINE amf_bool AMFConvertEmptyToBool(void*, AMF_RESULT& res) { res = AMF_OK; return false; }
+    AMF_INLINE amf_int64 AMFConvertEmptyToInt64(void*, AMF_RESULT& res) {res = AMF_OK; return 0; }
+    AMF_INLINE amf_double AMFConvertEmptyToDouble(void*, AMF_RESULT& res) {res = AMF_OK; return 0; }
     
-    inline amf_bool AMFConvertEmptyToBool(void*, AMF_RESULT& res) { res = AMF_OK; return false; }
-    inline amf_int64 AMFConvertEmptyToInt64(void*, AMF_RESULT& res) {res = AMF_OK; return 0; }
-    inline amf_double AMFConvertEmptyToDouble(void*, AMF_RESULT& res) {res = AMF_OK; return 0; }
     
-    
-    inline AMFVariant::String AMFConvertEmptyToString(void*, AMF_RESULT& res) {res = AMF_OK; return ""; }
-    inline AMFVariant::WString AMFConvertEmptyToWString(void*, AMF_RESULT& res) {res = AMF_OK; return L""; }
-    inline amf_int64 AMFConvertBoolToInt64(bool value, AMF_RESULT& res){res = AMF_OK; return value ? 1 : 0;}
-    inline amf_double AMFConvertBoolToDouble(bool value, AMF_RESULT& res){res = AMF_OK; return value ? 1 : 0;}
-    inline AMFVariant::String AMFConvertBoolToString(bool value, AMF_RESULT& res){res = AMF_OK; return value ? "true" : "false";}
-    inline AMFVariant::WString AMFConvertBoolToWString(bool value, AMF_RESULT& res){res = AMF_OK; return value ? L"true" : L"false";}
-    inline bool AMFConvertInt64ToBool(amf_int64 value, AMF_RESULT& res){res = AMF_OK;return value != 0;}
-    inline amf_double AMFConvertInt64ToDouble(amf_int64 value, AMF_RESULT& res){res = AMF_OK;return (amf_double)value;}
-    inline AMFVariant::String AMFConvertInt64ToString(amf_int64 value, AMF_RESULT& res)
+    AMF_INLINE AMFVariant::String AMFConvertEmptyToString(void*, AMF_RESULT& res) {res = AMF_OK; return ""; }
+    AMF_INLINE AMFVariant::WString AMFConvertEmptyToWString(void*, AMF_RESULT& res) {res = AMF_OK; return L""; }
+    AMF_INLINE amf_int64 AMFConvertBoolToInt64(bool value, AMF_RESULT& res){res = AMF_OK; return value ? 1 : 0;}
+    AMF_INLINE amf_double AMFConvertBoolToDouble(bool value, AMF_RESULT& res){res = AMF_OK; return value ? 1 : 0;}
+    AMF_INLINE AMFVariant::String AMFConvertBoolToString(bool value, AMF_RESULT& res){res = AMF_OK; return value ? "true" : "false";}
+    AMF_INLINE AMFVariant::WString AMFConvertBoolToWString(bool value, AMF_RESULT& res){res = AMF_OK; return value ? L"true" : L"false";}
+    AMF_INLINE bool AMFConvertInt64ToBool(amf_int64 value, AMF_RESULT& res){res = AMF_OK;return value != 0;}
+    AMF_INLINE amf_double AMFConvertInt64ToDouble(amf_int64 value, AMF_RESULT& res){res = AMF_OK;return (amf_double)value;}
+    AMF_INLINE AMFVariant::String AMFConvertInt64ToString(amf_int64 value, AMF_RESULT& res)
     {
         res = AMF_OK;
         char buff[0xFF];
-        sprintf(buff, "%" AMFPRId64, value);
+        sprintf(buff, "%" AMFPRId64, (long long)value);
         return buff;
     }
-    inline AMFVariant::WString AMFConvertInt64ToWString(amf_int64 value, AMF_RESULT& res)
+    AMF_INLINE AMFVariant::WString AMFConvertInt64ToWString(amf_int64 value, AMF_RESULT& res)
     {
         res = AMF_OK;
         wchar_t buff[0xFF];
-        swprintf(buff, 0xFF, L"%" LPRId64, value);
+        swprintf(buff, 0xFF, L"%" LPRId64, (long long)value);
         return buff;
     }
 
-    inline bool AMFConvertDoubleToBool(amf_double value, AMF_RESULT& res){res = AMF_OK;return value != 0;}
-    inline amf_int64 AMFConvertDoubleToInt64(amf_double value, AMF_RESULT& res){res = AMF_OK;return amf_int64(value);}
-    inline AMFVariant::String AMFConvertDoubleToString(amf_double value, AMF_RESULT& res)
+    AMF_INLINE bool AMFConvertDoubleToBool(amf_double value, AMF_RESULT& res){res = AMF_OK;return value != 0;}
+    AMF_INLINE amf_int64 AMFConvertDoubleToInt64(amf_double value, AMF_RESULT& res){res = AMF_OK;return amf_int64(value);}
+    AMF_INLINE AMFVariant::String AMFConvertDoubleToString(amf_double value, AMF_RESULT& res)
     {
         res = AMF_OK;
         char buff[0xFF];
         sprintf(buff, "%lf", value);
         return buff;
     }
-    inline AMFVariant::WString AMFConvertDoubleToWString(amf_double value, AMF_RESULT& res)
+    AMF_INLINE AMFVariant::WString AMFConvertDoubleToWString(amf_double value, AMF_RESULT& res)
     {
         res = AMF_OK;
         wchar_t buff[0xFF];
@@ -706,7 +791,7 @@ namespace amf
         return buff;
     }
 
-    inline bool AMFConvertStringToBool(const AMFVariant::String& value, AMF_RESULT& res)
+    AMF_INLINE bool AMFConvertStringToBool(const AMFVariant::String& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         AMFVariant::String tmp = value;
@@ -725,10 +810,10 @@ namespace amf
         return false;
     }
 
-    inline amf_int64 AMFConvertStringToInt64(const AMFVariant::String& value, AMF_RESULT& res)
+    AMF_INLINE amf_int64 AMFConvertStringToInt64(const AMFVariant::String& value, AMF_RESULT& res)
     {
         res = AMF_OK;
-        amf_int64 tmp = 0;
+        long long tmp = 0;
         int readElements = 0;
 
         if(value.size() > 2 && ( value.c_str()[0] == '0') && ( value.c_str()[1] == 'x') )
@@ -747,7 +832,7 @@ namespace amf
         return 0;
     }
 
-    inline amf_double AMFConvertStringToDouble(const AMFVariant::String& value, AMF_RESULT& res)
+    AMF_INLINE amf_double AMFConvertStringToDouble(const AMFVariant::String& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         amf_double tmp = 0;
@@ -764,7 +849,7 @@ namespace amf
         return 0;
     }
 
-    inline AMFVariant::WString AMFConvertStringToWString(const AMFVariant::String& value, AMF_RESULT& res)
+    AMF_INLINE AMFVariant::WString AMFConvertStringToWString(const AMFVariant::String& value, AMF_RESULT& res)
     {
         res = AMF_OK;
 //        return amf_from_utf8_to_unicode(value);
@@ -814,7 +899,7 @@ namespace amf
         len = value.size();
         pt = pUtf8Buff;
         UnicodeBuffSize = 0;
-        while(len > 0)
+        while(len > 0)                            
         {
             size_t length = mbrlen (pt, len, &mbs);
             if((length == 0) || (length > len))
@@ -843,7 +928,7 @@ namespace amf
         result.resize(UnicodeBuffSize);
         return result;
     }
-    inline AMFVariant::String AMFConvertWStringToString(const AMFVariant::WString& value, AMF_RESULT& res)
+    AMF_INLINE AMFVariant::String AMFConvertWStringToString(const AMFVariant::WString& value, AMF_RESULT& res)
     {
         res = AMF_OK;
 //      return amf_from_unicode_to_utf8(value);
@@ -909,55 +994,55 @@ namespace amf
     }
 
 
-    inline bool AMFConvertWStringToBool(const AMFVariant::WString& value, AMF_RESULT& res)
+    AMF_INLINE bool AMFConvertWStringToBool(const AMFVariant::WString& value, AMF_RESULT& res)
     {
         return AMFConvertStringToBool(AMFConvertWStringToString(value, res), res);
     }
-    inline amf_int64 AMFConvertWStringToInt64(const AMFVariant::WString& value, AMF_RESULT& res)
+    AMF_INLINE amf_int64 AMFConvertWStringToInt64(const AMFVariant::WString& value, AMF_RESULT& res)
     {
         return AMFConvertStringToInt64(AMFConvertWStringToString(value, res), res);
     }
-    inline amf_double AMFConvertWStringToDouble(const AMFVariant::WString& value, AMF_RESULT& res)
+    AMF_INLINE amf_double AMFConvertWStringToDouble(const AMFVariant::WString& value, AMF_RESULT& res)
     {
         return AMFConvertStringToDouble(AMFConvertWStringToString(value, res), res);
     }
 
-    inline AMFVariant::String AMF_STD_CALL AMFConvertRectToString(const AMFRect& value, AMF_RESULT& res)
+    AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertRectToString(const AMFRect& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         char buff[0xFF];
         sprintf(buff, "%d,%d,%d,%d", value.left, value.top, value.right, value.bottom);
         return buff;
     }
-    inline AMFVariant::String AMF_STD_CALL AMFConvertSizeToString(const AMFSize& value, AMF_RESULT& res)
+    AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertSizeToString(const AMFSize& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         char buff[0xFF];
         sprintf(buff, "%d,%d", value.width, value.height);
         return buff;
     }
-    inline AMFVariant::String AMF_STD_CALL AMFConvertPointToString(const AMFPoint& value, AMF_RESULT& res)
+    AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertPointToString(const AMFPoint& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         char buff[0xFF];
         sprintf(buff, "%d,%d", value.x, value.y);
         return buff;
     }
-    inline AMFVariant::String AMF_STD_CALL AMFConvertRateToString(const AMFRate& value, AMF_RESULT& res)
+    AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertRateToString(const AMFRate& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         char buff[0xFF];
         sprintf(buff, "%d,%d", value.num, value.den);
         return buff;
     }
-    inline AMFVariant::String AMF_STD_CALL AMFConvertRatioToString(const AMFRatio& value, AMF_RESULT& res)
+    AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertRatioToString(const AMFRatio& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         char buff[0xFF];
         sprintf(buff, "%d,%d", value.num, value.den);
         return buff;
     }
-    inline AMFVariant::String AMF_STD_CALL AMFConvertColorToString(const AMFColor& value, AMF_RESULT& res)
+    AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertColorToString(const AMFColor& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         char buff[0xFF];
@@ -965,7 +1050,7 @@ namespace amf
         return buff;
     }
 
-    inline AMFRect  AMF_STD_CALL AMFConvertStringToRect(const AMFVariant::String& value, AMF_RESULT& res)
+    AMF_INLINE AMFRect  AMF_STD_CALL AMFConvertStringToRect(const AMFVariant::String& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         AMFRect tmp = {};
@@ -982,7 +1067,7 @@ namespace amf
         return tmp;
     }
 
-    inline AMFSize  AMF_STD_CALL AMFConvertStringToSize(const AMFVariant::String& value, AMF_RESULT& res)
+    AMF_INLINE AMFSize  AMF_STD_CALL AMFConvertStringToSize(const AMFVariant::String& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         AMFSize tmp = {};
@@ -998,7 +1083,7 @@ namespace amf
         res = AMF_INVALID_ARG;
         return tmp;
     }
-    inline AMFPoint AMF_STD_CALL AMFConvertStringToPoint(const AMFVariant::String& value, AMF_RESULT& res)
+    AMF_INLINE AMFPoint AMF_STD_CALL AMFConvertStringToPoint(const AMFVariant::String& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         AMFPoint tmp = {};
@@ -1014,7 +1099,7 @@ namespace amf
         res = AMF_INVALID_ARG;
         return tmp;
     }
-    inline AMFRate  AMF_STD_CALL AMFConvertStringToRate(const AMFVariant::String& value, AMF_RESULT& res)
+    AMF_INLINE AMFRate  AMF_STD_CALL AMFConvertStringToRate(const AMFVariant::String& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         AMFRate tmp = {};
@@ -1030,7 +1115,7 @@ namespace amf
         res = AMF_INVALID_ARG;
         return tmp;
     }
-    inline AMFRatio AMF_STD_CALL AMFConvertStringToRatio(const AMFVariant::String& value, AMF_RESULT& res)
+    AMF_INLINE AMFRatio AMF_STD_CALL AMFConvertStringToRatio(const AMFVariant::String& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         AMFRatio tmp = {};
@@ -1046,7 +1131,7 @@ namespace amf
         res = AMF_INVALID_ARG;
         return tmp;
     }
-    inline AMFColor AMF_STD_CALL AMFConvertStringToColor(const AMFVariant::String& value, AMF_RESULT& res)
+    AMF_INLINE AMFColor AMF_STD_CALL AMFConvertStringToColor(const AMFVariant::String& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         int readElements = 0;
@@ -1066,53 +1151,53 @@ namespace amf
         return AMFConstructColor(0, 0, 0, 255);
     }
 ///////////////////////
-    inline AMFVariant::WString AMF_STD_CALL AMFConvertRectToWString(const AMFRect& value, AMF_RESULT& res)
+    AMF_INLINE AMFVariant::WString AMF_STD_CALL AMFConvertRectToWString(const AMFRect& value, AMF_RESULT& res)
     {
         return AMFConvertStringToWString(AMFConvertRectToString(value, res), res);
     }
-    inline AMFVariant::WString AMF_STD_CALL AMFConvertSizeToWString(const AMFSize& value, AMF_RESULT& res)
+    AMF_INLINE AMFVariant::WString AMF_STD_CALL AMFConvertSizeToWString(const AMFSize& value, AMF_RESULT& res)
     {
         return AMFConvertStringToWString(AMFConvertSizeToString(value, res), res);
     }
-    inline AMFVariant::WString AMF_STD_CALL AMFConvertPointToWString(const AMFPoint& value, AMF_RESULT& res)
+    AMF_INLINE AMFVariant::WString AMF_STD_CALL AMFConvertPointToWString(const AMFPoint& value, AMF_RESULT& res)
     {
         return AMFConvertStringToWString(AMFConvertPointToString(value, res), res);
     }
-    inline AMFVariant::WString AMF_STD_CALL AMFConvertRateToWString(const AMFRate& value, AMF_RESULT& res)
+    AMF_INLINE AMFVariant::WString AMF_STD_CALL AMFConvertRateToWString(const AMFRate& value, AMF_RESULT& res)
     {
         return AMFConvertStringToWString(AMFConvertRateToString(value, res), res);
     }
-    inline AMFVariant::WString AMF_STD_CALL AMFConvertRatioToWString(const AMFRatio& value, AMF_RESULT& res)
+    AMF_INLINE AMFVariant::WString AMF_STD_CALL AMFConvertRatioToWString(const AMFRatio& value, AMF_RESULT& res)
     {
         return AMFConvertStringToWString(AMFConvertRatioToString(value, res), res);
     }
-    inline AMFVariant::WString AMF_STD_CALL AMFConvertColorToWString(const AMFColor& value, AMF_RESULT& res)
+    AMF_INLINE AMFVariant::WString AMF_STD_CALL AMFConvertColorToWString(const AMFColor& value, AMF_RESULT& res)
     {
         return AMFConvertStringToWString(AMFConvertColorToString(value, res), res);
     }
 
-    inline AMFRect  AMF_STD_CALL AMFConvertWStringToRect(const AMFVariant::WString& value, AMF_RESULT& res)
+    AMF_INLINE AMFRect  AMF_STD_CALL AMFConvertWStringToRect(const AMFVariant::WString& value, AMF_RESULT& res)
     {
         return AMFConvertStringToRect(AMFConvertWStringToString(value, res), res);
     }
 
-    inline AMFSize  AMF_STD_CALL AMFConvertWStringToSize(const AMFVariant::WString& value, AMF_RESULT& res)
+    AMF_INLINE AMFSize  AMF_STD_CALL AMFConvertWStringToSize(const AMFVariant::WString& value, AMF_RESULT& res)
     {
         return AMFConvertStringToSize(AMFConvertWStringToString(value, res), res);
     }
-    inline AMFPoint AMF_STD_CALL AMFConvertWStringToPoint(const AMFVariant::WString& value, AMF_RESULT& res)
+    AMF_INLINE AMFPoint AMF_STD_CALL AMFConvertWStringToPoint(const AMFVariant::WString& value, AMF_RESULT& res)
     {
         return AMFConvertStringToPoint(AMFConvertWStringToString(value, res), res);
     }
-    inline AMFRate  AMF_STD_CALL AMFConvertWStringToRate(const AMFVariant::WString& value, AMF_RESULT& res)
+    AMF_INLINE AMFRate  AMF_STD_CALL AMFConvertWStringToRate(const AMFVariant::WString& value, AMF_RESULT& res)
     {
         return AMFConvertStringToRate(AMFConvertWStringToString(value, res), res);
     }
-    inline AMFRatio AMF_STD_CALL AMFConvertWStringToRatio(const AMFVariant::WString& value, AMF_RESULT& res)
+    AMF_INLINE AMFRatio AMF_STD_CALL AMFConvertWStringToRatio(const AMFVariant::WString& value, AMF_RESULT& res)
     {
         return AMFConvertStringToRatio(AMFConvertWStringToString(value, res), res);
     }
-    inline AMFColor AMF_STD_CALL AMFConvertWStringToColor(const AMFVariant::WString& value, AMF_RESULT& res)
+    AMF_INLINE AMFColor AMF_STD_CALL AMFConvertWStringToColor(const AMFVariant::WString& value, AMF_RESULT& res)
     {
         return AMFConvertStringToColor(AMFConvertWStringToString(value, res), res);
     }
@@ -1126,7 +1211,7 @@ namespace amf
             return res;\
         }\
     //-------------------------------------------------------------------------------------------------
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantChangeType(AMFVariantStruct* pDest, const AMFVariantStruct* pSrc, AMF_VARIANT_TYPE newType)
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantChangeType(AMFVariantStruct* pDest, const AMFVariantStruct* pSrc, AMF_VARIANT_TYPE newType)
     {
         AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
 
@@ -1206,60 +1291,62 @@ namespace amf
 
         return AMF_INVALID_ARG;
     }
+#endif // #if defined(__cplusplus)
+
     //-------------------------------------------------------------------------------------------------
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignBool(AMFVariantStruct* pDest, bool value)
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignBool(AMFVariantStruct* pDest, amf_bool value)
     {
-        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
         AMF_RESULT errRet = AMF_OK;
+        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
 
         errRet = AMFVariantClear(pDest);
         if(errRet == AMF_OK)
         {
-            AMFVariantGetType(pDest) = AMF_VARIANT_BOOL;
+            pDest->type = AMF_VARIANT_BOOL;
             AMFVariantBool(pDest) = value;
         }
         return errRet;
     }
     //-------------------------------------------------------------------------------------------------
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignInt64(AMFVariantStruct* pDest, amf_int64 value)
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignInt64(AMFVariantStruct* pDest, amf_int64 value)
     {
-        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
         AMF_RESULT errRet = AMF_OK;
+        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
 
         errRet = AMFVariantClear(pDest);
         if(errRet == AMF_OK)
         {
-            AMFVariantGetType(pDest) = AMF_VARIANT_INT64;
+            pDest->type = AMF_VARIANT_INT64;
             AMFVariantInt64(pDest) = value;
         }
         return errRet;
     }
     //-------------------------------------------------------------------------------------------------
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignDouble(AMFVariantStruct* pDest, amf_double value)
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignDouble(AMFVariantStruct* pDest, amf_double value)
     {
-        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
         AMF_RESULT errRet = AMF_OK;
+        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
 
         errRet = AMFVariantClear(pDest);
         if(errRet == AMF_OK)
         {
-            AMFVariantGetType(pDest) = AMF_VARIANT_DOUBLE;
+            pDest->type = AMF_VARIANT_DOUBLE;
             AMFVariantDouble(pDest) = value;
         }
         return errRet;
     }
     //-------------------------------------------------------------------------------------------------
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignString(AMFVariantStruct* pDest, const char* pValue)
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignString(AMFVariantStruct* pDest, const char* pValue)
     {
+        AMF_RESULT errRet = AMF_OK;
         AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
         AMF_VARIANT_RETURN_IF_INVALID_POINTER(pValue);
-        AMF_RESULT errRet = AMF_OK;
 
         errRet = AMFVariantClear(pDest);
         if(errRet == AMF_OK)
         {
-            AMFVariantGetType(pDest) = AMF_VARIANT_STRING;
             size_t size = (strlen(pValue) + 1);
+            pDest->type = AMF_VARIANT_STRING;
             AMFVariantString(pDest) = (char*)amf_variant_alloc(size * sizeof(char));
             if(AMFVariantString(pDest))
             {
@@ -1273,17 +1360,17 @@ namespace amf
         return errRet;
     }
     //-------------------------------------------------------------------------------------------------
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignWString(AMFVariantStruct* pDest, const wchar_t* pValue)
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignWString(AMFVariantStruct* pDest, const wchar_t* pValue)
     {
+        AMF_RESULT errRet = AMF_OK;
         AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
         AMF_VARIANT_RETURN_IF_INVALID_POINTER(pValue);
-        AMF_RESULT errRet = AMF_OK;
 
         errRet = AMFVariantClear(pDest);
         if(errRet == AMF_OK)
         {
-            AMFVariantGetType(pDest) = AMF_VARIANT_WSTRING;
             size_t size = (wcslen(pValue) + 1);
+            pDest->type = AMF_VARIANT_WSTRING;
             AMFVariantWString(pDest) = (wchar_t*)amf_variant_alloc(size * sizeof(wchar_t));
             if(AMFVariantWString(pDest))
             {
@@ -1297,110 +1384,157 @@ namespace amf
         return errRet;
     }
     //-------------------------------------------------------------------------------------------------
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignInterface(AMFVariantStruct* pDest, AMFInterface* pValue)
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignInterface(AMFVariantStruct* pDest, AMFInterface* pValue)
     {
+        AMF_RESULT errRet = AMF_OK;
         AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
         //AMF_VARIANT_RETURN_IF_INVALID_POINTER(pValue);//can be NULL
 
-        AMF_RESULT errRet = AMF_OK;
         errRet = AMFVariantClear(pDest);
         if(errRet == AMF_OK)
         {
-            AMFVariantGetType(pDest) = AMF_VARIANT_INTERFACE;
+            pDest->type = AMF_VARIANT_INTERFACE;
             AMFVariantInterface(pDest) = pValue;
             if(AMFVariantInterface(pDest))
             {
+#if defined(__cplusplus)
                 AMFVariantInterface(pDest)->Acquire();
+#else
+                AMFVariantInterface(pDest)->pVtbl->Acquire(AMFVariantInterface(pDest));
+#endif
+
             }
         }
         return errRet;
     }
     //-------------------------------------------------------------------------------------------------
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignRect (AMFVariantStruct* pDest, const AMFRect& value)
+#if defined(__cplusplus)
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignRect(AMFVariantStruct* pDest, const AMFRect& value)
     {
-        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
+        return AMFVariantAssignRect(pDest, &value);
+    }
+#endif
+    //-------------------------------------------------------------------------------------------------
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignRect (AMFVariantStruct* pDest, const AMFRect* value)
+    {
         AMF_RESULT errRet = AMF_OK;
+        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
 
         errRet = AMFVariantClear(pDest);
         if(errRet == AMF_OK)
         {
-            AMFVariantGetType(pDest) = AMF_VARIANT_RECT;
-            AMFVariantRect(pDest) = value;
+            pDest->type = AMF_VARIANT_RECT;
+            AMFVariantRect(pDest) = *value;
         }
         return errRet;
     }
     //-------------------------------------------------------------------------------------------------
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignSize (AMFVariantStruct* pDest, const AMFSize& value)
+#if defined(__cplusplus)
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignSize (AMFVariantStruct* pDest, const AMFSize& value)
     {
-        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
+        return AMFVariantAssignSize (pDest, &value);
+    }
+#endif
+    //-------------------------------------------------------------------------------------------------
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignSize (AMFVariantStruct* pDest, const AMFSize* value)
+    {
         AMF_RESULT errRet = AMF_OK;
+        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
 
         errRet = AMFVariantClear(pDest);
         if(errRet == AMF_OK)
         {
-            AMFVariantGetType(pDest) = AMF_VARIANT_SIZE;
-            AMFVariantSize(pDest) = value;
+            pDest->type = AMF_VARIANT_SIZE;
+            AMFVariantSize(pDest) = *value;
         }
         return errRet;
     }
     //-------------------------------------------------------------------------------------------------
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignPoint(AMFVariantStruct* pDest, const AMFPoint& value)
+#if defined(__cplusplus)
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignPoint(AMFVariantStruct* pDest, const AMFPoint& value)
     {
-        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
+        return AMFVariantAssignPoint(pDest, &value);
+    }
+#endif
+    //-------------------------------------------------------------------------------------------------
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignPoint(AMFVariantStruct* pDest, const AMFPoint* value)
+    {
         AMF_RESULT errRet = AMF_OK;
+        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
 
         errRet = AMFVariantClear(pDest);
         if(errRet == AMF_OK)
         {
-            AMFVariantGetType(pDest) = AMF_VARIANT_POINT;
-            AMFVariantPoint(pDest) = value;
+            pDest->type = AMF_VARIANT_POINT;
+            AMFVariantPoint(pDest) = *value;
         }
         return errRet;
     }
     //-------------------------------------------------------------------------------------------------
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignRate (AMFVariantStruct* pDest, const AMFRate& value)
+#if defined(__cplusplus)
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignRate (AMFVariantStruct* pDest, const AMFRate& value)
     {
-        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
+        return AMFVariantAssignRate (pDest, &value);
+    }
+#endif
+    //-------------------------------------------------------------------------------------------------
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignRate (AMFVariantStruct* pDest, const AMFRate* value)
+    {
         AMF_RESULT errRet = AMF_OK;
+        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
 
         errRet = AMFVariantClear(pDest);
         if(errRet == AMF_OK)
         {
-            AMFVariantGetType(pDest) = AMF_VARIANT_RATE;
-            AMFVariantRate(pDest) = value;
+            pDest->type = AMF_VARIANT_RATE;
+            AMFVariantRate(pDest) = *value;
         }
         return errRet;
     }
     //-------------------------------------------------------------------------------------------------
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignRatio(AMFVariantStruct* pDest, const AMFRatio& value)
+#if defined(__cplusplus)
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignRatio(AMFVariantStruct* pDest, const AMFRatio& value)
     {
-        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
+        return AMFVariantAssignRatio(pDest, &value);
+    }
+#endif
+    //-------------------------------------------------------------------------------------------------
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignRatio(AMFVariantStruct* pDest, const AMFRatio* value)
+    {
         AMF_RESULT errRet = AMF_OK;
+        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
 
         errRet = AMFVariantClear(pDest);
         if(errRet == AMF_OK)
         {
-            AMFVariantGetType(pDest) = AMF_VARIANT_RATIO;
-            AMFVariantRatio(pDest) = value;
+            pDest->type = AMF_VARIANT_RATIO;
+            AMFVariantRatio(pDest) = *value;
         }
         return errRet;
     }
     //-------------------------------------------------------------------------------------------------
-    inline AMF_RESULT AMF_CDECL_CALL AMFVariantAssignColor(AMFVariantStruct* pDest, const AMFColor& value)
+#if defined(__cplusplus)
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignColor(AMFVariantStruct* pDest, const AMFColor& value)
     {
-        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
+        return AMFVariantAssignColor(pDest, &value);
+    }
+#endif
+    //-------------------------------------------------------------------------------------------------
+    AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignColor(AMFVariantStruct* pDest, const AMFColor* value)
+    {
         AMF_RESULT errRet = AMF_OK;
+        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
 
         errRet = AMFVariantClear(pDest);
         if(errRet == AMF_OK)
         {
-            AMFVariantGetType(pDest) = AMF_VARIANT_COLOR;
-            AMFVariantColor(pDest) = value;
+            pDest->type = AMF_VARIANT_COLOR;
+            AMFVariantColor(pDest) = *value;
         }
         return errRet;
     }
     //-------------------------------------------------------------------------------------------------
-    inline char* AMF_CDECL_CALL AMFVariantDuplicateString(const char* from)
+    AMF_INLINE char* AMF_CDECL_CALL AMFVariantDuplicateString(const char* from)
     {
         char* ret = 0;
         if(from)
@@ -1414,12 +1548,12 @@ namespace amf
         return ret;
     }
     //-------------------------------------------------------------------------------------------------
-    inline void AMF_CDECL_CALL AMFVariantFreeString(char* from)
+    AMF_INLINE void AMF_CDECL_CALL AMFVariantFreeString(char* from)
     {
         amf_variant_free(from);
     }
     //-------------------------------------------------------------------------------------------------
-    inline wchar_t* AMF_CDECL_CALL AMFVariantDuplicateWString(const wchar_t* from)
+    AMF_INLINE wchar_t* AMF_CDECL_CALL AMFVariantDuplicateWString(const wchar_t* from)
     {
         wchar_t* ret = 0;
         if(from)
@@ -1433,14 +1567,15 @@ namespace amf
         return ret;
     }
     //-------------------------------------------------------------------------------------------------
-    inline void AMF_CDECL_CALL AMFVariantFreeWString(wchar_t* from)
+    AMF_INLINE void AMF_CDECL_CALL AMFVariantFreeWString(wchar_t* from)
     {
         amf_variant_free(from);
     }
     //----------------------------------------------------------------------------------------------
-    // inline implementation of AMFVariant class
+    // AMF_INLINE implementation of AMFVariant class
     //----------------------------------------------------------------------------------------------
-    inline AMFVariant::AMFVariant(const AMFVariantStruct* pOther)
+#if defined(__cplusplus)
+    AMF_INLINE AMFVariant::AMFVariant(const AMFVariantStruct* pOther)
     {
         AMFVariantInit(this);
         if(pOther != NULL)
@@ -1476,13 +1611,13 @@ namespace amf
         return str;
     }
     //-------------------------------------------------------------------------------------------------
-    inline AMFVariant& AMFVariant::operator=(const AMFVariantStruct& other)
+    AMF_INLINE AMFVariant& AMFVariant::operator=(const AMFVariantStruct& other)
     {
         AMFVariantCopy(this, const_cast<AMFVariantStruct*>(&other));
         return *this;
     }
     //-------------------------------------------------------------------------------------------------
-    inline AMFVariant& AMFVariant::operator=(const AMFVariantStruct* pOther)
+    AMF_INLINE AMFVariant& AMFVariant::operator=(const AMFVariantStruct* pOther)
     {
         if(pOther != NULL)
         {
@@ -1491,7 +1626,7 @@ namespace amf
         return *this;
     }
     //-------------------------------------------------------------------------------------------------
-    inline AMFVariant& AMFVariant::operator=(const AMFVariant& other)
+    AMF_INLINE AMFVariant& AMFVariant::operator=(const AMFVariant& other)
     {
         AMFVariantCopy(this,
                 const_cast<AMFVariantStruct*>(static_cast<const AMFVariantStruct*>(&other)));
@@ -1505,65 +1640,69 @@ namespace amf
         return *this;
     }
     //-------------------------------------------------------------------------------------------------
-    inline bool AMFVariant::operator==(const AMFVariantStruct& other) const
+    AMF_INLINE bool AMFVariant::operator==(const AMFVariantStruct& other) const
     {
         return *this == &other;
     }
     //-------------------------------------------------------------------------------------------------
-    inline bool AMFVariant::operator==(const AMFVariantStruct* pOther) const
+    AMF_INLINE bool AMFVariant::operator==(const AMFVariantStruct* pOther) const
     {
         //TODO: double check
-        bool ret = false;
+        amf_bool ret = false;
         if(pOther == NULL)
         {
             ret = false;
         }
         else
         {
-            AMFVariantCompare(this, pOther, ret);
+            AMFVariantCompare(this, pOther, &ret);
         }
         return ret;
     }
     //-------------------------------------------------------------------------------------------------
-    inline bool AMFVariant::operator!=(const AMFVariantStruct& other) const
+    AMF_INLINE bool AMFVariant::operator!=(const AMFVariantStruct& other) const
     {
         return !(*this == &other);
     }
     //-------------------------------------------------------------------------------------------------
-    inline bool AMFVariant::operator!=(const AMFVariantStruct* pOther) const
+    AMF_INLINE bool AMFVariant::operator!=(const AMFVariantStruct* pOther) const
     {
         return !(*this == pOther);
     }
     //-------------------------------------------------------------------------------------------------
-    inline void AMFVariant::Attach(AMFVariantStruct& variant)
+    AMF_INLINE void AMFVariant::Attach(AMFVariantStruct& variant)
     {
         Clear();
         memcpy(this, &variant, sizeof(variant));
         AMFVariantGetType(&variant) = AMF_VARIANT_EMPTY;
     }
     //-------------------------------------------------------------------------------------------------
-    inline AMFVariantStruct AMFVariant::Detach()
+    AMF_INLINE AMFVariantStruct AMFVariant::Detach()
     {
         AMFVariantStruct varResult = *this;
         AMFVariantGetType(this) = AMF_VARIANT_EMPTY;
         return varResult;
     }
     //-------------------------------------------------------------------------------------------------
-    inline AMFVariantStruct& AMFVariant::GetVariant()
+    AMF_INLINE AMFVariantStruct& AMFVariant::GetVariant()
     {
         return *static_cast<AMFVariantStruct*>(this);
     }
     //-------------------------------------------------------------------------------------------------
-    inline void AMFVariant::ChangeType(AMF_VARIANT_TYPE newType, const AMFVariant* pSrc)
+    AMF_INLINE void AMFVariant::ChangeType(AMF_VARIANT_TYPE newType, const AMFVariant* pSrc)
     {
         AMFVariantChangeType(this, pSrc, newType);
     }
     //-------------------------------------------------------------------------------------------------
-    inline bool AMFVariant::Empty() const
+    AMF_INLINE bool AMFVariant::Empty() const
     {
         return type == AMF_VARIANT_EMPTY;
     }
     //-------------------------------------------------------------------------------------------------
+#endif // #if defined(__cplusplus)
+
+#if defined(__cplusplus)
 } //namespace amf
+#endif
 
 #endif //#ifndef __AMFVariant_h__

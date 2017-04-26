@@ -36,16 +36,34 @@
 
 #include "Variant.h"
 
+#if defined(__cplusplus)
 namespace amf
 {
+#endif
     //----------------------------------------------------------------------------------------------
     // AMFPropertyStorageObserver interface
     //----------------------------------------------------------------------------------------------
+#if defined(__cplusplus)
+
     class AMF_NO_VTABLE AMFPropertyStorageObserver
     {
     public:
         virtual void                AMF_STD_CALL OnPropertyChanged(const wchar_t* name) = 0;
     };
+#else //#if defined(__cplusplus)
+    typedef struct AMFPropertyStorageObserver AMFPropertyStorageObserver;
+    typedef struct AMFPropertyStorageObserverVtbl
+    {
+        void                (AMF_STD_CALL *OnPropertyChanged)(AMFPropertyStorageObserver *pThis, const wchar_t* name);
+    } AMFPropertyStorageObserverVtbl;
+
+    struct AMFPropertyStorageObserver
+    {
+        const AMFPropertyStorageObserverVtbl *pVtbl;
+    };
+
+#endif // #if defined(__cplusplus)
+#if defined(__cplusplus)
     //----------------------------------------------------------------------------------------------
     // AMFPropertyStorage interface
     //----------------------------------------------------------------------------------------------
@@ -57,13 +75,13 @@ namespace amf
         virtual AMF_RESULT          AMF_STD_CALL SetProperty(const wchar_t* name, AMFVariantStruct value) = 0;
         virtual AMF_RESULT          AMF_STD_CALL GetProperty(const wchar_t* name, AMFVariantStruct* pValue) const = 0;
 
-        virtual bool                AMF_STD_CALL HasProperty(const wchar_t* name) const = 0;
+        virtual amf_bool            AMF_STD_CALL HasProperty(const wchar_t* name) const = 0;
         virtual amf_size            AMF_STD_CALL GetPropertyCount() const = 0;
         virtual AMF_RESULT          AMF_STD_CALL GetPropertyAt(amf_size index, wchar_t* name, amf_size nameSize, AMFVariantStruct* pValue) const = 0;
 
         virtual AMF_RESULT          AMF_STD_CALL Clear() = 0;
-        virtual AMF_RESULT          AMF_STD_CALL AddTo(AMFPropertyStorage* pDest, bool overwrite, bool deep) const= 0;
-        virtual AMF_RESULT          AMF_STD_CALL CopyTo(AMFPropertyStorage* pDest, bool deep) const = 0;
+        virtual AMF_RESULT          AMF_STD_CALL AddTo(AMFPropertyStorage* pDest, amf_bool overwrite, amf_bool deep) const= 0;
+        virtual AMF_RESULT          AMF_STD_CALL CopyTo(AMFPropertyStorage* pDest, amf_bool deep) const = 0;
 
         virtual void                AMF_STD_CALL AddObserver(AMFPropertyStorageObserver* pObserver) = 0;
         virtual void                AMF_STD_CALL RemoveObserver(AMFPropertyStorageObserver* pObserver) = 0;
@@ -78,6 +96,64 @@ namespace amf
         AMF_RESULT                  AMF_STD_CALL GetPropertyWString(const wchar_t* name, _T* pValue) const;
 
     };
+    //----------------------------------------------------------------------------------------------
+    // smart pointer
+    //----------------------------------------------------------------------------------------------
+    typedef AMFInterfacePtr_T<AMFPropertyStorage> AMFPropertyStoragePtr;
+    //----------------------------------------------------------------------------------------------
+
+#else // #if defined(__cplusplus)
+    typedef struct AMFPropertyStorage AMFPropertyStorage;
+        AMF_DECLARE_IID(AMFPropertyStorage, 0xc7cec05b, 0xcfb9, 0x48af, 0xac, 0xe3, 0xf6, 0x8d, 0xf8, 0x39, 0x5f, 0xe3)
+
+    typedef struct AMFPropertyStorageVtbl
+    {
+        // AMFInterface interface
+        amf_long            (AMF_STD_CALL *Acquire)(AMFPropertyStorage* pThis);
+        amf_long            (AMF_STD_CALL *Release)(AMFPropertyStorage* pThis);
+        enum AMF_RESULT     (AMF_STD_CALL *QueryInterface)(AMFPropertyStorage* pThis, const struct AMFGuid *interfaceID, void** ppInterface);
+
+        // AMFPropertyStorage interface
+        AMF_RESULT          (AMF_STD_CALL *SetProperty)(AMFPropertyStorage* pThis, const wchar_t* name, AMFVariantStruct value);
+        AMF_RESULT          (AMF_STD_CALL *GetProperty)(AMFPropertyStorage* pThis, const wchar_t* name, AMFVariantStruct* pValue);
+        amf_bool            (AMF_STD_CALL *HasProperty)(AMFPropertyStorage* pThis, const wchar_t* name);
+        amf_size            (AMF_STD_CALL *GetPropertyCount)(AMFPropertyStorage* pThis);
+        AMF_RESULT          (AMF_STD_CALL *GetPropertyAt)(AMFPropertyStorage* pThis, amf_size index, wchar_t* name, amf_size nameSize, AMFVariantStruct* pValue);
+        AMF_RESULT          (AMF_STD_CALL *Clear)(AMFPropertyStorage* pThis);
+        AMF_RESULT          (AMF_STD_CALL *AddTo)(AMFPropertyStorage* pThis, AMFPropertyStorage* pDest, amf_bool overwrite, amf_bool deep);
+        AMF_RESULT          (AMF_STD_CALL *CopyTo)(AMFPropertyStorage* pThis, AMFPropertyStorage* pDest, amf_bool deep);
+        void                (AMF_STD_CALL *AddObserver)(AMFPropertyStorage* pThis, AMFPropertyStorageObserver* pObserver);
+        void                (AMF_STD_CALL *RemoveObserver)(AMFPropertyStorage* pThis, AMFPropertyStorageObserver* pObserver);
+
+    } AMFPropertyStorageVtbl;
+
+    struct AMFPropertyStorage
+    {
+        const AMFPropertyStorageVtbl *pVtbl;
+    };
+
+    #define AMF_ASSIGN_PROPERTY_DATA(res, varType, pThis, name, val ) \
+    { \
+        AMFVariantStruct var; \
+        AMFVariantAssign##varType(&var, val); \
+        res = pThis->pVtbl->SetProperty(pThis, name, var ); \
+    }
+    #define AMF_ASSIGN_PROPERTY_TYPE(res, varType, dataType , pThis, name, val )  AMF_ASSIGN_PROPERTY_DATA(res, varType, pThis, name, (dataType)val)
+
+    #define AMF_ASSIGN_PROPERTY_INT64(res, pThis, name, val ) AMF_ASSIGN_PROPERTY_TYPE(res, Int64, amf_int64, pThis, name, val)
+    #define AMF_ASSIGN_PROPERTY_DOUBLE(res, pThis, name, val ) AMF_ASSIGN_PROPERTY_TYPE(res, Double, amf_double, pThis, name, val)
+    #define AMF_ASSIGN_PROPERTY_BOOL(res, pThis, name, val ) AMF_ASSIGN_PROPERTY_TYPE(res, Bool, amf_bool, pThis, name, val)
+    #define AMF_ASSIGN_PROPERTY_RECT(res, pThis, name, val ) AMF_ASSIGN_PROPERTY_DATA(res, Rect, pThis, name, &val)
+    #define AMF_ASSIGN_PROPERTY_SIZE(res, pThis, name, val ) AMF_ASSIGN_PROPERTY_DATA(res, Size, pThis, name, &val)
+    #define AMF_ASSIGN_PROPERTY_POINT(res, pThis, name, val ) AMF_ASSIGN_PROPERTY_DATA(res, Point, pThis, name, &val)
+    #define AMF_ASSIGN_PROPERTY_RATE(res, pThis, name, val ) AMF_ASSIGN_PROPERTY_DATA(res, Rate, pThis, name, &val)
+    #define AMF_ASSIGN_PROPERTY_RATIO(res, pThis, name, val ) AMF_ASSIGN_PROPERTY_DATA(res, Ratio, pThis, name, &val)
+    #define AMF_ASSIGN_PROPERTY_COLOR(res, pThis, name, val ) AMF_ASSIGN_PROPERTY_DATA(res, Color, pThis, name, &val)
+
+#endif // #if defined(__cplusplus)
+
+
+#if defined(__cplusplus)
     //----------------------------------------------------------------------------------------------
     // template methods implementations
     //----------------------------------------------------------------------------------------------
@@ -140,11 +216,10 @@ namespace amf
         }
         return err;
     }
-    //----------------------------------------------------------------------------------------------
-    // smart pointer
-    //----------------------------------------------------------------------------------------------
-    typedef AMFInterfacePtr_T<AMFPropertyStorage> AMFPropertyStoragePtr;
-    //----------------------------------------------------------------------------------------------
+#endif // #if defined(__cplusplus)
+
+#if defined(__cplusplus)
 } //namespace amf
+#endif
 
 #endif // #ifndef __AMFPropertyStorage_h__

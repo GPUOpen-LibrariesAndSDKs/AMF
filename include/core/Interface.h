@@ -36,19 +36,30 @@
 
 #include "Result.h"
 
+#if defined(__cplusplus)
 namespace amf
 {
+#endif
+#if defined(__cplusplus)
     #define AMF_DECLARE_IID(_data1, _data2, _data3, _data41, _data42, _data43, _data44, _data45, _data46, _data47, _data48) \
-        inline static const amf::AMFGuid IID() \
+        AMF_INLINE static const amf::AMFGuid IID() \
         { \
-            amf::AMFGuid uid(_data1, _data2, _data3, _data41, _data42, _data43, _data44, _data45, _data46, _data47, _data48); \
+            amf::AMFGuid uid = {_data1, _data2, _data3, _data41, _data42, _data43, _data44, _data45, _data46, _data47, _data48}; \
             return uid; \
         }
-
+#else
+#define AMF_DECLARE_IID(name, _data1, _data2, _data3, _data41, _data42, _data43, _data44, _data45, _data46, _data47, _data48) \
+        AMF_INLINE static const AMFGuid IID_##name(void) \
+        { \
+            AMFGuid uid = {_data1, _data2, _data3, _data41, _data42, _data43, _data44, _data45, _data46, _data47, _data48}; \
+            return uid; \
+        }
+#endif
 
     //------------------------------------------------------------------------
     // AMFInterface interface  - base class for all AMF interfaces
     //------------------------------------------------------------------------
+#if defined(__cplusplus)
     class AMF_NO_VTABLE AMFInterface
     {
     public:
@@ -58,9 +69,27 @@ namespace amf
         virtual amf_long            AMF_STD_CALL Release() = 0;
         virtual AMF_RESULT          AMF_STD_CALL QueryInterface(const AMFGuid& interfaceID, void** ppInterface) = 0;
     };
+#else
+    AMF_DECLARE_IID(AMFInterface, 0x9d872f34, 0x90dc, 0x4b93, 0xb6, 0xb2, 0x6c, 0xa3, 0x7c, 0x85, 0x25, 0xdb)
+    typedef struct AMFInterface AMFInterface;
+
+    typedef struct AMFInterfaceVtbl
+    {
+        // AMFInterface interface
+        amf_long            (AMF_STD_CALL *Acquire)(AMFInterface* pThis);
+        amf_long            (AMF_STD_CALL *Release)(AMFInterface* pThis);
+        enum AMF_RESULT     (AMF_STD_CALL *QueryInterface)(AMFInterface* pThis, const struct AMFGuid *interfaceID, void** ppInterface);
+    } AMFInterfaceVtbl;
+
+    struct AMFInterface
+    {
+        const AMFInterfaceVtbl *pVtbl;
+    };
+#endif
     //------------------------------------------------------------------------
     // template for AMF smart pointer
     //------------------------------------------------------------------------
+#if defined(__cplusplus)
     template<typename _Interf>
     class AMFInterfacePtr_T
     {
@@ -220,6 +249,10 @@ namespace amf
     //----------------------------------------------------------------------------------------------
     typedef AMFInterfacePtr_T<AMFInterface> AMFInterfacePtr;
     //----------------------------------------------------------------------------------------------
+#endif
+
+#if defined(__cplusplus)
 }
+#endif
 
 #endif //#ifndef __AMFInterface_h__

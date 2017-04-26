@@ -36,24 +36,45 @@
 
 #include "Data.h"
 
-#pragma warning( push )
-#pragma warning(disable : 4263)
-#pragma warning(disable : 4264)
-
+#if defined(_MSC_VER)
+    #pragma warning( push )
+    #pragma warning(disable : 4263)
+    #pragma warning(disable : 4264)
+#endif
+#if defined(__cplusplus)
 namespace amf
 {
+#endif
     //----------------------------------------------------------------------------------------------
     // AMFBufferObserver interface - callback
     //----------------------------------------------------------------------------------------------
+#if defined(__cplusplus)
     class AMFBuffer;
     class AMF_NO_VTABLE AMFBufferObserver
     {
     public:
         virtual void                AMF_STD_CALL OnBufferDataRelease(AMFBuffer* pBuffer) = 0;
     };
+#else // #if defined(__cplusplus)
+    typedef struct AMFBuffer AMFBuffer;
+    typedef struct AMFBufferObserver AMFBufferObserver;
+
+    typedef struct AMFBufferObserverVtbl
+    {
+        void                (AMF_STD_CALL *OnBufferDataRelease)(AMFBufferObserver* pThis, AMFBuffer* pBuffer);
+    } AMFBufferObserverVtbl;
+
+    struct AMFBufferObserver
+    {
+        const AMFBufferObserverVtbl *pVtbl;
+    };
+
+#endif // #if defined(__cplusplus)
+
     //----------------------------------------------------------------------------------------------
     // AMFBuffer interface
     //----------------------------------------------------------------------------------------------
+#if defined(__cplusplus)
     class AMF_NO_VTABLE AMFBuffer : public AMFData
     {
     public:
@@ -72,7 +93,68 @@ namespace amf
     //----------------------------------------------------------------------------------------------
     typedef AMFInterfacePtr_T<AMFBuffer> AMFBufferPtr;
     //----------------------------------------------------------------------------------------------
-} // namespace
-#pragma warning( pop )
 
+#else // #if defined(__cplusplus)
+        AMF_DECLARE_IID(AMFBuffer, 0xb04b7248, 0xb6f0, 0x4321, 0xb6, 0x91, 0xba, 0xa4, 0x74, 0xf, 0x9f, 0xcb)
+
+    typedef struct AMFBufferVtbl
+    {
+        // AMFInterface interface
+        amf_long            (AMF_STD_CALL *Acquire)(AMFBuffer* pThis);
+        amf_long            (AMF_STD_CALL *Release)(AMFBuffer* pThis);
+        enum AMF_RESULT     (AMF_STD_CALL *QueryInterface)(AMFBuffer* pThis, const struct AMFGuid *interfaceID, void** ppInterface);
+
+        // AMFPropertyStorage interface
+        AMF_RESULT          (AMF_STD_CALL *SetProperty)(AMFBuffer* pThis, const wchar_t* name, AMFVariantStruct value);
+        AMF_RESULT          (AMF_STD_CALL *GetProperty)(AMFBuffer* pThis, const wchar_t* name, AMFVariantStruct* pValue);
+        amf_bool            (AMF_STD_CALL *HasProperty)(AMFBuffer* pThis, const wchar_t* name);
+        amf_size            (AMF_STD_CALL *GetPropertyCount)(AMFBuffer* pThis);
+        AMF_RESULT          (AMF_STD_CALL *GetPropertyAt)(AMFBuffer* pThis, amf_size index, wchar_t* name, amf_size nameSize, AMFVariantStruct* pValue);
+        AMF_RESULT          (AMF_STD_CALL *Clear)(AMFBuffer* pThis);
+        AMF_RESULT          (AMF_STD_CALL *AddTo)(AMFBuffer* pThis, AMFPropertyStorage* pDest, amf_bool overwrite, amf_bool deep);
+        AMF_RESULT          (AMF_STD_CALL *CopyTo)(AMFBuffer* pThis, AMFPropertyStorage* pDest, amf_bool deep);
+        void                (AMF_STD_CALL *AddObserver)(AMFBuffer* pThis, AMFPropertyStorageObserver* pObserver);
+        void                (AMF_STD_CALL *RemoveObserver)(AMFBuffer* pThis, AMFPropertyStorageObserver* pObserver);
+
+        // AMFData interface
+
+        AMF_MEMORY_TYPE     (AMF_STD_CALL *GetMemoryType)(AMFBuffer* pThis);
+
+        AMF_RESULT          (AMF_STD_CALL *Duplicate)(AMFBuffer* pThis, AMF_MEMORY_TYPE type, AMFData** ppData);
+        AMF_RESULT          (AMF_STD_CALL *Convert)(AMFBuffer* pThis, AMF_MEMORY_TYPE type); // optimal interop if possilble. Copy through host memory if needed
+        AMF_RESULT          (AMF_STD_CALL *Interop)(AMFBuffer* pThis, AMF_MEMORY_TYPE type); // only optimal interop if possilble. No copy through host memory for GPU objects
+
+        AMF_DATA_TYPE       (AMF_STD_CALL *GetDataType)(AMFBuffer* pThis);
+
+        amf_bool            (AMF_STD_CALL *IsReusable)(AMFBuffer* pThis);
+
+        void                (AMF_STD_CALL *SetPts)(AMFBuffer* pThis, amf_pts pts);
+        amf_pts             (AMF_STD_CALL *GetPts)(AMFBuffer* pThis);
+        void                (AMF_STD_CALL *SetDuration)(AMFBuffer* pThis, amf_pts duration);
+        amf_pts             (AMF_STD_CALL *GetDuration)(AMFBuffer* pThis);
+
+        // AMFBuffer interface
+
+        AMF_RESULT          (AMF_STD_CALL *SetSize)(AMFBuffer* pThis, amf_size newSize);
+        amf_size            (AMF_STD_CALL *GetSize)(AMFBuffer* pThis);
+        void*               (AMF_STD_CALL *GetNative)(AMFBuffer* pThis);
+
+        // Observer management
+        void                (AMF_STD_CALL *AddObserver_Buffer)(AMFBuffer* pThis, AMFBufferObserver* pObserver);
+        void                (AMF_STD_CALL *RemoveObserver_Buffer)(AMFBuffer* pThis, AMFBufferObserver* pObserver);
+
+    } AMFBufferVtbl;
+
+    struct AMFBuffer
+    {
+        const AMFBufferVtbl *pVtbl;
+    };
+
+#endif // #if defined(__cplusplus)
+#if defined(__cplusplus)
+} // namespace
+#endif
+#if defined(_MSC_VER)
+    #pragma warning( pop )
+#endif
 #endif //#ifndef __AMFBuffer_h__

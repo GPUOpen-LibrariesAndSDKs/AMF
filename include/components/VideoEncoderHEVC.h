@@ -20,13 +20,21 @@
 // THE SOFTWARE.
 //
 
+/**
+ ***************************************************************************************************
+ * @file  VideoEncoderHEVC.h
+ * @brief AMFVideoEncoderHW_HEVC interface declaration
+ ***************************************************************************************************
+ */
 #ifndef __AMFVideoEncoderHW_HEVC_h__
 #define __AMFVideoEncoderHW_HEVC_h__
-#pragma once
 
-#include "public/include/components/Component.h"
+#include "Component.h"
 
 #define AMFVideoEncoder_HEVC L"AMFVideoEncoderHW_HEVC"
+
+//compiler def
+//#define H265_IMPLIMENTATION_DATED_TO_APR_2015
 
 enum AMF_VIDEO_ENCODER_HEVC_USAGE_ENUM
 {
@@ -130,13 +138,12 @@ enum AMF_VIDEO_ENCODER_HEVC_VBAQ_MODE_ENUM
 #define AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE                L"HevcHeaderInsertionMode"      // amf_int64(AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE_ENUM); default = NONE
 
 // Rate control properties
-#define AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD                  L"HevcRateControlMethod"        // amf_int64(AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_MODE_ENUM); default = depends on USAGE; Rate Control Method 
+#define AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD                  L"HevcRateControlMethod"             // amf_int64(AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_MODE_ENUM); default = depends on USAGE; Rate Control Method 
 #define AMF_VIDEO_ENCODER_HEVC_FRAMERATE                            L"HevcFrameRate"                // AMFRate; default = depends on usage; Frame Rate 
 #define AMF_VIDEO_ENCODER_HEVC_VBV_BUFFER_SIZE                      L"HevcVBVBufferSize"            // amf_int64; default = depends on USAGE; VBV Buffer Size in bits
 #define AMF_VIDEO_ENCODER_HEVC_INITIAL_VBV_BUFFER_FULLNESS          L"HevcInitialVBVBufferFullness" // amf_int64; default =  64; Initial VBV Buffer Fullness 0=0% 64=100%
 #define AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_PREANALYSIS_ENABLE      L"HevcRateControlPreAnalysisEnable"  // bool; default =  depends on USAGE; enable Pre-analysis assisted rate control 
 #define AMF_VIDEO_ENCODER_HEVC_ENABLE_VBAQ                          L"HevcEnableVBAQ"               // amf_int64(AMF_VIDEO_ENCODER_HEVC_VBAQ_MODE_ENUM) default  = AMF_VIDEO_ENCODER_HEVC_VBAQ_MODE_NONE; Enable VBAQ
-
 
 // Dynamic properties - can be set at any time
 
@@ -156,10 +163,10 @@ enum AMF_VIDEO_ENCODER_HEVC_VBAQ_MODE_ENUM
 #define AMF_VIDEO_ENCODER_HEVC_QP_I                                 L"HevcQP_I"                     // amf_int64; default = 26; P-frame QP; range = 0-51
 #define AMF_VIDEO_ENCODER_HEVC_QP_P                                 L"HevcQP_P"                     // amf_int64; default = 26; P-frame QP; range = 0-51
 
-#define AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_SKIP_FRAME_ENABLE       L"HevcRateControlSkipFrameEnable" // bool; default =  depends on USAGE; Rate Control Based Frame Skip 
+#define AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_SKIP_FRAME_ENABLE       L"HevcRateControlSkipFrameEnable"    // bool; default =  depends on USAGE; Rate Control Based Frame Skip 
 
 
-// Motion estimation
+    // Motion estimation
 #define AMF_VIDEO_ENCODER_HEVC_MOTION_HALF_PIXEL                    L"HevcHalfPixel"                // bool; default= true; Half Pixel 
 #define AMF_VIDEO_ENCODER_HEVC_MOTION_QUARTERPIXEL                  L"HevcQuarterPixel"             // bool; default= true; Quarter Pixel
 
@@ -172,10 +179,10 @@ enum AMF_VIDEO_ENCODER_HEVC_VBAQ_MODE_ENUM
 #define AMF_VIDEO_ENCODER_HEVC_MARK_CURRENT_WITH_LTR_INDEX          L"HevcMarkCurrentWithLTRIndex"  // amf_int64; default = N/A; Mark current frame with LTR index
 #define AMF_VIDEO_ENCODER_HEVC_FORCE_LTR_REFERENCE_BITFIELD         L"HevcForceLTRReferenceBitfield"// amf_int64; default = 0; force LTR bit-field 
 
-// Properties set by encoder on output buffer interface
-#define AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE                     L"HevcOutputDataType"           // amf_int64(AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE_ENUM); default = N/A
-#define AMF_VIDEO_ENCODER_HEVC_OUTPUT_MARKED_LTR_INDEX              L"HevcMarkedLTRIndex"           // amf_int64; default = -1; Marked LTR index
-#define AMF_VIDEO_ENCODER_HEVC_OUTPUT_REFERENCED_LTR_INDEX_BITFIELD L"HevcReferencedLTRIndexBitfield"// amf_int64; default = 0; referenced LTR bit-field 
+    // Properties set by encoder on output buffer interface
+#define AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE                     L"HevcOutputDataType"             // amf_int64(AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE_ENUM); default = N/A
+#define AMF_VIDEO_ENCODER_HEVC_OUTPUT_MARKED_LTR_INDEX              L"HevcMarkedLTRIndex"             // amf_int64; default = -1; Marked LTR index
+#define AMF_VIDEO_ENCODER_HEVC_OUTPUT_REFERENCED_LTR_INDEX_BITFIELD L"HevcReferencedLTRIndexBitfield" // amf_int64; default = 0; referenced LTR bit-field 
 
 // HEVC Encoder capabilities - exposed in AMFCaps interface
 #define AMF_VIDEO_ENCODER_HEVC_CAP_MAX_BITRATE                      L"HevcMaxBitrate"               // amf_int64; Maximum bit rate in bits
