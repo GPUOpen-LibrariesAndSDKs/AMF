@@ -104,7 +104,7 @@ AMF_RESULT AMF_CDECL_CALL AMFTraceEnableAsync(bool enable);
 *
 *******************************************************************************
 */
-AMF_RESULT AMF_CDECL_CALL AMFSetCustomDebugger(AMFDebug *ADebugger);
+AMF_RESULT AMF_CDECL_CALL AMFSetCustomDebugger(AMFDebug *pDebugger);
 
 /**
 *******************************************************************************
@@ -115,7 +115,7 @@ AMF_RESULT AMF_CDECL_CALL AMFSetCustomDebugger(AMFDebug *ADebugger);
 *
 *******************************************************************************
 */
-AMF_RESULT AMF_CDECL_CALL AMFSetCustomTracer(AMFTrace *);
+AMF_RESULT AMF_CDECL_CALL AMFSetCustomTracer(AMFTrace *pTrace);
 
 /**
 *******************************************************************************

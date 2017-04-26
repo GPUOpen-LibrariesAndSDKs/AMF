@@ -57,7 +57,7 @@ AMF_RESULT AMF_STD_CALL amf::AMFDataStream::OpenDataStream(const wchar_t* pFileU
     }
     else
     {
-       protocol = L"file";
+        protocol = L"file";
         path = url;
     }
     AMFDataStreamPtr ptr = NULL;

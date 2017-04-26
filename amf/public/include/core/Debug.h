@@ -37,20 +37,43 @@
 #include "Platform.h"
 #include "Result.h"
 
+#if defined(__cplusplus)
 namespace amf
 {
+#endif
     //----------------------------------------------------------------------------------------------
     // AMFDebug interface - singleton
     //----------------------------------------------------------------------------------------------
+#if defined(__cplusplus)
     class AMF_NO_VTABLE AMFDebug
     {
     public:
-        virtual  void               AMF_STD_CALL EnablePerformanceMonitor(bool enable) = 0;
-        virtual  bool               AMF_STD_CALL PerformanceMonitorEnabled() = 0;
-        virtual  void               AMF_STD_CALL AssertsEnable(bool enable) = 0;
-        virtual  bool               AMF_STD_CALL AssertsEnabled() = 0;
+        virtual  void               AMF_STD_CALL EnablePerformanceMonitor(amf_bool enable) = 0;
+        virtual  amf_bool           AMF_STD_CALL PerformanceMonitorEnabled() = 0;
+        virtual  void               AMF_STD_CALL AssertsEnable(amf_bool enable) = 0;
+        virtual  amf_bool           AMF_STD_CALL AssertsEnabled() = 0;
     };
+#else // #if defined(__cplusplus)
+    typedef struct AMFDebug AMFDebug;
+    typedef struct AMFDebugVtbl
+    {
+        // AMFDebug interface
+        void               (AMF_STD_CALL *EnablePerformanceMonitor)(AMFDebug* pThis, amf_bool enable);
+        amf_bool           (AMF_STD_CALL *PerformanceMonitorEnabled)(AMFDebug* pThis);
+        void               (AMF_STD_CALL *AssertsEnable)(AMFDebug* pThis, amf_bool enable);
+        amf_bool           (AMF_STD_CALL *AssertsEnabled)(AMFDebug* pThis);
+    } AMFDebugVtbl;
+
+    struct AMFDebug
+    {
+        const AMFDebugVtbl *pVtbl;
+    };
+
+#endif // #if defined(__cplusplus)
+
     //----------------------------------------------------------------------------------------------
+#if defined(__cplusplus)
 }
+#endif
 
 #endif // __AMFDebug_h__

@@ -460,6 +460,7 @@ namespace amf
             virtual bool RequestStop();
             virtual bool WaitForStop();
             virtual bool StopRequested();
+            virtual bool IsRunning();
 
             // this is executed in the thread and overloaded by implementor
             virtual void Run() { m_pOwner->Run(); }
@@ -530,6 +531,11 @@ namespace amf
         bool bRet = m_bStopRequested;
         pthread_mutex_unlock(&m_hMutex);
         return bRet;
+    }
+
+    bool AMFThreadObj::IsRunning()
+    {
+        return m_hThread != (uintptr_t)0L;
     }
 
     void ExitThread()

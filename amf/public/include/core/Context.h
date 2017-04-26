@@ -40,11 +40,14 @@
 #include "Compute.h"
 #include "ComputeFactory.h"
 
+#if defined(__cplusplus)
 namespace amf
 {
+#endif
     //----------------------------------------------------------------------------------------------
     // AMFContext interface
     //----------------------------------------------------------------------------------------------
+#if defined(__cplusplus)
     class AMF_NO_VTABLE AMFContext : public AMFPropertyStorage
     {
     public:
@@ -125,6 +128,104 @@ namespace amf
     // smart pointer
     //----------------------------------------------------------------------------------------------
     typedef AMFInterfacePtr_T<AMFContext> AMFContextPtr;
+#else
+    typedef struct AMFContext AMFContext;
+    AMF_DECLARE_IID(AMFContext, 0xa76a13f0, 0xd80e, 0x4fcc, 0xb5, 0x8, 0x65, 0xd0, 0xb5, 0x2e, 0xd9, 0xee)
+
+    typedef struct AMFContextVtbl
+    {
+        // AMFInterface interface
+        amf_long            (AMF_STD_CALL *Acquire)(AMFContext* pThis);
+        amf_long            (AMF_STD_CALL *Release)(AMFContext* pThis);
+        enum AMF_RESULT     (AMF_STD_CALL *QueryInterface)(AMFContext* pThis, const struct AMFGuid *interfaceID, void** ppInterface);
+        
+        // AMFInterface AMFPropertyStorage
+
+        AMF_RESULT          (AMF_STD_CALL *SetProperty)(AMFContext* pThis, const wchar_t* name, AMFVariantStruct value);
+        AMF_RESULT          (AMF_STD_CALL *GetProperty)(AMFContext* pThis, const wchar_t* name, AMFVariantStruct* pValue);
+        amf_bool            (AMF_STD_CALL *HasProperty)(AMFContext* pThis, const wchar_t* name);
+        amf_size            (AMF_STD_CALL *GetPropertyCount)(AMFContext* pThis);
+        AMF_RESULT          (AMF_STD_CALL *GetPropertyAt)(AMFContext* pThis, amf_size index, wchar_t* name, amf_size nameSize, AMFVariantStruct* pValue);
+        AMF_RESULT          (AMF_STD_CALL *Clear)(AMFContext* pThis);
+        AMF_RESULT          (AMF_STD_CALL *AddTo)(AMFContext* pThis, AMFPropertyStorage* pDest, amf_bool overwrite, amf_bool deep);
+        AMF_RESULT          (AMF_STD_CALL *CopyTo)(AMFContext* pThis, AMFPropertyStorage* pDest, amf_bool deep);
+        void                (AMF_STD_CALL *AddObserver)(AMFContext* pThis, AMFPropertyStorageObserver* pObserver);
+        void                (AMF_STD_CALL *RemoveObserver)(AMFContext* pThis, AMFPropertyStorageObserver* pObserver);
+
+        // AMFContext interface
+       
+        // Cleanup
+        AMF_RESULT          (AMF_STD_CALL *Terminate)(AMFContext* pThis);
+
+        // DX9
+        AMF_RESULT          (AMF_STD_CALL *InitDX9)(AMFContext* pThis, void* pDX9Device);
+        void*               (AMF_STD_CALL *GetDX9Device)(AMFContext* pThis, AMF_DX_VERSION dxVersionRequired);
+        AMF_RESULT          (AMF_STD_CALL *LockDX9)(AMFContext* pThis);
+        AMF_RESULT          (AMF_STD_CALL *UnlockDX9)(AMFContext* pThis);
+        // DX11
+        AMF_RESULT          (AMF_STD_CALL *InitDX11)(AMFContext* pThis, void* pDX11Device, AMF_DX_VERSION dxVersionRequired);
+        void*               (AMF_STD_CALL *GetDX11Device)(AMFContext* pThis, AMF_DX_VERSION dxVersionRequired);
+        AMF_RESULT          (AMF_STD_CALL *LockDX11)(AMFContext* pThis);
+        AMF_RESULT          (AMF_STD_CALL *UnlockDX11)(AMFContext* pThis);
+
+        // OpenCL
+        AMF_RESULT          (AMF_STD_CALL *InitOpenCL)(AMFContext* pThis, void* pCommandQueue);
+        void*               (AMF_STD_CALL *GetOpenCLContext)(AMFContext* pThis);
+        void*               (AMF_STD_CALL *GetOpenCLCommandQueue)(AMFContext* pThis);
+        void*               (AMF_STD_CALL *GetOpenCLDeviceID)(AMFContext* pThis);
+        AMF_RESULT          (AMF_STD_CALL *GetOpenCLComputeFactory)(AMFContext* pThis, AMFComputeFactory **ppFactory); // advanced compute - multiple queries
+        AMF_RESULT          (AMF_STD_CALL *InitOpenCLEx)(AMFContext* pThis, AMFComputeDevice *pDevice);
+        AMF_RESULT          (AMF_STD_CALL *LockOpenCL)(AMFContext* pThis);
+        AMF_RESULT          (AMF_STD_CALL *UnlockOpenCL)(AMFContext* pThis);
+
+        // OpenGL
+        AMF_RESULT          (AMF_STD_CALL *InitOpenGL)(AMFContext* pThis, amf_handle hOpenGLContext, amf_handle hWindow, amf_handle hDC);
+        amf_handle          (AMF_STD_CALL *GetOpenGLContext)(AMFContext* pThis);
+        amf_handle          (AMF_STD_CALL *GetOpenGLDrawable)(AMFContext* pThis);
+        AMF_RESULT          (AMF_STD_CALL *LockOpenGL)(AMFContext* pThis);
+        AMF_RESULT          (AMF_STD_CALL *UnlockOpenGL)(AMFContext* pThis);
+        // XV - Linux
+        AMF_RESULT          (AMF_STD_CALL *InitXV)(AMFContext* pThis, void* pXVDevice);
+        void*               (AMF_STD_CALL *GetXVDevice)(AMFContext* pThis);
+        AMF_RESULT          (AMF_STD_CALL *LockXV)(AMFContext* pThis);
+        AMF_RESULT          (AMF_STD_CALL *UnlockXV)(AMFContext* pThis);
+
+        // Gralloc - Android
+        AMF_RESULT          (AMF_STD_CALL *InitGralloc)(AMFContext* pThis, void* pGrallocDevice);
+        void*               (AMF_STD_CALL *GetGrallocDevice)(AMFContext* pThis);
+        AMF_RESULT          (AMF_STD_CALL *LockGralloc)(AMFContext* pThis);
+        AMF_RESULT          (AMF_STD_CALL *UnlockGralloc)(AMFContext* pThis);
+        // Allocation
+        AMF_RESULT          (AMF_STD_CALL *AllocBuffer)(AMFContext* pThis, AMF_MEMORY_TYPE type, amf_size size, AMFBuffer** ppBuffer);
+        AMF_RESULT          (AMF_STD_CALL *AllocSurface)(AMFContext* pThis, AMF_MEMORY_TYPE type, AMF_SURFACE_FORMAT format, amf_int32 width, amf_int32 height, AMFSurface** ppSurface);
+        AMF_RESULT          (AMF_STD_CALL *AllocAudioBuffer)(AMFContext* pThis, AMF_MEMORY_TYPE type, AMF_AUDIO_FORMAT format, amf_int32 samples, amf_int32 sampleRate, amf_int32 channels, 
+                                                    AMFAudioBuffer** ppAudioBuffer);
+
+        // Wrap existing objects
+        AMF_RESULT          (AMF_STD_CALL *CreateBufferFromHostNative)(AMFContext* pThis, void* pHostBuffer, amf_size size, AMFBuffer** ppBuffer, AMFBufferObserver* pObserver);
+        AMF_RESULT          (AMF_STD_CALL *CreateSurfaceFromHostNative)(AMFContext* pThis, AMF_SURFACE_FORMAT format, amf_int32 width, amf_int32 height, amf_int32 hPitch, amf_int32 vPitch, void* pData, 
+                                                     AMFSurface** ppSurface, AMFSurfaceObserver* pObserver);
+        AMF_RESULT          (AMF_STD_CALL *CreateSurfaceFromDX9Native)(AMFContext* pThis, void* pDX9Surface, AMFSurface** ppSurface, AMFSurfaceObserver* pObserver);
+        AMF_RESULT          (AMF_STD_CALL *CreateSurfaceFromDX11Native)(AMFContext* pThis, void* pDX11Surface, AMFSurface** ppSurface, AMFSurfaceObserver* pObserver);
+        AMF_RESULT          (AMF_STD_CALL *CreateSurfaceFromOpenGLNative)(AMFContext* pThis, AMF_SURFACE_FORMAT format, amf_handle hGLTextureID, AMFSurface** ppSurface, AMFSurfaceObserver* pObserver);
+        AMF_RESULT          (AMF_STD_CALL *CreateSurfaceFromGrallocNative)(AMFContext* pThis, amf_handle hGrallocSurface, AMFSurface** ppSurface, AMFSurfaceObserver* pObserver);
+        AMF_RESULT          (AMF_STD_CALL *CreateSurfaceFromOpenCLNative)(AMFContext* pThis, AMF_SURFACE_FORMAT format, amf_int32 width, amf_int32 height, void** pClPlanes, 
+                                                     AMFSurface** ppSurface, AMFSurfaceObserver* pObserver);
+        AMF_RESULT          (AMF_STD_CALL *CreateBufferFromOpenCLNative)(AMFContext* pThis, void* pCLBuffer, amf_size size, AMFBuffer** ppBuffer);
+
+        // Access to AMFCompute interface - AMF_MEMORY_OPENCL, AMF_MEMORY_COMPUTE_FOR_DX9, AMF_MEMORY_COMPUTE_FOR_DX11 are currently supported
+        AMF_RESULT          (AMF_STD_CALL *GetCompute)(AMFContext* pThis, AMF_MEMORY_TYPE eMemType, AMFCompute** ppCompute);
+
+    } AMFContextVtbl;
+
+    struct AMFContext
+    {
+        const AMFContextVtbl *pVtbl;
+    };
+
+#endif
+
+#if defined(__cplusplus)
     //----------------------------------------------------------------------------------------------
     // Lockers
     //----------------------------------------------------------------------------------------------
@@ -325,9 +426,12 @@ namespace amf
         AMFGrallocLocker(const AMFGrallocLocker&);
         AMFGrallocLocker& operator=(const AMFGrallocLocker&);
     };
+#endif
     //----------------------------------------------------------------------------------------------
     //----------------------------------------------------------------------------------------------
     //----------------------------------------------------------------------------------------------
+#if defined(__cplusplus)
 }
+#endif
 
 #endif //#ifndef __AMFContext_h__

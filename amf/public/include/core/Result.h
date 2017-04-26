@@ -40,7 +40,7 @@
 // result codes
 //----------------------------------------------------------------------------------------------
 
-enum AMF_RESULT
+typedef enum AMF_RESULT
 {
     AMF_OK                                   = 0,
     AMF_FAIL                                    ,
@@ -122,6 +122,6 @@ enum AMF_RESULT
     AMF_TAN_UNSUPPORTED_VERSION                 , // Not supported version requested, solely for TANCreateContext().
 
     AMF_NEED_MORE_INPUT                         ,//returned by AMFComponent::SubmitInput did not produce buffer
-};
+} AMF_RESULT;
 
 #endif //#ifndef __AMFResult_h__

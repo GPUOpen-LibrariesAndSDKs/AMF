@@ -40,6 +40,10 @@
 
 #include "../include/core/Platform.h"
 
+#ifndef _WIN32
+#include <pthread.h>
+#endif
+
 extern "C"
 {
     // threads

@@ -57,7 +57,7 @@
 #define AMF_TODO(_todo) (__FILE__ "(" AMF_MACRO_STRING(__LINE__) "): TODO: "_todo)
 
 #include <stdio.h>
-#include <cstdint>
+#include <stdint.h>
 
 #if defined(_WIN32)
 
@@ -68,7 +68,7 @@
     #define AMF_STD_CALL            __stdcall
     #define AMF_CDECL_CALL          __cdecl
     #define AMF_FAST_CALL           __fastcall
-    #define AMF_INLINE              inline
+    #define AMF_INLINE              __inline
     #define AMF_FORCEINLINE         __forceinline
     #define AMF_NO_VTABLE           __declspec(novtable)
 
@@ -106,9 +106,11 @@
 
 #if defined(_MSC_VER)
 #define AMF_WEAK __declspec( selectany ) 
-#else //GCC
-#define AMF_WEAK attribute((weak))
+#elif defined (__GCC__) || defined(__clang__)//GCC or CLANG
+#define AMF_WEAK __attribute__((weak))
 #endif
+
+#define amf_countof(x) (sizeof(x) / sizeof(x[0]))
 
 //-------------------------------------------------------------------------------------------------
 // basic data types
@@ -129,7 +131,15 @@ typedef     double              amf_double;
 typedef     float               amf_float;
 
 typedef     void                amf_void;
+
+#if defined(__cplusplus)
 typedef     bool                amf_bool;
+#else
+typedef     amf_uint16          amf_bool;
+#define     true                1 
+#define     false               0 
+#endif
+
 typedef     long                amf_long; 
 typedef     int                 amf_int; 
 typedef     unsigned long       amf_ulong; 
@@ -150,103 +160,116 @@ typedef     amf_int64           amf_pts;     // in 100 nanosecs
     #define PATH_SEPARATOR_WCHAR         L'/'
 #endif
 
-struct AMFRect
+typedef struct AMFRect
 {
     amf_int32 left;
     amf_int32 top;
     amf_int32 right;
     amf_int32 bottom;
-
+#if defined(__cplusplus)
     bool operator==(const AMFRect& other) const
     {
          return left == other.left && top == other.top && right == other.right && bottom == other.bottom; 
     }
-    inline bool operator!=(const AMFRect& other) const { return !operator==(other); }
+    AMF_INLINE bool operator!=(const AMFRect& other) const { return !operator==(other); }
     amf_int32 Width() const { return right - left; }
     amf_int32 Height() const { return bottom - top; }
-};
+#endif
+} AMFRect;
 
-inline AMFRect AMFConstructRect(amf_int32 left, amf_int32 top, amf_int32 right, amf_int32 bottom)
+AMF_INLINE struct AMFRect AMFConstructRect(amf_int32 left, amf_int32 top, amf_int32 right, amf_int32 bottom)
 {
-    AMFRect object = {left, top, right, bottom};
+    struct AMFRect object = {left, top, right, bottom};
     return object;
 }
 
-struct AMFSize
+typedef struct AMFSize
 {
     amf_int32 width;
     amf_int32 height;
+#if defined(__cplusplus)
     bool operator==(const AMFSize& other) const
     {
          return width == other.width && height == other.height; 
     }
-    inline bool operator!=(const AMFSize& other) const { return !operator==(other); }
-};
+    AMF_INLINE bool operator!=(const AMFSize& other) const { return !operator==(other); }
+#endif
+} AMFSize;
 
-inline AMFSize AMFConstructSize(amf_int32 width, amf_int32 height)
+AMF_INLINE struct AMFSize AMFConstructSize(amf_int32 width, amf_int32 height)
 {
-    AMFSize object = {width, height};
+    struct AMFSize object = {width, height};
     return object;
 }
 
-struct AMFPoint
+typedef struct AMFPoint
 {
     amf_int32 x;
     amf_int32 y;
+#if defined(__cplusplus)
     bool operator==(const AMFPoint& other) const
     {
          return x == other.x && y == other.y; 
     }
-    inline bool operator!=(const AMFPoint& other) const { return !operator==(other); }
-};
+    AMF_INLINE bool operator!=(const AMFPoint& other) const { return !operator==(other); }
+#endif
+} AMFPoint;
 
-inline AMFPoint AMFConstructPoint(amf_int32 x, amf_int32 y)
+AMF_INLINE struct AMFPoint AMFConstructPoint(amf_int32 x, amf_int32 y)
 {
-    AMFPoint object = {x, y};
+    struct AMFPoint object = {x, y};
     return object;
 }
 
-struct AMFRate
+typedef struct AMFRate
 {
     amf_uint32 num;
     amf_uint32 den;
+#if defined(__cplusplus)
     bool operator==(const AMFRate& other) const
     {
          return num == other.num && den == other.den; 
     }
-    inline bool operator!=(const AMFRate& other) const { return !operator==(other); }
-};
+    AMF_INLINE bool operator!=(const AMFRate& other) const { return !operator==(other); }
+#endif
+} AMFRate;
 
-inline AMFRate AMFConstructRate(amf_uint32 num, amf_uint32 den)
+AMF_INLINE struct AMFRate AMFConstructRate(amf_uint32 num, amf_uint32 den)
 {
-    AMFRate object = {num, den};
+    struct AMFRate object = {num, den};
     return object;
 }
 
-struct AMFRatio
+typedef struct AMFRatio
 {
     amf_uint32 num;
     amf_uint32 den;
+#if defined(__cplusplus)
     bool operator==(const AMFRatio& other) const
     {
          return num == other.num && den == other.den; 
     }
-    inline bool operator!=(const AMFRatio& other) const { return !operator==(other); }
-};
+    AMF_INLINE bool operator!=(const AMFRatio& other) const { return !operator==(other); }
+#endif
+} AMFRatio;
 
-inline AMFRatio AMFConstructRatio(amf_uint32 num, amf_uint32 den)
+AMF_INLINE struct AMFRatio AMFConstructRatio(amf_uint32 num, amf_uint32 den)
 {
-    AMFRatio object = {num, den};
+    struct AMFRatio object = {num, den};
     return object;
 }
 
 #pragma pack(push, 1)
-#pragma warning( push )
-#if defined(WIN32)
-#pragma warning(disable : 4200)
-#pragma warning(disable : 4201)
+#if defined(_MSC_VER)
+    #pragma warning( push )
 #endif
-struct AMFColor
+#if defined(WIN32)
+#if defined(_MSC_VER)
+    #pragma warning(disable : 4200)
+    #pragma warning(disable : 4201)
+#endif
+#endif
+typedef struct AMFColor
 {
     union
     {
@@ -259,19 +282,27 @@ struct AMFColor
         };
         amf_uint32 rgba;
     };
+#if defined(__cplusplus)
     bool operator==(const AMFColor& other) const
     {
          return r == other.r && g == other.g && b == other.b && a == other.a; 
     }
-    inline bool operator!=(const AMFColor& other) const { return !operator==(other); }
-};
-#pragma warning( pop )
+    AMF_INLINE bool operator!=(const AMFColor& other) const { return !operator==(other); }
+#endif
+} AMFColor;
+#if defined(_MSC_VER)
+    #pragma warning( pop )
+#endif
 #pragma pack(pop)
 
 
-inline AMFColor AMFConstructColor(amf_uint8 r, amf_uint8 g, amf_uint8 b, amf_uint8 a)
+AMF_INLINE struct AMFColor AMFConstructColor(amf_uint8 r, amf_uint8 g, amf_uint8 b, amf_uint8 a)
 {
-    AMFColor object = {r, g, b, a};
+    struct AMFColor object;
+    object.r = r;
+    object.g = g;
+    object.b = b;
+    object.a = a;
     return object;
 }
 
@@ -283,11 +314,11 @@ inline AMFColor AMFConstructColor(amf_uint8 r, amf_uint8 g, amf_uint8 b, amf_uin
     {
     #endif
         // allocator
-        inline void* AMF_CDECL_CALL amf_variant_alloc(amf_size count)
+        AMF_INLINE void* AMF_CDECL_CALL amf_variant_alloc(amf_size count)
         {
             return CoTaskMemAlloc(count);
         }
-        inline void AMF_CDECL_CALL amf_variant_free(void* ptr)
+        AMF_INLINE void AMF_CDECL_CALL amf_variant_free(void* ptr)
         {
             CoTaskMemFree(ptr);
         }
@@ -296,16 +327,17 @@ inline AMFColor AMFConstructColor(amf_uint8 r, amf_uint8 g, amf_uint8 b, amf_uin
     #endif
 
 #else // defined(_WIN32)
+    #include <stdlib.h>
     #if defined(__cplusplus)
     extern "C"
     {
     #endif
         // allocator
-        inline void* AMF_CDECL_CALL amf_variant_alloc(amf_size count)
+        AMF_INLINE void* AMF_CDECL_CALL amf_variant_alloc(amf_size count)
         {
             return malloc(count);
         }
-        inline void AMF_CDECL_CALL amf_variant_free(void* ptr)
+        AMF_INLINE void AMF_CDECL_CALL amf_variant_free(void* ptr)
         {
             free(ptr);
         }
@@ -314,10 +346,25 @@ inline AMFColor AMFConstructColor(amf_uint8 r, amf_uint8 g, amf_uint8 b, amf_uin
     #endif
 #endif // defined(_WIN32)
 
+
+#if defined(__cplusplus)
 namespace amf
 {
-    struct AMFGuid
+#endif
+    typedef struct AMFGuid
     {
+        amf_uint32 data1;
+        amf_uint16 data2;
+        amf_uint16 data3;
+        amf_uint8 data41;
+        amf_uint8 data42;
+        amf_uint8 data43;
+        amf_uint8 data44;
+        amf_uint8 data45;
+        amf_uint8 data46;
+        amf_uint8 data47;
+        amf_uint8 data48;
+#if defined(__cplusplus)
         AMFGuid(amf_uint32 _data1, amf_uint16 _data2, amf_uint16 _data3,
                 amf_uint8 _data41, amf_uint8 _data42, amf_uint8 _data43, amf_uint8 _data44,
                 amf_uint8 _data45, amf_uint8 _data46, amf_uint8 _data47, amf_uint8 _data48)
@@ -333,17 +380,6 @@ namespace amf
             data47(_data47),
             data48(_data48)
         {}
-        amf_uint32 data1;
-        amf_uint16 data2;
-        amf_uint16 data3;
-        amf_uint8 data41;
-        amf_uint8 data42;
-        amf_uint8 data43;
-        amf_uint8 data44;
-        amf_uint8 data45;
-        amf_uint8 data46;
-        amf_uint8 data47;
-        amf_uint8 data48;
 
         bool operator==(const AMFGuid& other) const
         {
@@ -360,13 +396,23 @@ namespace amf
                 data47 == other.data47 &&
                 data48 == other.data48;
         }
-        inline bool operator!=(const AMFGuid& other) const { return !operator==(other); }
-    };
+        AMF_INLINE bool operator!=(const AMFGuid& other) const { return !operator==(other); }
+#endif
+    } AMFGuid;
 
+#if defined(__cplusplus)
     AMF_INLINE bool AMFCompareGUIDs(const AMFGuid& guid1, const AMFGuid& guid2)
     {
         return guid1 == guid2;
     }
+#else
+    AMF_INLINE amf_bool AMFCompareGUIDs(const struct AMFGuid guid1, const struct AMFGuid guid2)
+    {
+        return memcmp(&guid1, &guid2, sizeof(guid1)) == 0;
+    }
+#endif
+#if defined(__cplusplus)
 }
+#endif
 
 #endif //#ifndef __AMFPlatform_h__
