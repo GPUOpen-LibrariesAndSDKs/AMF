@@ -1227,7 +1227,6 @@ AMF_RESULT              AvcParser::ReInit()
     m_pStream->Seek(amf::AMF_SEEK_BEGIN, 0, NULL);
     m_PacketCount = 0;
     m_bEof = false;
-    m_fps= 0;
     m_currentAccessUnitsSigns = AccessUnitSigns();
     m_ReadData.SetSize(0);
     return AMF_OK;

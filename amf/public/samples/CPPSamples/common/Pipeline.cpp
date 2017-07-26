@@ -256,6 +256,15 @@ void Pipeline::OnEof()
 PipelineState Pipeline::GetState() const
 {
     amf::AMFLock lock(&m_cs);
+    // test code 
+    for(ConnectorList::const_iterator it = m_connectors.begin(); it != m_connectors.end(); it++)
+    {
+        if(!(*it)->IsEof())
+        {
+            int a = 1;
+        }
+    }
+
     return m_state;
 }
 //-------------------------------------------------------------------------------------------------
@@ -318,6 +327,10 @@ double Pipeline::GetProcessingTime()
 //-------------------------------------------------------------------------------------------------
 amf_int64 Pipeline::GetNumberOfProcessedFrames()
 {
+    if(m_connectors.size() == 0)
+    {
+        return 0;
+    }
     PipelineConnectorPtr last = *m_connectors.rbegin();
     return last->GetSubmitFramesProcessed();
 }

@@ -125,27 +125,6 @@ private:
 static const wchar_t* PARAM_NAME_THREADCOUNT = L"THREADCOUNT";
 static const wchar_t* PARAM_NAME_PREVIEW_MODE = L"PREVIEWMODE";
 
-static AMF_RESULT ParamConverterCodec(const std::wstring& value, amf::AMFVariant& valueOut)
-{
-    std::wstring paramValue;
-
-    std::wstring uppValue = toUpper(value);
-    if(uppValue == L"AVC" || uppValue == L"H264" || uppValue == L"H.264")
-    {
-        paramValue = AMFVideoEncoderVCE_AVC;
-    } 
-    else if(uppValue == L"HEVC" || uppValue == L"H265" || uppValue == L"H.265")
-    {
-        paramValue = AMFVideoEncoder_HEVC;
-    } 
-    else 
-    {
-        LOG_ERROR(L"Invalid codec name \"" << value << L"\" value.");
-        return AMF_INVALID_ARG;
-    }
-    valueOut = paramValue.c_str();
-    return AMF_OK;
-}
 
 static AMF_RESULT RegisterCodecParams(ParametersStorage* pParams)
 {

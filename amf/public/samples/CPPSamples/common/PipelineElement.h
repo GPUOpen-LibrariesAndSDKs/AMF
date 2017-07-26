@@ -340,6 +340,7 @@ public:
     { 
         amf::AMFLock lock(&m_cs);
         m_Queue.clear(); 
+        m_bEof = false;
         return AMF_OK; 
     }
 
@@ -553,5 +554,14 @@ public:
 protected:
     amf::AMFComponentExPtr    m_pComponent;
     std::vector<bool>         m_bEof;
+};
+//-------------------------------------------------------------------------------------------------
+class AVSyncObject
+{
+    bool m_bVideoStarted = false;
+public:
+    bool IsVideoStarted() {return m_bVideoStarted;}
+    void VideoStarted() {m_bVideoStarted = true;}
+    void Reset() {m_bVideoStarted = false;}
 };
 //-------------------------------------------------------------------------------------------------

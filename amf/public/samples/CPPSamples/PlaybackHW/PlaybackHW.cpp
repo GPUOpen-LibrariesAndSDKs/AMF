@@ -72,7 +72,9 @@ ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, HWND* , int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK    OpenStreamProc(HWND, UINT, WPARAM, LPARAM);
 void                FileOpen(HWND hwnd);
+void                StreamOpen(HWND hwnd);
 void                UpdateMenuItems(HMENU hMenu);
 HWND                CreateClientWindow(HWND hWndParent);
 void                ResizeClient(HWND hWndParent);
@@ -112,7 +114,7 @@ static INT_PTR CALLBACK ProgressDlgProc(HWND hwnd, UINT Message, WPARAM wParam, 
             RequestStop();
             amf::AMFContextPtr pContext;
             g_AMFFactory.GetFactory()->CreateContext(&pContext);
-            pContext->InitDX9(NULL);
+            pContext->InitDX11(NULL);
             amf::AMFComponentPtr pComponent;
             g_AMFFactory.GetFactory()->CreateComponent(pContext, AMFVideoConverter, &pComponent);
             pComponent->Optimize(this);
@@ -312,7 +314,7 @@ BOOL InitInstance(HINSTANCE hInstance, HWND* phWnd, int nCmdShow)
 
 void UpdateMenuItems(HMENU hMenu)
 {
-    amf::AMF_MEMORY_TYPE    presenterType = amf::AMF_MEMORY_DX9;
+    amf::AMF_MEMORY_TYPE    presenterType = amf::AMF_MEMORY_DX11;
     {
         amf_int64 engineInt = amf::AMF_MEMORY_UNKNOWN;
         if(s_pPipeline->GetParam(PlaybackPipeline::PARAM_NAME_PRESENTER, engineInt) == AMF_OK)
@@ -372,6 +374,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             break;
         case ID_FILE_OPEN:
             FileOpen(hWnd);
+            break;
+        case ID_FILE_OPENNETWORKSTREAM:
+            StreamOpen(hWnd);
             break;
         case ID_PLAYBACK_PLAY:
             if(s_pPipeline->GetState() == PipelineStateEof || s_pPipeline->GetState() == PipelineStateNotReady)
@@ -620,5 +625,65 @@ void CloseToolbar()
     }
 }
 //-------------------------------------------------------------------------------------------------
+void                StreamOpen(HWND hWnd)
+{
+    if(DialogBox(hInst, MAKEINTRESOURCE(IDD_OPEN_STREAM), hWnd, OpenStreamProc) == IDOK)
+    {
+        s_pPipeline->Stop();
+        if(s_pPipeline->Init(hClientWindow) == AMF_OK)
+        {
+//            s_pPipeline->SetParam(PLAYBACK360_URL_PARAM, L"");
+            s_pPipeline->Play();
+            UpdateMenuItems(::GetMenu(hWnd));
+        }
+        else
+        {
+            s_pPipeline->SetParam(PlaybackPipelineBase::PARAM_NAME_URL_VIDEO, L"");
+            s_pPipeline->SetParam(PlaybackPipelineBase::PARAM_NAME_URL_AUDIO, L"");
+        }
+
+    }
+
+}
+INT_PTR CALLBACK    OpenStreamProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+    case WM_INITDIALOG:
+        // update values
+        {
+            bool bListen = false;
+            s_pPipeline->GetParam(PlaybackPipelineBase::PARAM_NAME_LISTEN_FOR_CONNECTION, bListen);
+            CheckDlgButton(hDlg, IDC_CHECK_LISTEN, bListen ? BST_CHECKED : BST_UNCHECKED);
+
+        }
+        return (INT_PTR)TRUE;
+
+    case WM_COMMAND:
+        if (LOWORD(wParam) == IDOK)
+        {
+            wchar_t buf[10000];
+            GetWindowText(GetDlgItem(hDlg, IDC_EDIT_URL_VIDEO), buf, amf_countof(buf));
+            s_pPipeline->SetParamAsString(PlaybackPipelineBase::PARAM_NAME_URL_VIDEO, buf);
+            GetWindowText(GetDlgItem(hDlg, IDC_EDIT_URL_AUDIO), buf, amf_countof(buf));
+            s_pPipeline->SetParamAsString(PlaybackPipelineBase::PARAM_NAME_URL_AUDIO, buf);
+            
+            bool bListen = IsDlgButtonChecked(hDlg, IDC_CHECK_LISTEN) == BST_CHECKED;
+            s_pPipeline->SetParam(PlaybackPipelineBase::PARAM_NAME_LISTEN_FOR_CONNECTION, bListen);
+
+            EndDialog(hDlg, LOWORD(wParam));
+            return (INT_PTR)TRUE;
+        }
+        if (LOWORD(wParam) == IDCANCEL)
+        {
+            EndDialog(hDlg, LOWORD(wParam));
+            return (INT_PTR)TRUE;
+        }
+        break;
+    }
+    return (INT_PTR)FALSE;
+}
+
+
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------

@@ -44,7 +44,7 @@
 //static wchar_t *fileNameIn                  = L"./bbc_1080p.264";
 static wchar_t *fileNameIn                  = NULL;
 static wchar_t *fileNameOut                 = L"./output_%dx%d.nv12";
-static amf::AMF_MEMORY_TYPE memoryTypeOut   = amf::AMF_MEMORY_DX9;
+static amf::AMF_MEMORY_TYPE memoryTypeOut   = amf::AMF_MEMORY_DX11;
 static amf::AMF_SURFACE_FORMAT formatOut    = amf::AMF_SURFACE_NV12;
 static amf_int32 frameCount                 = 500; // -1 means entire file
 static amf_int32 submitted = 0;

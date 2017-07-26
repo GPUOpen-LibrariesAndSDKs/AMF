@@ -19,6 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\src\components\AmbisonicRenderer\Ambisonic2SRendererImpl.cpp" />
+    <ClCompile Include="..\..\..\src\components\AmbisonicRenderer\convolution.cpp" />
+    <ClCompile Include="..\..\..\src\components\AmbisonicRenderer\HRTFtable.cpp" />
+    <ClCompile Include="..\..\..\src\components\AmbisonicRenderer\wav.cpp" />
     <ClCompile Include="..\..\..\common\AMFFactory.cpp" />
     <ClCompile Include="..\..\..\common\AMFSTL.cpp" />
     <ClCompile Include="..\..\..\common\DataStreamFactory.cpp" />
@@ -34,12 +38,18 @@
     <ClCompile Include="..\..\..\samples\CPPSamples\common\BitStreamParserH264.cpp" />
     <ClCompile Include="..\..\..\samples\CPPSamples\common\BitStreamParserH265.cpp" />
     <ClCompile Include="..\..\..\samples\CPPSamples\common\CmdLogger.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\EncoderParamsAVC.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\EncoderParamsHEVC.cpp" />
     <ClCompile Include="..\..\..\samples\CPPSamples\common\ParametersStorage.cpp" />
     <ClCompile Include="..\..\..\samples\CPPSamples\common\Pipeline.cpp" />
     <ClCompile Include="..\..\..\samples\CPPSamples\common\PlaybackPipelineBase.cpp" />
     <ClCompile Include="..\..\..\samples\CPPSamples\common\VideoPresenter.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\src\components\AmbisonicRenderer\Ambisonic2SRendererImpl.h" />
+    <ClInclude Include="..\..\..\src\components\AmbisonicRenderer\convolution.h" />
+    <ClInclude Include="..\..\..\src\components\AmbisonicRenderer\HRTFtable.h" />
+    <ClInclude Include="..\..\..\src\components\AmbisonicRenderer\wav.h" />
     <ClInclude Include="..\..\..\common\AMFFactory.h" />
     <ClInclude Include="..\..\..\common\AMFSTL.h" />
     <ClInclude Include="..\..\..\common\ByteArray.h" />
@@ -58,19 +68,18 @@
     <ClInclude Include="..\..\..\samples\CPPSamples\common\BitStreamParserH264.h" />
     <ClInclude Include="..\..\..\samples\CPPSamples\common\BitStreamParserH265.h" />
     <ClInclude Include="..\..\..\samples\CPPSamples\common\CmdLogger.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\EncoderParamsAVC.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\EncoderParamsHEVC.h" />
     <ClInclude Include="..\..\..\samples\CPPSamples\common\ParametersStorage.h" />
     <ClInclude Include="..\..\..\samples\CPPSamples\common\Pipeline.h" />
     <ClInclude Include="..\..\..\samples\CPPSamples\common\PipelineElement.h" />
     <ClInclude Include="..\..\..\samples\CPPSamples\common\PlaybackPipelineBase.h" />
     <ClInclude Include="..\..\..\samples\CPPSamples\common\VideoPresenter.h" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="AMF_UE4.Build.cs" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{5339C464-0EAF-4E56-957F-1FA286C59852}</ProjectGuid>
+    <ProjectGuid>{BE74F945-D4A5-4840-8C55-919030E8DC47}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>AMF_UE4_vs2015</RootNamespace>
+    <RootNamespace>AmfMediaCommon</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -139,7 +148,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>AMF_COMPONENT_AMBISONIC_STATIC;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)../../../..</AdditionalIncludeDirectories>
       <ShowIncludes>false</ShowIncludes>
     </ClCompile>
@@ -152,7 +161,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>AMF_COMPONENT_AMBISONIC_STATIC;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)../../../..</AdditionalIncludeDirectories>
       <ShowIncludes>false</ShowIncludes>
     </ClCompile>
@@ -167,7 +176,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>AMF_COMPONENT_AMBISONIC_STATIC;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)../../../..</AdditionalIncludeDirectories>
       <ShowIncludes>false</ShowIncludes>
     </ClCompile>
@@ -184,7 +193,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>AMF_COMPONENT_AMBISONIC_STATIC;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)../../../..</AdditionalIncludeDirectories>
       <ShowIncludes>false</ShowIncludes>
     </ClCompile>

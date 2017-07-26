@@ -43,7 +43,9 @@ IDC_PLAYBACKHW MENU
 BEGIN
     POPUP "&File"
     BEGIN
-        MENUITEM "Open \tO",                    ID_FILE_OPEN
+        MENUITEM "Open...\tCtrl+O",             ID_FILE_OPEN
+        MENUITEM "Open Network Stream...\tCtrl+N", ID_FILE_OPENNETWORKSTREAM
+        MENUITEM SEPARATOR
         MENUITEM "E&xit",                       IDM_EXIT
     END
     POPUP "&Options"
@@ -71,6 +73,8 @@ END
 
 IDC_PLAYBACKHW ACCELERATORS
 BEGIN
+    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL
+    "N",            ID_FILE_OPENNETWORKSTREAM, VIRTKEY, CONTROL
     "?",            IDM_ABOUT,              ASCII,  ALT
     "/",            IDM_ABOUT,              ASCII,  ALT
 END
@@ -111,6 +115,20 @@ BEGIN
     CONTROL         "",IDC_SEEK,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,6,6,246,15
 END
 
+IDD_OPEN_STREAM DIALOGEX 0, 0, 551, 69
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    EDITTEXT        IDC_EDIT_URL_VIDEO,66,6,480,14,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,438,54,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,498,54,50,14
+    EDITTEXT        IDC_EDIT_URL_AUDIO,66,24,480,14,ES_AUTOHSCROLL
+    LTEXT           "Video:",IDC_STATIC,12,12,21,8
+    LTEXT           "Audio(opt):",IDC_STATIC,12,30,38,8
+    CONTROL         "Listen as server",IDC_CHECK_LISTEN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,52,67,10
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -136,6 +154,14 @@ BEGIN
         RIGHTMARGIN, 303
         TOPMARGIN, 7
         BOTTOMMARGIN, 19
+    END
+
+    IDD_OPEN_STREAM, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 544
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 62
     END
 END
 #endif    // APSTUDIO_INVOKED

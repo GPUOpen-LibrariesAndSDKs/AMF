@@ -91,11 +91,14 @@ namespace amf
 
         protected:
             virtual void        AMF_STD_CALL  OnPropertyChanged(const wchar_t* pName);
+            virtual AMF_RESULT  AMF_STD_CALL  Drain();
 
             AMFFileMuxerFFMPEGImpl*   m_pHost;
             amf_int32                 m_iIndex;
             bool                      m_bEnabled;
             amf_int64                 m_iPacketCount;
+            amf_pts                   m_ptsLast;
+            amf_pts                   m_ptsShift;
 
         };
         typedef AMFInterfacePtr_T<AMFInputMuxerImpl>    AMFInputMuxerImplPtr;
@@ -166,8 +169,6 @@ namespace amf
         AMF_RESULT AMF_STD_CALL     Open();
         AMF_RESULT AMF_STD_CALL     Close();
 
-        amf_bool AMF_STD_CALL       IsRTMPUrl(const amf_string &url);
-
         AMF_RESULT AMF_STD_CALL     WriteHeader();
         AMF_RESULT AMF_STD_CALL     WriteData(AMFData* pData, amf_int32 iIndex);
     private:
@@ -186,6 +187,9 @@ namespace amf
         bool                    m_bForceEof;
         AMFFileMuxerFFMPEGImpl(const AMFFileMuxerFFMPEGImpl&);
         AMFFileMuxerFFMPEGImpl& operator=(const AMFFileMuxerFFMPEGImpl&);
+
+        amf_int64               m_iViewFrameCount;
+        amf_pts                 m_ptsStatTime;
     };
 
  //   typedef AMFInterfacePtr_T<AMFFileMuxerFFMPEGImpl>    AMFFileMuxerFFMPEGPtr;

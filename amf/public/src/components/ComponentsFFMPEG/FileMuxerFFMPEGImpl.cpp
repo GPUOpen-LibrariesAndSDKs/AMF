@@ -54,6 +54,7 @@ extern "C"
 #include "public/common/AMFFactory.h"
 #include "public/common/DataStream.h"
 
+#define FAKE_MUXING 0
 
 #define AMF_FACILITY            L"AMFFileMuxerFFMPEGImpl"
 #define MY_AV_NOPTS_VALUE       ((int64_t)0x8000000000000000LL)
@@ -154,7 +155,9 @@ AMFFileMuxerFFMPEGImpl::AMFInputMuxerImpl::AMFInputMuxerImpl(AMFFileMuxerFFMPEGI
     : m_pHost(pHost),
       m_iIndex(-1),
       m_bEnabled(true),
-      m_iPacketCount(0)
+      m_iPacketCount(0),
+      m_ptsLast(0),
+      m_ptsShift(0)
 {
 }
 //-------------------------------------------------------------------------------------------------
@@ -174,10 +177,24 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AMFInputMuxerImpl::SubmitInput(
         m_iPacketCount++;
         bool bVideo = m_pHost->m_pOutputContext->streams[m_iIndex]->codec->codec_type == AVMEDIA_TYPE_VIDEO;
 //        AMFTraceW(L"",0, AMF_TRACE_INFO, AMF_FACILITY, 2, L"Stream# %s, packet # %d, time = %.2f ms", bVideo ? L"Video" : L"Audio", (int)m_iPacketCount, pData->GetPts() / 10000.);
+        if(pData != NULL)
+        {
+            m_ptsLast = pData->GetPts() + m_ptsShift;
+            pData->SetPts(m_ptsLast);
+            
+        }
         return m_pHost->WriteData(pData, m_iIndex);
+
     }
     return pData != NULL ? AMF_OK : AMF_EOF;
 }
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT  AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AMFInputMuxerImpl::Drain()
+{
+    m_ptsShift = m_ptsLast;
+    return AMF_OK;
+}
+
 //-------------------------------------------------------------------------------------------------
 //
 //
@@ -283,14 +300,19 @@ AMFFileMuxerFFMPEGImpl::AMFFileMuxerFFMPEGImpl(AMFContext* pContext)
     m_pOutputContext(NULL),
     m_bHeaderIsWritten(false),
     m_bTerminated(true),
-    m_bForceEof(false)
+    m_bForceEof(false),
+    m_iViewFrameCount(0),
+    m_ptsStatTime(0)
 {
     g_AMFFactory.Init();
 
     AMFPrimitivePropertyInfoMapBegin
         AMFPropertyInfoPath(FFMPEG_MUXER_PATH, L"File Path", L"", false),
+        AMFPropertyInfoPath(FFMPEG_MUXER_URL, L"Stream URL", L"", false),
         AMFPropertyInfoBool(FFMPEG_MUXER_ENABLE_VIDEO, L"Enable video stream", true, true),
         AMFPropertyInfoBool(FFMPEG_MUXER_ENABLE_AUDIO, L"Enable audio stream", false, true),
+        AMFPropertyInfoBool(FFMPEG_MUXER_LISTEN, L"Listen", false, false)
+
     AMFPrimitivePropertyInfoMapEnd
 
     m_InputStreams.push_back(new AMFVideoInputMuxerImpl(this));
@@ -340,6 +362,10 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::Drain()
 {
     AMFLock lock(&m_sync);
 
+    for(amf_vector<AMFInputMuxerImplPtr>::iterator it = m_InputStreams.begin(); it != m_InputStreams.end(); it++)
+    {
+        (*it)->Drain();
+    }
     m_bForceEof = true;
 
     return AMF_OK;
@@ -442,6 +468,8 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
         // fake codec - not opened - some params will come from real Encoder later
         ist->codec= avcodec_alloc_context3(NULL);
         ist->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
+        ist->codecpar = avcodec_parameters_alloc();
+
               
 
         AMFInputMuxerImplPtr  spInput    = m_InputStreams[ind];
@@ -458,13 +486,16 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
         }
 
         ist->codec->codec_type=(AVMediaType)ist->id;
+        ist->codecpar->codec_type=(AVMediaType)ist->id;
 
         //Codec ID is FFMPEG's
         amf_int64  codecID = AV_CODEC_ID_NONE;
         AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_CODEC_ID, &codecID));
-        ist->codec->codec_id= (AVCodecID) codecID;
+        ist->codec->codec_id = (AVCodecID) codecID;
+        ist->codecpar->codec_id = (AVCodecID) codecID;
 
         AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_BIT_RATE, &ist->codec->bit_rate));
+        ist->codecpar->bit_rate = ist->codec->bit_rate;
 
         AMFVariant val;
         AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_EXTRA_DATA, &val));
@@ -475,9 +506,14 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
             AMFBufferPtr pBuffer = AMFBufferPtr(val.pInterface);
             ist->codec->extradata = (uint8_t*) pBuffer->GetNative();
             ist->codec->extradata_size = (int) pBuffer->GetSize();
+
+            ist->codecpar->extradata = (uint8_t*) pBuffer->GetNative();
+            ist->codecpar->extradata_size = (int) pBuffer->GetSize();
         }
 
         ist->internal = (AVStreamInternal*)av_mallocz(sizeof(*ist->internal));
+        ist->internal->avctx = avcodec_alloc_context3(NULL);
+
 
         if (streamType==MUXER_VIDEO)
         {
@@ -486,39 +522,52 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
 
             // default pts settings is MPEG like 
             avpriv_set_pts_info(ist, 33, 1, 90000);
-//            AVRational frame_rate=av_d2q(frameRate, 1<<24);
-
+// this is set in the line above 
             ist->time_base.num = frameRate.num;
             ist->time_base.den = frameRate.den;
+
             ist->codec->time_base=ist->time_base;
+
 
             AMFSize frame;
             AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_VIDEO_FRAMESIZE, &frame));
 
             ist->codec->width = frame.width;
             ist->codec->height = frame.height;
+            ist->codecpar->width = frame.width;
+            ist->codecpar->height = frame.height;
 
             ist->codec->framerate.num =frameRate.num;
             ist->codec->framerate.den =frameRate.den;
 
             ist->codec->pix_fmt = AV_PIX_FMT_YUV420P; // always
+            ist->codecpar->format = AV_PIX_FMT_YUV420P; // always
+
         }
         else if (streamType==MUXER_AUDIO)
         {
             AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_AUDIO_SAMPLE_RATE, &ist->codec->sample_rate));
             AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_AUDIO_CHANNELS, &ist->codec->channels));
+            ist->codecpar->sample_rate = ist->codec->sample_rate;
+            ist->codecpar->channels = ist->codec->channels;
+
 
             amf_int64  sampleFormat = AMFAF_UNKNOWN;
             AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_AUDIO_SAMPLE_FORMAT, &sampleFormat));
 
             ist->codec->sample_fmt=GetFFMPEGAudioFormat((AMF_AUDIO_FORMAT) sampleFormat);
+            ist->codecpar->format = ist->codec->sample_fmt;
 
             AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_AUDIO_CHANNEL_LAYOUT, &ist->codec->channel_layout));
             AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_AUDIO_BLOCK_ALIGN, &ist->codec->block_align));
             AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_AUDIO_FRAME_SIZE, &ist->codec->frame_size));
 
-            ist->codec->time_base.num= 1;
-            ist->codec->time_base.den=ist->codec->sample_rate;
+            ist->codecpar->channel_layout = ist->codec->channel_layout;
+            ist->codecpar->block_align = ist->codec->block_align;
+            ist->codecpar->frame_size = ist->codec->frame_size;
+
+            ist->codec->time_base.num = 1;
+            ist->codec->time_base.den = ist->codec->sample_rate;
             ist->time_base=ist->codec->time_base;
         }
     }
@@ -532,7 +581,9 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::FreeContext()
     {
         for(unsigned int j=0;j<m_pOutputContext->nb_streams;j++) 
         {
+            av_free(m_pOutputContext->streams[j]->internal->avctx);
             av_free(m_pOutputContext->streams[j]->codec);
+            av_free(m_pOutputContext->streams[j]->codecpar);
             av_free(m_pOutputContext->streams[j]);
         }
 
@@ -555,18 +606,42 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::Open()
     Close();
     AllocateContext();
 
-    amf_wstring pUrl;
-    GetPropertyWString(L"Path", &pUrl);
+    amf_wstring path;
+    amf_wstring url;
+    GetPropertyWString(FFMPEG_MUXER_PATH, &path);
+    GetPropertyWString(FFMPEG_MUXER_URL, &url);
 
-    amf_string convertedfilename = amf_from_unicode_to_utf8(pUrl);
     AVOutputFormat* file_oformat = NULL;
-    if (IsRTMPUrl(convertedfilename))
+    amf_string convertedfilename;
+    bool bListen = false;
+    bool bRtmpLive = false;
+    if(url.length() > 0)
     {
-        file_oformat = av_guess_format("flv", NULL, NULL);
+        GetProperty(FFMPEG_MUXER_LISTEN, &bListen);
+        convertedfilename = amf_from_unicode_to_utf8(url);
+        amf_string::size_type pos = convertedfilename.find(':');
+        if(pos != amf_string::npos)
+        {
+            amf_string protocol = convertedfilename.substr(0, pos);
+            protocol = amf_string_to_lower(protocol);
+            if (protocol == "rtmp")
+            {
+                protocol = "flv";
+                bRtmpLive = true;
+            }
+            else if (protocol == "tcp")
+            {
+                protocol = "mpegts";
+            }
+            file_oformat = av_guess_format(protocol.c_str(), NULL, NULL);
+        }
     }
-    else
+    else if(path.length() > 0)
     {
-        convertedfilename = amf_string("vlfile:") + convertedfilename;
+        convertedfilename = amf_string("file:") + amf_from_unicode_to_multibyte(path);
+    }
+    if(file_oformat == NULL)
+    {
         file_oformat = av_guess_format(NULL, convertedfilename.c_str(), NULL);
     }
 
@@ -577,8 +652,21 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::Open()
     
     m_pOutputContext->oformat = file_oformat;
 
+    int iret = 0;
+    AVDictionary *options = NULL;
+    if(bListen)
+    { 
+        iret = av_dict_set(&options, "listen", "1", 0);
+    }
+    if(bRtmpLive)
+    {
+        iret = av_dict_set(&options, "rtmp_live", "live", 0);
+    }
     // open file
-    int iret = avio_open(&m_pOutputContext->pb, convertedfilename.c_str(), AVIO_FLAG_WRITE);
+//    int iret = avio_open(&m_pOutputContext->pb, convertedfilename.c_str(), AVIO_FLAG_WRITE);
+#if !FAKE_MUXING
+    iret = avio_open2(&m_pOutputContext->pb, convertedfilename.c_str(), AVIO_FLAG_WRITE, NULL, &options);
+
     if(iret != 0)
     {
         return AMF_FILE_NOT_OPEN;
@@ -586,12 +674,14 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::Open()
 
     AMF_RESULT err = WriteHeader();
     AMF_RETURN_IF_FAILED(err,  L"Open() - WriteHeader() failed");
-
+#endif
     m_bEofList.resize(GetInputCount());
     for(amf_size i=0; i <m_bEofList.size(); i++)
     {
         m_bEofList[i] = false;
     }
+    m_iViewFrameCount = 0;
+    m_ptsStatTime = 0;
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
@@ -601,7 +691,9 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::Close()
     {
         if(m_bHeaderIsWritten)
         {
+#if !FAKE_MUXING
             av_write_trailer(m_pOutputContext);
+#endif
         }
         avio_close(m_pOutputContext->pb);
         m_pOutputContext->pb = 0;
@@ -610,32 +702,19 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::Close()
     FreeContext();
     return AMF_OK;
 }
-
-amf_bool AMF_STD_CALL AMFFileMuxerFFMPEGImpl::IsRTMPUrl(const amf_string & url)
-{
-    amf_bool ret = false;
-
-    amf_string url_lower = amf_string_to_lower(url);
-
-    if (url_lower.compare(0, 7, "rtmp://") == 0)
-    {
-        ret = true;
-    }
-
-    return ret;
-}
-
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::WriteHeader()
 {
     if (!m_bHeaderIsWritten)
     {
         m_bHeaderIsWritten = true;
+#if !FAKE_MUXING
         int ret = avformat_write_header(m_pOutputContext, NULL);
         if (ret != 0)
         {
             return AMF_FAIL;
         }
+#endif
     }
     return AMF_OK;
 }
@@ -648,9 +727,14 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::WriteData(AMFData* pData, amf_i
 
     if (pData)
     {
+        m_bForceEof = false;
         AVStream *ost = m_pOutputContext->streams[iIndex];
 
         // fill packet 
+        AVPacket  pkt = {};
+        av_init_packet(&pkt);
+#if !FAKE_MUXING
+
         AMFBufferPtr pInBuffer(pData);
         AMF_RETURN_IF_FALSE(pInBuffer != 0,AMF_INVALID_ARG, L"WriteData() - Input should be Buffer");
 
@@ -660,11 +744,10 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::WriteData(AMFData* pData, amf_i
         amf_size uiMemSizeIn = pInBuffer->GetSize();
         AMF_RETURN_IF_FALSE(uiMemSizeIn!=0, AMF_INVALID_ARG, L"WriteData() - Invalid param");
 
-        AVPacket  pkt = {};
-        av_init_packet(&pkt);
         pkt.data = static_cast<uint8_t*>(pInBuffer->GetNative());
         pkt.size = (int)uiMemSizeIn;
         pkt.stream_index = iIndex;
+#endif
 
         // Try to determine the output video frame type
         amf_int64 outputDataType = -1;
@@ -685,10 +768,43 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::WriteData(AMFData* pData, amf_i
         pkt.dts=pkt.pts;
         pkt.duration = av_rescale_q(duration, AMF_TIME_BASE_Q, ost->time_base);
 
+        amf_pts currentTime = amf_high_precision_clock();
+
+        if(ost->codec->codec_type  == AVMEDIA_TYPE_VIDEO)
+        { 
+  
+//            AMFTraceWarning(AMF_FACILITY, L"WritePacket() video in_pts=%" LPRId64 L"  pts=%" LPRId64 L", dts=% " LPRId64, pts, pkt.pts, pkt.dts);
+        }
+//        AMFTraceWarning(AMF_FACILITY, L"WritePacket() %s in_pts=%" LPRId64 L"  pts=%" LPRId64 L", dts=% " LPRId64,
+//            ost->codec->codec_type == AVMEDIA_TYPE_VIDEO ? L"video" : L"audio",
+//            pts, pkt.pts, pkt.dts);
+
+        amf_int64 ptsFFmpeg = pkt.pts;
+#if !FAKE_MUXING
         if (av_interleaved_write_frame(m_pOutputContext,&pkt)<0)
         {
             return AMF_FAIL;
         }
+#endif
+        if(ost->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+        {
+            if(m_iViewFrameCount == 0)
+            {
+                m_ptsStatTime = currentTime;
+            }
+            m_iViewFrameCount++;            
+            if((m_iViewFrameCount % 100) == 0)
+            {
+#if FAKE_MUXING
+                AMFTraceWarning(AMF_FACILITY, L" FPS=%5.2f", (double)100 * AMF_SECOND / (currentTime - m_ptsStatTime));
+#endif
+                m_ptsStatTime = currentTime;
+            }
+        }
+//        AMFTraceWarning(AMF_FACILITY, L"WritePacket() %s in_pts=%" LPRId64 L"pts=%" LPRId64 L"time=%5.2f",
+//            ost->codec->codec_type == AVMEDIA_TYPE_VIDEO ? L"video" : L"audio",
+//            pts, ptsFFmpeg, double(amf_high_precision_clock() - currentTime) / 10000. 
+//            );
     }
     // check if all streams reached EOF
     if (!pData || m_bForceEof)

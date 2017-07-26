@@ -61,26 +61,26 @@ public:
     AMF_RESULT Connect(PipelineElementPtr pElement, amf_int32 queueSize, ConnectionThreading eThreading = CT_ThreadQueue);
     AMF_RESULT Connect(PipelineElementPtr pElement, amf_int32 slot, PipelineElementPtr upstreamElement, amf_int32 upstreamSlot, amf_int32 queueSize, ConnectionThreading eThreading = CT_ThreadQueue);
 
-    virtual AMF_RESULT Start();
-    virtual AMF_RESULT Stop();
-    virtual AMF_RESULT Restart();
+    virtual AMF_RESULT      Start();
+    virtual AMF_RESULT      Stop();
+    virtual AMF_RESULT      Restart();
 
-    PipelineState GetState() const;
+    virtual PipelineState   GetState() const;
 
-    virtual void DisplayResult();
-    double GetFPS();
-    double GetProcessingTime();
-    amf_int64 GetNumberOfProcessedFrames();
+    virtual void            DisplayResult();
+    virtual double          GetFPS();
+    double                  GetProcessingTime();
+    amf_int64               GetNumberOfProcessedFrames();
 
 protected:
-    virtual AMF_RESULT Freeze();
-    virtual AMF_RESULT UnFreeze();
-    virtual AMF_RESULT Flush();
+    virtual AMF_RESULT      Freeze();
+    virtual AMF_RESULT      UnFreeze();
+    virtual AMF_RESULT      Flush();
 
-    virtual void OnEof();
+    virtual void            OnEof();
 
-    amf_int64   m_startTime;
-    amf_int64   m_stopTime;
+    amf_int64                           m_startTime;
+    amf_int64                           m_stopTime;
 
     typedef std::vector<PipelineConnectorPtr> ConnectorList;
     ConnectorList                       m_connectors;

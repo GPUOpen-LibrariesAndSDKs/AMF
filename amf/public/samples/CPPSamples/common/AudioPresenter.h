@@ -74,9 +74,14 @@ public:
     virtual AMF_RESULT Pause() = 0;
 
     bool HandleSeek(const amf::AMFAudioBuffer* pAudioBuffer, bool& bDiscard, amf_size& byteOffset);
+    virtual void SetLowLatency(bool bLowLatency){m_bLowLatency = bLowLatency;}
+    virtual void SetAVSyncObject(AVSyncObject *pAVSync) {m_pAVSync = pAVSync;}
 
 protected:
     AudioPresenter();
 
     amf_pts m_ptsSeek;
+    bool    m_bLowLatency;
+    amf_pts                             m_startTime;
+    AVSyncObject *m_pAVSync;
 };

@@ -111,6 +111,9 @@ protected:
     amf_uint32                  m_iBufferSampleSize;
 
     AMF_AUDIO_PLAYBACK_STATUS   m_eEngineState;
+    amf_pts                     m_iAVSyncDelay;
+    amf_pts                     m_iLastTime;
+    UINT32                      m_uiNumSamplesWritten;
 };
 
 

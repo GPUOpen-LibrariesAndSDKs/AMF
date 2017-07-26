@@ -1,0 +1,181 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="TranscodeHW.cpp" />
+    <ClCompile Include="..\common\BitStreamParser.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\BitStreamParserH264.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\TranscodePipeline.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\CmdLogger.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\CmdLineParser.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\Pipeline.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\ParametersStorage.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\DeviceDX9.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\DeviceDX11.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\VideoPresenter.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\VideoPresenterDX9.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\VideoPresenterDX11.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\VideoPresenterOpenGL.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\BitStreamParserH265.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\AMFFactory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\Thread.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\Windows\ThreadWindows.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\AMFSTL.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\DataStreamFactory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\DataStreamFile.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\DataStreamMemory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\TraceAdapter.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\EncoderParamsAVC.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\EncoderParamsHEVC.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\BackBufferPresenter.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="common">
+      <UniqueIdentifier>{b07ee6d6-a029-443e-8c6e-504041eba4a7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Test">
+      <UniqueIdentifier>{fa3f5144-664b-460c-88b9-a5ceec99209e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public">
+      <UniqueIdentifier>{238655c6-9dfa-4f75-a246-7969005ee2e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\common">
+      <UniqueIdentifier>{a725e191-5003-4c14-99c1-117371283470}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\common\BitStreamParser.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\BitStreamParserH264.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\ByteArray.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\TranscodePipeline.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\CmdLogger.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\CmdLineParser.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\Pipeline.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\PipelineElement.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\ParametersStorage.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\DeviceDX9.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\DeviceDX11.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\VideoPresenter.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\VideoPresenterDX9.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\VideoPresenterDX11.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\VideoPresenterOpenGL.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\BitStreamParserH265.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\AMFFactory.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\Thread.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\AMFSTL.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\DataStreamFile.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\DataStreamMemory.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\TraceAdapter.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\EncoderParamsAVC.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\EncoderParamsHEVC.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\BackBufferPresenter.h">
+      <Filter>common</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="TranscodeSVC.bat">
+      <Filter>Test</Filter>
+    </CustomBuild>
+    <CustomBuild Include="TranscodeSpeed.bat">
+      <Filter>Test</Filter>
+    </CustomBuild>
+    <CustomBuild Include="TranscodeIntraRefresh.bat" />
+  </ItemGroup>
+</Project>

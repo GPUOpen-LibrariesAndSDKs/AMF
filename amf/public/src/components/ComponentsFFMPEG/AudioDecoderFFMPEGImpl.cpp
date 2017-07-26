@@ -192,6 +192,12 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
         return AMF_DECODER_NOT_PRESENT;
     }
 
+    // MM get - around some WMV audio codecs
+    if(m_pCodecContext->channel_layout == 0)
+    {
+        m_pCodecContext->channel_layout = 3;
+    }
+
     // output properties
     AMF_RETURN_IF_FAILED(SetProperty(AUDIO_DECODER_OUT_AUDIO_SAMPLE_FORMAT, sampleFormat));
     AMF_RETURN_IF_FAILED(SetProperty(AUDIO_DECODER_OUT_AUDIO_SAMPLE_RATE, m_pCodecContext->sample_rate));

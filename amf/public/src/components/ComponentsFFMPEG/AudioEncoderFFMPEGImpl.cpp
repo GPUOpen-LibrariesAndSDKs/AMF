@@ -435,6 +435,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::QueryOutput(AMFData** ppData
         avFrame.channel_layout = m_pCodecContext->channel_layout;
         avFrame.sample_rate = m_iSampleRate;
         avFrame.key_frame = 1;
+        avFrame.pts = av_rescale_q(m_pFrame->GetPts(), AMF_TIME_BASE_Q, m_pCodecContext->time_base);
 
         int planar = IsAudioPlanar(m_inSampleFormat) ? 1 : m_iChannelCount;
         int planes = !IsAudioPlanar(m_inSampleFormat) ? 1 : m_iChannelCount;

@@ -449,12 +449,16 @@ AMFFileDemuxerFFMPEGImpl::AMFFileDemuxerFFMPEGImpl(AMFContext* pContext)
 
     AMFPrimitivePropertyInfoMapBegin
         AMFPropertyInfoPath(FFMPEG_DEMUXER_PATH, L"File Path", L"", false),
+        AMFPropertyInfoPath(FFMPEG_DEMUXER_URL, L"Stream URL", L"", false),
+        
         AMFPropertyInfoInt64(FFMPEG_DEMUXER_START_FRAME, L"StartFrame", 0, 0, LLONG_MAX, true),
         AMFPropertyInfoInt64(FFMPEG_DEMUXER_FRAME_COUNT, L"FramesNumber", 0, 0, LLONG_MAX, true),
         AMFPropertyInfoInt64(FFMPEG_DEMUXER_DURATION, L"Duration", 0, 0, LLONG_MAX, false),
 //        AMFPropertyInfoBool(FFMPEG_DEMUXER_SYNC_AV, L"Sync Audio and Video by PTS", false, false),
         AMFPropertyInfoBool(FFMPEG_DEMUXER_CHECK_MVC, L"Check MVC", true, false),
-        AMFPropertyInfoBool(FFMPEG_DEMUXER_INDIVIDUAL_STREAM_MODE, L"Stream mode", true, false)
+        AMFPropertyInfoBool(FFMPEG_DEMUXER_INDIVIDUAL_STREAM_MODE, L"Stream mode", true, false),
+        AMFPropertyInfoBool(FFMPEG_DEMUXER_LISTEN, L"Listen", false, false)
+        
     AMFPrimitivePropertyInfoMapEnd
 
     InitFFMPEG();
@@ -595,6 +599,11 @@ AMF_RESULT AMF_STD_CALL AMFFileDemuxerFFMPEGImpl::Seek(amf_pts ptsPos, AMF_SEEK_
 
     AMF_RETURN_IF_FALSE(!m_bTerminated, AMF_WRONG_STATE, L"Seek() - Primitive Terminated");
     AMF_RETURN_IF_FALSE(m_pInputContext != NULL, AMF_NOT_INITIALIZED, L"Seek() - Input ontext not Initialized");
+
+    if(m_ptsPosition == ptsPos)
+    {
+        return AMF_OK;
+    }
 
     int flags = 0;
     switch (eType)
@@ -772,7 +781,7 @@ void AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::OnPropertyChanged(const wchar_t* pN
     AMFLock lock(&m_sync);
 
     const amf_wstring  name(pName);
-    if (name == FFMPEG_DEMUXER_PATH)
+    if (name == FFMPEG_DEMUXER_PATH || name == FFMPEG_DEMUXER_URL)
     {
         m_OutputStreams.clear();
         ReInit(0, 0);
@@ -800,25 +809,73 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
 
     // if the URL is the same, ignore the call
     amf_wstring Url;
-    GetPropertyWString(FFMPEG_DEMUXER_PATH, &Url);
-    if (m_Url == Url)
+    amf_wstring Path;
+    
+    GetPropertyWString(FFMPEG_DEMUXER_URL, &Url);
+    GetPropertyWString(FFMPEG_DEMUXER_PATH, &Path);
+
+    amf_string convertedfilename;
+    bool bListen = false;
+    AVInputFormat* file_iformat = NULL;
+    if(Url.length() >0)
+    { 
+        if (m_Url == Url)
+        {
+            return AMF_OK;
+        }
+        convertedfilename = amf_from_unicode_to_utf8(Url);;
+        amf_string::size_type pos = convertedfilename.find(':');
+        if(pos != amf_string::npos)
+        {
+            amf_string protocol = convertedfilename.substr(0, pos);
+            protocol = amf_string_to_lower(protocol);
+            if (protocol == "rtmp")
+            {
+//                protocol = "flv";
+//                bListen = true;
+            }
+            else if (protocol == "tcp")
+            {
+                protocol = "mpegts";
+                file_iformat = av_find_input_format(protocol.c_str());
+            }
+        }
+        GetProperty(FFMPEG_DEMUXER_LISTEN, &bListen);
+    }
+    else
     {
-        return AMF_OK;
+        if (m_Url == Path)
+        {
+            return AMF_OK;
+        }
+//        convertedfilename = amf_string("vlfile:") + amf_from_unicode_to_utf8(Path);
+        convertedfilename = amf_string("file:") + amf_from_unicode_to_multibyte(Path);
+        Url = Path;
     }
 
-
     Close();
+
     m_ptsDuration = 0;
     m_ptsPosition = 0;
     m_bTerminated = false;
 
+    AVDictionary *options = NULL;
+
+    if(bListen)
+    {
+        av_dict_set(&options, "listen", "1", 0);
+        av_dict_set(&options, "timeout", "30", 0);
+    }
 
     // try open the file, if it fails, return error code
-    amf_string     convertedfilename = amf_string("vlfile:") + amf_from_unicode_to_utf8(Url);
     AVInputFormat* fmt               = NULL;
-    int            ret               = avformat_open_input(&m_pInputContext, convertedfilename.c_str(), fmt, NULL);
+    int            ret               = avformat_open_input(&m_pInputContext, convertedfilename.c_str(), fmt, &options);
     AMF_RETURN_IF_FALSE(ret>=0 && m_pInputContext!=NULL, AMF_INVALID_ARG, L"Open() failed to open file %s", Url.c_str());
-
+ 
+    if(file_iformat!= NULL)
+    { 
+        m_pInputContext->iformat = file_iformat;
+    }
     // disable raw video support. toos should use raw reader
     ret = avformat_find_stream_info(m_pInputContext, NULL);
     if (ret < 0)
@@ -982,16 +1039,24 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::ReadPacket(AVPacket **packet)
     AVPacket  pkt ={};
     pkt.dts = AV_NOPTS_VALUE;
     pkt.pts = AV_NOPTS_VALUE;
+//    amf_pts currTime = amf_high_precision_clock();
     if (m_bForceEof || av_read_frame(m_pInputContext, &pkt) < 0) 
     {
 //        AMFTraceInfo(AMF_FACILITY, L"ReadPacket() - EOF, END");
         return AMF_EOF;
     }
+//    amf_pts readDuration = amf_high_precision_clock() - currTime;
 
     AVStream *ist = m_pInputContext->streams[pkt.stream_index];
     int64_t wrap = 1LL << ist->pts_wrap_bits;
+
+//    AMFTraceWarning(AMF_FACILITY, L"ReadPacket() %s pts=%" LPRId64 L", dts=% " LPRId64 L" first_dts=%" LPRId64, 
+//        pkt.stream_index == m_iVideoStreamIndex ? L"video" : L"audio",
+//        pkt.pts, pkt.dts, ist->first_dts);
+
     if (pkt.stream_index == m_iVideoStreamIndex)
     {
+//        AMFTraceWarning(AMF_FACILITY, L"ReadPacket() video pts=%" LPRId64 L", dts=% " LPRId64 L" first_dts=%" LPRId64 L" readduration=%5.2f", pkt.pts, pkt.dts, ist->first_dts, float(readDuration) /10000.);
         int64_t t = INT64_C(234);
         if (pkt.dts == AV_NOPTS_VALUE)
         {
@@ -1013,6 +1078,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::ReadPacket(AVPacket **packet)
     }
     else
     {
+//        AMFTraceWarning(AMF_FACILITY, L"ReadPacket() audio pts=%" LPRId64 L", dts=% " LPRId64 L" first_dts=%" LPRId64 L" readduration=%5.2f", pkt.pts, pkt.dts, ist->first_dts, float(readDuration) /10000.);
         if (pkt.pts != AV_NOPTS_VALUE && pkt.dts != AV_NOPTS_VALUE && pkt.dts<0)
         {
             pkt.dts += wrap;
@@ -1228,11 +1294,14 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::UpdateBufferProperties(AMFBuf
     {
         pBuffer->SetProperty(FFMPEG_DEMUXER_BUFFER_TYPE, AMFVariant(DEMUXER_VIDEO));
         UpdateBufferVideoDuration(pBuffer, pPacket, ist);
+//        AMFTraceWarning(AMF_FACILITY, L"Video PTS=%5.2f", (double)pBuffer->GetPts() / 10000);
+
     }
     else if (ist->codec->codec_type == AVMEDIA_TYPE_AUDIO)
     {
         pBuffer->SetProperty(FFMPEG_DEMUXER_BUFFER_TYPE, AMFVariant(DEMUXER_AUDIO));
         UpdateBufferAudioDuration(pBuffer, pPacket, ist);
+//        AMFTraceWarning(AMF_FACILITY, L"Audio PTS=%5.2f", (double)pBuffer->GetPts() / 10000);
     }
     pBuffer->SetProperty(FFMPEG_DEMUXER_BUFFER_STREAM_INDEX, pPacket->stream_index);
     

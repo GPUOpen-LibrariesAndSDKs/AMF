@@ -1,0 +1,209 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\src\components\AmbisonicRenderer\Ambisonic2SRendererImpl.cpp" />
+    <ClCompile Include="..\..\..\src\components\AmbisonicRenderer\convolution.cpp" />
+    <ClCompile Include="..\..\..\src\components\AmbisonicRenderer\HRTFtable.cpp" />
+    <ClCompile Include="..\..\..\src\components\AmbisonicRenderer\wav.cpp" />
+    <ClCompile Include="..\..\..\common\AMFFactory.cpp" />
+    <ClCompile Include="..\..\..\common\AMFSTL.cpp" />
+    <ClCompile Include="..\..\..\common\DataStreamFactory.cpp" />
+    <ClCompile Include="..\..\..\common\DataStreamFile.cpp" />
+    <ClCompile Include="..\..\..\common\DataStreamMemory.cpp" />
+    <ClCompile Include="..\..\..\common\IOCapsImpl.cpp" />
+    <ClCompile Include="..\..\..\common\PropertyStorageExImpl.cpp" />
+    <ClCompile Include="..\..\..\common\Thread.cpp" />
+    <ClCompile Include="..\..\..\common\TraceAdapter.cpp" />
+    <ClCompile Include="..\..\..\common\Windows\ThreadWindows.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\AudioPresenter.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\BitStreamParser.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\BitStreamParserH264.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\BitStreamParserH265.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\CmdLogger.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\EncoderParamsAVC.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\EncoderParamsHEVC.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\ParametersStorage.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\Pipeline.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\PlaybackPipelineBase.cpp" />
+    <ClCompile Include="..\..\..\samples\CPPSamples\common\VideoPresenter.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\src\components\AmbisonicRenderer\Ambisonic2SRendererImpl.h" />
+    <ClInclude Include="..\..\..\src\components\AmbisonicRenderer\convolution.h" />
+    <ClInclude Include="..\..\..\src\components\AmbisonicRenderer\HRTFtable.h" />
+    <ClInclude Include="..\..\..\src\components\AmbisonicRenderer\wav.h" />
+    <ClInclude Include="..\..\..\common\AMFFactory.h" />
+    <ClInclude Include="..\..\..\common\AMFSTL.h" />
+    <ClInclude Include="..\..\..\common\ByteArray.h" />
+    <ClInclude Include="..\..\..\common\DataStream.h" />
+    <ClInclude Include="..\..\..\common\DataStreamFile.h" />
+    <ClInclude Include="..\..\..\common\DataStreamMemory.h" />
+    <ClInclude Include="..\..\..\common\InterfaceImpl.h" />
+    <ClInclude Include="..\..\..\common\IOCapsImpl.h" />
+    <ClInclude Include="..\..\..\common\ObservableImpl.h" />
+    <ClInclude Include="..\..\..\common\PropertyStorageExImpl.h" />
+    <ClInclude Include="..\..\..\common\PropertyStorageImpl.h" />
+    <ClInclude Include="..\..\..\common\Thread.h" />
+    <ClInclude Include="..\..\..\common\TraceAdapter.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\AudioPresenter.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\BitStreamParser.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\BitStreamParserH264.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\BitStreamParserH265.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\CmdLogger.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\EncoderParamsAVC.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\EncoderParamsHEVC.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\ParametersStorage.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\Pipeline.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\PipelineElement.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\PlaybackPipelineBase.h" />
+    <ClInclude Include="..\..\..\samples\CPPSamples\common\VideoPresenter.h" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{BE74F945-D4A5-4840-8C55-919030E8DC47}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>AmfMediaCommon</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(ProjectDir)..\..\..\..\bin\vs2017x$(PlatformArchitecture)$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)..\..\..\..\bin\obj\vs2017x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(ProjectDir)..\..\..\..\bin\vs2017x$(PlatformArchitecture)$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)..\..\..\..\bin\obj\vs2017x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(ProjectDir)..\..\..\..\bin\vs2017x$(PlatformArchitecture)$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)..\..\..\..\bin\obj\vs2017x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(ProjectDir)..\..\..\..\bin\vs2017x$(PlatformArchitecture)$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)..\..\..\..\bin\obj\vs2017x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>AMF_COMPONENT_AMBISONIC_STATIC;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../../..</AdditionalIncludeDirectories>
+      <ShowIncludes>false</ShowIncludes>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>AMF_COMPONENT_AMBISONIC_STATIC;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../../..</AdditionalIncludeDirectories>
+      <ShowIncludes>false</ShowIncludes>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>AMF_COMPONENT_AMBISONIC_STATIC;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../../..</AdditionalIncludeDirectories>
+      <ShowIncludes>false</ShowIncludes>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>AMF_COMPONENT_AMBISONIC_STATIC;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../../..</AdditionalIncludeDirectories>
+      <ShowIncludes>false</ShowIncludes>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -454,6 +454,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::QueryOutput(AMFData** ppDa
     if(m_pInputData != NULL)
     { 
         pOutputAudioBuffer->SetPts(m_pInputData->GetPts());
+        m_pInputData->CopyTo(pOutputAudioBuffer, false);
     }
     else
     {

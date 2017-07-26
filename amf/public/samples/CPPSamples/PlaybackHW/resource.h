@@ -14,6 +14,7 @@
 #define IDR_MAINFRAME                   128
 #define IDD_TOOLBAR_DLG                 130
 #define IDD_PROGRESS_DLG                131
+#define IDD_OPEN_STREAM                 136
 #define IDC_BRIGHTNESS_EDIT             1001
 #define IDC_BRIGHTNESS_SPIN             1002
 #define IDC_CONTRAST_EDIT               1003
@@ -33,6 +34,8 @@
 #define IDC_TEMPORAL_DENOISE_SPIN       1016
 #define IDC_SEEK                        1016
 #define IDC_DEBLOCKING_CHECK            1017
+#define IDC_CHECK1                      1017
+#define IDC_CHECK_LISTEN                1018
 #define IDC_DEBLOCKING_EDIT             1018
 #define IDC_DEBLOCKING_SPIN             1019
 #define IDC_MOSQUITO_NOISE_REDUCTION_CHECK 1020
@@ -44,7 +47,11 @@
 #define IDC_COLOR_VIBRANCE_CHECK        1026
 #define IDC_COLOR_VIBRANCE_EDIT         1027
 #define IDC_COLOR_VIBRANCE_SPIN         1028
+#define IDC_EDIT_URL                    1028
+#define IDC_EDIT_URL_VIDEO              1028
 #define IDC_SKINTONE_CORRECTION_CHECK   1029
+#define IDC_EDIT_URL2                   1029
+#define IDC_EDIT_URL_AUDIO              1029
 #define IDC_SKINTONE_CORRECTION_EDIT    1030
 #define IDC_SKINTONE_CORRECTION_SPIN    1031
 #define IDC_BRIGHTER_WHITES_CHECK       1032
@@ -74,6 +81,7 @@
 #define ID_PLAYBACK_STEP                32788
 #define ID_PLAYBACK_STOP                32789
 #define ID_TOOLBAR                      32793
+#define ID_FILE_OPENNETWORKSTREAM       32794
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -82,8 +90,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        131
-#define _APS_NEXT_COMMAND_VALUE         32794
-#define _APS_NEXT_CONTROL_VALUE         1017
+#define _APS_NEXT_COMMAND_VALUE         32795
+#define _APS_NEXT_CONTROL_VALUE         1018
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

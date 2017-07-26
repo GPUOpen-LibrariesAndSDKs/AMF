@@ -236,10 +236,10 @@ static AMF_RESULT ParamPreAnalysisAVC(const std::wstring& value, amf::AMFVariant
 {
     AMF_VIDEO_ENCODER_PREENCODE_MODE_ENUM paramValue;
     std::wstring uppValue = toUpper(value);
-    if(uppValue == L"NONE" || uppValue == L"0" || uppValue == L"DISABLED")
+	if (uppValue == L"NONE" || uppValue == L"0" || uppValue == L"DISABLED" || uppValue == L"FALSE")
     {
         paramValue =  AMF_VIDEO_ENCODER_PREENCODE_DISABLED;
-    } else if(uppValue == L"ENABLED" || uppValue == L"1") {
+    } else if(uppValue == L"ENABLED" || uppValue == L"1" || uppValue == L"TRUE") {
         paramValue =  AMF_VIDEO_ENCODER_PREENCODE_ENABLED;
     } else {
         LOG_ERROR(L"AMF_VIDEO_ENCODER_PREENCODE_MODE_ENUM hasn't \"" << value << L"\" value.");

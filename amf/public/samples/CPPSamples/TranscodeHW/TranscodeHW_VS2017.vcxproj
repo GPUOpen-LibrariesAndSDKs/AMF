@@ -1,0 +1,275 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{A17A79DA-46EF-4EDB-88F8-C2469ECA26B7}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>TranscodeHW</RootNamespace>
+    <ProjectName>TranscodeHW</ProjectName>
+    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\..\public\props\AMF_VS2017.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\..\public\props\AMF_VS2017.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\..\public\props\AMF_VS2017.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\..\public\props\AMF_VS2017.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>Async</ExceptionHandling>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\lib\vs2017x$(PlatformArchitecture)$(Configuration)\;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>;DXGI.LIB;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>Async</ExceptionHandling>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\lib\vs2017x$(PlatformArchitecture)$(Configuration)\;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>;DXGI.LIB;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>Async</ExceptionHandling>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\lib\vs2017x$(PlatformArchitecture)$(Configuration)\;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>;DXGI.LIB;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>Async</ExceptionHandling>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\lib\vs2017x$(PlatformArchitecture)$(Configuration)\;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>;DXGI.LIB;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\common\AMFFactory.cpp" />
+    <ClCompile Include="..\..\..\common\AMFSTL.cpp" />
+    <ClCompile Include="..\..\..\common\DataStreamFactory.cpp" />
+    <ClCompile Include="..\..\..\common\DataStreamFile.cpp" />
+    <ClCompile Include="..\..\..\common\DataStreamMemory.cpp" />
+    <ClCompile Include="..\..\..\common\Thread.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\TraceAdapter.cpp" />
+    <ClCompile Include="..\..\..\common\Windows\ThreadWindows.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\common\BackBufferPresenter.cpp" />
+    <ClCompile Include="..\common\BitStreamParser.cpp" />
+    <ClCompile Include="..\common\BitStreamParserH264.cpp" />
+    <ClCompile Include="..\common\BitStreamParserH265.cpp" />
+    <ClCompile Include="..\common\CmdLineParser.cpp" />
+    <ClCompile Include="..\common\CmdLogger.cpp" />
+    <ClCompile Include="..\common\DeviceDX11.cpp" />
+    <ClCompile Include="..\common\DeviceDX9.cpp" />
+    <ClCompile Include="..\common\EncoderParamsAVC.cpp" />
+    <ClCompile Include="..\common\EncoderParamsHEVC.cpp" />
+    <ClCompile Include="..\common\ParametersStorage.cpp" />
+    <ClCompile Include="..\common\Pipeline.cpp" />
+    <ClCompile Include="..\common\TranscodePipeline.cpp" />
+    <ClCompile Include="..\common\VideoPresenter.cpp" />
+    <ClCompile Include="..\common\VideoPresenterDX11.cpp" />
+    <ClCompile Include="..\common\VideoPresenterDX9.cpp" />
+    <ClCompile Include="..\common\VideoPresenterOpenGL.cpp" />
+    <ClCompile Include="TranscodeHW.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\common\AMFFactory.h" />
+    <ClInclude Include="..\..\..\common\AMFSTL.h" />
+    <ClInclude Include="..\..\..\common\DataStreamFile.h" />
+    <ClInclude Include="..\..\..\common\DataStreamMemory.h" />
+    <ClInclude Include="..\..\..\common\Thread.h" />
+    <ClInclude Include="..\..\..\common\TraceAdapter.h" />
+    <ClInclude Include="..\common\BackBufferPresenter.h" />
+    <ClInclude Include="..\common\BitStreamParser.h" />
+    <ClInclude Include="..\common\BitStreamParserH264.h" />
+    <ClInclude Include="..\common\BitStreamParserH265.h" />
+    <ClInclude Include="..\common\ByteArray.h" />
+    <ClInclude Include="..\common\CmdLineParser.h" />
+    <ClInclude Include="..\common\CmdLogger.h" />
+    <ClInclude Include="..\common\DeviceDX11.h" />
+    <ClInclude Include="..\common\DeviceDX9.h" />
+    <ClInclude Include="..\common\EncoderParamsAVC.h" />
+    <ClInclude Include="..\common\EncoderParamsHEVC.h" />
+    <ClInclude Include="..\common\ParametersStorage.h" />
+    <ClInclude Include="..\common\Pipeline.h" />
+    <ClInclude Include="..\common\PipelineElement.h" />
+    <ClInclude Include="..\common\TranscodePipeline.h" />
+    <ClInclude Include="..\common\VideoPresenter.h" />
+    <ClInclude Include="..\common\VideoPresenterDX11.h" />
+    <ClInclude Include="..\common\VideoPresenterDX9.h" />
+    <ClInclude Include="..\common\VideoPresenterOpenGL.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="TranscodeSVC.bat">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy /Y %(FullPath) $(OutDir)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Copy %(Filename)%(Extension)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(OutDir)/%(Filename)%(Extension)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy /Y %(FullPath) $(OutDir)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Copy %(Filename)%(Extension)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(OutDir)/%(Filename)%(Extension)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy /Y %(FullPath) $(OutDir)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Copy %(Filename)%(Extension)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)/%(Filename)%(Extension)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">xcopy /Y %(FullPath) $(OutDir)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Copy %(Filename)%(Extension)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)/%(Filename)%(Extension)</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="TranscodeSpeed.bat">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy /Y %(FullPath) $(OutDir)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy /Y %(FullPath) $(OutDir)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy /Y %(FullPath) $(OutDir)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">xcopy /Y %(FullPath) $(OutDir)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Copy %(Filename)%(Extension)...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Copy %(Filename)%(Extension)...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Copy %(Filename)%(Extension)...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Copy %(Filename)%(Extension)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(OutDir)/%(Filename)%(Extension)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(OutDir)/%(Filename)%(Extension)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)/%(Filename)%(Extension)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)/%(Filename)%(Extension)</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="TranscodeIntraRefresh.bat">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy /Y %(FullPath) $(OutDir)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy /Y %(FullPath) $(OutDir)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy /Y %(FullPath) $(OutDir)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">xcopy /Y %(FullPath) $(OutDir)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Copy %(Filename)%(Extension)...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Copy %(Filename)%(Extension)...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Copy %(Filename)%(Extension)...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Copy %(Filename)%(Extension)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(OutDir)/%(Filename)%(Extension)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(OutDir)/%(Filename)%(Extension)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)/%(Filename)%(Extension)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)/%(Filename)%(Extension)</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

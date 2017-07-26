@@ -35,7 +35,34 @@
 
 #include "VideoRender.h"
 #include <gl/gl.h>
-#include <gl/glext.h>
+
+// -----------------------------------------------------------------------------------------------------------------------------------------
+#ifndef APIENTRY
+#define APIENTRY
+#endif
+#ifndef APIENTRYP
+#define APIENTRYP APIENTRY *
+#endif
+
+#define GL_COLOR_ATTACHMENT0_EXT          0x8CE0
+#define GL_DEPTH_ATTACHMENT_EXT           0x8D00
+
+#define GL_FRAMEBUFFER_EXT                0x8D40
+#define GL_RENDERBUFFER_EXT               0x8D41
+#define GL_DEPTH24_STENCIL8_EXT           0x88F0
+
+typedef void (APIENTRYP PFNGLBINDFRAMEBUFFEREXTPROC) (GLenum target, GLuint framebuffer);
+typedef void (APIENTRYP PFNGLFRAMEBUFFERTEXTURE2DEXTPROC) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+typedef void (APIENTRYP PFNGLGENFRAMEBUFFERSEXTPROC) (GLsizei n, GLuint *framebuffers);
+typedef void (APIENTRYP PFNGLDELETEFRAMEBUFFERSPROC) (GLsizei n, const GLuint *framebuffers);
+typedef void (APIENTRYP PFNGLDELETEFRAMEBUFFERSEXTPROC) (GLsizei n, const GLuint *framebuffers);
+
+typedef void (APIENTRYP PFNGLGENRENDERBUFFERSEXTPROC) (GLsizei n, GLuint *renderbuffers);
+typedef void (APIENTRYP PFNGLBINDRENDERBUFFEREXTPROC) (GLenum target, GLuint renderbuffer);
+typedef void (APIENTRYP PFNGLRENDERBUFFERSTORAGEEXTPROC) (GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
+typedef void (APIENTRYP PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC) (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
+typedef void (APIENTRYP PFNGLDELETERENDERBUFFERSEXTPROC) (GLsizei n, const GLuint *renderbuffers);
+// -----------------------------------------------------------------------------------------------------------------------------------------
 
 class VideoRenderOpenGL : public VideoRender
 {

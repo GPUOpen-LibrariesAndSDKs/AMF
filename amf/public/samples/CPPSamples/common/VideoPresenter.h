@@ -67,8 +67,9 @@ public:
     virtual double              GetFPS() const { return m_dLastFPS; }
     virtual amf_int64           GetFramesDropped() const {return m_iFramesDropped; }
     virtual bool                SupportAllocator() const { return true; }
+    virtual void                DoActualWait(bool bDoWait) {m_bDoWait = bDoWait;}
 
-    AMF_RESULT Resume();
+    virtual AMF_RESULT          Resume();
     AMF_RESULT Pause() { m_state = ModePaused; return AMF_OK; }
     AMF_RESULT Step() { m_state = ModeStep; return AMF_OK;}
     Mode       GetMode() const { return m_state;}
@@ -93,13 +94,15 @@ public:
     amf_int32 GetFrameHeight() const    { return m_InputFrameSize.height; }
 
 
+    virtual void SetAVSyncObject(AVSyncObject *pAVSync) {m_pAVSync = pAVSync;}
+
 protected:
     VideoPresenter();
     virtual AMF_RESULT Freeze();
     virtual AMF_RESULT UnFreeze();
 
     virtual AMF_RESULT CalcOutputRect(const AMFRect* pSrcRect, const AMFRect* pDstRect, AMFRect* pTargetRect);
-    bool WaitForPTS(amf_pts pts); // returns false if frame is too late and should be dropped
+    bool WaitForPTS(amf_pts pts, bool bRealWait = true); // returns false if frame is too late and should be dropped
 
     void        UpdateProcessor();
 
@@ -120,4 +123,6 @@ protected:
     AMFRect                             m_rectClient;
     
     amf_pts                             m_currentTime;
+    bool                                m_bDoWait;
+    AVSyncObject*                       m_pAVSync;
 };

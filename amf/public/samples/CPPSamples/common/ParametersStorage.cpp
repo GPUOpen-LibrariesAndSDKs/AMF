@@ -35,8 +35,8 @@
 
 #include "ParametersStorage.h"
 #include "CmdLogger.h"
-//#include "VideoPresenter.h"
-//#include "public/include/components/VideoEncoderVCE.h"
+#include "public/include/components/VideoEncoderVCE.h"
+#include "public/include/components/VideoEncoderHEVC.h"
 
 
 std::wstring AddIndexToPath(const std::wstring& path, amf_int32 index)
@@ -222,15 +222,15 @@ AMF_RESULT ParamConverterVideoPresenter(const std::wstring& value, amf::AMFVaria
 {
     amf::AMF_MEMORY_TYPE paramValue = amf::AMF_MEMORY_UNKNOWN;
     std::wstring uppValue = toUpper(value);
-    if(uppValue == L"DX9")
+    if(uppValue == L"DX9" || uppValue == L"2")
     {
         paramValue = amf::AMF_MEMORY_DX9;
     }else
-    if(uppValue == L"DX11")
+    if(uppValue == L"DX11" || uppValue == L"3")
     {
         paramValue = amf::AMF_MEMORY_DX11;
     }else
-    if(uppValue == L"OPENGL")
+    if(uppValue == L"OPENGL"  || uppValue == L"5")
     {
         paramValue = amf::AMF_MEMORY_OPENGL;
     }
@@ -242,23 +242,23 @@ AMF_RESULT ParamConverterMemoryType(const std::wstring& value, amf::AMFVariant& 
 {
     amf::AMF_MEMORY_TYPE paramValue = amf::AMF_MEMORY_UNKNOWN;
     std::wstring uppValue = toUpper(value);
-    if(uppValue == L"DX9")
+    if(uppValue == L"DX9"  || uppValue == L"2")
     {
         paramValue = amf::AMF_MEMORY_DX9;
     }else
-    if(uppValue == L"DX11")
+    if(uppValue == L"DX11"  || uppValue == L"3")
     {
         paramValue = amf::AMF_MEMORY_DX11;
     }else
-    if(uppValue == L"OPENGL")
+    if(uppValue == L"OPENGL"  || uppValue == L"5")
     {
         paramValue = amf::AMF_MEMORY_OPENGL;
     }else
-    if(uppValue == L"OPENCL")
+    if(uppValue == L"OPENCL"  || uppValue == L"4")
     {
         paramValue = amf::AMF_MEMORY_OPENCL;
     }else
-    if(uppValue == L"HOST")
+    if(uppValue == L"HOST"  || uppValue == L"1")
     {
         paramValue = amf::AMF_MEMORY_HOST;
     }
@@ -379,3 +379,29 @@ std::wstring SplitSvcParamName(const std::wstring &fullName)
     return fullName;
 }
 
+AMF_RESULT ParamConverterCodec(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    std::wstring paramValue;
+
+    std::wstring uppValue = toUpper(value);
+    if (value == AMFVideoEncoderVCE_AVC || value == AMFVideoEncoder_HEVC ||
+        uppValue == AMFVideoEncoderVCE_AVC || uppValue == AMFVideoEncoder_HEVC)
+    {
+        paramValue = value;
+    }
+    else if (uppValue == L"AVC" || uppValue == L"H264" || uppValue == L"H.264")
+    {
+        paramValue = AMFVideoEncoderVCE_AVC;
+    } 
+    else if(uppValue == L"HEVC" || uppValue == L"H265" || uppValue == L"H.265")
+    {
+        paramValue = AMFVideoEncoder_HEVC;
+    } 
+    else 
+    {
+        LOG_ERROR(L"Invalid codec name \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = paramValue.c_str();
+    return AMF_OK;
+}

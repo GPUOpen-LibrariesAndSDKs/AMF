@@ -61,6 +61,8 @@ AMF_RESULT ParamConverterSize(const std::wstring& value, amf::AMFVariant& valueO
 AMF_RESULT ParamConverterVideoPresenter(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterMemoryType(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterFormat(const std::wstring& value, amf::AMFVariant& valueOut);
+AMF_RESULT ParamConverterCodec(const std::wstring& value, amf::AMFVariant& valueOut);
+
 std::wstring AddIndexToPath(const std::wstring& path, amf_int32 index);
 
 inline std::wstring toUpper(const std::wstring& str)

@@ -32,7 +32,11 @@
 #pragma once
 #include <windows.h>
 #include <gl/gl.h>
+
+#if defined(__ANDROID__)
 #include <gl/glext.h>
+#endif
+
 #include "public/include/core/Result.h"
 
 class DeviceOpenGL

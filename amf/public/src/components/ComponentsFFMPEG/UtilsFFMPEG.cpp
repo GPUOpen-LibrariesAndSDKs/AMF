@@ -131,8 +131,12 @@ static int file_close(URLContext *h)
     return err == AMF_OK ? 0 : -1;
 }
 //-------------------------------------------------------------------------------------------------
+// FFmpeg doesnt support multi-byte file names only so if a file name has Eng + Lang1 + lang2 where one of languages is not default it will fail
+// FFmpeg 3.3.1 disabled custom protocols
+
 int ffurl_register_protocol2(URLProtocol *first_protocol, URLProtocol *protocol, int size)
 {
+    /*
     URLProtocol **p;
     if (static_cast<amf_size>(size) < sizeof(URLProtocol))
     {
@@ -145,6 +149,24 @@ int ffurl_register_protocol2(URLProtocol *first_protocol, URLProtocol *protocol,
         p = &(*p)->next;
     *p = protocol;
     protocol->next = NULL;
+    */
+    //MM total hack. FFMPEG 3.3.1 removed a way to register external protocols. So we reuse one
+//    *((URLProtocol*)&ff_unix_protocol) = *protocol;
+    /*
+    const URLProtocol **protocols = ffurl_get_protocols(NULL, NULL);
+    if (!protocols)
+        return 0;
+    for (int i = 0; protocols[i]; i++) 
+    {
+        const URLProtocol *up = protocols[i];
+        if (!strcmp("gopher", up->name)) {
+            *((URLProtocol*)up) = *protocol;
+            av_freep(&protocols);
+            break;
+        }
+    }
+    av_freep(&protocols);
+    */
     return 0;
 }
 //-------------------------------------------------------------------------------------------------
@@ -162,19 +184,27 @@ extern "C"
         file_write, // write
         file_seek,  // seek
         file_close, // close
-        NULL,       // next
+//        NULL,       // next
         NULL,       //url_read_pause
         NULL,       //url_read_seek
         NULL,       //file_get_handle
         NULL,       //int (*url_get_multi_file_handle)(URLContext *h, int **handles, int *numhandles);
+        NULL,       //int (*url_get_short_seek)(URLContext *h);
         NULL,       //int (*url_shutdown)(URLContext *h, int flags);
         0,          //int priv_data_size;
         NULL,       //const AVClass *priv_data_class;
         0,          //int flags;
-        NULL        //int (*url_check)(URLContext *h, int mask);
+        NULL,       //int (*url_check)(URLContext *h, int mask);
+        NULL,       //int (*url_open_dir)(URLContext *h);
+        NULL,       //int (*url_read_dir)(URLContext *h, AVIODirEntry **next);
+        NULL,       //int (*url_close_dir)(URLContext *h);
+        NULL,       //int (*url_delete)(URLContext *h);
+        NULL,       //int (*url_move)(URLContext *h_src, URLContext *h_dst);
+        NULL,       //const char *default_whitelist;
     };
 };
 
+#define DETAILED_FFMPEG_LOG 0
 
 extern "C"
 {
@@ -189,7 +219,9 @@ void my_log_callback(void* ptr, int level, const char* fmt, va_list vl)
 
     if(level > loglevel)
     { 
+#if !DETAILED_FFMPEG_LOG
         return;
+#endif
     }
 //#undef fprintf
     amf_string name;
@@ -199,7 +231,8 @@ void my_log_callback(void* ptr, int level, const char* fmt, va_list vl)
     if(name.length()==0 || name=="NULL"){
         name="ffmpeg";
     }
-
+#if !DETAILED_FFMPEG_LOG
+    
     if(name=="mov,mp4,m4a,3gp,3g2,mj2")
     { 
         return;
@@ -222,13 +255,13 @@ void my_log_callback(void* ptr, int level, const char* fmt, va_list vl)
     if(name=="h264"){
         return;
     }
-    if(name=="rtp"){
-        return;
-    }
+//    if(name=="rtp"){
+//        return;
+//    }
     if(name=="mpegts"){
         return;
     }
-    
+#endif
     
     amf_string format=fmt;
 

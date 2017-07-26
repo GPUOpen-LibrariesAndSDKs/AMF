@@ -34,7 +34,11 @@
 #include "d3d9.h"
 #include <d3d11.h>
 #include <gl/gl.h>
+
+#if defined(__ANDROID__)
 #include <gl/glext.h>
+#endif 
+
 #define CL_USE_DEPRECATED_OPENCL_2_0_APIS
 #include <CL/cl.h>
 #include "public/include/core/Result.h"

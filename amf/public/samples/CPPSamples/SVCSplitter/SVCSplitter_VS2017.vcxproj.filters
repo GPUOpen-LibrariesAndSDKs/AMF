@@ -1,0 +1,111 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\common\BitStreamParser.cpp">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\BitStreamParserH264.cpp">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\BitStreamParserH265.cpp">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\CmdLogger.cpp">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClCompile>
+    <ClCompile Include="SVCSplitter.cpp">
+      <Filter>public\samples\CPPSamples\SVCSplitter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\AMFFactory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\Thread.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\Windows\ThreadWindows.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\AMFSTL.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\DataStreamFactory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\DataStreamFile.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\DataStreamMemory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\TraceAdapter.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\common\BitStreamParser.h">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\BitStreamParserH264.h">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\BitStreamParserH265.h">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\ByteArray.h">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\CmdLogger.h">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClInclude>
+    <ClInclude Include="SVCSplitter.h">
+      <Filter>public\samples\CPPSamples\SVCSplitter</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\core\Platform.h">
+      <Filter>public\include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\AMFFactory.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\Thread.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\AMFSTL.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\DataStreamFile.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\DataStreamMemory.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\TraceAdapter.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="public">
+      <UniqueIdentifier>{f13646a8-f1b6-465b-882a-56caf7f49130}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\samples">
+      <UniqueIdentifier>{63ead7ce-edf5-4eb4-8492-6ee34037c9c6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\samples\CPPSamples">
+      <UniqueIdentifier>{3d535cd9-c161-458a-a97f-e933a9faa020}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\samples\CPPSamples\common">
+      <UniqueIdentifier>{491bbe99-c398-42e9-82b5-fc7924ac3b52}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\samples\CPPSamples\SVCSplitter">
+      <UniqueIdentifier>{ca11a5c5-33a1-411e-a33a-3b9779fabaa6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\include">
+      <UniqueIdentifier>{cf3d500b-a775-453f-b98e-9778c3c60fc6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\include\core">
+      <UniqueIdentifier>{f44982c7-5a2e-4bf4-94b6-da59c1acf59f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\common">
+      <UniqueIdentifier>{e10e3f97-720f-42a2-9eaf-2d9037852c16}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

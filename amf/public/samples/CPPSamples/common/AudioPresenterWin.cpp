@@ -45,6 +45,7 @@
 #include <AudioClient.h>
 #include <AudioPolicy.h>
 
+#define TRACE_AMBISONIC_STAT 0
 
 using namespace amf;
 
@@ -76,7 +77,10 @@ AudioPresenterWin::AudioPresenterWin()
     m_iBufferDuration(0),
     m_iBufferSampleSize(0),
     m_uiLastBufferDataOffset(0),
-    m_eEngineState(AMFAPS_UNKNOWN_STATUS)
+    m_eEngineState(AMFAPS_UNKNOWN_STATUS),
+    m_iAVSyncDelay(-1LL),
+    m_iLastTime(0),
+    m_uiNumSamplesWritten(0)
 {
 }
 //-------------------------------------------------------------------------------------------------
@@ -205,6 +209,7 @@ AMF_RESULT AudioPresenterWin::SelectFormat()
 
 //-------------------------------------------------------------------------------------------------
 #define REFTIMES_PER_SEC  10000000
+#define LOW_LATENCY_DIVIDER  20
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AudioPresenterWin::InitClient()
 {
@@ -213,11 +218,16 @@ AMF_RESULT AudioPresenterWin::InitClient()
     HRESULT hr=S_OK;
 
     REFERENCE_TIME hnsRequestedDuration = REFTIMES_PER_SEC*3;
-
+    if(m_bLowLatency)
+    {
+        hnsRequestedDuration = REFTIMES_PER_SEC / LOW_LATENCY_DIVIDER;
+        hnsRequestedDuration = ((hnsRequestedDuration + (64 - 1)) & ~(64 - 1));
+    }
     WAVEFORMATEX *pMixFormat=(WAVEFORMATEX *)m_pMixFormat;
     IAudioClient *pAudioClient=(IAudioClient *)m_pAudioClient;
     hr = pAudioClient->Initialize(
                          AUDCLNT_SHAREMODE_SHARED,
+//                        AUDCLNT_SHAREMODE_EXCLUSIVE,
                          0,
                          hnsRequestedDuration,
                          0,
@@ -241,7 +251,7 @@ AMF_RESULT AudioPresenterWin::InitClient()
 AMF_RESULT AudioPresenterWin::SubmitInput(amf::AMFData* pData)
 {
     amf::AMFLock lock(&m_cs);
-
+    m_uiNumSamplesWritten = 0;
     if (m_bFrozen)
     {
         return AMF_INPUT_FULL;
@@ -254,11 +264,39 @@ AMF_RESULT AudioPresenterWin::SubmitInput(amf::AMFData* pData)
     }
     AMF_RESULT err = AMF_OK;
 
+    if(m_pAVSync != NULL && !m_pAVSync->IsVideoStarted())
+    {
+        if(m_iAVSyncDelay == 1LL)
+        {
+            m_iAVSyncDelay = amf_high_precision_clock();;
+        }
+        return AMF_INPUT_FULL;
+    }
+
     // there's not much to do in the base class
     amf::AMFAudioBufferPtr pAudioBuffer(pData);
 
     amf_pts  ptsSleepTime = 0;
     err = Present(pAudioBuffer, ptsSleepTime);
+
+    if(m_startTime == -1LL)
+    {
+//        AMFTraceWarning(AMF_FACILITY, L"Delay was =%5.2f", (double)(amf_high_precision_clock() - m_iAVSyncDelay) / 10000);
+
+        m_startTime = amf_high_precision_clock();
+        m_ptsSeek = pData->GetPts();
+        m_iLastTime = m_startTime;
+    }
+    else
+    { 
+//        WAVEFORMATEX *pMixFormat=(WAVEFORMATEX *)m_pMixFormat;
+//        amf_pts currTime = amf_high_precision_clock() - m_startTime;
+//        AMFTraceWarning(AMF_FACILITY, L"Between calls=%5.2f err=%s buffers=%d offset=%d written=%d", 
+//            (double)(currTime - m_iLastTime) / 10000, err == AMF_INPUT_FULL ? L"InputFull" : L"OK",
+//            (int)m_UnusedBuffers.size(), (int)m_uiLastBufferDataOffset / (pMixFormat->wBitsPerSample / 8 ), (int)m_uiNumSamplesWritten);
+//        m_iLastTime = currTime;
+    }
+
     if (ptsSleepTime > 0)
     {
         amf_sleep(amf_long(ptsSleepTime / 10000)); // to milliseconds
@@ -298,11 +336,23 @@ AMF_RESULT AudioPresenterWin::Present(AMFAudioBuffer *buffer,amf_pts &sleeptime)
         CHECK_HR(hr);
         m_eEngineState = AMFAPS_PLAYING_STATUS;
     }
-
     // process leftover
-    if(m_UnusedBuffers.size() < 10)
+    if((m_UnusedBuffers.size() < 10 && !m_bLowLatency) || (m_UnusedBuffers.size() < 1 && m_bLowLatency))
     {
         m_UnusedBuffers.push_back(buffer); // add to the end
+#if TRACE_AMBISONIC_STAT
+        amf_pts ambiStart;
+        amf_pts ambiExec;
+        amf_pts ambiPeriod;
+        buffer->GetProperty(L"AmbiStart", &ambiStart);
+        buffer->GetProperty(L"AmbiExec", &ambiExec);
+        buffer->GetProperty(L"AmbiPeriod", &ambiPeriod);
+        
+
+        amf_pts currTime = amf_high_precision_clock();
+        
+        AMFTraceWarning(AMF_FACILITY, L"AmbiLatency=%5.2f AmbiExec=%5.2f AmbiPeriod=%5.2f", (double)(currTime - ambiStart) / 10000, (double)ambiExec / 10000,(double)ambiPeriod / 10000);
+#endif
     }
     else
     { 
@@ -311,7 +361,11 @@ AMF_RESULT AudioPresenterWin::Present(AMFAudioBuffer *buffer,amf_pts &sleeptime)
     while(m_UnusedBuffers.size()>0)
     {
         AMFAudioBufferPtr pLastBuffer=m_UnusedBuffers.front();
-        PushBuffer(pLastBuffer,m_uiLastBufferDataOffset); // uiBufferDataOffset - in/out
+        AMF_RESULT errPush = PushBuffer(pLastBuffer,m_uiLastBufferDataOffset); // uiBufferDataOffset - in/out
+        if(errPush != AMF_OK)
+        {
+            AMFTraceWarning(AMF_FACILITY, L"PushBuffer() failed");
+        }
         amf_size uiBufMemSize=pLastBuffer->GetSize();
         if(m_uiLastBufferDataOffset>=uiBufMemSize)
         { // buffer used completely - discard
@@ -326,11 +380,19 @@ AMF_RESULT AudioPresenterWin::Present(AMFAudioBuffer *buffer,amf_pts &sleeptime)
     // define delay
     UINT32 iSamplesInBuffer=0;
     hr = pAudioClient->GetCurrentPadding(&iSamplesInBuffer);
+    if(iSamplesInBuffer < m_iBufferSampleSize / 4)
+    {
+        AMFTraceWarning(AMF_FACILITY, L"Buffer is too empty = %d", iSamplesInBuffer);
+    }
 
     sleeptime=0;
     if(m_eEngineState==AMFAPS_PLAYING_STATUS)
     {
-        if(iSamplesInBuffer > m_iBufferSampleSize* 2 /3)
+        if(m_bLowLatency)
+        {
+            sleeptime = 10000; // 1 ms
+        }
+        else if(iSamplesInBuffer > m_iBufferSampleSize* 2 / 3)
         { // 2/3
             sleeptime = (amf_pts)iSamplesInBuffer / 2 * AMF_SECOND / pMixFormat->nSamplesPerSec;
         }
@@ -339,7 +401,6 @@ AMF_RESULT AudioPresenterWin::Present(AMFAudioBuffer *buffer,amf_pts &sleeptime)
             sleeptime = 10000; // 1 ms
         }
     }
-
     return err;
 }
 //-------------------------------------------------------------------------------------------------
@@ -381,6 +442,7 @@ AMF_RESULT AudioPresenterWin::PushBuffer(AMFAudioBufferPtr &buffer,amf_size &uiB
     // release thir buffer
     UINT32 numSamplesWritten=(UINT32)(to_copy/pMixFormat->nChannels/(pMixFormat->wBitsPerSample/8));
     hr = pRenderClient->ReleaseBuffer(numSamplesWritten, 0);
+    m_uiNumSamplesWritten = numSamplesWritten;
     CHECK_HR(hr);
 
     return AMF_OK;
@@ -440,6 +502,7 @@ AMF_RESULT AudioPresenterWin::Reset()
     pAudioClient->Start();
     m_uiLastBufferDataOffset = 0;
     m_eEngineState = AMFAPS_PLAYING_STATUS;
+    m_iAVSyncDelay = -1LL;
     
     return AMF_OK;
 }

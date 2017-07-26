@@ -1,0 +1,190 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="common">
+      <UniqueIdentifier>{e4fa657b-2944-432a-a5a3-8687f788ea06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="windows">
+      <UniqueIdentifier>{7128d9f2-2294-4a95-815f-1effaef0d4ad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public">
+      <UniqueIdentifier>{a78f2705-b4c0-47d8-b565-f6683d5c3706}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\common">
+      <UniqueIdentifier>{34fed5d7-84a2-4795-95ec-15ea67cb9d1e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="PlaybackHW.ico">
+      <Filter>windows</Filter>
+    </None>
+    <None Include="small.ico">
+      <Filter>windows</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="PlaybackHW.h">
+      <Filter>windows</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\BitStreamParser.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\BitStreamParserH264.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\PlaybackPipeline.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\CmdLogger.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\Pipeline.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\PipelineElement.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\VideoPresenter.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\VideoPresenterDX11.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\VideoPresenterDX9.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\VideoPresenterOpenGL.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\CmdLineParser.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\ParametersStorage.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\BitStreamParserH265.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\AMFFactory.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\Thread.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\AMFSTL.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\DataStreamFile.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\DataStreamMemory.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\TraceAdapter.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\AudioPresenter.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\AudioPresenterWin.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\ByteArray.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\PlaybackPipelineBase.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\BackBufferPresenter.h">
+      <Filter>common</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="PlaybackHW.cpp">
+      <Filter>windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\BitStreamParser.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\BitStreamParserH264.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\PlaybackPipeline.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\CmdLogger.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\Pipeline.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\VideoPresenter.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\VideoPresenterDX11.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\VideoPresenterDX9.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\VideoPresenterOpenGL.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\CmdLineParser.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\ParametersStorage.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\BitStreamParserH265.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\AMFFactory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\Thread.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\Windows\ThreadWindows.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\AMFSTL.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\DataStreamFactory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\DataStreamFile.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\DataStreamMemory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\TraceAdapter.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\AudioPresenter.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\AudioPresenterWin.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\PlaybackPipelineBase.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\BackBufferPresenter.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="PlaybackHW.rc">
+      <Filter>windows</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>

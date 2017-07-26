@@ -33,8 +33,6 @@
 
 #include "VideoRenderOpenGL.h"
 #include "../common/CmdLogger.h"
-#include <gl/gl.h>
-#include <gl/glext.h>
 
 bool ReportGLErrors(const char* file, int line)
 {
@@ -151,7 +149,7 @@ AMF_RESULT VideoRenderOpenGL::InitFunctionPtrs()
         return AMF_FAIL;
     }
     m_glDeleteFramebuffersEXT = (PFNGLDELETEFRAMEBUFFERSEXTPROC) wglGetProcAddress("glDeleteFramebuffersEXT");
-    if( !m_glDeleteFramebuffersEXT) 
+	if (!m_glDeleteFramebuffersEXT)
     {
         LOG_ERROR("Could not get glDeleteFramebuffersEXT proc address.");
         return AMF_FAIL;

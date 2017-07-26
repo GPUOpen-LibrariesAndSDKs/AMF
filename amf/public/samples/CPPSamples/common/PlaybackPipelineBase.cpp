@@ -37,26 +37,35 @@
 
 
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_INPUT      = L"INPUT";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_URL_VIDEO  = L"UrlVideo";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_URL_AUDIO  = L"UrlAudio";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_PRESENTER  = L"PRESENTER";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_FRAMERATE = L"FRAMERATE";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_LOOP = L"LOOP";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_LISTEN_FOR_CONNECTION = L"LISTEN";
 
 PlaybackPipelineBase::PlaybackPipelineBase() :
     m_iVideoWidth(0),
     m_iVideoHeight(0),
     m_bVideoPresenterDirectConnect(false),
-    m_nFfmpegRefCount(0)
+    m_nFfmpegRefCount(0),
+    m_bURL(false)
 {
     g_AMFFactory.Init();
     SetParamDescription(PARAM_NAME_INPUT, ParamCommon,  L"Input file name", NULL);
+    SetParamDescription(PARAM_NAME_URL_VIDEO, ParamCommon,  L"Input stream URL Video", NULL);
+    SetParamDescription(PARAM_NAME_URL_AUDIO, ParamCommon,  L"Input stream URL Audio", NULL);
     SetParamDescription(PARAM_NAME_PRESENTER, ParamCommon,  L"Specifies presenter engine type (DX9, DX11, OPENGL)", ParamConverterVideoPresenter);
     SetParamDescription(PARAM_NAME_FRAMERATE, ParamCommon,  L"Forces Video Frame Rate (double)", ParamConverterDouble);
     SetParamDescription(PARAM_NAME_LOOP, ParamCommon,  L"Loop Video, boolean, default = true", ParamConverterBoolean);
+    SetParamDescription(PARAM_NAME_LISTEN_FOR_CONNECTION, ParamCommon,  L"LIsten for connection, boolean, default = true", ParamConverterBoolean);
+    
+    SetParam(PARAM_NAME_LISTEN_FOR_CONNECTION, false);
 
 #if defined(METRO_APP)
     SetParam(PlaybackPipelineBase::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_DX11);
 #else
-    SetParam(PlaybackPipelineBase::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_DX9);
+    SetParam(PlaybackPipelineBase::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_DX11);
 #endif
 }
 
@@ -79,9 +88,9 @@ void PlaybackPipelineBase::Terminate()
 
 AMF_RESULT PlaybackPipelineBase::GetDuration(amf_pts& duration) const
 {
-    if (m_pDemuxer != NULL)
+    if (m_pDemuxerVideo != NULL)
     {
-        amf::AMFMediaSourcePtr pSource(m_pDemuxer);
+        amf::AMFMediaSourcePtr pSource(m_pDemuxerVideo);
         if (pSource != NULL)
         {
             duration = pSource->GetDuration();
@@ -94,9 +103,9 @@ AMF_RESULT PlaybackPipelineBase::GetDuration(amf_pts& duration) const
 
 AMF_RESULT PlaybackPipelineBase::GetCurrentPts(amf_pts& pts) const
 {
-	if (m_pDemuxer != NULL)
+	if (m_pDemuxerVideo != NULL)
 	{
-		amf::AMFMediaSourcePtr pSource(m_pDemuxer);
+		amf::AMFMediaSourcePtr pSource(m_pDemuxerVideo);
 		if (pSource != NULL)
 		{
 			pts = pSource->GetPosition();
@@ -159,9 +168,9 @@ AMF_RESULT PlaybackPipelineBase::Seek(amf_pts pts)
     {
 //        m_pVideoStream->SetPosition( (amf_int64)pos);
     }
-    else if(m_pDemuxer != NULL)
+    else if(m_pDemuxerVideo != NULL)
     {
-        amf::AMFMediaSourcePtr pSource(m_pDemuxer);
+        amf::AMFMediaSourcePtr pSource(m_pDemuxerVideo);
         if(pSource != NULL)
         { 
             Freeze();
@@ -169,7 +178,16 @@ AMF_RESULT PlaybackPipelineBase::Seek(amf_pts pts)
             //MM temporarely - till provide better information that pipeline frozen
             amf_sleep(200);
             pSource->Seek(pts, amf::AMF_SEEK_PREV_KEYFRAME, -1);
-            
+
+            if(m_pDemuxerAudio != NULL)
+            {
+                
+                amf::AMFMediaSourcePtr pSourceAudio(m_pDemuxerAudio);
+                if(pSourceAudio != NULL)
+                { 
+                    pSourceAudio->Seek(pts, amf::AMF_SEEK_PREV_KEYFRAME, -1);
+                }
+            }
             if(m_pAudioPresenter != NULL)
             {
                 m_pAudioPresenter->Seek(pts);
@@ -188,13 +206,23 @@ AMF_RESULT PlaybackPipelineBase::Init()
     //---------------------------------------------------------------------------------------------
     // Read Options
     std::wstring inputPath = L"";
-
+    std::wstring inputUrlAudio = L"";
 #if !defined(METRO_APP)
     res = GetParamWString(PARAM_NAME_INPUT, inputPath);
-    CHECK_AMF_ERROR_RETURN(res , L"Input Path");
 #else
     inputPath = path;
 #endif
+    if(inputPath.length() == 0)
+    {
+        res = GetParamWString(PARAM_NAME_URL_VIDEO, inputPath);
+        if(inputPath.length() == 0)
+        {
+            return AMF_NOT_FOUND;
+        }
+        m_bURL = true;
+
+        res = GetParamWString(PARAM_NAME_URL_AUDIO, inputUrlAudio);
+    }
 
     amf::AMF_MEMORY_TYPE presenterEngine;
     {
@@ -215,8 +243,11 @@ AMF_RESULT PlaybackPipelineBase::Init()
 
     //---------------------------------------------------------------------------------------------
     // Init Video Stream Parser or demuxer
-    BitStreamType streamType = GetStreamType(inputPath.c_str());
-
+    BitStreamType streamType = BitStreamUnknown;
+    if(!m_bURL)
+    {
+        streamType = GetStreamType(inputPath.c_str());
+    }
     amf_int32 iVideoStreamIndex = -1;
     amf_int32 iAudioStreamIndex = -1;
 
@@ -248,19 +279,27 @@ AMF_RESULT PlaybackPipelineBase::Init()
         res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_DEMUXER, &pDemuxer);
         CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << FFMPEG_DEMUXER << L") failed");
         ++m_nFfmpegRefCount;
-        m_pDemuxer = amf::AMFComponentExPtr(pDemuxer);
+        m_pDemuxerVideo = amf::AMFComponentExPtr(pDemuxer);
 
-        m_pDemuxer->SetProperty(FFMPEG_DEMUXER_PATH, inputPath.c_str());
-        res = m_pDemuxer->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
-        CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxer->Init() failed");
+        bool bListen = false;
+        GetParam(PlaybackPipelineBase::PARAM_NAME_LISTEN_FOR_CONNECTION, bListen);
 
+        if(m_bURL)
+        {
+            bool bListen = false;
+            GetParam(PlaybackPipelineBase::PARAM_NAME_LISTEN_FOR_CONNECTION, bListen);
+            m_pDemuxerVideo->SetProperty(FFMPEG_DEMUXER_LISTEN, bListen);
+        }
+        m_pDemuxerVideo->SetProperty(m_bURL ? FFMPEG_DEMUXER_URL : FFMPEG_DEMUXER_PATH, inputPath.c_str());
+        res = m_pDemuxerVideo->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
+        CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxerVideo->Init() failed");
 
-        amf_int32 outputs = m_pDemuxer->GetOutputCount();
+        amf_int32 outputs = m_pDemuxerVideo->GetOutputCount();
         for(amf_int32 output = 0; output < outputs; output++)
         {
             amf::AMFOutputPtr pOutput;
-            res = m_pDemuxer->GetOutput(output, &pOutput);
-            CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxer->GetOutput() failed");
+            res = m_pDemuxerVideo->GetOutput(output, &pOutput);
+            CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxerVideo->GetOutput() failed");
 
             amf_int64 eStreamType = DEMUXER_UNKNOWN;
             pOutput->GetProperty(FFMPEG_DEMUXER_STREAM_TYPE, &eStreamType);
@@ -278,36 +317,96 @@ AMF_RESULT PlaybackPipelineBase::Init()
                 pAudioOutput = pOutput;
             }
         }
+        if(inputUrlAudio.length() > 0)
+        {
+            amf::AMFComponentPtr  pDemuxerAudio;
+            res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_DEMUXER, &pDemuxerAudio);
+            CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << FFMPEG_DEMUXER << L") failed");
+            ++m_nFfmpegRefCount;
+            m_pDemuxerAudio = amf::AMFComponentExPtr(pDemuxerAudio);
+
+            m_pDemuxerAudio->SetProperty(m_bURL ? FFMPEG_DEMUXER_URL : FFMPEG_DEMUXER_PATH, inputUrlAudio.c_str());
+            res = m_pDemuxerAudio->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
+            CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxerAudio->Init() failed");
+
+            amf_int32 outputs = m_pDemuxerAudio->GetOutputCount();
+            for(amf_int32 output = 0; output < outputs; output++)
+            {
+                amf::AMFOutputPtr pOutput;
+                res = m_pDemuxerAudio->GetOutput(output, &pOutput);
+                CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxerAudio->GetOutput() failed");
+
+                amf_int64 eStreamType = DEMUXER_UNKNOWN;
+                pOutput->GetProperty(FFMPEG_DEMUXER_STREAM_TYPE, &eStreamType);
+
+
+                if(iVideoStreamIndex < 0 && eStreamType == DEMUXER_VIDEO)
+                {
+                    iVideoStreamIndex = output;
+                    pVideoOutput = pOutput;
+                }
+
+                if(iAudioStreamIndex < 0 && eStreamType == DEMUXER_AUDIO)
+                {
+                    iAudioStreamIndex = output;
+                    pAudioOutput = pOutput;
+                }
+            }
+
+        }
+
+
     }
     //---------------------------------------------------------------------------------------------
     // init streams
     if(iVideoStreamIndex >= 0)
     {
-		InitVideo(pVideoOutput, presenterEngine);
+		res = InitVideo(pVideoOutput, presenterEngine);
+        CHECK_AMF_ERROR_RETURN(res, L"InitVideo() failed");
     }
     if(iAudioStreamIndex >= 0)
     {
-        InitAudio(pAudioOutput);
+        res = InitAudio(pAudioOutput);
+        CHECK_AMF_ERROR_RETURN(res, L"InitAudio() failed");
     }
 
     //---------------------------------------------------------------------------------------------
     // Connect pipeline
 
 	//-------------------------- Connect parser/ Demuxer
-	PipelineElementPtr pPipelineElementDemuxer = nullptr;
+	PipelineElementPtr pPipelineElementDemuxerVideo = nullptr;
+	PipelineElementPtr pPipelineElementDemuxerAudio = nullptr;
 	if (m_pVideoStreamParser != NULL)
 	{
-		pPipelineElementDemuxer = m_pVideoStreamParser;
+		pPipelineElementDemuxerVideo = m_pVideoStreamParser;
 	}
 	else
 	{
-		pPipelineElementDemuxer = PipelineElementPtr(new AMFComponentExElement(m_pDemuxer));
+		pPipelineElementDemuxerVideo = PipelineElementPtr(new AMFComponentExElement(m_pDemuxerVideo));
 	}
-	Connect(pPipelineElementDemuxer, 10);
-	Connect(PipelineElementPtr(new AMFComponentElement(m_pVideoDecoder)), 0, pPipelineElementDemuxer, iVideoStreamIndex, 4, CT_ThreadQueue);
+    Connect(pPipelineElementDemuxerVideo, 10);
+
+    if(m_pDemuxerAudio != NULL)
+    {
+        pPipelineElementDemuxerAudio = PipelineElementPtr(new AMFComponentExElement(m_pDemuxerAudio));
+	    Connect(pPipelineElementDemuxerAudio, 0, PipelineElementPtr(), 0, 10);
+    }
+    else
+    {
+        pPipelineElementDemuxerAudio = pPipelineElementDemuxerVideo;
+    }
+	Connect(PipelineElementPtr(new AMFComponentElement(m_pVideoDecoder)), 0, pPipelineElementDemuxerVideo, iVideoStreamIndex, m_bURL ? 100 : 4, CT_ThreadQueue);
 	// Initialize pipeline for both video and audio
-	InitVideoPipeline(iVideoStreamIndex, pPipelineElementDemuxer);
-	InitAudioPipeline(iAudioStreamIndex, pPipelineElementDemuxer);
+	InitVideoPipeline(iVideoStreamIndex, pPipelineElementDemuxerVideo);
+	InitAudioPipeline(iAudioStreamIndex, pPipelineElementDemuxerAudio);
+
+    if(iVideoStreamIndex >= 0 && m_pVideoPresenter != NULL && m_pAudioPresenter != NULL)
+    {
+        m_AVSync.Reset();
+        m_pVideoPresenter->SetAVSyncObject(&m_AVSync);
+        m_pAudioPresenter->SetAVSyncObject(&m_AVSync);
+    }
+    
     return AMF_OK;
 }
 
@@ -315,7 +414,7 @@ AMF_RESULT PlaybackPipelineBase::InitAudioPipeline(amf_uint32 iAudioStreamIndex,
 {
 	if (iAudioStreamIndex >= 0 && m_pAudioPresenter != NULL && pAudioSourceStream != NULL)
 	{
-		Connect(PipelineElementPtr(new AMFComponentElement(m_pAudioDecoder)), 0, pAudioSourceStream, iAudioStreamIndex, 100, CT_ThreadQueue);
+		Connect(PipelineElementPtr(new AMFComponentElement(m_pAudioDecoder)), 0, pAudioSourceStream, iAudioStreamIndex, m_bURL ? 1000 : 100, CT_ThreadQueue);
 		Connect(PipelineElementPtr(new AMFComponentElement(m_pAudioConverter)), 10);
 		Connect(m_pAudioPresenter, 10);
 	}
@@ -334,7 +433,7 @@ AMF_RESULT PlaybackPipelineBase::InitVideoPipeline(amf_uint32 iVideoStreamIndex,
     }
     else
     {
-            Connect(m_pVideoPresenter, 4, CT_ThreadQueue);
+        Connect(m_pVideoPresenter, 4, CT_ThreadQueue);
     }
 	return AMF_OK;
 }
@@ -346,7 +445,7 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoProcessor()
     AMF_RESULT res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFVideoConverter, &m_pVideoProcessor);
     CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFVideoConverter << L") failed");
 
-    if (m_pVideoPresenter->SupportAllocator())
+    if (m_pVideoPresenter->SupportAllocator() && m_pContext->GetOpenCLContext() == NULL)
     {
         m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_KEEP_ASPECT_RATIO, true);
         m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_FILL, true);
@@ -362,17 +461,16 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoProcessor()
 AMF_RESULT  PlaybackPipelineBase::InitVideoDecoder(const wchar_t *pDecoderID, amf::AMFBuffer* pExtraData)
 {
     AMF_VIDEO_DECODER_MODE_ENUM   decoderMode = AMF_VIDEO_DECODER_MODE_COMPLIANT; // AMF_VIDEO_DECODER_MODE_REGULAR , AMF_VIDEO_DECODER_MODE_LOW_LATENCY;
-//    AMF_VIDEO_DECODER_MODE_ENUM   decoderMode = AMF_VIDEO_DECODER_MODE_REGULAR;
 
     AMF_RESULT res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, pDecoderID, &m_pVideoDecoder);
-    CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFVideoDecoderUVD_H264_AVC << L") failed");
+    CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << pDecoderID << L") failed");
 
     m_pVideoDecoder->SetProperty(AMF_VIDEO_DECODER_REORDER_MODE, amf_int64(decoderMode));
-        
     m_pVideoDecoder->SetProperty(AMF_VIDEO_DECODER_EXTRADATA, amf::AMFVariant(pExtraData));
 
     m_pVideoDecoder->SetProperty(AMF_TIMESTAMP_MODE, amf_int64(AMF_TS_DECODE)); // our sample H264 parser provides decode order timestamps- change depend on demuxer
-    m_pVideoDecoder->Init(amf::AMF_SURFACE_NV12, m_iVideoWidth, m_iVideoHeight);
+    res = m_pVideoDecoder->Init(amf::AMF_SURFACE_NV12, m_iVideoWidth, m_iVideoHeight);
+    CHECK_AMF_ERROR_RETURN(res, L"m_pVideoDecoder->Init("<< m_iVideoWidth << m_iVideoHeight << L") failed " << pDecoderID );
 
     return AMF_OK;
 }
@@ -421,11 +519,22 @@ AMF_RESULT PlaybackPipelineBase::Pause()
     return AMF_WRONG_STATE;
 }
 
+bool  PlaybackPipelineBase::IsPaused() const
+{
+    return GetState() == PipelineStateRunning && m_pVideoPresenter->GetMode() == VideoPresenter::ModePaused;
+}
+
+
 AMF_RESULT PlaybackPipelineBase::Step()
 {
     switch(GetState())
     {
     case PipelineStateRunning:
+        if(m_pAudioPresenter != NULL)
+        {
+            m_pAudioPresenter->Pause();
+        }
+        m_pVideoPresenter->Pause();
         return m_pVideoPresenter->Step();
     case PipelineStateReady:
     case PipelineStateNotReady:
@@ -439,7 +548,14 @@ AMF_RESULT PlaybackPipelineBase::Step()
 
 AMF_RESULT PlaybackPipelineBase::Stop()
 {
+    if(m_pAudioPresenter != NULL)
+    {
+        m_pAudioPresenter->Flush();
+    }
+
     Pipeline::Stop();
+
+    m_AVSync.Reset();
 
     if(m_pAudioDecoder != NULL)
     {
@@ -478,11 +594,17 @@ AMF_RESULT PlaybackPipelineBase::Stop()
 
     m_pVideoStreamParser = NULL;
 
-    if(m_pDemuxer != NULL)
+    if(m_pDemuxerVideo != NULL)
     {
-        m_pDemuxer->Terminate();
-        m_pDemuxer = NULL;
+        m_pDemuxerVideo->Terminate();
+        m_pDemuxerVideo = NULL;
     }
+    if(m_pDemuxerAudio != NULL)
+    {
+        m_pDemuxerAudio->Terminate();
+        m_pDemuxerAudio = NULL;
+    }
+
 
     if(m_pContext != NULL)
     {
@@ -536,7 +658,7 @@ void PlaybackPipelineBase::UpdateVideoProcessorProperties(const wchar_t* name)
         }
     }
 }
-double PlaybackPipelineBase::GetFPS() const
+double PlaybackPipelineBase::GetFPS()
 {
     if(m_pVideoPresenter != NULL)
     {
@@ -697,20 +819,24 @@ AMF_RESULT  PlaybackPipelineBase::InitVideo(amf::AMFOutput* pOutput, amf::AMF_ME
 		AMFRate frameRate = {};
 		pOutput->GetProperty(FFMPEG_DEMUXER_VIDEO_FRAME_RATE, &frameRate);
 
-		dFps = frameRate.den == 0 ? 0.0
-			: (static_cast<double>(frameRate.num) / static_cast<double>(frameRate.den));
+		dFps = frameRate.den == 0 ? 0.0 : (static_cast<double>(frameRate.num) / static_cast<double>(frameRate.den));
     }
     //---------------------------------------------------------------------------------------------
     // Init Video Decoder
     res = InitVideoDecoder(pVideoDecoderID.c_str(), pExtraData);
     CHECK_AMF_ERROR_RETURN(res, L"InitVideoDecoder() failed");
 
+    if(m_pVideoDecoder != NULL)
+    { 
+        m_pVideoDecoder->SetProperty(AMF_TIMESTAMP_MODE, amf_int64(m_pVideoStreamParser != NULL ? AMF_TS_DECODE : AMF_TS_SORT)); // our sample H264 parser provides decode order timestamps- change depend on demuxer
+    }
     //---------------------------------------------------------------------------------------------
     // Init Presenter
     res = CreateVideoPresenter(presenterEngine, bitRate, dFps);
     CHECK_AMF_ERROR_RETURN(res, L"CreatePresenter() failed");
 
-    m_pVideoPresenter->Init(m_iVideoWidth, m_iVideoHeight);
+    res = m_pVideoPresenter->Init(m_iVideoWidth, m_iVideoHeight);
+    CHECK_AMF_ERROR_RETURN(res, L"m_pVideoPresenter->Init(" << m_iVideoWidth << m_iVideoHeight << ") failed");
 
     //---------------------------------------------------------------------------------------------
     // Init Video Converter/Processor
@@ -729,9 +855,13 @@ void PlaybackPipelineBase::OnEof()
         GetParam(PARAM_NAME_LOOP, bLoop);
         if(bLoop)
         {
-            if(m_pDemuxer != nullptr)
+            if(m_pDemuxerVideo != nullptr)
             {
-                m_pDemuxer->ReInit(0, 0);
+                m_pDemuxerVideo->ReInit(0, 0);
+            }
+            if(m_pDemuxerAudio != nullptr)
+            {
+                m_pDemuxerAudio->ReInit(0, 0);
             }
             if(m_pVideoStreamParser != NULL)
             {

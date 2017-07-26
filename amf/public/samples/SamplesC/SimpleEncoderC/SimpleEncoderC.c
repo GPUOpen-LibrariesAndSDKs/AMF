@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <tchar.h>
 #include <d3d9.h>
+#include <d3d11.h>
 #if defined(_WIN32)
 #include <process.h>
 #else
@@ -55,7 +56,7 @@ static wchar_t *pCodec = AMFVideoEncoderVCE_AVC;
 
  //#define ENABLE_4K
 
-static AMF_MEMORY_TYPE memoryTypeIn  = AMF_MEMORY_DX9;
+static AMF_MEMORY_TYPE memoryTypeIn  = AMF_MEMORY_DX11;
 static AMF_SURFACE_FORMAT formatIn   = AMF_SURFACE_NV12;
 
 #if defined(ENABLE_4K)
@@ -80,7 +81,13 @@ static wchar_t *fileNameOut = L"./output.h264";
 static amf_int32 xPos = 0;
 static amf_int32 yPos = 0;
 //-------------------------------------------------------------------------------------------------
-static void FillSurface(AMFContext *context, AMFSurface *surface);
+static void FillSurfaceDX9(AMFContext *context, AMFSurface *surface);
+static void FillSurfaceDX11(AMFContext *context, AMFSurface *surface);
+static void PrepareFillDX11(AMFContext *context);
+
+AMFSurface* pColor1;
+AMFSurface* pColor2;
+
 //-------------------------------------------------------------------------------------------------
 typedef struct PollingThread
 {
@@ -126,11 +133,13 @@ int _tmain(int argc, _TCHAR* argv[])
         res = context->pVtbl->InitDX9(context, NULL); // can be DX9 or DX9Ex device
         AMF_RETURN_IF_FAILED(res, L"InitDX9(NULL) failed");
     }
-//    if(memoryTypeIn == AMF_MEMORY_DX11)
-//    {
-//        res = context->pVtbl->InitDX11(context, NULL); // can be DX11 device
-//        AMF_RETURN_IF_FAILED(res, L"InitDX11(NULL) failed");
-//    }
+    if(memoryTypeIn == AMF_MEMORY_DX11)
+    {
+		res = context->pVtbl->InitDX11(context, NULL, AMF_DX11_0); // can be DX11 device
+        AMF_RETURN_IF_FAILED(res, L"InitDX11(NULL) failed");
+		PrepareFillDX11(context);
+    }
+
     // component: encoder
     res = AMFFactoryHelper_GetFactory()->pVtbl->CreateComponent(AMFFactoryHelper_GetFactory(), context, pCodec, &encoder);
     AMF_RETURN_IF_FAILED(res, L"CreateComponent(%s) failed", pCodec);
@@ -204,7 +213,15 @@ int _tmain(int argc, _TCHAR* argv[])
             surfaceIn = NULL;
             res = context->pVtbl->AllocSurface(context, memoryTypeIn, formatIn, widthIn, heightIn, &surfaceIn);
             AMF_RETURN_IF_FAILED(res, L"AllocSurface() failed");
-            FillSurface(context, surfaceIn);
+            
+			if (memoryTypeIn == AMF_MEMORY_DX9)
+			{
+				FillSurfaceDX9(context, surfaceIn);
+			}
+			else
+			{
+				FillSurfaceDX11(context, surfaceIn);
+			}
         }
         // encode
         amf_pts start_time = amf_high_precision_clock();
@@ -236,6 +253,15 @@ int _tmain(int argc, _TCHAR* argv[])
     }
     PollingThread_Stop(&s_thread);
 
+	if (pColor1 != NULL)
+	{
+		pColor1->pVtbl->Release(pColor1);
+	}
+	if (pColor2 != NULL)
+	{
+		pColor2->pVtbl->Release(pColor2);
+	}
+
     // cleanup in this order
     if(surfaceIn != NULL)
     { 
@@ -253,7 +279,7 @@ int _tmain(int argc, _TCHAR* argv[])
     return 0;
 }
 //-------------------------------------------------------------------------------------------------
-static void FillSurface(AMFContext *context, AMFSurface *surface)
+static void FillSurfaceDX9(AMFContext *context, AMFSurface *surface)
 {
     HRESULT hr = S_OK;
     // fill surface with something something useful. We fill with color and color rect
@@ -278,6 +304,92 @@ static void FillSurface(AMFContext *context, AMFSurface *surface)
 
     xPos+=2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
     yPos+=2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
+}
+
+static void FillNV12SurfaceWithColor(AMFSurface* surface, amf_uint8 Y, amf_uint8 U, amf_uint8 V)
+{
+	AMFPlane *pPlaneY = surface->pVtbl->GetPlaneAt(surface, 0);
+	AMFPlane *pPlaneUV = surface->pVtbl->GetPlaneAt(surface, 1);
+
+	amf_int32 widthY = pPlaneY->pVtbl->GetWidth(pPlaneY);
+	amf_int32 heightY = pPlaneY->pVtbl->GetHeight(pPlaneY);
+	amf_int32 lineY = pPlaneY->pVtbl->GetHPitch(pPlaneY);
+
+	amf_uint8 *pDataY = (amf_uint8 *)pPlaneY->pVtbl->GetNative(pPlaneY);
+
+	for (amf_int32 y = 0; y < heightY; y++)
+	{
+		amf_uint8 *pDataLine = pDataY + y * lineY;
+		memset(pDataLine, Y, widthY);
+	}
+
+	amf_int32 widthUV = pPlaneUV->pVtbl->GetWidth(pPlaneUV);
+	amf_int32 heightUV = pPlaneUV->pVtbl->GetHeight(pPlaneUV);
+	amf_int32 lineUV = pPlaneUV->pVtbl->GetHPitch(pPlaneUV);
+
+	amf_uint8 *pDataUV = (amf_uint8 *)pPlaneUV->pVtbl->GetNative(pPlaneUV);
+
+	for (amf_int32 y = 0; y < heightUV; y++)
+	{
+		amf_uint8 *pDataLine = pDataUV + y * lineUV;
+		for (amf_int32 x = 0; x < widthUV; x++)
+		{
+			*pDataLine++ = U;
+			*pDataLine++ = V;
+		}
+	}
+
+}
+
+static void PrepareFillDX11(AMFContext *context)
+{
+	AMF_RESULT res = AMF_OK; // error checking can be added later
+	res = context->pVtbl->AllocSurface(context, AMF_MEMORY_HOST, formatIn, widthIn, heightIn, &pColor1);
+	res = context->pVtbl->AllocSurface(context, AMF_MEMORY_HOST, formatIn, rectSize, rectSize, &pColor2);
+
+	FillNV12SurfaceWithColor(pColor2, 128, 0, 128);
+	FillNV12SurfaceWithColor(pColor1, 128, 255, 128);
+
+	pColor1->pVtbl->Convert(pColor1, memoryTypeIn);
+	pColor2->pVtbl->Convert(pColor2, memoryTypeIn);
+}
+
+static void FillSurfaceDX11(AMFContext *context, AMFSurface *surface)
+{
+	HRESULT hr = S_OK;
+	// fill surface with something something useful. We fill with color and color rect
+	// get native DX objects
+	ID3D11Device* deviceDX11 = (ID3D11Device *)context->pVtbl->GetDX11Device(context, AMF_DX11_0); // no reference counting - do not Release()
+	AMFPlane *plane = surface->pVtbl->GetPlaneAt(surface, 0);
+	ID3D11Texture2D* surfaceDX11 = (ID3D11Texture2D*)plane->pVtbl->GetNative(plane); // no reference counting - do not Release()
+	
+	ID3D11DeviceContext *deviceContextDX11 = NULL;
+	deviceDX11->lpVtbl->GetImmediateContext(deviceDX11, &deviceContextDX11);
+
+	AMFPlane *planeColor1 = pColor1->pVtbl->GetPlaneAt(pColor1, 0);
+	ID3D11Texture2D* surfaceDX11Color1 = (ID3D11Texture2D*)planeColor1->pVtbl->GetNative(planeColor1); // no reference counting - do not Release()
+	deviceContextDX11->lpVtbl->CopyResource(deviceContextDX11, (ID3D11Resource *)surfaceDX11, (ID3D11Resource *)surfaceDX11Color1);
+
+	if (xPos + rectSize > widthIn)
+	{
+		xPos = 0;
+	}
+	if (yPos + rectSize > heightIn)
+	{
+		yPos = 0;
+	}
+	D3D11_BOX rect = { 0, 0, 0, rectSize, rectSize, 1 };
+
+	AMFPlane *planeColor2 = pColor2->pVtbl->GetPlaneAt(pColor2, 0);
+	ID3D11Texture2D* surfaceDX11Color2 = (ID3D11Texture2D*)planeColor2->pVtbl->GetNative(planeColor2); // no reference counting - do not Release()
+
+	deviceContextDX11->lpVtbl->CopySubresourceRegion(deviceContextDX11, (ID3D11Resource *)surfaceDX11, 0, xPos, yPos, 0, (ID3D11Resource *)surfaceDX11Color2, 0, &rect);
+	deviceContextDX11->lpVtbl->Flush(deviceContextDX11);
+
+	xPos += 2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
+	yPos += 2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
+
+	deviceContextDX11->lpVtbl->Release(deviceContextDX11);
 }
 
 //----------------------------------------------------------------------------

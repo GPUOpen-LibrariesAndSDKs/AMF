@@ -31,6 +31,7 @@
 //
 #include "VideoPresenterDX11.h"
 #include <d3dcompiler.h>
+#include "public/common/TraceAdapter.h"
 
 #pragma comment(lib, "d3dcompiler.lib")
 
@@ -138,6 +139,12 @@ AMF_RESULT VideoPresenterDX11::Present(amf::AMFSurface* pSurface)
     {
         err;
     }
+#if 0
+    amf_pts timestamp;
+    pSurface->GetProperty(L"Stitch", &timestamp);
+    amf_pts latency = amf_high_precision_clock() - timestamp;
+    AMFTraceWarning(L"stitch", L"Stitch - Latency = %5.2f", (double)latency / 10000.);
+#endif
     {
         amf::AMFContext::AMFDX11Locker dxlock(m_pContext);
 

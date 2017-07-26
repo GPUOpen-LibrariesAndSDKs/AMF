@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="SimpleDecoder.cpp" />
+    <ClCompile Include="..\common\BitStreamParser.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\BitStreamParserH264.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\BitStreamParserH265.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\AMFFactory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\Thread.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\Windows\ThreadWindows.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\AMFSTL.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\DataStreamFactory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\DataStreamFile.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\DataStreamMemory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\TraceAdapter.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\common\BitStreamParser.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\BitStreamParserH264.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\ByteArray.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\BitStreamParserH265.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\AMFFactory.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\Thread.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\AMFSTL.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\DataStreamFile.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\DataStreamMemory.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\TraceAdapter.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="common">
+      <UniqueIdentifier>{56651d61-d6ee-429d-b903-ecbd3714c743}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public">
+      <UniqueIdentifier>{f96a98ac-9feb-4bf7-95f6-aab26622508f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\common">
+      <UniqueIdentifier>{42eb4d3d-e011-4d7f-82c7-959dc996cf12}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

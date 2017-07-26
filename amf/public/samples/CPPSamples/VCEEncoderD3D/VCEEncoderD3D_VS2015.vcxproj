@@ -83,7 +83,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(AMDAPPSDKROOT)\include;$(AMDAPPSDKSAMPLESROOT)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(OCL_ROOT)\include;</AdditionalIncludeDirectories>
       <TreatWarningAsError>false</TreatWarningAsError>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>Async</ExceptionHandling>
@@ -109,7 +109,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(AMDAPPSDKROOT)\include;$(AMDAPPSDKSAMPLESROOT)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(OCL_ROOT)\include;</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
@@ -129,7 +129,7 @@
     <ClCompile>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(AMDAPPSDKROOT)\include;$(AMDAPPSDKSAMPLESROOT)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(OCL_ROOT)\include;</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ExceptionHandling>Async</ExceptionHandling>
@@ -146,7 +146,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(AMDAPPSDKROOT)\include;$(AMDAPPSDKSAMPLESROOT)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(OCL_ROOT)\include;</AdditionalIncludeDirectories>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>

@@ -41,15 +41,15 @@
 
 // On Win7 AMF Encoder can work on DX9 only
 // The next line can be used to demo DX11 input and DX9 output from converter
-//static amf::AMF_MEMORY_TYPE memoryTypeIn = amf::AMF_MEMORY_DX11; 
-static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX9;
+static amf::AMF_MEMORY_TYPE memoryTypeIn = amf::AMF_MEMORY_DX11; 
+//static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX9;
 static amf::AMF_SURFACE_FORMAT formatIn   = amf::AMF_SURFACE_BGRA;
 static amf_int32 widthIn                  = 1920;
 static amf_int32 heightIn                 = 1080;
 static amf_int32 frameCount               = 100;
 
 static wchar_t *fileNameOut               = L"./output_%dx%d.nv12";
-static amf::AMF_MEMORY_TYPE memoryTypeOut = amf::AMF_MEMORY_DX9;
+static amf::AMF_MEMORY_TYPE memoryTypeOut = amf::AMF_MEMORY_DX11;
 static amf::AMF_SURFACE_FORMAT formatOut  = amf::AMF_SURFACE_NV12;
 static amf_int32 widthOut                 = 1280;
 static amf_int32 heightOut                = 720;

@@ -40,7 +40,9 @@ VideoPresenter::VideoPresenter() :
     m_FpsStatStartTime(0),
     m_iFramesDropped(0),
     m_dLastFPS(0),
-    m_currentTime(0)
+    m_currentTime(0),
+    m_bDoWait(true),
+    m_pAVSync(NULL)
 {
     amf_increase_timer_precision();
     memset(&m_InputFrameSize, 0, sizeof(m_InputFrameSize));
@@ -85,6 +87,12 @@ AMF_RESULT VideoPresenter::SubmitInput(amf::AMFData* pData)
     if(pData)
     {
         m_currentTime = pData->GetPts();
+        if(m_pAVSync != NULL && !m_pAVSync->IsVideoStarted())
+        {
+             //AMFTraceWarning(AMF_FACILITY, L"First PTS=%5.2f", (double)pData->GetPts() / 10000);
+            m_pAVSync->VideoStarted();
+        }
+
         switch(m_state)
         {
         case ModeStep:
@@ -129,8 +137,10 @@ AMF_RESULT VideoPresenter::CalcOutputRect(const AMFRect* pSrcRect, const AMFRect
     return AMF_OK;
 }
 
-bool VideoPresenter::WaitForPTS(amf_pts pts)
+bool VideoPresenter::WaitForPTS(amf_pts pts, bool bRealWait)
 {
+#define WAIT_THRESHOLD 5 * AMF_SECOND / 1000LL // 5 ms
+
     bool bRet = true;
     amf_pts currTime = amf_high_precision_clock();
 
@@ -140,12 +150,13 @@ bool VideoPresenter::WaitForPTS(amf_pts pts)
         pts -= m_startPts;
 
         amf_pts diff = pts - currTime;
-
-        if(diff > AMF_SECOND / 1000LL) // ignore delays < 1 ms 
+        bool bWaited = false;
+        if(diff >  WAIT_THRESHOLD && m_bDoWait && bRealWait) // ignore delays < 1 ms 
         {
             m_waiter.Wait(diff);
+            bWaited = true;
         } 
-        if(diff < - 10 * AMF_SECOND / 1000LL) // ignore lags < 2 ms 
+        if(diff < - 10 * AMF_SECOND / 1000LL) // ignore lags < 10 ms 
         {
             if(m_iFrameCount == 1)
             {
@@ -154,11 +165,15 @@ bool VideoPresenter::WaitForPTS(amf_pts pts)
             else
             {
                 m_iFramesDropped++;
+                wchar_t buf[1000];
+                swprintf(buf,L"+++ Drop Frame #%d pts=%5.2f time=%5.2f diff=%5.2f\n",(int)m_iFramesDropped, (float)pts / 10000., (float)currTime / 10000., float(diff) / 10000.);
+                ::OutputDebugStringW(buf);
+
                 bRet = false;
             }
         }
 //        wchar_t buf[1000];
-//        swprintf(buf,L"+++ Present Frame #%d pts=%d time=%d diff=%5.2f\n",(int)m_iFrameCount, (int)pts, (int)currTime, float(diff) / 10000.);
+//        swprintf(buf,L"+++ Present Frame #%d pts=%5.2f time=%5.2f diff=%5.2f\n",(int)m_iFrameCount, (float)pts / 10000., (float)currTime / 10000., float(diff) / 10000.);
 //        ::OutputDebugStringW(buf);
 
             // update FPS = alpha filter

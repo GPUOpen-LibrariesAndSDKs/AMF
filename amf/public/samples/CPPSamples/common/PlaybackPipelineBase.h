@@ -57,6 +57,10 @@ public:
     virtual ~PlaybackPipelineBase();
 
     static const wchar_t* PARAM_NAME_INPUT;
+    static const wchar_t* PARAM_NAME_URL_VIDEO;
+    static const wchar_t* PARAM_NAME_URL_AUDIO;
+    static const wchar_t* PARAM_NAME_LISTEN_FOR_CONNECTION;
+
     static const wchar_t* PARAM_NAME_PRESENTER;
     static const wchar_t* PARAM_NAME_FRAMERATE;
     static const wchar_t* PARAM_NAME_LOOP;
@@ -65,8 +69,10 @@ public:
     virtual AMF_RESULT Pause();
     virtual AMF_RESULT Step();
     virtual AMF_RESULT Stop();
+    virtual bool       IsPaused() const;
 
-    void Terminate();
+
+    virtual void Terminate();
 
     virtual AMF_RESULT GetDuration(amf_pts& pts) const;
 	virtual AMF_RESULT GetCurrentPts(amf_pts& pts) const;
@@ -76,7 +82,7 @@ public:
 
 	virtual AMF_RESULT Seek(amf_pts pts);
 
-    double     GetFPS() const;
+    virtual double     GetFPS();
     amf_int64  GetFramesDropped() const;
 
     virtual void        UpdateVideoProcessorProperties(const wchar_t* name);
@@ -98,7 +104,8 @@ protected:
     
     amf::AMFContextPtr      m_pContext;
 
-    amf::AMFComponentExPtr  m_pDemuxer;
+    amf::AMFComponentExPtr  m_pDemuxerVideo;
+    amf::AMFComponentExPtr  m_pDemuxerAudio; //optional demuxer if audio is a diffrent URL (ie YouTube)
 
     amf::AMFDataStreamPtr   m_pVideoStream;
     BitStreamParserPtr      m_pVideoStreamParser;
@@ -116,4 +123,8 @@ protected:
 
     bool                    m_bVideoPresenterDirectConnect;
     amf_uint32              m_nFfmpegRefCount;
+
+    AVSyncObject            m_AVSync;
+    bool                    m_bURL;
+
 };

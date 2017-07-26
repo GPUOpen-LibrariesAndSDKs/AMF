@@ -30,6 +30,12 @@
 New features are available in 
 Driver: Radeon Software Edition Crimson; 17.4.1 Software: 17.10 and later 
 
+1.4.4.0 (06.07.2017) version
+--------------------------
+    - FFmpeg updated to v3.3.1
+    - added sample projects for VS2015 and VS2017
+
+
 1.4.2.0 (11.04.2017) version
 --------------------------
     - AMF "C" interfaces
