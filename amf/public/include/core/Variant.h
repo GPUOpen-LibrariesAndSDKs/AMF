@@ -38,10 +38,9 @@
 #endif
 
 #include "Interface.h"
-#if defined(__cplusplus)
 #include <locale.h>
 #include <wchar.h>
-#endif
+#include <string.h>
 
 #if defined(__cplusplus)
 namespace amf

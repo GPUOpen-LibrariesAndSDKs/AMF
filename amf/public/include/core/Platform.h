@@ -56,6 +56,16 @@
 
 #define AMF_TODO(_todo) (__FILE__ "(" AMF_MACRO_STRING(__LINE__) "): TODO: "_todo)
 
+
+ #if defined(__GNUC__) || defined(__clang__)
+     #define AMF_ALIGN(n) __attribute__((aligned(n)))
+ #elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
+     #define AMF_ALIGN(n) __declspec(align(n))
+ #else
+    #define AMF_ALIGN(n)
+//     #error Need to define AMF_ALIGN
+ #endif
+
 #include <stdio.h>
 #include <stdint.h>
 

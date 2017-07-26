@@ -50,7 +50,7 @@ extern "C"
     extern int vscwprintf(const wchar_t* p_fmt, va_list p_args);
     extern int vscprintf(const char* p_fmt, va_list p_args);
 }
-#elif _MSC_VER <= 1900
+#elif _MSC_VER <= 1910
     #define snprintf _snprintf
     #define vscprintf _vscprintf
     #define vscwprintf _vscwprintf  //  Count chars without writing to string
