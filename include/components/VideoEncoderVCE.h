@@ -108,9 +108,7 @@ enum AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_ENUM
 enum AMF_VIDEO_ENCODER_PREENCODE_MODE_ENUM
 {
     AMF_VIDEO_ENCODER_PREENCODE_DISABLED = 0,
-    AMF_VIDEO_ENCODER_PREENCODE_ENABLED,
-    AMF_VIDEO_ENCODER_PREENCODE_ENABLED_DOWNSCALEFACTOR_2,
-    AMF_VIDEO_ENCODER_PREENCODE_ENABLED_DOWNSCALEFACTOR_4
+    AMF_VIDEO_ENCODER_PREENCODE_ENABLED  = 1,
 };
 
 enum AMF_VIDEO_ENCODER_CODING_ENUM
@@ -135,7 +133,8 @@ enum AMF_VIDEO_ENCODER_CODING_ENUM
 #define AMF_VIDEO_ENCODER_SCANTYPE                              L"ScanType"                 // amf_int64(AMF_VIDEO_ENCODER_SCANTYPE_ENUM); default = AMF_VIDEO_ENCODER_SCANTYPE_PROGRESSIVE; indicates input stream type
 #define AMF_VIDEO_ENCODER_MAX_NUM_REFRAMES                      L"MaxNumRefFrames"          // amf_int64; Maximum number of reference frames
 #define AMF_VIDEO_ENCODER_ASPECT_RATIO                          L"AspectRatio"              // AMFRatio; default = 1, 1
-#define AMF_VIDEO_ENCODER_FULL_RANGE_COLOR                      L"FullRangeColor"           //  bool; default = false; inidicates that YUV input is (0,255) 
+#define AMF_VIDEO_ENCODER_FULL_RANGE_COLOR                      L"FullRangeColor"           // bool; default = false; inidicates that YUV input is (0,255) 
+#define AMF_VIDEO_ENCODER_RATE_CONTROL_PREANALYSIS_ENABLE       L"RateControlPreanalysisEnable"     // amf_int64(AMF_VIDEO_ENCODER_PREENCODE_MODE_ENUM); default =  AMF_VIDEO_ENCODER_PREENCODE_DISABLED; controls Pre-analysis assisted rate control 
 
     // Quality preset property
 #define AMF_VIDEO_ENCODER_QUALITY_PRESET                        L"QualityPreset"            // amf_int64(AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM); default = depends on USAGE; Quality Preset 
@@ -166,7 +165,6 @@ enum AMF_VIDEO_ENCODER_CODING_ENUM
 #define AMF_VIDEO_ENCODER_PEAK_BITRATE                          L"PeakBitrate"              // amf_int64; default = depends on USAGE; Peak bit rate in bits
 #define AMF_VIDEO_ENCODER_RATE_CONTROL_SKIP_FRAME_ENABLE        L"RateControlSkipFrameEnable"   // bool; default =  depends on USAGE; Rate Control Based Frame Skip 
 #define AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD                   L"RateControlMethod"        // amf_int64(AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_ENUM); default = depends on USAGE; Rate Control Method 
-#define AMF_VIDEO_ENCODER_RATE_CONTROL_PREANALYSIS_ENABLE       L"RateControlPreanalysisEnable"   // amf_int64(AMF_VIDEO_ENCODER_PREENCODE_MODE_ENUM); default =  AMF_VIDEO_ENCODER_PREENCODE_DISABLED; controls Pre-analysis assisted rate control 
 
     // Picture control properties
 #define AMF_VIDEO_ENCODER_HEADER_INSERTION_SPACING              L"HeaderInsertionSpacing"   // amf_int64; default = depends on USAGE; Header Insertion Spacing; range 0-1000

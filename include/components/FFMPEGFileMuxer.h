@@ -51,6 +51,8 @@ enum FFMPEG_MUXER_STREAM_TYPE_ENUM
 
 // component properties
 #define FFMPEG_MUXER_PATH                     L"Path"                     // string - the file to open
+#define FFMPEG_MUXER_URL                      L"Url"                      // string - the stream url to open
+#define FFMPEG_MUXER_LISTEN                   L"Listen"                   // bool (default = false)
 #define FFMPEG_MUXER_ENABLE_VIDEO             L"EnableVideo"              // bool (default = true)
 #define FFMPEG_MUXER_ENABLE_AUDIO             L"EnableAudio"              // bool (default = false)
 

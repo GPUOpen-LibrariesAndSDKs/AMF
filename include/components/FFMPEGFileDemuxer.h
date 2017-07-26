@@ -51,12 +51,14 @@ enum FFMPEG_DEMUXER_STREAM_TYPE_ENUM
 
 // component properties
 #define FFMPEG_DEMUXER_PATH                     L"Path"                     // string - the file to open
+#define FFMPEG_DEMUXER_URL                      L"Url"                      // string - the stream url to open
 #define FFMPEG_DEMUXER_START_FRAME              L"StartFrame"               // amf_int64 (default = 0)
 #define FFMPEG_DEMUXER_FRAME_COUNT              L"FramesNumber"             // amf_int64 (default = 0)
 #define FFMPEG_DEMUXER_DURATION                 L"Duration"                 // amf_int64 (default = 0)
 #define FFMPEG_DEMUXER_CHECK_MVC                L"CheckMVC"                 // bool (default = true)
 //#define FFMPEG_DEMUXER_SYNC_AV                  L"SyncAV"                   // bool (default = false)
 #define FFMPEG_DEMUXER_INDIVIDUAL_STREAM_MODE   L"StreamMode"               // bool (default = true)
+#define FFMPEG_DEMUXER_LISTEN                   L"Listen"                   // bool (default = false)
 
 //common stream properties
 #define FFMPEG_DEMUXER_STREAM_TYPE              L"StreamType"               // amf_int64( FFMPEG_DEMUXER_STREAM_TYPE_ENUM )
