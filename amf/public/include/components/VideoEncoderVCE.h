@@ -53,9 +53,12 @@ enum AMF_VIDEO_ENCODER_USAGE_ENUM
 
 enum AMF_VIDEO_ENCODER_PROFILE_ENUM
 {
+    AMF_VIDEO_ENCODER_PROFILE_UNKNOWN = 0,
     AMF_VIDEO_ENCODER_PROFILE_BASELINE = 66,
     AMF_VIDEO_ENCODER_PROFILE_MAIN = 77,
-    AMF_VIDEO_ENCODER_PROFILE_HIGH = 100
+    AMF_VIDEO_ENCODER_PROFILE_HIGH = 100,
+    AMF_VIDEO_ENCODER_PROFILE_CONSTRAINED_BASELINE = 256,
+    AMF_VIDEO_ENCODER_PROFILE_CONSTRAINED_HIGH = 257
 };
 
 enum AMF_VIDEO_ENCODER_SCANTYPE_ENUM
@@ -66,6 +69,7 @@ enum AMF_VIDEO_ENCODER_SCANTYPE_ENUM
 
 enum AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_ENUM
 {
+    AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_UNKNOWN = -1,
     AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CONSTANT_QP = 0,
     AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CBR,
     AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR,
@@ -154,7 +158,7 @@ enum AMF_VIDEO_ENCODER_CODING_ENUM
 #define AMF_VIDEO_ENCODER_VBV_BUFFER_SIZE                       L"VBVBufferSize"            // amf_int64; default = depends on USAGE; VBV Buffer Size in bits
 #define AMF_VIDEO_ENCODER_INITIAL_VBV_BUFFER_FULLNESS           L"InitialVBVBufferFullness" // amf_int64; default =  64; Initial VBV Buffer Fullness 0=0% 64=100%
 
-#define AMF_VIDEO_ENCODER_MAX_AU_SIZE                           L"MaxAUSize"                // amf_int64; default = 60; Max AU Size in bits
+#define AMF_VIDEO_ENCODER_MAX_AU_SIZE                           L"MaxAUSize"                // amf_int64; default = 0; Max AU Size in bits
 
 #define AMF_VIDEO_ENCODER_MIN_QP                                L"MinQP"                    // amf_int64; default = depends on USAGE; Min QP; range = 0-51
 #define AMF_VIDEO_ENCODER_MAX_QP                                L"MaxQP"                    // amf_int64; default = depends on USAGE; Max QP; range = 0-51
