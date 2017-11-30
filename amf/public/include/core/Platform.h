@@ -421,12 +421,12 @@ namespace amf
     } AMFGuid;
 
 #if defined(__cplusplus)
-    AMF_INLINE bool AMFCompareGUIDs(const AMFGuid& guid1, const AMFGuid& guid2)
+    static AMF_INLINE bool AMFCompareGUIDs(const AMFGuid& guid1, const AMFGuid& guid2)
     {
         return guid1 == guid2;
     }
 #else
-    AMF_INLINE amf_bool AMFCompareGUIDs(const struct AMFGuid guid1, const struct AMFGuid guid2)
+    static AMF_INLINE amf_bool AMFCompareGUIDs(const struct AMFGuid guid1, const struct AMFGuid guid2)
     {
         return memcmp(&guid1, &guid2, sizeof(guid1)) == 0;
     }
