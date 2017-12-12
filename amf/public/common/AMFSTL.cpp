@@ -50,7 +50,7 @@ extern "C"
     extern int vscwprintf(const wchar_t* p_fmt, va_list p_args);
     extern int vscprintf(const char* p_fmt, va_list p_args);
 }
-#elif _MSC_VER <= 1910
+#elif _MSC_VER <= 1911
     #define snprintf _snprintf
     #define vscprintf _vscprintf
     #define vscwprintf _vscwprintf  //  Count chars without writing to string
@@ -741,17 +741,19 @@ static size_t amf_wprintfCore(outputStreamDelegateW p_outDelegate, void* p_conte
                     const void* str = va_arg(p_args, const void*);
                     if (str != NULL)
                     {
+                        const wchar_t* str_wchar = nullptr;
                         switch (*(fmt - 1))
                         {
                         case L'h':
                             currentArgumentString = amf_from_utf8_to_unicode(reinterpret_cast<const char*>(str));
+                            str_wchar = currentArgumentString.c_str();
                             break;
                         case L'l':
                         case L'w':
-                            currentArgumentString = reinterpret_cast<const wchar_t*>(str);
+                            currentArgumentString = str_wchar = reinterpret_cast<const wchar_t*>(str);
                             break;
                         default:
-                            currentArgumentString = reinterpret_cast<const wchar_t*>(str);
+                            currentArgumentString = str_wchar = reinterpret_cast<const wchar_t*>(str);
                         }
                     }
                     else
@@ -796,7 +798,7 @@ static size_t amf_wprintfCore(outputStreamDelegateW p_outDelegate, void* p_conte
                     switch (*(fmt - 1))
                     {
                     case L'l':
-                        if (*(fmt - 1) == L'l')    //    long long
+                        if (*(fmt - 2) == L'l')    //    long long
                         {
                             sprintf(tempBuffer, currentFormatMB.c_str(), va_arg(p_args, long long));
                         }

@@ -126,7 +126,7 @@
 
 #if defined(_MSC_VER)
 #define AMF_WEAK __declspec( selectany ) 
-#elif defined (__GCC__) || defined(__clang__)//GCC or CLANG
+#elif defined (__GNUC__) || defined(__clang__)//GCC or CLANG
 #define AMF_WEAK __attribute__((weak))
 #endif
 

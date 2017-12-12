@@ -30,30 +30,38 @@
 // THE SOFTWARE.
 //
 
-/**
-***************************************************************************************************
-* @file  Version.h
-* @brief Version declaration
-***************************************************************************************************
-*/
-#ifndef __AMFVersion_h__
-#define __AMFVersion_h__
+//-------------------------------------------------------------------------------------------------
+// Desktop duplication interface declaration
+//-------------------------------------------------------------------------------------------------
+
+#ifndef __AMFDISPLAYCAPTURE__
+#define __AMFDISPLAYCAPTURE__
 #pragma once
 
-#include "Platform.h"
+#include "public/include/components/Component.h"
 
-#define AMF_MAKE_FULL_VERSION(VERSION_MAJOR, VERSION_MINOR, VERSION_RELEASE, VERSION_BUILD_NUM)    ( ((amf_uint64)(VERSION_MAJOR) << 48ull) | ((amf_uint64)(VERSION_MINOR) << 32ull) | ((amf_uint64)(VERSION_RELEASE) << 16ull)  | (amf_uint64)(VERSION_BUILD_NUM))
+#define AMFDisplayCapture L"AMFDisplayCapture"
 
-#define AMF_GET_MAJOR_VERSION(x)      ((x >> 48ull) & 0xFFFF)
-#define AMF_GET_MINOR_VERSION(x)      ((x >> 32ull) & 0xFFFF)
-#define AMF_GET_SUBMINOR_VERSION(x)   ((x >> 16ull) & 0xFFFF)
-#define AMF_GET_BUILD_VERSION(x)      ((x >>  0ull) & 0xFFFF)
+// Static properties
+//
+// Index of the display monitor
+// - Monitor index is determined by using EnumAdapters() in DX11.
+#define AMF_DISPLAYCAPTURE_MONITOR_INDEX			L"InMonitorIndex"         // amf_int64 (default = 0)
+// Capture frame rate
+#define AMF_DISPLAYCAPTURE_FRAMERATE				L"InFrameRate"            // amf_int64 (default = 60)
+// Optional interface object for getting current time.
+#define AMF_DISPLAYCAPTURE_CURRENT_TIME_INTERFACE	L"CurrentTimeInterface"
+// Capture format
+#define AMF_DISPLAYCAPTURE_FORMAT					L"CurrentFormat"
 
-#define AMF_VERSION_MAJOR       1
-#define AMF_VERSION_MINOR       4
-#define AMF_VERSION_RELEASE     6
-#define AMF_VERSION_BUILD_NUM   0
-
-#define AMF_FULL_VERSION AMF_MAKE_FULL_VERSION(AMF_VERSION_MAJOR, AMF_VERSION_MINOR, AMF_VERSION_RELEASE, AMF_VERSION_BUILD_NUM)
-
-#endif //#ifndef __AMFVersion_h__
+extern "C"
+{
+	// Component that allows the desktop to be captured:
+	// - DX11 only and the device must be created with IDXGIFactory1 or later support
+	// - The monitor display must not be rotated.  See DDAPISource.cpp
+	// - Component will fail to initialize on Windows 7 as the Desktop Duplication API
+	// is not supported
+	//
+	AMF_RESULT AMF_CDECL_CALL AMFCreateComponentDisplayCapture(amf::AMFContext* pContext, amf::AMFComponent** ppComponent);
+}
+#endif // #ifndef __AMFDISPLAYCAPTURE__
