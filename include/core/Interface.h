@@ -42,7 +42,7 @@ namespace amf
 #endif
 #if defined(__cplusplus)
     #define AMF_DECLARE_IID(_data1, _data2, _data3, _data41, _data42, _data43, _data44, _data45, _data46, _data47, _data48) \
-        AMF_INLINE static const amf::AMFGuid IID() \
+        static AMF_INLINE const amf::AMFGuid IID() \
         { \
             amf::AMFGuid uid = {_data1, _data2, _data3, _data41, _data42, _data43, _data44, _data45, _data46, _data47, _data48}; \
             return uid; \

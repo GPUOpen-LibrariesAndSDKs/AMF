@@ -433,5 +433,10 @@ namespace amf
 #if defined(__cplusplus)
 }
 #endif
-
+enum AMF_CONTEXT_DEVICETYPE_ENUM
+{
+    AMF_CONTEXT_DEVICE_TYPE_GPU = 0,
+    AMF_CONTEXT_DEVICE_TYPE_CPU
+};
+#define AMF_CONTEXT_DEVICE_TYPE  L"AMF_Context_DeviceType" //Value type: amf_int64; Values : AMF_CONTEXT_DEVICE_TYPE_GPU for GPU (default) , AMF_CONTEXT_DEVICE_TYPE_CPU for CPU.
 #endif //#ifndef __AMFContext_h__

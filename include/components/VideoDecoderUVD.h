@@ -84,4 +84,64 @@ enum AMF_TIMESTAMP_MODE_ENUM
 // Decoder capabilities - exposed in AMFCaps interface
 #define AMF_VIDEO_DECODER_CAP_NUM_OF_STREAMS            L"NumOfStreams"               // amf_int64; maximum number of decode streams supported 
 
+
+// metadata information: can be set on output surface
+enum AMF_COLOR_PRIMARIES_ENUM
+{
+    AMF_COLOR_PRIMARIES_UNDEFINED                       = 0,
+    AMF_COLOR_PRIMARIES_BT709                           = 1,
+    AMF_COLOR_PRIMARIES_UNSPECIFIED                     = 2,
+    AMF_COLOR_PRIMARIES_RESERVED                        = 3,
+    AMF_COLOR_PRIMARIES_BT470M                          = 4,
+    AMF_COLOR_PRIMARIES_BT470BG                         = 5,
+    AMF_COLOR_PRIMARIES_SMPTE170M                       = 6,
+    AMF_COLOR_PRIMARIES_SMPTE240M                       = 7,
+    AMF_COLOR_PRIMARIES_FILM                            = 8,
+    AMF_COLOR_PRIMARIES_BT2020                          = 9,
+    AMF_COLOR_PRIMARIES_SMPTE428                        = 10,
+    AMF_COLOR_PRIMARIES_SMPTE431                        = 11,
+    AMF_COLOR_PRIMARIES_SMPTE432                        = 12,
+    AMF_COLOR_PRIMARIES_JEDEC_P22                       = 22,
+};
+enum AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM
+{
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED         = 0,
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_BT709             = 1,
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_UNSPECIFIED       = 2,
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_RESERVED          = 3,
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_GAMMA22           = 4,
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_GAMMA28           = 5,
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE170M         = 6,
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE240M         = 7,
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_LINEAR            = 8,
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_LOG               = 9,
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_LOG_SQRT          = 10,
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_IEC61966_2_4      = 11,
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_BT1361_ECG        = 12,
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_IEC61966_2_1      = 13,
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_BT2020_10         = 14, 
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_BT2020_12         = 15,
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE2084         = 16,
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE428          = 17,
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_ARIB_STD_B67      = 18,
+};
+
+typedef struct AMFHDRMetadata
+{
+        amf_uint16  redPrimary[2];              // normalized to 50000
+        amf_uint16  greenPrimary[2];            // normalized to 50000
+        amf_uint16  bluePrimary[2];             // normalized to 50000
+        amf_uint16  whitePoint[2];              // normalized to 50000
+        amf_uint32  maxMasteringLuminance;      // normalized to 10000
+        amf_uint32  minMasteringLuminance;      // normalized to 10000
+        amf_uint16  maxContentLightLevel;       // nit value 
+        amf_uint16  maxFrameAverageLightLevel;  // nit value 
+} AMFHDRMetadata;
+
+
+// In addition to component AMF_VIDEO_DECODER_FULL_RANGE_COLOR will be also set on surface 
+#define AMF_VIDEO_DECODER_COLOR_TRANSFER_CHARACTERISTIC L"ColorTransferChar"    // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 § 7.1
+#define AMF_VIDEO_DECODER_COLOR_PRIMARIES               L"ColorPrimaries"       // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 § 7.2
+#define AMF_VIDEO_DECODER_HDR_METADATA                  L"HdrMetadata"          // AMFBuffer containing AMFHDRMetadata; default NULL
+
 #endif //#ifndef __VideoDecoderHW_UVD_h__

@@ -134,7 +134,7 @@ namespace amf
 
     #define AMF_ASSIGN_PROPERTY_DATA(res, varType, pThis, name, val ) \
     { \
-        AMFVariantStruct var; \
+        AMFVariantStruct var = {0}; \
         AMFVariantAssign##varType(&var, val); \
         res = pThis->pVtbl->SetProperty(pThis, name, var ); \
     }

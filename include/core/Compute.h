@@ -72,7 +72,13 @@ namespace amf
         AMF_CHANNEL_SNORM_INT16         = 5,
         AMF_CHANNEL_FLOAT               = 6,
         AMF_CHANNEL_FLOAT16             = 7,
-    } AMF_CHANNEL_TYPE;
+        AMF_CHANNEL_UNSIGNED_INT16      = 8,
+} AMF_CHANNEL_TYPE;
+    //----------------------------------------------------------------------------------------------
+#define AMF_STRUCTURED_BUFFER_FORMAT        L"StructuredBufferFormat"                                                             // amf_int64(AMF_CHANNEL_TYPE), default - AMF_CHANNEL_UNSIGNED_INT32; to be set on AMFBuffer objects
+#if defined(_WIN32)
+    AMF_WEAK GUID  AMFStructuredBufferFormatGUID = { 0x90c5d674, 0xe90, 0x4181, 0xbd, 0xef, 0x26, 0x13, 0xc1, 0xdf, 0xa3, 0xbd }; // UINT(DXGI_FORMAT), default - DXGI_FORMAT_R32_UINT; to be set on ID3D11Buffer or ID3D11Texture2D objects when used natively
+#endif
     //----------------------------------------------------------------------------------------------
     // enumeration argument type
     //----------------------------------------------------------------------------------------------
@@ -81,6 +87,12 @@ namespace amf
         AMF_ARGUMENT_ACCESS_READ        = 0,
         AMF_ARGUMENT_ACCESS_WRITE       = 1,
         AMF_ARGUMENT_ACCESS_READWRITE   = 2,
+        AMF_ARGUMENT_ACCESS_READWRITE_MASK  = 0xFFFF,
+        //Sampler parameters
+        AMF_ARGUMENT_SAMPLER_POINT         = 0x00000000, // default
+        AMF_ARGUMENT_SAMPLER_LINEAR        = 0x10000000, 
+        AMF_ARGUMENT_SAMPLER_NORM_COORD    = 0x20000000, 
+        AMF_ARGUMENT_SAMPLER_MASK          = 0xFFFF0000,
     } AMF_ARGUMENT_ACCESS_TYPE;
     //----------------------------------------------------------------------------------------------
     // AMFComputeKernel interface
@@ -261,6 +273,8 @@ namespace amf
         virtual AMF_RESULT          AMF_STD_CALL RegisterKernelSourceFile(AMF_KERNEL_ID* pKernelID, const wchar_t* kernelid_name, const char* kernelName, const wchar_t* filepath, const char* options) = 0;
         virtual AMF_RESULT          AMF_STD_CALL RegisterKernelSource(AMF_KERNEL_ID* pKernelID, const wchar_t* kernelid_name, const char* kernelName, amf_size dataSize, const amf_uint8* data, const char* options) = 0;
         virtual AMF_RESULT          AMF_STD_CALL RegisterKernelBinary(AMF_KERNEL_ID* pKernelID, const wchar_t* kernelid_name, const char* kernelName, amf_size dataSize, const amf_uint8* data, const char* options) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL RegisterKernelSource1(AMF_MEMORY_TYPE eMemoryType, AMF_KERNEL_ID* pKernelID, const wchar_t* kernelid_name, const char* kernelName, amf_size dataSize, const amf_uint8* data, const char* options) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL RegisterKernelBinary1(AMF_MEMORY_TYPE eMemoryType, AMF_KERNEL_ID* pKernelID, const wchar_t* kernelid_name, const char* kernelName, amf_size dataSize, const amf_uint8* data, const char* options) = 0;
     };
 #else // #if defined(__cplusplus)
     typedef struct AMFPrograms AMFPrograms;
@@ -269,6 +283,8 @@ namespace amf
         AMF_RESULT          (AMF_STD_CALL *RegisterKernelSourceFile)(AMFPrograms* pThis, AMF_KERNEL_ID* pKernelID, const wchar_t* kernelid_name, const char* kernelName, const wchar_t* filepath, const char* options);
         AMF_RESULT          (AMF_STD_CALL *RegisterKernelSource)(AMFPrograms* pThis, AMF_KERNEL_ID* pKernelID, const wchar_t* kernelid_name, const char* kernelName, amf_size dataSize, const amf_uint8* data, const char* options);
         AMF_RESULT          (AMF_STD_CALL *RegisterKernelBinary)(AMFPrograms* pThis, AMF_KERNEL_ID* pKernelID, const wchar_t* kernelid_name, const char* kernelName, amf_size dataSize, const amf_uint8* data, const char* options);
+        AMF_RESULT          (AMF_STD_CALL *RegisterKernelSource1)(AMFPrograms* pThis, AMF_MEMORY_TYPE eMemoryType, AMF_KERNEL_ID* pKernelID, const wchar_t* kernelid_name, const char* kernelName, amf_size dataSize, const amf_uint8* data, const char* options);
+        AMF_RESULT          (AMF_STD_CALL *RegisterKernelBinary1)(AMFPrograms* pThis, AMF_MEMORY_TYPE eMemoryType, AMF_KERNEL_ID* pKernelID, const wchar_t* kernelid_name, const char* kernelName, amf_size dataSize, const amf_uint8* data, const char* options);
     } AMFProgramsVtbl;
 
     struct AMFPrograms
@@ -276,6 +292,7 @@ namespace amf
         const AMFProgramsVtbl *pVtbl;
     };
 #endif // #if defined(__cplusplus)
+
 
 #if defined(__cplusplus)
 } // namespace amf
