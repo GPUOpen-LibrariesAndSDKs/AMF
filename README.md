@@ -14,7 +14,7 @@ These features are a part of the initial 1.3 version of AMF.
 ### Prerequisites
 * Windows&reg; 7 (SP1 with the [Platform Update](https://msdn.microsoft.com/en-us/library/windows/desktop/jj863687.aspx)), Windows&reg; 8.1, or Windows&reg; 10
 * Visual Studio&reg; 2013, Visual Studio&reg; 2015 or Visual Studio&reg; 2017
-* Version 1.4.6: AMD Radeon Software Crimson Edition 17.7.2 (17.50.02) or newer
+* Version 1.4.6: AMD Radeon Software Crimson Edition 17.12.1 (17.50.02) or newer
 * Version 1.4.4: AMD Radeon Software Crimson Edition 17.7.2 (17.30.1041) or newer
 * Version 1.4: AMD Radeon Software Crimson Edition 17.1.1 (16.50.2611) or newer
 * Version 1.3: AMD Radeon Software Crimson Edition 16.7.3 (16.30.2311) or newer
