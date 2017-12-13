@@ -49,7 +49,8 @@ PlaybackPipelineBase::PlaybackPipelineBase() :
     m_iVideoHeight(0),
     m_bVideoPresenterDirectConnect(false),
     m_nFfmpegRefCount(0),
-    m_bURL(false)
+    m_bURL(false),
+    m_eDecoderFormat(amf::AMF_SURFACE_NV12)
 {
     g_AMFFactory.Init();
     SetParamDescription(PARAM_NAME_INPUT, ParamCommon,  L"Input file name", NULL);
@@ -454,7 +455,7 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoProcessor()
     m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_MEMORY_TYPE, m_pVideoPresenter->GetMemoryType());
     m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, m_pVideoPresenter->GetInputFormat());
 
-    m_pVideoProcessor->Init(amf::AMF_SURFACE_NV12, m_iVideoWidth, m_iVideoHeight);
+    m_pVideoProcessor->Init(m_eDecoderFormat, m_iVideoWidth, m_iVideoHeight);
     return AMF_OK;
 }
 
@@ -469,7 +470,12 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoDecoder(const wchar_t *pDecoderID, am
     m_pVideoDecoder->SetProperty(AMF_VIDEO_DECODER_EXTRADATA, amf::AMFVariant(pExtraData));
 
     m_pVideoDecoder->SetProperty(AMF_TIMESTAMP_MODE, amf_int64(AMF_TS_DECODE)); // our sample H264 parser provides decode order timestamps- change depend on demuxer
-    res = m_pVideoDecoder->Init(amf::AMF_SURFACE_NV12, m_iVideoWidth, m_iVideoHeight);
+    m_eDecoderFormat = amf::AMF_SURFACE_NV12;
+    if(std::wstring(pDecoderID) == AMFVideoDecoderHW_H265_MAIN10)
+    {
+        m_eDecoderFormat = amf::AMF_SURFACE_P010;
+    }
+    res = m_pVideoDecoder->Init(m_eDecoderFormat, m_iVideoWidth, m_iVideoHeight);
     CHECK_AMF_ERROR_RETURN(res, L"m_pVideoDecoder->Init("<< m_iVideoWidth << m_iVideoHeight << L") failed " << pDecoderID );
 
     return AMF_OK;

@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2017 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,57 +30,60 @@
 // THE SOFTWARE.
 //
 
-#include "CmdLogger.h"
-#include <iostream>
-#include <iomanip>
+#pragma once
 
-void ChangeTextColor(AMFLogLevel level)
+#include <atlbase.h>
+#include <mmdeviceapi.h>
+#include <Audioclient.h>
+#include "public/common/InterfaceImpl.h"
+
+
+namespace amf
 {
-#if !defined(METRO_APP)
-    HANDLE hCmd = GetStdHandle(STD_OUTPUT_HANDLE);
+	class AMFWASAPISourceImpl : public AMFInterfaceImpl<AMFInterface>
+	{
+	public:
+		AMFWASAPISourceImpl();
+		virtual ~AMFWASAPISourceImpl();
 
-	switch (level)
-    {
-    case AMFLogLevelInfo:
-        SetConsoleTextAttribute(hCmd, FOREGROUND_INTENSITY);
-        break;
-    case AMFLogLevelSuccess:
-        SetConsoleTextAttribute(hCmd, FOREGROUND_GREEN);
-        break;
-    case AMFLogLevelError:
-//        SetConsoleTextAttribute(hCmd, FOREGROUND_RED);
-        SetConsoleTextAttribute(hCmd, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
-        
-        break;
-    }
-#endif
-}
+		// Setup and teardown
+		AMF_RESULT Init(bool capture, amf_int32 activeDevice = 0);
+		AMF_RESULT Terminate();
 
-amf::AMFCriticalSection      s_std_out_cs;
+		// Capture start and done
+		int CaptureOnePacket(char** ppData, UINT& numSamples);
+		int CaptureOnePacketTry(char** ppData, UINT& numSamples);
+		int CaptureOnePacketDone(UINT numSamples);
 
-void WriteLog(const wchar_t* message, AMFLogLevel level)
-{
-#if 0
-    std::wstringstream messageStream;
+		// Getters
+		WAVEFORMATEX*	GetWaveFormat(){ return &m_waveFormat; };
+		UINT			GetFrameSize(){ return m_frameSize; };
+		UINT			GetSampleCount(){ return m_sampleCount; };
+		REFERENCE_TIME	GetFrameDuration(){ return m_duration; };
+		std::vector<std::string> 
+						GetDeviceList() { return m_deviceList; };
 
-    SYSTEMTIME st;
-    GetSystemTime(&st);
-    messageStream << std::setfill(L'0') 
-        << std::setw(2) << st.wHour 
-        << L":" << std::setw(2) << st.wMinute 
-        << L":" << std::setw(2) << st.wSecond 
-        << L"." << std::setw(3) << st.wMilliseconds 
-        << L" - " 
-        << message;
-    AMFLock lock(&s_std_out_cs);
-    ChangeTextColor(type);
-    wprintf(messageStream.str().c_str());
-    ChangeTextColor(AMFLogLevelInfo);
-#else
-    amf::AMFLock lock(&s_std_out_cs);
-    ChangeTextColor(level);
-    wprintf(message);
-    ChangeTextColor(AMFLogLevelInfo);
-#endif
-}
+		// Call to end thread loop
+		void SetAtEOF() { m_eof = true;  }
 
+	private:
+		AMF_RESULT InitCaptureMicrophone(amf_int32 activeDevice = 0);
+		AMF_RESULT InitCaptureDesktop();
+
+		AMF_RESULT CreateDeviceList();
+
+		mutable AMFCriticalSection				m_sync;
+
+		ATL::CComPtr<IMMDevice>					m_device;
+		ATL::CComPtr<IAudioClient>				m_client;
+		ATL::CComPtr<IAudioCaptureClient>		m_capture;
+		std::vector<std::string>				m_deviceList;
+		
+		WAVEFORMATEX							m_waveFormat;
+		amf_uint32								m_frameSize;
+		amf_uint32								m_sampleCount;
+		REFERENCE_TIME							m_duration;
+		bool									m_eof;
+	};
+	typedef AMFInterfacePtr_T<AMFWASAPISourceImpl>    AMFWASAPISourceImplPtr;
+} //namespace amf

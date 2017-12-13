@@ -69,6 +69,7 @@ public:
     virtual amf::AMF_SURFACE_FORMAT GetInputFormat() const{ return m_eInputFormat; }
     virtual AMF_RESULT              SetInputFormat(amf::AMF_SURFACE_FORMAT format);
     virtual DXGI_FORMAT             GetDXGIFormat() const;
+    virtual AMF_RESULT              Flush();
 
     virtual AMF_RESULT Init(amf_int32 width, amf_int32 height);
     virtual AMF_RESULT Terminate();

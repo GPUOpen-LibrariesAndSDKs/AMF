@@ -126,5 +126,6 @@ protected:
 
     AVSyncObject            m_AVSync;
     bool                    m_bURL;
+    amf::AMF_SURFACE_FORMAT m_eDecoderFormat;
 
 };

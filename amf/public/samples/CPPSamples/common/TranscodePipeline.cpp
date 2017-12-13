@@ -109,7 +109,8 @@ protected:
 
 
 TranscodePipeline::TranscodePipeline()
-    :m_pContext()
+    :m_pContext(),
+    m_eDecoderFormat(amf::AMF_SURFACE_NV12)
 {
 }
 
@@ -589,7 +590,7 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
         CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFVideoConverter << L") failed");
         m_pConverter2->SetProperty(AMF_VIDEO_CONVERTER_MEMORY_TYPE, m_pPresenter->GetMemoryType());
         m_pConverter2->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, m_pPresenter->GetInputFormat());
-        res = m_pConverter2->Init(amf::AMF_SURFACE_NV12, frame.width, frame.height);
+        res = m_pConverter2->Init(m_eDecoderFormat, frame.width, frame.height);
         CHECK_AMF_ERROR_RETURN(res, L"m_pConverter->Init() failed");
 
         Connect(PipelineElementPtr(new AMFComponentElement(m_pConverter2)), 0, m_pSplitter, 1, 4, CT_ThreadQueue);
@@ -707,7 +708,14 @@ AMF_RESULT  TranscodePipeline::InitVideoDecoder(const wchar_t *pDecoderID, amf_i
     m_pDecoder->SetProperty(AMF_VIDEO_DECODER_EXTRADATA, amf::AMFVariant(pExtraData));
 
     m_pDecoder->SetProperty(AMF_TIMESTAMP_MODE, amf_int64(AMF_TS_DECODE)); // our sample H264 parser provides decode order timestamps- change depend on demuxer
-    m_pDecoder->Init(amf::AMF_SURFACE_NV12, videoWidth, videoHeight);
+
+    m_eDecoderFormat = amf::AMF_SURFACE_NV12;
+    if(std::wstring(pDecoderID) == AMFVideoDecoderHW_H265_MAIN10)
+    {
+        m_eDecoderFormat = amf::AMF_SURFACE_P010;
+    }
+
+    m_pDecoder->Init(m_eDecoderFormat, videoWidth, videoHeight);
 
     return AMF_OK;
 }
@@ -722,7 +730,7 @@ AMF_RESULT  TranscodePipeline::InitVideoProcessor(amf::AMF_MEMORY_TYPE presenter
     m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, amf::AMF_SURFACE_NV12);
     m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, AMFConstructSize(outWidth, outHeight));
 
-    m_pConverter->Init(amf::AMF_SURFACE_NV12, inWidth, inHeight);
+    m_pConverter->Init(m_eDecoderFormat, inWidth, inHeight);
 
     return AMF_OK;
 }

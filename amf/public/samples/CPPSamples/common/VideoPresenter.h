@@ -58,6 +58,8 @@ public:
     virtual amf::AMF_MEMORY_TYPE    GetMemoryType() const = 0;
     virtual amf::AMF_SURFACE_FORMAT GetInputFormat() const = 0;
     virtual AMF_RESULT              SetInputFormat(amf::AMF_SURFACE_FORMAT format) = 0;
+    virtual AMF_RESULT              SetSubresourceIndex(amf_int32 index);
+    virtual amf_int32               GetSubresourceIndex();
 
     virtual AMF_RESULT              Init(amf_int32 width, amf_int32 height);
     virtual AMF_RESULT              Terminate();
@@ -125,4 +127,5 @@ protected:
     amf_pts                             m_currentTime;
     bool                                m_bDoWait;
     AVSyncObject*                       m_pAVSync;
+    amf_int32                           m_iSubresourceIndex;
 };

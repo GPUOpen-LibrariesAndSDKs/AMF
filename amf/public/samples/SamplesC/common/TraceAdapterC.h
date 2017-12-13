@@ -56,7 +56,7 @@ extern "C"
 }
 #endif
 
-#elif _MSC_VER <= 1910
+#elif _MSC_VER <= 1911
     #define snprintf _snprintf
     #define vscprintf _vscprintf
     #define vscwprintf _vscwprintf  //  Count chars without writing to string

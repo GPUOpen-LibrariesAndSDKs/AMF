@@ -111,7 +111,9 @@ VideoPresenterDX11::VideoPresenterDX11(HWND hwnd, amf::AMFContext* pContext) :
     m_uiAvailableBackBuffer(0),
     m_uiBackBufferCount(4),
     m_bResizeSwapChain(false),
-    m_eInputFormat(amf::AMF_SURFACE_BGRA)
+//    m_eInputFormat(amf::AMF_SURFACE_BGRA)
+    m_eInputFormat(amf::AMF_SURFACE_RGBA)
+//     m_eInputFormat(amf::AMF_SURFACE_RGBA_F16)
 {
     memset(&m_sourceVertexRect, 0, sizeof(m_sourceVertexRect));
 }
@@ -269,7 +271,7 @@ AMF_RESULT VideoPresenterDX11::BitBltRender(amf::AMF_FRAME_TYPE eFrameType, ID3D
 
     AMFRect  newSourceRect = *pSrcRect;
     AMFSize srcSize ={(amf_int32)srcDesc.Width, (amf_int32)srcDesc.Height};
-    if((srcDesc.BindFlags & D3D11_BIND_SHADER_RESOURCE) != D3D11_BIND_SHADER_RESOURCE)
+    if((srcDesc.BindFlags & D3D11_BIND_SHADER_RESOURCE) != D3D11_BIND_SHADER_RESOURCE || (srcDesc.MiscFlags & D3D11_RESOURCE_MISC_TEXTURECUBE))
     {
         CopySurface(eFrameType, pSrcSurface, pSrcRect);
         AMFRect  newSourceRect;
@@ -343,7 +345,20 @@ AMF_RESULT VideoPresenterDX11::CopySurface(amf::AMF_FRAME_TYPE eFrameType, ID3D1
         Desc.ArraySize = 1;
         Desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
         Desc.Usage = D3D11_USAGE_DEFAULT;
-        Desc.Format = srcDesc.Format;
+        switch(srcDesc.Format)
+        {
+        case DXGI_FORMAT_B8G8R8A8_TYPELESS:
+            Desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+            break;
+        case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+            Desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+            break;
+        default:
+            Desc.Format = srcDesc.Format;
+            break;
+        }
+
+
         Desc.Width = pSrcRect->Width();
         Desc.Height = pSrcRect->Height();
         Desc.MipLevels = 1;
@@ -373,7 +388,14 @@ AMF_RESULT VideoPresenterDX11::CopySurface(amf::AMF_FRAME_TYPE eFrameType, ID3D1
         spContext->CopySubresourceRegion(m_pCopyTexture_R,0,0,0,0,pSrcSurface,1,&box);
         break;
     default:
-        spContext->CopySubresourceRegion(m_pCopyTexture_L,0,0,0,0,pSrcSurface,0,&box);
+        if(srcDesc.MiscFlags & D3D11_RESOURCE_MISC_TEXTURECUBE)
+        {
+            spContext->CopySubresourceRegion(m_pCopyTexture_L,0,0,0,0,pSrcSurface,m_iSubresourceIndex,&box); // TODO get subresource property
+        }
+        else
+        {
+            spContext->CopySubresourceRegion(m_pCopyTexture_L,0,0,0,0,pSrcSurface,0,&box);
+        }
         break;
     }
     return AMF_OK;
@@ -976,7 +998,7 @@ void AMF_STD_CALL VideoPresenterDX11::OnSurfaceDataRelease(amf::AMFSurface* pSur
 
 AMF_RESULT              VideoPresenterDX11::SetInputFormat(amf::AMF_SURFACE_FORMAT format)
 {
-    if(format != amf::AMF_SURFACE_BGRA && format != amf::AMF_SURFACE_RGBA)
+    if(format != amf::AMF_SURFACE_BGRA && format != amf::AMF_SURFACE_RGBA  && format != amf::AMF_SURFACE_RGBA_F16)
     {
         return AMF_FAIL;
     }
@@ -994,6 +1016,15 @@ DXGI_FORMAT VideoPresenterDX11::GetDXGIFormat() const
     case amf::AMF_SURFACE_RGBA:
         format = DXGI_FORMAT_R8G8B8A8_UNORM;
         break;
+    case amf::AMF_SURFACE_RGBA_F16:
+        format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+        break;
     }
     return format;
+}
+
+AMF_RESULT              VideoPresenterDX11::Flush()
+{
+    m_uiAvailableBackBuffer = 0;
+    return BackBufferPresenter::Flush();
 }

@@ -81,12 +81,14 @@ AMFAudioEncoderFFMPEGImpl::AMFAudioEncoderFFMPEGImpl(AMFContext* pContext)
     m_pCompressedBuffer(NULL),
     m_iSamplesPacked(0),
     m_iFrameOffset(0),
-    m_iFirstFramePts(-1),
+    m_iFirstFramePts(-1LL),
+	m_iSamplesInPackaet(0),
     m_audioFrameSubmitCount(0),
     m_audioFrameQueryCount(0),
     m_inSampleFormat(AMFAF_UNKNOWN),
     m_iChannelCount(0),
-    m_iSampleRate(0)
+    m_iSampleRate(0),
+    m_PrevPts(-1LL)
 
 {
     AMFPrimitivePropertyInfoMapBegin
@@ -130,7 +132,9 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
     m_bDrained = true;
 
     // reset the first frame pts offset
-    m_iFirstFramePts = -1;
+    m_PrevPts = -1LL;
+    m_iFirstFramePts = -1LL;
+    m_iSamplesInPackaet = 0;
 
     // get the codec ID that was set
     amf_int64  codecID = AV_CODEC_ID_NONE;
@@ -165,8 +169,8 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
     m_pCodecContext->sample_fmt = GetFFMPEGAudioFormat(m_inSampleFormat);
 
     // set all default parameters
-    m_pCodecContext->strict_std_compliance = FF_COMPLIANCE_STRICT;
-//    m_pCodecContext->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
+    //m_pCodecContext->strict_std_compliance = FF_COMPLIANCE_STRICT;
+    m_pCodecContext->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
     
     m_pCodecContext->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
@@ -251,8 +255,10 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Terminate()
     m_pFrame.Release();
     m_iFrameOffset = 0;
     m_iFirstFramePts = -1;
-
+	
     m_iSamplesPacked=0;
+	m_iSamplesInPackaet = 0;
+	
     m_audioFrameSubmitCount = 0;
     m_audioFrameQueryCount = 0;
 
@@ -433,6 +439,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::QueryOutput(AMFData** ppData
         avFrame.nb_samples = samples;
         avFrame.format = m_pCodecContext->sample_fmt;
         avFrame.channel_layout = m_pCodecContext->channel_layout;
+        avFrame.channels = m_iChannelCount;
         avFrame.sample_rate = m_iSampleRate;
         avFrame.key_frame = 1;
         avFrame.pts = av_rescale_q(m_pFrame->GetPts(), AMF_TIME_BASE_Q, m_pCodecContext->time_base);
@@ -451,7 +458,6 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::QueryOutput(AMFData** ppData
         }
         avFrame.extended_data = avFrame.data;
 
-
         ret = avcodec_encode_audio2(m_pCodecContext, &avPacket, &avFrame, &pckt);
         m_iFrameOffset += samples;
         m_bDrained = false;
@@ -469,32 +475,43 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::QueryOutput(AMFData** ppData
         { 
             m_bDrained = true;
         }
+        else
+        {
+            amf_pts amfDuration = av_rescale_q(avPacket.duration, m_pCodecContext->time_base , AMF_TIME_BASE_Q);
+            samples = amfDuration * m_pCodecContext->sample_rate / AMF_SECOND;
+        }
     }
-    if (ret == 0 && pckt)
+    if (ret == 0)
     {
-       // allocate and fill output buffer
-       AMFBufferPtr pBufferOut;
-       AMF_RESULT err = m_pContext->AllocBuffer(AMF_MEMORY_HOST, avPacket.size, &pBufferOut);
-       AMF_RETURN_IF_FAILED(err, L"GetOutput() - AllocBuffer failed");
+        m_iSamplesInPackaet += samples;
 
-       amf_uint8 *pMemOut=static_cast<uint8_t*>(pBufferOut->GetNative());
-       memcpy(pMemOut, m_pCompressedBuffer, avPacket.size);
+        if (pckt)
+        {
+            // allocate and fill output buffer
+            AMFBufferPtr pBufferOut;
+            AMF_RESULT err = m_pContext->AllocBuffer(AMF_MEMORY_HOST, avPacket.size, &pBufferOut);
+            AMF_RETURN_IF_FAILED(err, L"GetOutput() - AllocBuffer failed");
 
-       // do PTS -always 100 nanos
-       amf_pts iSamplesPacked=(amf_pts)iFrameSizeBytes/iSampleSize/m_pCodecContext->channels;
+            amf_uint8 *pMemOut = static_cast<uint8_t*>(pBufferOut->GetNative());
+            memcpy(pMemOut, m_pCompressedBuffer, avPacket.size);
 
-       amf_pts pts=(m_iSamplesPacked*AMF_SECOND+m_pCodecContext->sample_rate/2)/m_pCodecContext->sample_rate;
-       amf_pts duration=(iSamplesPacked*AMF_SECOND+m_pCodecContext->sample_rate/2)/m_pCodecContext->sample_rate;
+            // do PTS -always 100 nanos
+            amf_pts pts = m_iSamplesPacked * AMF_SECOND / m_pCodecContext->sample_rate;
+            amf_pts duration = m_iSamplesInPackaet * AMF_SECOND / m_pCodecContext->sample_rate;
 
-       pBufferOut->SetPts(m_iFirstFramePts + pts);
-       m_iSamplesPacked+=iSamplesPacked;
+            pBufferOut->SetPts(m_iFirstFramePts + pts);
+            m_PrevPts = m_iFirstFramePts + pts;
+            m_iSamplesPacked += m_iSamplesInPackaet;
 
-       pBufferOut->SetDuration(duration); 
+            pBufferOut->SetDuration(duration);
 
-       // prepare output
-       *ppData=pBufferOut;
-       (*ppData)->Acquire();
-       m_audioFrameQueryCount++;
+            // prepare output
+            *ppData = pBufferOut;
+            (*ppData)->Acquire();
+            m_audioFrameQueryCount++;
+
+            m_iSamplesInPackaet = 0;
+        }
     }
 
     // if we have more output to be consumed than a frame, we should consume it

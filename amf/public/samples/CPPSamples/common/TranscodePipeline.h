@@ -116,4 +116,5 @@ protected:
     SplitterPtr                     m_pSplitter;
     amf::AMFComponentPtr            m_pConverter2;
     BackBufferPresenterPtr          m_pPresenter;
+    amf::AMF_SURFACE_FORMAT         m_eDecoderFormat;
 };

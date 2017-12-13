@@ -301,6 +301,8 @@ void QueryDecoderCaps(amf::AMFContext* pContext)
     QueryDecoderForCodec(AMFVideoDecoderUVD_MPEG4, pContext);
     QueryDecoderForCodec(AMFVideoDecoderUVD_H264_AVC, pContext);
     QueryDecoderForCodec(AMFVideoDecoderUVD_MPEG2, pContext);
+    QueryDecoderForCodec(AMFVideoDecoderHW_H265_HEVC, pContext);
+    
 }
 
 bool QueryEncoderCaps(amf::AMFContext* pContext)

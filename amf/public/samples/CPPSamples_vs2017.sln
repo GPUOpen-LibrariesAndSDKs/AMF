@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.16
+VisualStudioVersion = 15.0.27004.2005
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CapabilityManager", "CPPSamples\CapabilityManager\CapabilityManager_VS2017.vcxproj", "{6C3B9FF8-624F-4D7F-89E1-2B4AFFAAA873}"
 EndProject
@@ -22,6 +22,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleEncoderC", "SamplesC\SimpleEncoderC\SimpleEncoderC_VS2017.vcxproj", "{74118461-A742-490F-BB54-86EB2509921C}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ComponentsFFMPEG", "..\proj\vs2017\ComponentsFFMPEG\ComponentsFFMPEG.vcxproj", "{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DVR", "CPPSamples\DVR\DVR_VS2017.vcxproj", "{7E7270B4-B894-4BA2-9E89-621276C6BF28}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -111,8 +113,19 @@ Global
 		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}.Release|Win32.Build.0 = Release|Win32
 		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}.Release|x64.ActiveCfg = Release|x64
 		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}.Release|x64.Build.0 = Release|x64
+		{7E7270B4-B894-4BA2-9E89-621276C6BF28}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7E7270B4-B894-4BA2-9E89-621276C6BF28}.Debug|Win32.Build.0 = Debug|Win32
+		{7E7270B4-B894-4BA2-9E89-621276C6BF28}.Debug|x64.ActiveCfg = Debug|x64
+		{7E7270B4-B894-4BA2-9E89-621276C6BF28}.Debug|x64.Build.0 = Debug|x64
+		{7E7270B4-B894-4BA2-9E89-621276C6BF28}.Release|Win32.ActiveCfg = Release|Win32
+		{7E7270B4-B894-4BA2-9E89-621276C6BF28}.Release|Win32.Build.0 = Release|Win32
+		{7E7270B4-B894-4BA2-9E89-621276C6BF28}.Release|x64.ActiveCfg = Release|x64
+		{7E7270B4-B894-4BA2-9E89-621276C6BF28}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {AFDAA502-2943-4951-9827-9FC8A7DB90C5}
 	EndGlobalSection
 EndGlobal

@@ -1,0 +1,190 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="windows">
+      <UniqueIdentifier>{a759cb18-43f6-4ba0-ad8e-7d3ba7584e5d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public">
+      <UniqueIdentifier>{9b70fd2e-55d6-40f8-b645-1a501515ee7f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\common">
+      <UniqueIdentifier>{d6e711f6-3e9f-44c1-867f-20a05ae2db2d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\samples">
+      <UniqueIdentifier>{a3670b80-2575-47ec-8832-1df4a1994626}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\samples\CPPSamples">
+      <UniqueIdentifier>{9962d822-323e-4c7f-b547-94ad4fd1e2e8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\samples\CPPSamples\common">
+      <UniqueIdentifier>{4a16ac1e-8c3d-4721-b100-be812db8fd5a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\components">
+      <UniqueIdentifier>{b6fedaa0-c282-4e32-9f74-0b94ae389749}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DVR.cpp">
+      <Filter>windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\AMFFactory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\AMFSTL.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\Thread.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\TraceAdapter.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\Windows\ThreadWindows.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\ParametersStorage.cpp">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\Pipeline.cpp">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\src\components\DisplayCapture\DisplayCaptureImpl.cpp">
+      <Filter>public\components</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\DisplayDvrPipeline.cpp">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\PropertyStorageExImpl.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\DeviceDX11.cpp">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\EncoderParamsAVC.cpp">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\EncoderParamsHEVC.cpp">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\DeviceDX9.cpp">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\CmdLogger.cpp">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\src\components\AudioCapture\AudioCaptureImpl.cpp">
+      <Filter>public\components</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\src\components\AudioCapture\WASAPISource.cpp">
+      <Filter>public\components</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\src\components\DisplayCapture\DDAPISource.cpp">
+      <Filter>public\components</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\CurrentTimeImpl.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\DeviceOpenCL.cpp">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\OpenCLLoader.cpp">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DVR.h">
+      <Filter>windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\AMFFactory.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\AMFSTL.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\Thread.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\TraceAdapter.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\ParametersStorage.h">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\Pipeline.h">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\PipelineElement.h">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\src\components\DisplayCapture\DisplayCaptureImpl.h">
+      <Filter>public\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\components\DisplayCapture.h">
+      <Filter>public\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\DisplayDvrPipeline.h">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\PropertyStorageExImpl.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\PropertyStorageImpl.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\DeviceDX11.h">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\EncoderParamsAVC.h">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\EncoderParamsHEVC.h">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\DeviceDX9.h">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\CmdLogger.h">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\components\AudioCapture.h">
+      <Filter>public\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\src\components\AudioCapture\AudioCaptureImpl.h">
+      <Filter>public\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\src\components\AudioCapture\WASAPISource.h">
+      <Filter>public\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\src\components\DisplayCapture\DDAPISource.h">
+      <Filter>public\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\CurrentTime.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\CurrentTimeImpl.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\components\DisplayCapture\CaptureStats.h">
+      <Filter>public\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\OpenCLLoader.h">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="DVR.rc">
+      <Filter>windows</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="DVR.ico">
+      <Filter>windows</Filter>
+    </Image>
+  </ItemGroup>
+</Project>

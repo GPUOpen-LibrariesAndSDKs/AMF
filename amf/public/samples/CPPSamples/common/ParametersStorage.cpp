@@ -37,6 +37,7 @@
 #include "CmdLogger.h"
 #include "public/include/components/VideoEncoderVCE.h"
 #include "public/include/components/VideoEncoderHEVC.h"
+#include "public/include/components/VideoConverter.h"
 
 
 std::wstring AddIndexToPath(const std::wstring& path, amf_int32 index)
@@ -283,12 +284,35 @@ AMF_RESULT ParamConverterFormat(const std::wstring& value, amf::AMFVariant& valu
         paramValue =  amf::AMF_SURFACE_RGBA;
     } else if(uppValue == L"GRAY8" || uppValue == L"5") {
         paramValue =  amf::AMF_SURFACE_GRAY8;
-    } else if(uppValue == L"YUV420P" || uppValue == L"6") {
+	} else if (uppValue == L"YUV420P" || uppValue == L"420P" || uppValue == L"6") {
         paramValue =  amf::AMF_SURFACE_YUV420P;
     } else if(uppValue == L"U8V8" || uppValue == L"7") {
         paramValue =  amf::AMF_SURFACE_U8V8;
+    } else if(uppValue == L"P010" || uppValue == L"10") {
+        paramValue =  amf::AMF_SURFACE_P010;
+    } else if(uppValue == L"RGBAF16" || uppValue == L"RGBA_F16" || uppValue == L"11") {
+        paramValue =  amf::AMF_SURFACE_RGBA_F16;
     } else {
         LOG_ERROR(L"AMF_SURFACE_FORMAT hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+AMF_RESULT ParamConverterColorProfile(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM paramValue = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN;
+    std::wstring uppValue = toUpper(value);
+    if(uppValue == L"601" || uppValue == L"0"){
+        paramValue =  AMF_VIDEO_CONVERTER_COLOR_PROFILE_601;
+    } else if(uppValue == L"709" || uppValue == L"1") {
+        paramValue =  AMF_VIDEO_CONVERTER_COLOR_PROFILE_709;
+    } else if(uppValue == L"2020" || uppValue == L"2") {
+        paramValue =  AMF_VIDEO_CONVERTER_COLOR_PROFILE_2020;
+    } else if(uppValue == L"JPEG" || uppValue == L"3") {
+        paramValue =  AMF_VIDEO_CONVERTER_COLOR_PROFILE_JPEG;
+    } else {
+        LOG_ERROR(L"AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM hasn't \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
     }
     valueOut = amf_int64(paramValue);

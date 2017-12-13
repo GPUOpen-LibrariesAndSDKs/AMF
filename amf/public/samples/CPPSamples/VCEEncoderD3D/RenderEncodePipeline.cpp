@@ -384,6 +384,17 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
         displayDeviceName = m_deviceDX11.GetDisplayDeviceName();
         res = m_pContext->InitDX11(m_deviceDX11.GetDevice());
         CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX11() failed");
+
+		D3D_FEATURE_LEVEL dxLevel = m_deviceDX11.GetDevice()->GetFeatureLevel();
+		// En/Decoder supports starts 11.1
+		if (dxLevel != D3D_FEATURE_LEVEL_11_1)
+		{
+			res = m_deviceDX9.Init(deviceEX, adapterID, bFullScreen, width, height);
+			CHECK_AMF_ERROR_RETURN(res, L"m_deviceDX9.Init() failed");
+			displayDeviceName = m_deviceDX9.GetDisplayDeviceName();
+			res = m_pContext->InitDX9(m_deviceDX9.GetDevice());
+			CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX9() failed");
+		}
     }
 
     if(renderMemoryType == amf::AMF_MEMORY_OPENGL || secondaryMemoryType == amf::AMF_MEMORY_OPENGL)

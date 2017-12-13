@@ -47,6 +47,7 @@
 
 using namespace amf;
 
+#define AMF_CODEC_H265MAIN10      1005
 
 
 static const AMFEnumDescriptionEntry VIDEO_CODEC_IDS_ENUM[] =
@@ -61,6 +62,7 @@ static const AMFEnumDescriptionEntry VIDEO_CODEC_IDS_ENUM[] =
     { AV_CODEC_ID_MJPEG, AMFVideoDecoderUVD_MJPEG },
 #if defined(ENABLE_H265)
     { AV_CODEC_ID_HEVC, AMFVideoDecoderHW_H265_HEVC },
+    { AMF_CODEC_H265MAIN10, AMFVideoDecoderHW_H265_MAIN10},
 #endif
     { 0, 0 }
 };
@@ -74,7 +76,7 @@ static const AMFEnumDescriptionEntry AMF_OUTPUT_FORMATS_ENUM[] =
     { AMF_SURFACE_NV12, L"NV12" },
     { AMF_SURFACE_YUV420P, L"YUV420P" },
     { AMF_SURFACE_YV12, L"YV12" },
-
+    { AMF_SURFACE_P010, L"P010" },
     { AMF_SURFACE_UNKNOWN, 0 }  // This is end of description mark
 };
 
@@ -125,6 +127,9 @@ static const sFormatMap[] =
     FormatMap(AV_PIX_FMT_YUV420P, AMF_SURFACE_YV12),
 
     FormatMap(AV_PIX_FMT_YUYV422, AMF_SURFACE_YUY2),
+    FormatMap(AV_PIX_FMT_P010, AMF_SURFACE_P010),
+    FormatMap(AV_PIX_FMT_YUV420P10, AMF_SURFACE_P010), //hack:: FFmpeg prefer  YUV420P10 but AMF decodes to P010
+
     //FormatMap(PIX_FMT_YUV422P, AMF_SURFACE_YUV422P),
     //FormatMap(PIX_FMT_YUVJ422P, AMF_SURFACE_YUV422P)
 };
@@ -297,6 +302,7 @@ AMFFileDemuxerFFMPEGImpl::AMFVideoOutputDemuxerImpl::AMFVideoOutputDemuxerImpl(A
         codecID = pHost->m_eVideoCodecID;
     }
 
+
     // calculate pixel aspect ratio
     double  pixelAspectRatio = 1.0;
     if (ist->sample_aspect_ratio.den != 0 && ist->sample_aspect_ratio.num != 0)
@@ -327,6 +333,11 @@ AMFFileDemuxerFFMPEGImpl::AMFVideoOutputDemuxerImpl::AMFVideoOutputDemuxerImpl(A
             surfaceFormat = sFormatMap[i].amfFormat;
             break;
         }
+    }
+
+    if(surfaceFormat == AMF_SURFACE_P010 && codecID == AV_CODEC_ID_HEVC)
+    {
+         codecID = AMF_CODEC_H265MAIN10;
     }
 
     AMFSize frame = AMFConstructSize(ist->codec->width, ist->codec->height);

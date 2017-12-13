@@ -30,6 +30,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ComponentsFFMPEG", "..\proj
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleEncoderC", "SamplesC\SimpleEncoderC\SimpleEncoderC_VS2015.vcxproj", "{74118461-A742-490F-BB54-86EB2509921C}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DVR", "CPPSamples\DVR\DVR_VS2015.vcxproj", "{7E7270B4-B894-4BA2-9E89-621276C6BF28}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -118,6 +120,14 @@ Global
 		{74118461-A742-490F-BB54-86EB2509921C}.Release|Win32.Build.0 = Release|Win32
 		{74118461-A742-490F-BB54-86EB2509921C}.Release|x64.ActiveCfg = Release|x64
 		{74118461-A742-490F-BB54-86EB2509921C}.Release|x64.Build.0 = Release|x64
+		{7E7270B4-B894-4BA2-9E89-621276C6BF28}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7E7270B4-B894-4BA2-9E89-621276C6BF28}.Debug|Win32.Build.0 = Debug|Win32
+		{7E7270B4-B894-4BA2-9E89-621276C6BF28}.Debug|x64.ActiveCfg = Debug|x64
+		{7E7270B4-B894-4BA2-9E89-621276C6BF28}.Debug|x64.Build.0 = Debug|x64
+		{7E7270B4-B894-4BA2-9E89-621276C6BF28}.Release|Win32.ActiveCfg = Release|Win32
+		{7E7270B4-B894-4BA2-9E89-621276C6BF28}.Release|Win32.Build.0 = Release|Win32
+		{7E7270B4-B894-4BA2-9E89-621276C6BF28}.Release|x64.ActiveCfg = Release|x64
+		{7E7270B4-B894-4BA2-9E89-621276C6BF28}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

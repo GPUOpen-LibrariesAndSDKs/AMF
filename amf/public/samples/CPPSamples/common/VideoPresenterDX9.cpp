@@ -306,3 +306,9 @@ void AMF_STD_CALL VideoPresenterDX9::OnSurfaceDataRelease(amf::AMFSurface* pSurf
         }
     }
 }
+
+AMF_RESULT     VideoPresenterDX9::Flush()
+{
+    m_uiAvailableBackBuffer = 0;
+    return BackBufferPresenter::Flush();
+}

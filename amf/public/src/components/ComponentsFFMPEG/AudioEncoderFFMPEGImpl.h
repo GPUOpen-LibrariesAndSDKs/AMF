@@ -101,6 +101,7 @@ namespace amf
 
         amf_uint8*              m_pCompressedBuffer;
         amf_pts                 m_iSamplesPacked;
+        amf_pts                 m_iSamplesInPackaet;
         bool                    m_bEof;
         bool                    m_bDrained;
 
@@ -110,6 +111,8 @@ namespace amf
 
         amf_int64               m_audioFrameSubmitCount;
         amf_int64               m_audioFrameQueryCount;
+
+        amf_pts                 m_PrevPts;
         
         AMFAudioEncoderFFMPEGImpl(const AMFAudioEncoderFFMPEGImpl&);
         AMFAudioEncoderFFMPEGImpl& operator=(const AMFAudioEncoderFFMPEGImpl&);

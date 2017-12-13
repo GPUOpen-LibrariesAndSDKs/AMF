@@ -68,7 +68,22 @@ public:
     virtual void                    SetFrameRate(double fps);
     virtual double                  GetFrameRate()  const;
     virtual void                    GetFrameRate(AMFRate *frameRate) const;
-    virtual const wchar_t*          GetCodecComponent() {return AMFVideoDecoderHW_H265_HEVC;}
+    virtual const wchar_t*          GetCodecComponent() 
+    {
+        if(m_SpsMap.size() != 0)
+        {
+            const SpsData &sps = m_SpsMap.cbegin()->second;
+            switch(sps.bit_depth_luma_minus8 + 8)
+            {
+            case 8:
+                return AMFVideoDecoderHW_H265_HEVC;
+            case 10:
+                return AMFVideoDecoderHW_H265_MAIN10;
+            }
+        }
+
+        return AMFVideoDecoderHW_H265_HEVC;
+    }
 
     virtual AMF_RESULT              QueryOutput(amf::AMFData** ppData);
     virtual AMF_RESULT              ReInit();

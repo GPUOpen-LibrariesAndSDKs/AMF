@@ -62,6 +62,7 @@ AMF_RESULT ParamConverterVideoPresenter(const std::wstring& value, amf::AMFVaria
 AMF_RESULT ParamConverterMemoryType(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterFormat(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterCodec(const std::wstring& value, amf::AMFVariant& valueOut);
+AMF_RESULT ParamConverterColorProfile(const std::wstring& value, amf::AMFVariant& valueOut);
 
 std::wstring AddIndexToPath(const std::wstring& path, amf_int32 index);
 
@@ -76,6 +77,7 @@ class ParametersStorage
 {
 public:
     ParametersStorage();
+    virtual ~ParametersStorage() {}
 
     AMF_RESULT  SetParam(const wchar_t* name, amf::AMFVariantStruct value);
     AMF_RESULT  GetParam(const wchar_t* name, amf::AMFVariantStruct* value) const;

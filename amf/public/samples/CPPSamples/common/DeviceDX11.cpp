@@ -66,8 +66,8 @@ AMF_RESULT DeviceDX11::Init(amf_uint32 adapterID, bool onlyWithOutputs)
     //convert logical id to real index
     adapterID = m_adaptersIndexes[adapterID];
 
-    ATL::CComPtr<IDXGIFactory> pFactory;
-    hr = CreateDXGIFactory(__uuidof(IDXGIFactory), (void **)&pFactory);
+    ATL::CComPtr<IDXGIFactory1> pFactory;
+    hr = CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void **)&pFactory);
     if(FAILED(hr))
     {
         LOG_ERROR("CreateDXGIFactory failed. Error: " << std::hex << hr);

@@ -42,7 +42,8 @@ VideoPresenter::VideoPresenter() :
     m_dLastFPS(0),
     m_currentTime(0),
     m_bDoWait(true),
-    m_pAVSync(NULL)
+    m_pAVSync(NULL),
+    m_iSubresourceIndex(0)
 {
     amf_increase_timer_precision();
     memset(&m_InputFrameSize, 0, sizeof(m_InputFrameSize));
@@ -250,3 +251,13 @@ AMF_RESULT VideoPresenter::Resume()
     return AMF_OK;
 }
 
+AMF_RESULT              VideoPresenter::SetSubresourceIndex(amf_int32 index)
+{
+    m_iSubresourceIndex = index;
+    return AMF_OK;
+}
+
+amf_int32               VideoPresenter::GetSubresourceIndex()
+{
+    return m_iSubresourceIndex;
+}
