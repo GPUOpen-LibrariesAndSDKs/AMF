@@ -30,8 +30,8 @@
 // THE SOFTWARE.
 //
 
-#ifndef __AMFSTL_h__
-#define __AMFSTL_h__
+#ifndef AMF_AMFSTL_h
+#define AMF_AMFSTL_h
 #pragma once
 
 #if defined(__GNUC__)
@@ -309,5 +309,5 @@ namespace amf
     #pragma GCC diagnostic pop
 #endif
 
-#endif // __AMFSTL_h__
+#endif // AMF_AMFSTL_h
 

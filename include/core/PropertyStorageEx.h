@@ -30,8 +30,8 @@
 // THE SOFTWARE.
 //
 
-#ifndef __AMFPropertyStorageEx_h__
-#define __AMFPropertyStorageEx_h__
+#ifndef AMF_PropertyStorageEx_h
+#define AMF_PropertyStorageEx_h
 #pragma once
 
 #include "PropertyStorage.h"
@@ -194,4 +194,4 @@ namespace amf
 #endif
 
 
-#endif //#ifndef __AMFPropertyStorageEx_h__
+#endif //#ifndef AMF_PropertyStorageEx_h

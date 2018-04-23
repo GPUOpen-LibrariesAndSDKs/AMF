@@ -30,8 +30,8 @@
 // THE SOFTWARE.
 //
 
-#ifndef __AMFTrace_h__
-#define __AMFTrace_h__
+#ifndef AMF_Trace_h
+#define AMF_Trace_h
 #pragma once
 
 #include "Platform.h"
@@ -180,4 +180,4 @@ namespace amf
 #endif
 
 
-#endif // __AMFTrace_h__
+#endif // AMF_Trace_h

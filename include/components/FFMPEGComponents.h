@@ -34,8 +34,8 @@
 // FFMPEG components definitions
 //-------------------------------------------------------------------------------------------------
  
-#ifndef __AMFComponentsFFMPEG_h__
-#define __AMFComponentsFFMPEG_h__
+#ifndef AMF_ComponentsFFMPEG_h
+#define AMF_ComponentsFFMPEG_h
 
 #pragma once
 
@@ -47,4 +47,4 @@
 #endif
 
 
-#endif //#ifndef __AMFComponentsFFMPEG_h__
+#endif //#ifndef AMF_ComponentsFFMPEG_h

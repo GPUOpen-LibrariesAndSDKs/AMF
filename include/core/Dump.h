@@ -30,8 +30,8 @@
 // THE SOFTWARE.
 //
 
-#ifndef __AMFDump_h__
-#define __AMFDump_h__
+#ifndef AMF_Dump_h
+#define AMF_Dump_h
 #pragma once
 
 #include "Platform.h"
@@ -109,4 +109,4 @@ namespace amf
 } // namespace
 #endif
 
-#endif //__AMFDump_h__
+#endif //AMF_Dump_h

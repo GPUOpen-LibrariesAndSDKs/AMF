@@ -30,8 +30,8 @@
 // THE SOFTWARE.
 //
 
-#ifndef __AMFResult_h__
-#define __AMFResult_h__
+#ifndef AMF_Result_h
+#define AMF_Result_h
 #pragma once
 
 #include "Platform.h"
@@ -124,4 +124,4 @@ typedef enum AMF_RESULT
     AMF_NEED_MORE_INPUT                         ,//returned by AMFComponent::SubmitInput did not produce buffer
 } AMF_RESULT;
 
-#endif //#ifndef __AMFResult_h__
+#endif //#ifndef AMF_Result_h

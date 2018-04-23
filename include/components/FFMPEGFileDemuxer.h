@@ -33,20 +33,12 @@
 //-------------------------------------------------------------------------------------------------
 // DemuxerFFMPEG  interface declaration
 //-------------------------------------------------------------------------------------------------
-#ifndef __AMFFileDemuxerFFMPEG_h__
-#define __AMFFileDemuxerFFMPEG_h__
+#ifndef AMF_FileDemuxerFFMPEG_h
+#define AMF_FileDemuxerFFMPEG_h
 
 #pragma once
 
 #define FFMPEG_DEMUXER L"DemuxerFFMPEG"
-
-enum FFMPEG_DEMUXER_STREAM_TYPE_ENUM
-{
-    DEMUXER_UNKNOWN =   -1,
-    DEMUXER_VIDEO =     0,
-    DEMUXER_AUDIO =     1,
-    DEMUXER_DATA =      2,
-};
 
 
 // component properties
@@ -60,29 +52,14 @@ enum FFMPEG_DEMUXER_STREAM_TYPE_ENUM
 #define FFMPEG_DEMUXER_INDIVIDUAL_STREAM_MODE   L"StreamMode"               // bool (default = true)
 #define FFMPEG_DEMUXER_LISTEN                   L"Listen"                   // bool (default = false)
 
-//common stream properties
-#define FFMPEG_DEMUXER_STREAM_TYPE              L"StreamType"               // amf_int64( FFMPEG_DEMUXER_STREAM_TYPE_ENUM )
-#define FFMPEG_DEMUXER_STREAM_ENABLED           L"Enabled"                  // bool( default = false )
-#define FFMPEG_DEMUXER_CODEC_ID                 L"CodecID"                  // amf_int64 (default = AV_CODEC_ID_NONE) - FFMPEG codec ID
-#define FFMPEG_DEMUXER_BIT_RATE                 L"BitRate"                  // amf_int64 (default = codec->bit_rate)
-#define FFMPEG_DEMUXER_EXTRA_DATA               L"ExtraData"                // interface to AMFBuffer - as is from FFMPEG
+// for common, video and audio properties see Component.h
+
 
 // video stream properties
-#define FFMPEG_DEMUXER_VIDEO_DECODER_ID         L"DecoderID"                // string (default - name of the codec ID - see VideoDecoderUVD.h)
-#define FFMPEG_DEMUXER_VIDEO_FRAME_RATE         L"FrameRate"                // AMFRate; default - from file 
-#define FFMPEG_DEMUXER_VIDEO_FRAMESIZE          L"FrameSize"                // AMFSize; default = 0,0; Frame size
-#define FFMPEG_DEMUXER_VIDEO_SURFACE_FORMAT     L"SurfaceFormat"            // amf_int64( AMF_OUTPUT_FORMATS_ENUM )
 #define FFMPEG_DEMUXER_VIDEO_PIXEL_ASPECT_RATIO L"PixelAspectRatio"         // double (default = calculated)
 
-// audio stream properties
-#define FFMPEG_DEMUXER_AUDIO_SAMPLE_RATE        L"SampleRate"               // amf_int64 (default = codec->sample_rate)
-#define FFMPEG_DEMUXER_AUDIO_CHANNELS           L"Channels"                 // amf_int64 (default = codec->channels)
-#define FFMPEG_DEMUXER_AUDIO_SAMPLE_FORMAT      L"SampleFormat"             // amf_int64( AMF_AUDIO_FORMAT )
-#define FFMPEG_DEMUXER_AUDIO_CHANNEL_LAYOUT     L"ChannelLayout"            // amf_int64 (default = codec->channel_layout)
-#define FFMPEG_DEMUXER_AUDIO_BLOCK_ALIGN        L"BlockAlign"               // amf_int64 (default = codec->block_align)
-#define FFMPEG_DEMUXER_AUDIO_FRAME_SIZE         L"FrameSize"                // amf_int64 (default = codec->frame_size)
 
 // buffer properties
-#define FFMPEG_DEMUXER_BUFFER_TYPE              L"BufferType"               // amf_int64 ( FFMPEG_DEMUXER_STREAM_TYPE_ENUM )
+#define FFMPEG_DEMUXER_BUFFER_TYPE              L"BufferType"               // amf_int64 ( AMF_STREAM_TYPE_ENUM )
 #define FFMPEG_DEMUXER_BUFFER_STREAM_INDEX      L"BufferStreamIndexType"    // amf_int64 ( stream index )
-#endif //#ifndef __AMFFileDemuxerFFMPEG_h__
+#endif //#ifndef AMF_FileDemuxerFFMPEG_h

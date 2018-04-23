@@ -30,8 +30,8 @@
 // THE SOFTWARE.
 //
 
-#ifndef __AMFVariant_h__
-#define __AMFVariant_h__
+#ifndef AMF_Variant_h
+#define AMF_Variant_h
 #pragma once
 #if defined(_MSC_VER)
     #pragma warning(disable: 4996)
@@ -1704,4 +1704,4 @@ namespace amf
 } //namespace amf
 #endif
 
-#endif //#ifndef __AMFVariant_h__
+#endif //#ifndef AMF_Variant_h

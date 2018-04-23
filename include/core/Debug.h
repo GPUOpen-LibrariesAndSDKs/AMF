@@ -30,8 +30,8 @@
 // THE SOFTWARE.
 //
 
-#ifndef __AMFDebug_h__
-#define __AMFDebug_h__
+#ifndef AMF_Debug_h
+#define AMF_Debug_h
 #pragma once
 
 #include "Platform.h"
@@ -75,4 +75,4 @@ namespace amf
 }
 #endif
 
-#endif // __AMFDebug_h__
+#endif // AMF_Debug_h

@@ -33,8 +33,8 @@
 //-------------------------------------------------------------------------------------------------
 // AudioDecoderFFMPEG  interface declaration
 //-------------------------------------------------------------------------------------------------
-#ifndef __AMFAudioDecoderFFMPEG_h__
-#define __AMFAudioDecoderFFMPEG_h__
+#ifndef AMF_AudioDecoderFFMPEG_h
+#define AMF_AudioDecoderFFMPEG_h
 
 #pragma once
 
@@ -65,4 +65,4 @@
 
 
 
-#endif //#ifndef __AMFAudioDecoderFFMPEG_h__
+#endif //#ifndef AMF_AudioDecoderFFMPEG_h

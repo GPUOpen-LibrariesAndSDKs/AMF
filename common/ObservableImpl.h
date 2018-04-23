@@ -36,8 +36,8 @@
  * @brief AMFObservableImpl common template declaration
  ***************************************************************************************************
  */
-#ifndef _OBSERVABLEIMPL_H_
-#define _OBSERVABLEIMPL_H_
+#ifndef AMF_ObservableImpl_h
+#define AMF_ObservableImpl_h
 #pragma once
 
 #include "Thread.h"
@@ -136,4 +136,4 @@ namespace amf
         AMFCriticalSection m_sc;
     };
 }
-#endif //_OBSERVABLEIMPL_H_
+#endif //AMF_ObservableImpl_h

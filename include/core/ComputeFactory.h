@@ -30,8 +30,8 @@
 // THE SOFTWARE.
 //
 
-#ifndef __AMFComputeCaps_h__
-#define __AMFComputeCaps_h__
+#ifndef AMF_ComputeFactory_h
+#define AMF_ComputeFactory_h
 #pragma once
 
 #include "Compute.h"
@@ -143,4 +143,5 @@ namespace amf
 #if defined(__cplusplus)
 }; // namespace amf
 #endif
-#endif // __AMFComputeCaps_h__
+
+#endif // AMF_ComputeFactory_h

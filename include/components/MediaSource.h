@@ -30,8 +30,8 @@
 // THE SOFTWARE.
 //
 
-#ifndef __AMFMediaSource_h__
-#define __AMFMediaSource_h__
+#ifndef AMF_MediaSource_h
+#define AMF_MediaSource_h
 
 #pragma once
 
@@ -76,4 +76,4 @@ namespace amf
     typedef AMFInterfacePtr_T<AMFMediaSource> AMFMediaSourcePtr;
 } //namespace amf
 
-#endif //#ifndef __AMFMediaSource_h__
+#endif //#ifndef AMF_MediaSource_h

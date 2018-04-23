@@ -34,8 +34,8 @@
 // AMFVideoEncoderHW_AVC interface declaration
 //-------------------------------------------------------------------------------------------------
 
-#ifndef __AMFVideoEncoderHW_AVC_h__
-#define __AMFVideoEncoderHW_AVC_h__
+#ifndef AMF_VideoEncoderVCE_h
+#define AMF_VideoEncoderVCE_h
 #pragma once
 
 #include "Component.h"
@@ -223,4 +223,4 @@ enum AMF_VIDEO_ENCODER_CODING_ENUM
 #define AMF_VIDEO_ENCODER_CAP_FIXED_SLICE_MODE                  L"FixedSliceMode"           // bool  is fixed slice mode supported
 #define AMF_VIDEO_ENCODER_CAP_NUM_OF_HW_INSTANCES               L"NumOfHwInstances"         // amf_int64 number of HW encoder instances
 
-#endif //#ifndef __AMFVideoEncoderHW_AVC_h__
+#endif //#ifndef AMF_VideoEncoderVCE_h

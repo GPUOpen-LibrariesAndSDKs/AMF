@@ -30,8 +30,8 @@
 // THE SOFTWARE.
 //
 
-#ifndef __AMFAudioBuffer_h__
-#define __AMFAudioBuffer_h__
+#ifndef AMF_AudioBuffer_h
+#define AMF_AudioBuffer_h
 #pragma once
 
 #include "Data.h"
@@ -181,4 +181,4 @@ namespace amf
 #if defined(_MSC_VER)
     #pragma warning( pop )
 #endif
-#endif //#ifndef __AMFAudioBuffer_h__
+#endif //#ifndef AMF_AudioBuffer_h

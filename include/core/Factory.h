@@ -30,8 +30,8 @@
 // THE SOFTWARE.
 //
 
-#ifndef __AMFFactory_h__
-#define __AMFFactory_h__
+#ifndef AMF_Factory_h
+#define AMF_Factory_h
 #pragma once
 
 #include "Platform.h"
@@ -115,4 +115,4 @@ extern "C"
 
 //----------------------------------------------------------------------------------------------
 
-#endif 
+#endif  // AMF_Factory_h

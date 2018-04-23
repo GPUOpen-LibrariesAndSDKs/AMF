@@ -30,8 +30,8 @@
 // THE SOFTWARE.
 //
 
-#ifndef __AMFSurface_h__
-#define __AMFSurface_h__
+#ifndef AMF_Surface_h
+#define AMF_Surface_h
 #pragma once
 
 #include "Data.h"
@@ -60,10 +60,15 @@ namespace amf
         AMF_SURFACE_YUY2,               ///< 9 - YUY2: Byte 0=8-bit Y'0; Byte 1=8-bit Cb; Byte 2=8-bit Y'1; Byte 3=8-bit Cr
         AMF_SURFACE_P010,               ///< 10- planar Y width x height + packed UV width/2 x height/2 - 10 bit per component (16 allocated, upper 10 bits are used)
         AMF_SURFACE_RGBA_F16,           ///< 11 - packed - 16 bit per component float
+        AMF_SURFACE_UYVY,               ///< 12 - the similar to YUY2 but Y and UV swapped: Byte 0=8-bit Cb; Byte 1=8-bit Y'0; Byte 2=8-bit Cr Byte 3=8-bit Y'1; (used the same DX/CL/Vulkan storage as YUY2)
 
         AMF_SURFACE_FIRST = AMF_SURFACE_NV12,
         AMF_SURFACE_LAST = AMF_SURFACE_RGBA_F16
     } AMF_SURFACE_FORMAT;
+
+#if defined(_WIN32)
+    AMF_WEAK GUID  AMFFormatGUID = { 0x8cd592d0, 0x8063, 0x4af8, 0xa7, 0xd0, 0x32, 0x5b, 0xc5, 0xf7, 0x48, 0xab}; // UINT(AMF_SURFACE_FORMAT), default - AMF_SURFACE_UNKNOWN; to be set on ID3D11Texture2D objects when used natively (i.e. force UYVY on DXGI_FORMAT_YUY2 texture)
+#endif
 
     //----------------------------------------------------------------------------------------------
     // frame type
@@ -229,4 +234,4 @@ namespace amf
 #if defined(_MSC_VER)
     #pragma warning( pop )
 #endif
-#endif //#ifndef __AMFSurface_h__
+#endif //#ifndef AMF_Surface_h

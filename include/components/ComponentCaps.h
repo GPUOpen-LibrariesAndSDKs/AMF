@@ -30,8 +30,8 @@
 // THE SOFTWARE.
 //
 
-#ifndef __AMFComponentCaps_h__
-#define __AMFComponentCaps_h__
+#ifndef AMF_ComponentCaps_h
+#define AMF_ComponentCaps_h
 
 #pragma once
 
@@ -169,4 +169,4 @@ namespace amf
 }
 #endif
 
-#endif //#ifndef __AMFComponentCaps_h__
+#endif //#ifndef AMF_ComponentCaps_h

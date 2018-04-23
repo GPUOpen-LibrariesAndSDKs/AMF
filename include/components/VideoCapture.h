@@ -29,57 +29,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#ifndef AMF_AMFFactory_h
-#define AMF_AMFFactory_h
+
+//-------------------------------------------------------------------------------------------------
+// ZCamLive  interface declaration
+//-------------------------------------------------------------------------------------------------
+#ifndef AMF_VideoCapture_h
+#define AMF_VideoCapture_h
 
 #pragma once
 
-#include "../include/core/Factory.h"
-#include <string>
-#include <vector>
+#define VIDEOCAP_DEVICE_COUNT           L"VideoCapDeviceCount"    // amf_int64, (default=2), number of video capture devices
+#define VIDEOCAP_DEVICE_NAME            L"VideoCapDeviceName"     // WString, (default=""), name of the video capture device
+#define VIDEOCAP_DEVICE_ACTIVE          L"VideoCapDeviceActive"   // WString, (default=""), name of the selected video capture device
 
+#define VIDEOCAP_CODEC                   L"CodecID"               // WString (default = "AMFVideoDecoderUVD_H264_AVC"), UVD codec ID
+#define VIDEOCAP_FRAMESIZE               L"FrameSize"             // AMFSize, (default=AMFConstructSize(1920, 1080)), frame size in pixels
 
-class AMFFactoryHelper
+extern "C"
 {
-public:
-    AMFFactoryHelper();
-    virtual ~AMFFactoryHelper();
-
-    AMF_RESULT  Init();
-    AMF_RESULT  Terminate();
-
-    AMF_RESULT  LoadExternalComponent(amf::AMFContext* pContext, const wchar_t* dll, const char* function, void* reserved, amf::AMFComponent** ppComponent);
-    AMF_RESULT  UnLoadExternalComponent(const wchar_t* dll);
-
-    amf::AMFFactory* GetFactory();
-    amf::AMFDebug* GetDebug();
-    amf::AMFTrace* GetTrace();
-
-    amf_uint64 AMFQueryVersion();
-protected:
-    struct ComponentHolder
-    {
-        HMODULE         m_hDLLHandle;
-        amf_long        m_iRefCount;
-        std::wstring    m_DLL;
-
-        ComponentHolder()
-        {
-            m_hDLLHandle = NULL;
-            m_iRefCount = 0;
-        }
-    };
-
-    HMODULE             m_hDLLHandle;
-    amf::AMFFactory*    m_pFactory;
-    amf::AMFDebug*      m_pDebug;
-    amf::AMFTrace*      m_pTrace;
-    amf_uint64          m_AMFRuntimeVersion;
-
-    amf_long            m_iRefCount;
-
-    std::vector<ComponentHolder>  m_extComponents;
-};
-
-extern ::AMFFactoryHelper g_AMFFactory;
-#endif // AMF_AMFFactory_h
+    AMF_RESULT AMF_CDECL_CALL AMFCreateComponentVideoCapture(amf::AMFContext* pContext, amf::AMFComponentEx** ppComponent);
+}
+#endif // AMF_VideoCapture_h

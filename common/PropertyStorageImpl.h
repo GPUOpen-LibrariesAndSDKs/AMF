@@ -33,6 +33,8 @@
 ///  @file   PropertyStorageImpl.h
 ///  @brief  AMFPropertyStorageImpl header
 ///-------------------------------------------------------------------------
+#ifndef AMF_PropertyStorageImpl_h
+#define AMF_PropertyStorageImpl_h
 #pragma once
 
 #include "../include/core/PropertyStorage.h"
@@ -193,5 +195,4 @@ namespace amf
     //---------------------------------------------------------------------------------------------
     //---------------------------------------------------------------------------------------------
 }
-
-
+#endif // AMF_PropertyStorageImpl_h

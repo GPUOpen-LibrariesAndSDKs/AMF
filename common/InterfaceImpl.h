@@ -30,6 +30,9 @@
 // THE SOFTWARE.
 //
 
+#ifndef AMF_InterfaceImpl_h
+#define AMF_InterfaceImpl_h
+
 #pragma once
 
 #include "../include/core/Interface.h"
@@ -200,3 +203,4 @@ namespace amf
 
 
 } // namespace amf
+#endif // AMF_InterfaceImpl_h

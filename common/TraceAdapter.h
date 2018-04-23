@@ -30,9 +30,11 @@
 // THE SOFTWARE.
 //
 ///-------------------------------------------------------------------------
-///  @file   Trace.h
+///  @file   TraceAdapter.h
 ///  @brief  AMFTrace interface
 ///-------------------------------------------------------------------------
+#ifndef AMF_TraceAdapter_h
+#define AMF_TraceAdapter_h
 #pragma once
 
 #include "../include/core/Debug.h"
@@ -782,3 +784,4 @@ extern "C"
     AMF_MEMORY_TYPE AMF_STD_CALL AMFGetMemoryTypeByName(const wchar_t* name);
 } //extern "C"
 } // namespace amf
+#endif // AMF_TraceAdapter_h

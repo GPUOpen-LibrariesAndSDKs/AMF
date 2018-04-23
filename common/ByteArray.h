@@ -30,6 +30,10 @@
 // THE SOFTWARE.
 //
 
+#ifndef AMF_ByteArray_h
+#define AMF_ByteArray_h
+
+
 #pragma once
 #include "../include/core/Platform.h"
 #define    INIT_ARRAY_SIZE 1024
@@ -105,3 +109,4 @@ public:
     amf_uint8 *GetData() const { return m_pData; }
     amf_size GetSize() const { return m_iSize; }
 };
+#endif // AMF_ByteArray_h
