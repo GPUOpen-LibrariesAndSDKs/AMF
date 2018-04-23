@@ -30,8 +30,11 @@
 // THE SOFTWARE.
 //
 #include "VideoPresenterDX11.h"
+
 #include <d3dcompiler.h>
 #include "public/common/TraceAdapter.h"
+#include "public/include/components/VideoDecoderUVD.h"
+#include "public/include/components/VideoConverter.h"
 
 #pragma comment(lib, "d3dcompiler.lib")
 
@@ -111,9 +114,11 @@ VideoPresenterDX11::VideoPresenterDX11(HWND hwnd, amf::AMFContext* pContext) :
     m_uiAvailableBackBuffer(0),
     m_uiBackBufferCount(4),
     m_bResizeSwapChain(false),
+    m_bFirstFrame(true),
 //    m_eInputFormat(amf::AMF_SURFACE_BGRA)
     m_eInputFormat(amf::AMF_SURFACE_RGBA)
 //     m_eInputFormat(amf::AMF_SURFACE_RGBA_F16)
+
 {
     memset(&m_sourceVertexRect, 0, sizeof(m_sourceVertexRect));
 }
@@ -141,6 +146,9 @@ AMF_RESULT VideoPresenterDX11::Present(amf::AMFSurface* pSurface)
     {
         err;
     }
+
+    ApplyCSC(pSurface);
+
 #if 0
     amf_pts timestamp;
     pSurface->GetProperty(L"Stitch", &timestamp);
@@ -465,6 +473,7 @@ AMF_RESULT VideoPresenterDX11::Init(amf_int32 width, amf_int32 height)
     }
     err = CompileShaders();
     PrepareStates();
+    m_bFirstFrame = true;
 
     return err;
 }
@@ -609,6 +618,7 @@ AMF_RESULT VideoPresenterDX11::CreatePresentationSwapChain()
         hr = spIDXGIFactory->CreateSwapChain( m_pDevice, &sd, &m_pSwapChain );
         //ASSERT_RETURN_IF_HR_FAILED(hr,AMF_DIRECTX_FAILED,L"CreatePresentationSwapChain() - CreateSwapChain() failed");
     }
+
     ResizeSwapChain();
     return err;
 }
@@ -1027,4 +1037,136 @@ AMF_RESULT              VideoPresenterDX11::Flush()
 {
     m_uiAvailableBackBuffer = 0;
     return BackBufferPresenter::Flush();
+}
+
+// to enble this code switch to Windows 10 SDK for Windows 10 RS2 (10.0.15063.0) or later.
+#if defined(NTDDI_WIN10_RS2)
+#include <DXGI1_6.h>
+#endif
+
+#define USE_COLOR_TWITCH_IN_DISPLAY 0
+
+void        VideoPresenterDX11::UpdateProcessor()
+{
+    VideoPresenter::UpdateProcessor();
+#if defined(NTDDI_WIN10_RS2)
+    if(m_pProcessor != NULL && m_pDevice != NULL)
+    {
+#if USE_COLOR_TWITCH_IN_DISPLAY
+        ATL::CComQIPtr<IDXGISwapChain3> pSwapChain3(m_pSwapChain);
+        if(pSwapChain3 != NULL)
+        {
+            UINT supported[20];
+            for(int i = 0; i < 20; i++)
+            {
+                pSwapChain3->CheckColorSpaceSupport((DXGI_COLOR_SPACE_TYPE)i, &supported[i]);
+            }
+            if(GetInputFormat() == amf::AMF_SURFACE_RGBA_F16 && 
+                (supported[DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709] & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT))
+            {
+
+                DXGI_COLOR_SPACE_TYPE colorSpace = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
+                {
+
+
+                    pSwapChain3->SetColorSpace1(colorSpace);
+                    m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_USE_DECODER_HDR_METADATA, false);
+                }
+            }
+        }
+#endif
+        // check and set color space and HDR support
+
+        CComQIPtr<IDXGIDevice> spDXGIDevice=m_pDevice;
+
+        CComPtr<IDXGIAdapter> spDXGIAdapter;
+        HRESULT hr = spDXGIDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&spDXGIAdapter);
+
+        UINT adapterIndex = 0;
+        for(;;adapterIndex++)
+        { 
+            ATL::CComPtr<IDXGIOutput> spDXGIOutput;
+            spDXGIAdapter->EnumOutputs(adapterIndex, &spDXGIOutput);
+            if(spDXGIOutput == NULL)
+            {
+                break;
+            }
+            ATL::CComQIPtr<IDXGIOutput6> spDXGIOutput6(spDXGIOutput);
+            if(spDXGIOutput6 != NULL)
+            {
+                DXGI_OUTPUT_DESC1 desc = {};
+                spDXGIOutput6->GetDesc1(&desc);
+                if(desc.MaxLuminance != 0 && desc.BitsPerColor > 8)
+//                if(desc.MaxLuminance != 0)
+                {
+                    amf::AMFBufferPtr pBuffer;
+                    m_pContext->AllocBuffer(amf::AMF_MEMORY_HOST, sizeof(AMFHDRMetadata), &pBuffer);
+                    AMFHDRMetadata* pHDRData = (AMFHDRMetadata*)pBuffer->GetNative();
+
+                    pHDRData->redPrimary[0] = amf_uint16(desc.RedPrimary[0] * 50000.f);
+                    pHDRData->redPrimary[1] = amf_uint16(desc.RedPrimary[1] * 50000.f);
+
+                    pHDRData->greenPrimary[0] = amf_uint16(desc.GreenPrimary[0] * 50000.f);
+                    pHDRData->greenPrimary[1] = amf_uint16(desc.GreenPrimary[1] * 50000.f);
+
+                    pHDRData->bluePrimary[0] = amf_uint16(desc.BluePrimary[0] * 50000.f);
+                    pHDRData->bluePrimary[1] = amf_uint16(desc.BluePrimary[1] * 50000.f);
+
+                    pHDRData->whitePoint[0] = amf_uint16(desc.WhitePoint[0] * 50000.f);
+                    pHDRData->whitePoint[1] = amf_uint16(desc.WhitePoint[1] * 50000.f);
+
+                    pHDRData->maxMasteringLuminance = amf_uint32(desc.MaxLuminance * 10000.f);
+                    pHDRData->minMasteringLuminance = amf_uint32(desc.MinLuminance * 10000.f);
+                    pHDRData->maxContentLightLevel = 0;
+                    pHDRData->maxFrameAverageLightLevel = amf_uint32(desc.MaxFullFrameLuminance* 10000.f);
+
+                    m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_DISPLAY_HDR_METADATA,pBuffer);
+                }
+            }
+        }
+    }
+#endif
+}
+AMF_RESULT VideoPresenterDX11::ApplyCSC(amf::AMFSurface* pSurface)
+{
+#if defined(NTDDI_WIN10_RS2)
+#ifdef USE_COLOR_TWITCH_IN_DISPLAY
+    if(m_bFirstFrame)
+    {
+        amf::AMFVariant varBuf;
+        if(pSurface->GetProperty(AMF_VIDEO_DECODER_HDR_METADATA, &varBuf) == AMF_OK)
+        {
+            amf::AMFBufferPtr pBuffer(varBuf.pInterface);
+            if(pBuffer != NULL)
+            {
+                AMFHDRMetadata* pHDRData = (AMFHDRMetadata*)pBuffer->GetNative();
+                // check and set color space
+                ATL::CComQIPtr<IDXGISwapChain4> pSwapChain4(m_pSwapChain);
+                if(pSwapChain4 != NULL)
+                {
+
+                    DXGI_HDR_METADATA_HDR10 metadata = {};
+                    metadata.WhitePoint[0] = pHDRData->whitePoint[0];
+                    metadata.WhitePoint[1] = pHDRData->whitePoint[1];
+                    metadata.RedPrimary[0] = pHDRData->redPrimary[0];
+                    metadata.RedPrimary[1] = pHDRData->redPrimary[1];
+                    metadata.GreenPrimary[0] = pHDRData->greenPrimary[0];
+                    metadata.GreenPrimary[1] = pHDRData->greenPrimary[1];
+                    metadata.BluePrimary[0] = pHDRData->bluePrimary[0];
+                    metadata.BluePrimary[1] = pHDRData->bluePrimary[1];
+                    metadata.MaxMasteringLuminance = pHDRData->maxMasteringLuminance;
+                    metadata.MinMasteringLuminance = pHDRData->minMasteringLuminance;
+                    metadata.MaxContentLightLevel = pHDRData->maxContentLightLevel;
+                    metadata.MaxFrameAverageLightLevel = pHDRData->maxFrameAverageLightLevel;
+
+                    HRESULT hr = pSwapChain4->SetHDRMetaData(DXGI_HDR_METADATA_TYPE_HDR10, sizeof(metadata), &metadata);
+                    int a = 1;
+                }
+                m_bFirstFrame = false;
+            }
+        }
+    }
+#endif
+#endif
+    return AMF_OK;
 }

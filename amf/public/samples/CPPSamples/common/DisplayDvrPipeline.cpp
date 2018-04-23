@@ -498,56 +498,54 @@ AMF_RESULT DisplayDvrPipeline::InitMuxer(
 		res = m_pMuxer->GetInput(input, &pInput);
 		CHECK_AMF_ERROR_RETURN(res, L"m_pMuxer->GetInput() failed");
 
-		amf_int64 eStreamType = MUXER_UNKNOWN;
-		pInput->GetProperty(FFMPEG_MUXER_STREAM_TYPE, &eStreamType);
+		amf_int64 eStreamType = AMF_STREAM_UNKNOWN;
+		pInput->GetProperty(AMF_STREAM_TYPE, &eStreamType);
 
-		if (eStreamType == MUXER_VIDEO)
+		if (eStreamType == AMF_STREAM_VIDEO)
 		{
 			outVideoStreamMuxerIndex = input;
 
-			pInput->SetProperty(FFMPEG_MUXER_STREAM_ENABLED, true);
+			pInput->SetProperty(AMF_STREAM_ENABLED, true);
 			amf_int32 bitrate = 0;
 			if (m_szEncoderID == AMFVideoEncoderVCE_AVC || m_szEncoderID == AMFVideoEncoderVCE_SVC)
 			{
-#define AV_CODEC_ID_H264 28 // works with current FFmpeg only
-				pInput->SetProperty(FFMPEG_MUXER_CODEC_ID, AV_CODEC_ID_H264); // default
+				pInput->SetProperty(AMF_STREAM_CODEC_ID, AMF_STREAM_CODEC_ID_H264_AVC); // default
 				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, &bitrate);
-				pInput->SetProperty(FFMPEG_MUXER_BIT_RATE, bitrate);
+				pInput->SetProperty(AMF_STREAM_BIT_RATE, bitrate);
 				amf::AMFInterfacePtr pExtraData;
 				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_EXTRADATA, &pExtraData);
-				pInput->SetProperty(FFMPEG_MUXER_EXTRA_DATA, pExtraData);
+				pInput->SetProperty(AMF_STREAM_EXTRA_DATA, pExtraData);
 
 				AMFSize frameSize;
 				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, &frameSize);
-				pInput->SetProperty(FFMPEG_MUXER_VIDEO_FRAMESIZE, frameSize);
+				pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, frameSize);
 
 				AMFRate frameRate;
 				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_FRAMERATE, &frameRate);
-				pInput->SetProperty(FFMPEG_MUXER_VIDEO_FRAME_RATE, frameRate);
+				pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_RATE, frameRate);
 			}
 			else
 			{
-#define AV_CODEC_ID_H265 174 // works with current FFmpeg only
-				pInput->SetProperty(FFMPEG_MUXER_CODEC_ID, AV_CODEC_ID_H265);
+				pInput->SetProperty(AMF_STREAM_CODEC_ID, AMF_STREAM_CODEC_ID_H265_HEVC);
 				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE, &bitrate);
-				pInput->SetProperty(FFMPEG_MUXER_BIT_RATE, bitrate);
+				pInput->SetProperty(AMF_STREAM_BIT_RATE, bitrate);
 				amf::AMFInterfacePtr pExtraData;
 				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_HEVC_EXTRADATA, &pExtraData);
-				pInput->SetProperty(FFMPEG_MUXER_EXTRA_DATA, pExtraData);
+				pInput->SetProperty(AMF_STREAM_EXTRA_DATA, pExtraData);
 
 				AMFSize frameSize;
 				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE, &frameSize);
-				pInput->SetProperty(FFMPEG_MUXER_VIDEO_FRAMESIZE, frameSize);
+				pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, frameSize);
 
 				AMFRate frameRate;
 				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, &frameRate);
-				pInput->SetProperty(FFMPEG_MUXER_VIDEO_FRAME_RATE, frameRate);
+				pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_RATE, frameRate);
 			}
 		}
-		else if (eStreamType == MUXER_AUDIO)
+		else if (eStreamType == AMF_STREAM_AUDIO)
 		{
 			outAudioStreamMuxerIndex = input;
-			pInput->SetProperty(FFMPEG_MUXER_STREAM_ENABLED, true);
+			pInput->SetProperty(AMF_STREAM_ENABLED, true);
 
 			amf_int64 codecID = 0;
 			amf_int64 streamBitRate = 0;
@@ -569,16 +567,16 @@ AMF_RESULT DisplayDvrPipeline::InitMuxer(
 
 			amf::AMFInterfacePtr pExtraData;
 			m_pAudioEncoder->GetProperty(AUDIO_ENCODER_OUT_AUDIO_EXTRA_DATA, &pExtraData);
-			pInput->SetProperty(FFMPEG_MUXER_EXTRA_DATA, pExtraData);
+			pInput->SetProperty(AMF_STREAM_EXTRA_DATA, pExtraData);
 
-			pInput->SetProperty(FFMPEG_MUXER_CODEC_ID, codecID);
-			pInput->SetProperty(FFMPEG_MUXER_BIT_RATE, streamBitRate);
-			pInput->SetProperty(FFMPEG_MUXER_AUDIO_SAMPLE_RATE, streamSampleRate);
-			pInput->SetProperty(FFMPEG_MUXER_AUDIO_CHANNELS, streamChannels);
-			pInput->SetProperty(FFMPEG_MUXER_AUDIO_SAMPLE_FORMAT, streamFormat);
-			pInput->SetProperty(FFMPEG_MUXER_AUDIO_CHANNEL_LAYOUT, streamLayout);
-			pInput->SetProperty(FFMPEG_MUXER_AUDIO_BLOCK_ALIGN, streamBlockAlign);
-			pInput->SetProperty(FFMPEG_MUXER_AUDIO_FRAME_SIZE, streamFrameSize);
+			pInput->SetProperty(AMF_STREAM_CODEC_ID, codecID);
+			pInput->SetProperty(AMF_STREAM_BIT_RATE, streamBitRate);
+			pInput->SetProperty(AMF_STREAM_AUDIO_SAMPLE_RATE, streamSampleRate);
+			pInput->SetProperty(AMF_STREAM_AUDIO_CHANNELS, streamChannels);
+			pInput->SetProperty(AMF_STREAM_AUDIO_FORMAT, streamFormat);
+			pInput->SetProperty(AMF_STREAM_AUDIO_CHANNEL_LAYOUT, streamLayout);
+			pInput->SetProperty(AMF_STREAM_AUDIO_BLOCK_ALIGN, streamBlockAlign);
+			pInput->SetProperty(AMF_STREAM_AUDIO_FRAME_SIZE, streamFrameSize);
 		}
 	}
 

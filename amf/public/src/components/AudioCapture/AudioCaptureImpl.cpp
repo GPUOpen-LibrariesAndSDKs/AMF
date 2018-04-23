@@ -222,6 +222,11 @@ AMF_RESULT AMF_STD_CALL  AMFAudioCaptureImpl::Flush()
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT  AMF_STD_CALL  AMFAudioCaptureImpl::SubmitInput(AMFData* pData)
 {
+    return AMF_NOT_IMPLEMENTED;
+}
+
+AMF_RESULT  AMF_STD_CALL  AMFAudioCaptureImpl::SubmitInputPrivate(AMFData* pData)
+{
 	AMFLock lock(&m_sync);
 
 	AMF_RESULT  res = AMF_INPUT_FULL;
@@ -367,7 +372,7 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
 		AMF_RESULT err = AMF_INPUT_FULL;
 		while (!m_audioPollingThread.StopRequested())
 		{
-			err = SubmitInput(pAudioBuffer);
+			err = SubmitInputPrivate(pAudioBuffer);
 			if (AMF_INPUT_FULL != err)
 			{
 				break;

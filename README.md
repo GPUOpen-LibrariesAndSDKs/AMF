@@ -2,10 +2,7 @@
 
 AMF is a light-weight, portable multimedia framework that abstracts away most of the platform and API-specific details and allows for easy implementation of multimedia applications using a variety of technologies, such as DirectX 11, OpenGL, and OpenCL and facilitates an efficient interop between them.
 
-These features are a part of the initial 1.3 version of AMF.  
-* Version 1.4 of the AMF SDK includes support for the H.265 encoder(HEVC) and bug fixes.  
-* Version 1.4.4 has support for FFmpeg 3.3.1.
-* Version 1.4.6 has support for game dvr
+These features are a part of the initial 1.3 version of AMF.  Version 1.4 of the AMF SDK includes support for the H.265 encoder(HEVC) and bug fixes.  Version 1.4.4 has support for FFmpeg 3.3.1.  Version 1.4.6 has support for game dvr.  Version 1.4.7 has support for 360 video stitch.
 
 <div>
   <a href="https://github.com/GPUOpen-LibrariesAndSDKs/AMF/releases/latest/"><img src="http://gpuopen-librariesandsdks.github.io/media/latest-release-button.svg" alt="Latest release" title="Latest release"></a>
@@ -14,6 +11,7 @@ These features are a part of the initial 1.3 version of AMF.
 ### Prerequisites
 * Windows&reg; 7 (SP1 with the [Platform Update](https://msdn.microsoft.com/en-us/library/windows/desktop/jj863687.aspx)), Windows&reg; 8.1, or Windows&reg; 10
 * Visual Studio&reg; 2013, Visual Studio&reg; 2015 or Visual Studio&reg; 2017
+* Version 1.4.7: AMD Radeon Software Adrenalin Edition 18.3.4 (17.50.33) or newer
 * Version 1.4.6: AMD Radeon Software Crimson Edition 17.12.1 (17.50.02) or newer
 * Version 1.4.4: AMD Radeon Software Crimson Edition 17.7.2 (17.30.1041) or newer
 * Version 1.4: AMD Radeon Software Crimson Edition 17.1.1 (16.50.2611) or newer

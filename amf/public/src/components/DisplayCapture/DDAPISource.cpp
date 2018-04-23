@@ -33,7 +33,6 @@
 
 #include "DDAPISource.h"
 //#include "CaptureStats.h"
-#include "public/samples/CPPSamples/common/CmdLogger.h"
 
 #include <VersionHelpers.h>
 

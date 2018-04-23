@@ -58,24 +58,22 @@ extern "C"
 
 #define AMF_FACILITY            L"AMFFileMuxerFFMPEGImpl"
 #define MY_AV_NOPTS_VALUE       ((int64_t)0x8000000000000000LL)
-#define ENABLE_H265
 
 using namespace amf;
 
 
-const AMFEnumDescriptionEntry VIDEO_CODEC_IDS_ENUM[] =
+static const AMFEnumDescriptionEntry VIDEO_CODEC_IDS_ENUM[] =
 {
-    { AV_CODEC_ID_NONE, L"UNKNOWN" },
-    { AV_CODEC_ID_MPEG2VIDEO, AMFVideoDecoderUVD_MPEG2 },
-    { AV_CODEC_ID_MPEG4, AMFVideoDecoderUVD_MPEG4 },
-    { AV_CODEC_ID_WMV3, AMFVideoDecoderUVD_WMV3 },
-    { AV_CODEC_ID_VC1, AMFVideoDecoderUVD_VC1 },
-    { AV_CODEC_ID_H264, AMFVideoDecoderUVD_H264_AVC },
-    { AV_CODEC_H264MVC, AMFVideoDecoderUVD_H264_MVC },
-    { AV_CODEC_ID_MJPEG, AMFVideoDecoderUVD_MJPEG },
-#if defined(ENABLE_H265)
-    { AV_CODEC_ID_HEVC, AMFVideoDecoderHW_H265_HEVC },
-#endif
+    { AMF_STREAM_CODEC_ID_UNKNOWN, L"UNKNOWN" },
+    { AMF_STREAM_CODEC_ID_MPEG2, AMFVideoDecoderUVD_MPEG2 },
+    { AMF_STREAM_CODEC_ID_MPEG4, AMFVideoDecoderUVD_MPEG4 },
+    { AMF_STREAM_CODEC_ID_WMV3, AMFVideoDecoderUVD_WMV3 },
+    { AMF_STREAM_CODEC_ID_VC1, AMFVideoDecoderUVD_VC1 },
+    { AMF_STREAM_CODEC_ID_H264_AVC, AMFVideoDecoderUVD_H264_AVC },
+    { AMF_STREAM_CODEC_ID_H264_MVC, AMFVideoDecoderUVD_H264_MVC },
+    { AMF_STREAM_CODEC_ID_MJPEG, AMFVideoDecoderUVD_MJPEG },
+    { AMF_STREAM_CODEC_ID_H265_HEVC, AMFVideoDecoderHW_H265_HEVC },
+    { AMF_STREAM_CODEC_ID_H265_MAIN10, AMFVideoDecoderHW_H265_MAIN10},
     { 0, 0 }
 };
 
@@ -111,11 +109,11 @@ const AMFEnumDescriptionEntry AMF_SAMPLE_FORMAT_ENUM_DESCRIPTION[] =
 
 const AMFEnumDescriptionEntry FFMPEG_MUXER_STREAM_TYPE_ENUM_DESCRIPTION[] =
 {
-    {MUXER_UNKNOWN,   L"Unknown"},
-    {MUXER_VIDEO,     L"Video"},
-    {MUXER_AUDIO,     L"Audio"},
-    {MUXER_DATA,      L"Data"},
-    { MUXER_UNKNOWN   , 0 }  // This is end of description mark
+    {AMF_STREAM_UNKNOWN,   L"Unknown"},
+    {AMF_STREAM_VIDEO,     L"Video"},
+    {AMF_STREAM_AUDIO,     L"Audio"},
+    {AMF_STREAM_DATA,      L"Data"},
+    { AMF_STREAM_UNKNOWN   , 0 }  // This is end of description mark
 };
 
 struct FormatMap
@@ -205,10 +203,10 @@ AMF_RESULT  AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AMFInputMuxerImpl::Drain()
 void AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AMFInputMuxerImpl::OnPropertyChanged(const wchar_t* pName)
 {
     const amf_wstring  name(pName);
-    if (name == FFMPEG_MUXER_STREAM_ENABLED)
+    if (name == AMF_STREAM_ENABLED)
     {
         AMFLock lock(&m_pHost->m_sync);
-        AMFPropertyStorage::GetProperty(FFMPEG_MUXER_STREAM_ENABLED, &m_bEnabled);
+        AMFPropertyStorage::GetProperty(AMF_STREAM_ENABLED, &m_bEnabled);
         return;
     }
 }
@@ -217,13 +215,13 @@ AMFFileMuxerFFMPEGImpl::AMFVideoInputMuxerImpl::AMFVideoInputMuxerImpl(AMFFileMu
     : AMFFileMuxerFFMPEGImpl::AMFInputMuxerImpl(pHost)
 {
     AMFPrimitivePropertyInfoMapBegin
-        AMFPropertyInfoEnum(FFMPEG_MUXER_STREAM_TYPE, L"Stream Type", MUXER_VIDEO, FFMPEG_MUXER_STREAM_TYPE_ENUM_DESCRIPTION, false),
-        AMFPropertyInfoBool(FFMPEG_MUXER_STREAM_ENABLED, L"Enabled", true, false),
-        AMFPropertyInfoEnum(FFMPEG_MUXER_CODEC_ID, L"Codec ID", AV_CODEC_ID_H264, VIDEO_CODEC_IDS_ENUM, false),
-        AMFPropertyInfoInt64(FFMPEG_MUXER_BIT_RATE, L"Bit Rate", 100000, 1, INT_MAX, false),
-        AMFPropertyInfoInterface(FFMPEG_MUXER_EXTRA_DATA, L"Extra Data", NULL, false),
-        AMFPropertyInfoRate(FFMPEG_MUXER_VIDEO_FRAME_RATE, L"Frame Rate", 30, 1, false),
-        AMFPropertyInfoSize(FFMPEG_MUXER_VIDEO_FRAMESIZE, L"Frame Size", AMFConstructSize(1920,1080), AMFConstructSize(1,1), AMFConstructSize(100000,100000), false),
+        AMFPropertyInfoEnum(AMF_STREAM_TYPE, L"Stream Type", AMF_STREAM_VIDEO, FFMPEG_MUXER_STREAM_TYPE_ENUM_DESCRIPTION, false),
+        AMFPropertyInfoBool(AMF_STREAM_ENABLED, L"Enabled", true, false),
+        AMFPropertyInfoEnum(AMF_STREAM_CODEC_ID, L"Codec ID", AMF_STREAM_CODEC_ID_H264_AVC, VIDEO_CODEC_IDS_ENUM, false),
+        AMFPropertyInfoInt64(AMF_STREAM_BIT_RATE, L"Bit Rate", 100000, 1, INT_MAX, false),
+        AMFPropertyInfoInterface(AMF_STREAM_EXTRA_DATA, L"Extra Data", NULL, false),
+        AMFPropertyInfoRate(AMF_STREAM_VIDEO_FRAME_RATE, L"Frame Rate", 30, 1, false),
+        AMFPropertyInfoSize(AMF_STREAM_VIDEO_FRAME_SIZE, L"Frame Size", AMFConstructSize(1920,1080), AMFConstructSize(1,1), AMFConstructSize(100000,100000), false),
     AMFPrimitivePropertyInfoMapEnd
 }
 //-------------------------------------------------------------------------------------------------
@@ -255,18 +253,18 @@ AMFFileMuxerFFMPEGImpl::AMFAudioInputMuxerImpl::AMFAudioInputMuxerImpl(AMFFileMu
     : AMFFileMuxerFFMPEGImpl::AMFInputMuxerImpl(pHost)
 {
     AMFPrimitivePropertyInfoMapBegin
-        AMFPropertyInfoEnum(FFMPEG_MUXER_STREAM_TYPE, L"Stream Type", MUXER_AUDIO, FFMPEG_MUXER_STREAM_TYPE_ENUM_DESCRIPTION, false),
-        AMFPropertyInfoBool(FFMPEG_MUXER_STREAM_ENABLED, L"Enabled", true, false),
-        AMFPropertyInfoInt64(FFMPEG_MUXER_CODEC_ID, L"Codec ID", AV_CODEC_ID_NONE, AV_CODEC_ID_NONE, INT_MAX, false),
-        AMFPropertyInfoInt64(FFMPEG_MUXER_BIT_RATE, L"Bit Rate", 100000, 1, INT_MAX, false),
-        AMFPropertyInfoInterface(FFMPEG_MUXER_EXTRA_DATA, L"Extra Data", NULL, false),
+        AMFPropertyInfoEnum(AMF_STREAM_TYPE, L"Stream Type", AMF_STREAM_AUDIO, FFMPEG_MUXER_STREAM_TYPE_ENUM_DESCRIPTION, false),
+        AMFPropertyInfoBool(AMF_STREAM_ENABLED, L"Enabled", true, false),
+        AMFPropertyInfoInt64(AMF_STREAM_CODEC_ID, L"Codec ID", AV_CODEC_ID_NONE, AV_CODEC_ID_NONE, INT_MAX, false),
+        AMFPropertyInfoInt64(AMF_STREAM_BIT_RATE, L"Bit Rate", 100000, 1, INT_MAX, false),
+        AMFPropertyInfoInterface(AMF_STREAM_EXTRA_DATA, L"Extra Data", NULL, false),
 
-        AMFPropertyInfoInt64(FFMPEG_MUXER_AUDIO_SAMPLE_RATE, L"Sample Rate", 44100, 0, INT_MAX, false),
-        AMFPropertyInfoInt64(FFMPEG_MUXER_AUDIO_CHANNELS, L"Channels", 2, 1, INT_MAX, false),
-        AMFPropertyInfoEnum(FFMPEG_MUXER_AUDIO_SAMPLE_FORMAT, L"Sample Format", AMFAF_UNKNOWN, AMF_SAMPLE_FORMAT_ENUM_DESCRIPTION, false),
-        AMFPropertyInfoInt64(FFMPEG_MUXER_AUDIO_CHANNEL_LAYOUT, L"Channel Layout", 3, 0, INT_MAX, false),
-        AMFPropertyInfoInt64(FFMPEG_MUXER_AUDIO_BLOCK_ALIGN, L"Block Align", 0, 0, INT_MAX, false),
-        AMFPropertyInfoInt64(FFMPEG_MUXER_AUDIO_FRAME_SIZE, L"Frame Size", 0, 0, INT_MAX, false),
+        AMFPropertyInfoInt64(AMF_STREAM_AUDIO_SAMPLE_RATE, L"Sample Rate", 44100, 0, INT_MAX, false),
+        AMFPropertyInfoInt64(AMF_STREAM_AUDIO_CHANNELS, L"Channels", 2, 1, INT_MAX, false),
+        AMFPropertyInfoEnum(AMF_STREAM_AUDIO_FORMAT, L"Sample Format", AMFAF_UNKNOWN, AMF_SAMPLE_FORMAT_ENUM_DESCRIPTION, false),
+        AMFPropertyInfoInt64(AMF_STREAM_AUDIO_CHANNEL_LAYOUT, L"Channel Layout", 3, 0, INT_MAX, false),
+        AMFPropertyInfoInt64(AMF_STREAM_AUDIO_BLOCK_ALIGN, L"Block Align", 0, 0, INT_MAX, false),
+        AMFPropertyInfoInt64(AMF_STREAM_AUDIO_FRAME_SIZE, L"Frame Size", 0, 0, INT_MAX, false),
     AMFPrimitivePropertyInfoMapEnd
 
 }
@@ -389,7 +387,7 @@ void AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::OnPropertyChanged(const wchar_t* pNam
     const amf_wstring  name(pName);
     if(name == FFMPEG_MUXER_ENABLE_VIDEO || name == FFMPEG_MUXER_ENABLE_AUDIO)
     {
-        FFMPEG_MUXER_STREAM_TYPE_ENUM eType = name == FFMPEG_MUXER_ENABLE_AUDIO ? MUXER_AUDIO : MUXER_VIDEO;
+        AMF_STREAM_TYPE_ENUM eType = name == FFMPEG_MUXER_ENABLE_AUDIO ? AMF_STREAM_AUDIO : AMF_STREAM_VIDEO;
 
         bool enableStream = false;
         GetProperty(name.c_str(), &enableStream);
@@ -398,7 +396,7 @@ void AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::OnPropertyChanged(const wchar_t* pNam
         for(amf_vector<AMFInputMuxerImplPtr>::iterator it = m_InputStreams.begin(); it != m_InputStreams.end(); it++)
         {
             amf_int64 type;
-            (*it)->GetProperty(FFMPEG_MUXER_STREAM_TYPE, &type);
+            (*it)->GetProperty(AMF_STREAM_TYPE, &type);
             if(type == eType)
             {
                 bFound = true;
@@ -411,7 +409,7 @@ void AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::OnPropertyChanged(const wchar_t* pNam
         }
         if(!bFound && enableStream)
         {
-            if(eType == MUXER_VIDEO)
+            if(eType == AMF_STREAM_VIDEO)
             {
                 m_InputStreams.push_back(new AMFVideoInputMuxerImpl(this));
             }
@@ -473,15 +471,15 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
               
 
         AMFInputMuxerImplPtr  spInput    = m_InputStreams[ind];
-        amf_int64             streamType = MUXER_UNKNOWN;
-        AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_STREAM_TYPE, &streamType));
+        amf_int64             streamType = AMF_STREAM_UNKNOWN;
+        AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_TYPE, &streamType));
 
         switch (streamType)
         {
-        case MUXER_VIDEO:   ist->id=AVMEDIA_TYPE_VIDEO; break;
-        case MUXER_AUDIO:   ist->id=AVMEDIA_TYPE_AUDIO; break;
-        case MUXER_DATA:    ist->id=AVMEDIA_TYPE_DATA; break;
-        case MUXER_UNKNOWN: 
+        case AMF_STREAM_VIDEO:   ist->id=AVMEDIA_TYPE_VIDEO; break;
+        case AMF_STREAM_AUDIO:   ist->id=AVMEDIA_TYPE_AUDIO; break;
+        case AMF_STREAM_DATA:    ist->id=AVMEDIA_TYPE_DATA; break;
+        case AMF_STREAM_UNKNOWN: 
         default:            ist->id=AVMEDIA_TYPE_UNKNOWN; break;
         }
 
@@ -490,15 +488,19 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
 
         //Codec ID is FFMPEG's
         amf_int64  codecID = AV_CODEC_ID_NONE;
-        AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_CODEC_ID, &codecID));
+        AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_CODEC_ID, &codecID));
+        if(streamType == AMF_STREAM_VIDEO)
+        {
+            codecID = GetFFMPEGVideoFormat(AMF_STREAM_CODEC_ID_ENUM(codecID));
+        }
         ist->codec->codec_id = (AVCodecID) codecID;
         ist->codecpar->codec_id = (AVCodecID) codecID;
 
-        AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_BIT_RATE, &ist->codec->bit_rate));
+        AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_BIT_RATE, &ist->codec->bit_rate));
         ist->codecpar->bit_rate = ist->codec->bit_rate;
 
         AMFVariant val;
-        AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_EXTRA_DATA, &val));
+        AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_EXTRA_DATA, &val));
         if (!val.Empty() && val.pInterface)
         {
             // NOTE: the buffer ptr. shouldn't disappear as the 
@@ -515,10 +517,10 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
         ist->internal->avctx = avcodec_alloc_context3(NULL);
 
 
-        if (streamType==MUXER_VIDEO)
+        if (streamType==AMF_STREAM_VIDEO)
         {
             AMFRate  frameRate;
-            AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_VIDEO_FRAME_RATE, &frameRate));
+            AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_VIDEO_FRAME_RATE, &frameRate));
 
             // default pts settings is MPEG like 
             avpriv_set_pts_info(ist, 33, 1, 90000);
@@ -530,7 +532,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
 
 
             AMFSize frame;
-            AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_VIDEO_FRAMESIZE, &frame));
+            AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, &frame));
 
             ist->codec->width = frame.width;
             ist->codec->height = frame.height;
@@ -544,23 +546,23 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
             ist->codecpar->format = AV_PIX_FMT_YUV420P; // always
 
         }
-        else if (streamType==MUXER_AUDIO)
+        else if (streamType==AMF_STREAM_AUDIO)
         {
-            AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_AUDIO_SAMPLE_RATE, &ist->codec->sample_rate));
-            AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_AUDIO_CHANNELS, &ist->codec->channels));
+            AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_AUDIO_SAMPLE_RATE, &ist->codec->sample_rate));
+            AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_AUDIO_CHANNELS, &ist->codec->channels));
             ist->codecpar->sample_rate = ist->codec->sample_rate;
             ist->codecpar->channels = ist->codec->channels;
 
 
             amf_int64  sampleFormat = AMFAF_UNKNOWN;
-            AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_AUDIO_SAMPLE_FORMAT, &sampleFormat));
+            AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_AUDIO_FORMAT, &sampleFormat));
 
             ist->codec->sample_fmt=GetFFMPEGAudioFormat((AMF_AUDIO_FORMAT) sampleFormat);
             ist->codecpar->format = ist->codec->sample_fmt;
 
-            AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_AUDIO_CHANNEL_LAYOUT, &ist->codec->channel_layout));
-            AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_AUDIO_BLOCK_ALIGN, &ist->codec->block_align));
-            AMF_RETURN_IF_FAILED(spInput->GetProperty(FFMPEG_MUXER_AUDIO_FRAME_SIZE, &ist->codec->frame_size));
+            AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_AUDIO_CHANNEL_LAYOUT, &ist->codec->channel_layout));
+            AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_AUDIO_BLOCK_ALIGN, &ist->codec->block_align));
+            AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_AUDIO_FRAME_SIZE, &ist->codec->frame_size));
 
             ist->codecpar->channel_layout = ist->codec->channel_layout;
             ist->codecpar->block_align = ist->codec->block_align;

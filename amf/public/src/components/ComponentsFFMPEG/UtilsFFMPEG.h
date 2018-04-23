@@ -32,7 +32,7 @@
 //
 #pragma once
 
-#include "public/include/core/Context.h"
+#include "public/include/components/Component.h"
 
 
 extern "C"
@@ -55,11 +55,15 @@ namespace amf
 
     amf_int32         AMF_STD_CALL   GetAudioSampleSize(AMF_AUDIO_FORMAT inFormat);
     bool              AMF_STD_CALL   IsAudioPlanar(AMF_AUDIO_FORMAT inFormat);
-    
+
+    AMF_STREAM_CODEC_ID_ENUM  AMF_STD_CALL   GetAMFVideoFormat(AVCodecID inFormat);
+    AVCodecID    AMF_STD_CALL   GetFFMPEGVideoFormat(AMF_STREAM_CODEC_ID_ENUM inFormat);
 }
 
 // there is no definition in FFMPEG for H264MVC so create an ID
 // based on the last element in their enumeration
-extern const amf_int  AV_CODEC_H264MVC;
+#define AMF_CODEC_H265MAIN10      1005
+#define AV_CODEC_H264MVC          1006
+
 extern AVRational AMF_TIME_BASE_Q;
 extern AVRational FFMPEG_TIME_BASE_Q;

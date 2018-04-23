@@ -43,7 +43,6 @@ using namespace amf;
 
 // there is no definition in FFMPEG for H264MVC so create an ID
 // based on the last element in their enumeration
-const amf_int  AV_CODEC_H264MVC = AV_CODEC_ID_WRAPPED_AVFRAME + 0x300000;
 AVRational AMF_TIME_BASE_Q    = { 1, AMF_SECOND };
 AVRational FFMPEG_TIME_BASE_Q = { 1, AV_TIME_BASE };
 
@@ -404,3 +403,45 @@ amf_int32 AMF_STD_CALL  amf::GetAudioSampleSize(AMF_AUDIO_FORMAT inFormat)
     }
     return sample_size;
 }
+
+//-------------------------------------------------------------------------------------------------
+AMF_STREAM_CODEC_ID_ENUM  AMF_STD_CALL   amf::GetAMFVideoFormat(AVCodecID inFormat)
+{
+    switch(inFormat)
+    {
+    case AV_CODEC_ID_NONE: return AMF_STREAM_CODEC_ID_UNKNOWN;
+    case AV_CODEC_ID_MPEG2VIDEO: return AMF_STREAM_CODEC_ID_MPEG2;
+    case AV_CODEC_ID_MPEG4: return AMF_STREAM_CODEC_ID_MPEG4;
+    case AV_CODEC_ID_WMV3: return AMF_STREAM_CODEC_ID_WMV3;
+    case AV_CODEC_ID_VC1: return AMF_STREAM_CODEC_ID_VC1;
+    case AV_CODEC_ID_H264: return AMF_STREAM_CODEC_ID_H264_AVC;
+    case AV_CODEC_H264MVC: return AMF_STREAM_CODEC_ID_H264_MVC;
+    //case AMF_STREAM_CODEC_ID_H264_SVC    = 7,  // AMFVideoDecoderUVD_H264_SVC   
+    case AV_CODEC_ID_MJPEG: return AMF_STREAM_CODEC_ID_MJPEG;
+    case AV_CODEC_ID_HEVC: return AMF_STREAM_CODEC_ID_H265_HEVC;
+    case AMF_CODEC_H265MAIN10: return AMF_STREAM_CODEC_ID_H265_MAIN10;
+
+    }
+    return AMF_STREAM_CODEC_ID_UNKNOWN;
+}
+//-------------------------------------------------------------------------------------------------
+AVCodecID    AMF_STD_CALL   amf::GetFFMPEGVideoFormat(AMF_STREAM_CODEC_ID_ENUM inFormat)
+{
+    switch(inFormat)
+    {
+    case AMF_STREAM_CODEC_ID_UNKNOWN: return AV_CODEC_ID_NONE;
+    case AMF_STREAM_CODEC_ID_MPEG2: return AV_CODEC_ID_MPEG2VIDEO;
+    case AMF_STREAM_CODEC_ID_MPEG4: return AV_CODEC_ID_MPEG4;
+    case AMF_STREAM_CODEC_ID_WMV3: return AV_CODEC_ID_WMV3;
+    case AMF_STREAM_CODEC_ID_VC1: return AV_CODEC_ID_VC1;
+    case AMF_STREAM_CODEC_ID_H264_AVC: return AV_CODEC_ID_H264;
+    case AMF_STREAM_CODEC_ID_H264_MVC: return (AVCodecID)AV_CODEC_H264MVC;
+    //case AMF_STREAM_CODEC_ID_H264_SVC    = 7,  // AMFVideoDecoderUVD_H264_SVC   
+    case AMF_STREAM_CODEC_ID_MJPEG: return AV_CODEC_ID_MJPEG;
+    case AMF_STREAM_CODEC_ID_H265_HEVC: return AV_CODEC_ID_HEVC;
+    case AMF_STREAM_CODEC_ID_H265_MAIN10: return (AVCodecID)AMF_CODEC_H265MAIN10;
+
+    }
+    return AV_CODEC_ID_NONE;
+}
+//-------------------------------------------------------------------------------------------------

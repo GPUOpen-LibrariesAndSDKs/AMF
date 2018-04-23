@@ -1,0 +1,127 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\public\common\AMFFactory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\AMFSTL.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\DataStreamFactory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\DataStreamFile.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\DataStreamMemory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\IOCapsImpl.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\PropertyStorageExImpl.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\TraceAdapter.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\Thread.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\Windows\ThreadWindows.cpp">
+      <Filter>public\common\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\stitch\samples\Common\StitchPipelineBase.cpp">
+      <Filter>stitch\samples\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\stitch\src\components\ZCamLiveStream\DataStreamZCam.cpp">
+      <Filter>stitch\src\components\ZCamLiveStream</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\stitch\src\components\ZCamLiveStream\ZCamLiveStreamImpl.cpp">
+      <Filter>stitch\src\components\ZCamLiveStream</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\stitch\src\components\VideoCapture\MFSource.cpp" />
+    <ClCompile Include="..\..\..\..\stitch\src\components\VideoCapture\VideoCaptureImpl.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\public\common\DataStreamMemory.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\AMFFactory.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\AMFSTL.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\ByteArray.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\DataStream.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\DataStreamFile.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\InterfaceImpl.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\IOCapsImpl.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\PropertyStorageImpl.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\ObservableImpl.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\PropertyStorageExImpl.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\TraceAdapter.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\Thread.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\stitch\samples\Common\StitchPipelineBase.h">
+      <Filter>stitch\samples\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\stitch\src\components\ZCamLiveStream\DataStreamZCam.h">
+      <Filter>stitch\src\components\ZCamLiveStream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\stitch\src\components\ZCamLiveStream\ZCamLiveStreamImpl.h">
+      <Filter>stitch\src\components\ZCamLiveStream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\stitch\src\components\VideoCapture\MFSource.h" />
+    <ClInclude Include="..\..\..\..\stitch\src\components\VideoCapture\VideoCaptureImpl.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="public">
+      <UniqueIdentifier>{ac6a9179-74a6-4f96-97bf-91a8e64f288a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\common">
+      <UniqueIdentifier>{bb2209db-36a4-4e22-ab3f-489b89497803}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="stitch">
+      <UniqueIdentifier>{de2c31a3-7ba7-4c5c-8f3b-75335011ab12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\common\Windows">
+      <UniqueIdentifier>{018ba6e3-2d93-4eba-88aa-7e1d25d25124}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="stitch\src">
+      <UniqueIdentifier>{a98857da-bc9d-4472-80e4-bea09d35572c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="stitch\samples">
+      <UniqueIdentifier>{640254db-c4aa-4dc1-85af-5826487d573a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="stitch\samples\Common">
+      <UniqueIdentifier>{95e3d969-d260-4e45-890f-fbc47220944a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="stitch\src\components">
+      <UniqueIdentifier>{f5103d1f-7e5d-4297-868c-49e1a51c9d2d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="stitch\src\components\ZCamLiveStream">
+      <UniqueIdentifier>{70c34198-15db-45f2-be0c-75dd4f61ad30}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

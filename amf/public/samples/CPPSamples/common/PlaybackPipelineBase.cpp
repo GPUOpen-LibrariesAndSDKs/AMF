@@ -302,17 +302,17 @@ AMF_RESULT PlaybackPipelineBase::Init()
             res = m_pDemuxerVideo->GetOutput(output, &pOutput);
             CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxerVideo->GetOutput() failed");
 
-            amf_int64 eStreamType = DEMUXER_UNKNOWN;
-            pOutput->GetProperty(FFMPEG_DEMUXER_STREAM_TYPE, &eStreamType);
+            amf_int64 eStreamType = AMF_STREAM_UNKNOWN;
+            pOutput->GetProperty(AMF_STREAM_TYPE, &eStreamType);
 
 
-            if(iVideoStreamIndex < 0 && eStreamType == DEMUXER_VIDEO)
+            if(iVideoStreamIndex < 0 && eStreamType == AMF_STREAM_VIDEO)
             {
                 iVideoStreamIndex = output;
                 pVideoOutput = pOutput;
             }
 
-            if(iAudioStreamIndex < 0 && eStreamType == DEMUXER_AUDIO)
+            if(iAudioStreamIndex < 0 && eStreamType == AMF_STREAM_AUDIO)
             {
                 iAudioStreamIndex = output;
                 pAudioOutput = pOutput;
@@ -337,17 +337,17 @@ AMF_RESULT PlaybackPipelineBase::Init()
                 res = m_pDemuxerAudio->GetOutput(output, &pOutput);
                 CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxerAudio->GetOutput() failed");
 
-                amf_int64 eStreamType = DEMUXER_UNKNOWN;
-                pOutput->GetProperty(FFMPEG_DEMUXER_STREAM_TYPE, &eStreamType);
+                amf_int64 eStreamType = AMF_STREAM_UNKNOWN;
+                pOutput->GetProperty(AMF_STREAM_TYPE, &eStreamType);
 
 
-                if(iVideoStreamIndex < 0 && eStreamType == DEMUXER_VIDEO)
+                if(iVideoStreamIndex < 0 && eStreamType == AMF_STREAM_VIDEO)
                 {
                     iVideoStreamIndex = output;
                     pVideoOutput = pOutput;
                 }
 
-                if(iAudioStreamIndex < 0 && eStreamType == DEMUXER_AUDIO)
+                if(iAudioStreamIndex < 0 && eStreamType == AMF_STREAM_AUDIO)
                 {
                     iAudioStreamIndex = output;
                     pAudioOutput = pOutput;
@@ -694,17 +694,17 @@ AMF_RESULT  PlaybackPipelineBase::InitAudio(amf::AMFOutput* pOutput)
     amf_int64 streamFrameSize = 0;
     amf::AMFInterfacePtr pExtradata;
 
-    pOutput->GetProperty(FFMPEG_DEMUXER_CODEC_ID, &codecID);
+    pOutput->GetProperty(AMF_STREAM_CODEC_ID, &codecID);
 
-    pOutput->GetProperty(FFMPEG_DEMUXER_BIT_RATE, &streamBitRate);
-    pOutput->GetProperty(FFMPEG_DEMUXER_EXTRA_DATA, &pExtradata);
+    pOutput->GetProperty(AMF_STREAM_BIT_RATE, &streamBitRate);
+    pOutput->GetProperty(AMF_STREAM_EXTRA_DATA, &pExtradata);
 
-    pOutput->GetProperty(FFMPEG_DEMUXER_AUDIO_SAMPLE_RATE, &streamSampleRate);
-    pOutput->GetProperty(FFMPEG_DEMUXER_AUDIO_CHANNELS, &streamChannels);
-    pOutput->GetProperty(FFMPEG_DEMUXER_AUDIO_SAMPLE_FORMAT, &streamFormat);
-    pOutput->GetProperty(FFMPEG_DEMUXER_AUDIO_CHANNEL_LAYOUT, &streamLayout);
-    pOutput->GetProperty(FFMPEG_DEMUXER_AUDIO_BLOCK_ALIGN, &streamBlockAlign);
-    pOutput->GetProperty(FFMPEG_DEMUXER_AUDIO_FRAME_SIZE, &streamFrameSize);
+    pOutput->GetProperty(AMF_STREAM_AUDIO_SAMPLE_RATE, &streamSampleRate);
+    pOutput->GetProperty(AMF_STREAM_AUDIO_CHANNELS, &streamChannels);
+    pOutput->GetProperty(AMF_STREAM_AUDIO_FORMAT, &streamFormat);
+    pOutput->GetProperty(AMF_STREAM_AUDIO_CHANNEL_LAYOUT, &streamLayout);
+    pOutput->GetProperty(AMF_STREAM_AUDIO_BLOCK_ALIGN, &streamBlockAlign);
+    pOutput->GetProperty(AMF_STREAM_AUDIO_FRAME_SIZE, &streamFrameSize);
 
     res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_AUDIO_DECODER, &m_pAudioDecoder);
     CHECK_AMF_ERROR_RETURN(res, L"LoadExternalComponent(" << FFMPEG_AUDIO_DECODER << L") failed");
@@ -766,7 +766,7 @@ AMF_RESULT  PlaybackPipelineBase::InitAudio(amf::AMFOutput* pOutput)
     res = m_pAudioConverter->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
     CHECK_AMF_ERROR_RETURN(res, L"m_pAudioConverter->Init() failed");
 
-    pOutput->SetProperty(FFMPEG_DEMUXER_STREAM_ENABLED, true);
+    pOutput->SetProperty(AMF_STREAM_ENABLED, true);
 
    return AMF_OK;
 }
@@ -804,26 +804,24 @@ AMF_RESULT  PlaybackPipelineBase::InitVideo(amf::AMFOutput* pOutput, amf::AMF_ME
     else if(pOutput != NULL)
     { 
         amf::AMFInterfacePtr pInterface;
-        pOutput->GetProperty(FFMPEG_DEMUXER_EXTRA_DATA, &pInterface);
+        pOutput->GetProperty(AMF_STREAM_EXTRA_DATA, &pInterface);
         pExtraData = amf::AMFBufferPtr(pInterface);
 
         AMFSize frameSize;
-        pOutput->GetProperty(FFMPEG_DEMUXER_VIDEO_FRAMESIZE, &frameSize);
+        pOutput->GetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, &frameSize);
         m_iVideoWidth = frameSize.width;
         m_iVideoHeight = frameSize.height;
         
-        amf::AMFVariant var;
-        res= pOutput->GetProperty(FFMPEG_DEMUXER_VIDEO_DECODER_ID, &var);
-        if(res == AMF_OK)  // video stream setup
-        {
-            pVideoDecoderID = var.ToWString().c_str();
-        }
-        pOutput->SetProperty(FFMPEG_DEMUXER_STREAM_ENABLED, true);
+        amf_int64 codecID;
+        res= pOutput->GetProperty(AMF_STREAM_CODEC_ID, &codecID);
+        pVideoDecoderID = StreamCodecIDtoDecoderID(AMF_STREAM_CODEC_ID_ENUM(codecID));
+        
+        pOutput->SetProperty(AMF_STREAM_ENABLED, true);
 
-		pOutput->GetProperty(FFMPEG_DEMUXER_BIT_RATE, &bitRate);
+		pOutput->GetProperty(AMF_STREAM_BIT_RATE, &bitRate);
 
 		AMFRate frameRate = {};
-		pOutput->GetProperty(FFMPEG_DEMUXER_VIDEO_FRAME_RATE, &frameRate);
+		pOutput->GetProperty(AMF_STREAM_VIDEO_FRAME_RATE, &frameRate);
 
 		dFps = frameRate.den == 0 ? 0.0 : (static_cast<double>(frameRate.num) / static_cast<double>(frameRate.den));
     }
@@ -840,6 +838,11 @@ AMF_RESULT  PlaybackPipelineBase::InitVideo(amf::AMFOutput* pOutput, amf::AMF_ME
     // Init Presenter
     res = CreateVideoPresenter(presenterEngine, bitRate, dFps);
     CHECK_AMF_ERROR_RETURN(res, L"CreatePresenter() failed");
+
+    if(m_eDecoderFormat == amf::AMF_SURFACE_P010) //HDR support
+    {
+        m_pVideoPresenter->SetInputFormat(amf::AMF_SURFACE_RGBA_F16);
+    }
 
     res = m_pVideoPresenter->Init(m_iVideoWidth, m_iVideoHeight);
     CHECK_AMF_ERROR_RETURN(res, L"m_pVideoPresenter->Init(" << m_iVideoWidth << m_iVideoHeight << ") failed");

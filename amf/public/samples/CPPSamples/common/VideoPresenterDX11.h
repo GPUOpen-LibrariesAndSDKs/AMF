@@ -70,6 +70,7 @@ public:
     virtual AMF_RESULT              SetInputFormat(amf::AMF_SURFACE_FORMAT format);
     virtual DXGI_FORMAT             GetDXGIFormat() const;
     virtual AMF_RESULT              Flush();
+//    virtual bool                SupportAllocator() const { return false; } //MM to test only
 
     virtual AMF_RESULT Init(amf_int32 width, amf_int32 height);
     virtual AMF_RESULT Terminate();
@@ -79,6 +80,9 @@ public:
             amf_int32 width, amf_int32 height, amf_int32 hPitch, amf_int32 vPitch, amf::AMFSurface** ppSurface);
     // amf::AMFSurfaceObserver interface
     virtual void AMF_STD_CALL OnSurfaceDataRelease(amf::AMFSurface* pSurface);
+protected:
+    virtual void        UpdateProcessor();
+
 
 private:
     AMF_RESULT BitBlt(amf::AMF_FRAME_TYPE eFrameType, ID3D11Texture2D* pSrcSurface, AMFRect* pSrcRect, ID3D11Texture2D* pDstSurface, AMFRect* pDstRect);
@@ -93,6 +97,9 @@ private:
     AMF_RESULT CopySurface(amf::AMF_FRAME_TYPE eFrameType, ID3D11Texture2D* pSrcSurface, AMFRect* pSrcRect);
 
     AMF_RESULT CreatePresentationSwapChain();
+
+    AMF_RESULT ApplyCSC(amf::AMFSurface* pSurface);
+
 
     amf::AMF_SURFACE_FORMAT             m_eInputFormat;
     CComPtr<ID3D11Device>               m_pDevice;
@@ -134,4 +141,6 @@ private:
     AMFRect                     m_sourceVertexRect;
 
     bool                            m_bResizeSwapChain;
+
+    bool                        m_bFirstFrame; 
 };

@@ -106,7 +106,7 @@ protected:
     virtual AMF_RESULT CalcOutputRect(const AMFRect* pSrcRect, const AMFRect* pDstRect, AMFRect* pTargetRect);
     bool WaitForPTS(amf_pts pts, bool bRealWait = true); // returns false if frame is too late and should be dropped
 
-    void        UpdateProcessor();
+    virtual void        UpdateProcessor();
 
     amf_pts                             m_startTime;
     amf_pts                             m_startPts;

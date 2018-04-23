@@ -168,6 +168,30 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
     m_inSampleFormat = (AMF_AUDIO_FORMAT)format;
     m_pCodecContext->sample_fmt = GetFFMPEGAudioFormat(m_inSampleFormat);
 
+    // verify format in codec
+    if(codec->sample_fmts != NULL)
+    { 
+        bool bFound = false;
+        for(int i = 0; ; i++)
+        {
+            if(codec->sample_fmts[i] == -1)
+            {
+                break;
+            }
+            if(codec->sample_fmts[i] == m_pCodecContext->sample_fmt)
+            {
+                bFound = true;
+                break;
+            }
+        }
+        if(!bFound)
+        {
+            m_pCodecContext->sample_fmt = codec->sample_fmts[0];
+            m_inSampleFormat = GetAMFAudioFormat(m_pCodecContext->sample_fmt);
+            SetProperty(AUDIO_ENCODER_IN_AUDIO_SAMPLE_FORMAT, m_inSampleFormat);
+        }
+    }
+
     // set all default parameters
     //m_pCodecContext->strict_std_compliance = FF_COMPLIANCE_STRICT;
     m_pCodecContext->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
@@ -478,7 +502,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::QueryOutput(AMFData** ppData
         else
         {
             amf_pts amfDuration = av_rescale_q(avPacket.duration, m_pCodecContext->time_base , AMF_TIME_BASE_Q);
-            samples = amfDuration * m_pCodecContext->sample_rate / AMF_SECOND;
+            samples = int(amfDuration * m_pCodecContext->sample_rate / AMF_SECOND);
         }
     }
     if (ret == 0)

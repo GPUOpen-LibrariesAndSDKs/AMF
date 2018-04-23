@@ -28,7 +28,11 @@
 //
 
 New features are available in 
-Driver: Radeon Software Edition Crimson; 17.12.2 Software: 17.50 and later 
+Driver: Radeon Software Adrenalin Edition 18.3.4 Software: 17.50 and later 
+
+1.4.7.0 (04.12.2018) version
+--------------------------
+    - 360 video stitch sample
 
 1.4.6.0 (11.30.2017) version
 --------------------------

@@ -131,7 +131,7 @@ int AMFWASAPISourceImpl::CaptureOnePacketTry(char** ppData, UINT& numSamples)
 				break;
 			}
 			// Wait long enough so we can make sure that we true silence
-			amf_sleep(200);
+			amf_sleep(20);
 		}
 	}
 

@@ -1,0 +1,429 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{0D493826-E26D-42EB-88C7-86D20BBF3929}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>componentstitch</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.10586.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\..\public\props\AMF_VS2015.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\..\public\props\AMF_VS2015.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\..\public\props\AMF_VS2015.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\..\public\props\AMF_VS2015.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <TargetName>amf-stitch-$(PlatformArchitecture)</TargetName>
+    <OutDir>$(ProjectDir)..\..\..\..\bin\vs2015x$(PlatformArchitecture)$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)..\..\..\..\bin\obj\vs2015x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <TargetName>amf-stitch-$(PlatformArchitecture)</TargetName>
+    <OutDir>$(ProjectDir)..\..\..\..\bin\vs2015x$(PlatformArchitecture)$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)..\..\..\..\bin\obj\vs2015x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <TargetName>amf-stitch-$(PlatformArchitecture)</TargetName>
+    <OutDir>$(ProjectDir)..\..\..\..\bin\vs2015x$(PlatformArchitecture)$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)..\..\..\..\bin\obj\vs2015x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <TargetName>amf-stitch-$(PlatformArchitecture)</TargetName>
+    <OutDir>$(ProjectDir)..\..\..\..\bin\vs2015x$(PlatformArchitecture)$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)..\..\..\..\bin\obj\vs2015x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>AMF_COMPONENT_VSTITCH_EXPORTS;WIN32;_DEBUG;_WINDOWS;_USRDLL;COMPONENTSTITCH_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(SolutionDir)../../../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <OpenMPSupport>true</OpenMPSupport>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>AMF_COMPONENT_VSTITCH_EXPORTS;WIN32;_DEBUG;_WINDOWS;_USRDLL;COMPONENTSTITCH_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(SolutionDir)../../../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <OpenMPSupport>true</OpenMPSupport>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>AMF_COMPONENT_VSTITCH_EXPORTS;WIN32;NDEBUG;_WINDOWS;_USRDLL;COMPONENTSTITCH_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(SolutionDir)../../../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <OpenMPSupport>true</OpenMPSupport>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>AMF_COMPONENT_VSTITCH_EXPORTS;WIN32;NDEBUG;_WINDOWS;_USRDLL;COMPONENTSTITCH_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(SolutionDir)../../../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <OpenMPSupport>true</OpenMPSupport>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\public\common\AMFFactory.h" />
+    <ClInclude Include="..\..\..\..\public\common\AMFSTL.h" />
+    <ClInclude Include="..\..\..\..\public\common\DataStreamFile.h" />
+    <ClInclude Include="..\..\..\..\public\common\DataStreamMemory.h" />
+    <ClInclude Include="..\..\..\..\public\common\IOCapsImpl.h" />
+    <ClInclude Include="..\..\..\..\public\common\ObservableImpl.h" />
+    <ClInclude Include="..\..\..\..\public\common\PropertyStorageExImpl.h" />
+    <ClInclude Include="..\..\..\..\public\common\PropertyStorageImpl.h" />
+    <ClInclude Include="..\..\..\..\public\common\Thread.h" />
+    <ClInclude Include="..\..\..\..\public\common\TraceAdapter.h" />
+    <ClInclude Include="..\..\..\..\public\include\components\Component.h" />
+    <ClInclude Include="..\..\..\..\public\include\components\ComponentCaps.h" />
+    <ClInclude Include="..\..\..\..\public\include\core\AudioBuffer.h" />
+    <ClInclude Include="..\..\..\..\public\include\core\Buffer.h" />
+    <ClInclude Include="..\..\..\..\public\include\core\Compute.h" />
+    <ClInclude Include="..\..\..\..\public\include\core\Context.h" />
+    <ClInclude Include="..\..\..\..\public\include\core\Data.h" />
+    <ClInclude Include="..\..\..\..\public\include\core\Debug.h" />
+    <ClInclude Include="..\..\..\..\public\include\core\Factory.h" />
+    <ClInclude Include="..\..\..\..\public\include\core\Guid.h" />
+    <ClInclude Include="..\..\..\..\public\include\core\Interface.h" />
+    <ClInclude Include="..\..\..\..\public\include\core\Plane.h" />
+    <ClInclude Include="..\..\..\..\public\include\core\Platform.h" />
+    <ClInclude Include="..\..\..\..\public\include\core\PropertyStorage.h" />
+    <ClInclude Include="..\..\..\..\public\include\core\PropertyStorageEx.h" />
+    <ClInclude Include="..\..\..\..\public\include\core\Result.h" />
+    <ClInclude Include="..\..\..\..\public\include\core\Surface.h" />
+    <ClInclude Include="..\..\..\..\public\include\core\Trace.h" />
+    <ClInclude Include="..\..\..\..\public\include\core\Variant.h" />
+    <ClInclude Include="..\..\..\..\public\include\core\Version.h" />
+    <ClInclude Include="..\..\..\..\stitch\include\components\VideoStitch.h" />
+    <ClInclude Include="..\..\..\src\components\VideoStitch\DirectX11\StitchEngineDX11.h" />
+    <ClInclude Include="..\..\..\src\components\VideoStitch\HistogramImpl.h" />
+    <ClInclude Include="..\..\..\src\components\VideoStitch\StitchEngineBase.h" />
+    <ClInclude Include="..\..\..\src\components\VideoStitch\VideoStitchCapsImpl.h" />
+    <ClInclude Include="..\..\..\src\components\VideoStitch\VideoStitchImpl.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\public\common\AMFFactory.cpp" />
+    <ClCompile Include="..\..\..\..\public\common\AMFSTL.cpp" />
+    <ClCompile Include="..\..\..\..\public\common\DataStreamFactory.cpp" />
+    <ClCompile Include="..\..\..\..\public\common\DataStreamFile.cpp" />
+    <ClCompile Include="..\..\..\..\public\common\DataStreamMemory.cpp" />
+    <ClCompile Include="..\..\..\..\public\common\IOCapsImpl.cpp" />
+    <ClCompile Include="..\..\..\..\public\common\PropertyStorageExImpl.cpp" />
+    <ClCompile Include="..\..\..\..\public\common\Thread.cpp" />
+    <ClCompile Include="..\..\..\..\public\common\TraceAdapter.cpp" />
+    <ClCompile Include="..\..\..\..\public\common\Windows\ThreadWindows.cpp" />
+    <ClCompile Include="..\..\..\src\components\VideoStitch\DirectX11\StitchEngineDX11.cpp" />
+    <ClCompile Include="..\..\..\src\components\VideoStitch\HistogramImpl.cpp" />
+    <ClCompile Include="..\..\..\src\components\VideoStitch\ProgramsDX11.cpp" />
+    <ClCompile Include="..\..\..\src\components\VideoStitch\StitchEngineBase.cpp" />
+    <ClCompile Include="..\..\..\src\components\VideoStitch\VideoStitchCapsImpl.cpp" />
+    <ClCompile Include="..\..\..\src\components\VideoStitch\VideoStitchImpl.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\..\src\components\VideoStitch\Programs\Histogram.cl">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(FullPath)" %(Filename)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(FullPath)" %(Filename)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(FullPath)" %(Filename)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(FullPath)" %(Filename)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Building binary resource header for %(Filename)%(Extension)...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Building binary resource header for %(Filename)%(Extension)...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building binary resource header for %(Filename)%(Extension)...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building binary resource header for %(Filename)%(Extension)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(FullPath).h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(FullPath).h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(FullPath).h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(FullPath).h</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\..\src\components\VideoStitch\DirectX11\StitchD3D11.hlsl">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fxc.exe /T ps_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_ps.bin" /E PS  "%(FullPath)"
+fxc.exe /T ps_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_psc.bin" /E PS_Cube  "%(FullPath)"
+fxc.exe /T vs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_vs.bin" /E VS  "%(FullPath)"
+fxc.exe /T gs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_gs.bin" /E GS  "%(FullPath)"
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_ps.bin" %(Filename)_ps
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_psc.bin" %(Filename)_psc
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_vs.bin" %(Filename)_vs
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_gs.bin" %(Filename)_gs</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fxc.exe /T ps_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_ps.bin" /E PS  "%(FullPath)"
+fxc.exe /T ps_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_psc.bin" /E PS_Cube  "%(FullPath)"
+fxc.exe /T vs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_vs.bin" /E VS  "%(FullPath)"
+fxc.exe /T gs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_gs.bin" /E GS  "%(FullPath)"
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_ps.bin" %(Filename)_ps
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_psc.bin" %(Filename)_psc
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_vs.bin" %(Filename)_vs
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_gs.bin" %(Filename)_gs</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">fxc.exe /T ps_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_ps.bin" /E PS  "%(FullPath)"
+fxc.exe /T ps_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_psc.bin" /E PS_Cube  "%(FullPath)"
+fxc.exe /T vs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_vs.bin" /E VS  "%(FullPath)"
+fxc.exe /T gs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_gs.bin" /E GS  "%(FullPath)"
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_ps.bin" %(Filename)_ps
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_psc.bin" %(Filename)_psc
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_vs.bin" %(Filename)_vs
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_gs.bin" %(Filename)_gs</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">fxc.exe /T ps_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_ps.bin" /E PS  "%(FullPath)"
+fxc.exe /T ps_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_psc.bin" /E PS_Cube  "%(FullPath)"
+fxc.exe /T vs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_vs.bin" /E VS  "%(FullPath)"
+fxc.exe /T gs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_gs.bin" /E GS  "%(FullPath)"
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_ps.bin" %(Filename)_ps
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_psc.bin" %(Filename)_psc
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_vs.bin" %(Filename)_vs
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_gs.bin" %(Filename)_gs</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)\%(Directory)\%(Filename)_ps.bin.h;%(RootDir)\%(Directory)\%(Filename)_vs.bin.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)\%(Directory)\%(Filename)_ps.bin.h;%(RootDir)\%(Directory)\%(Filename)_vs.bin.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)\%(Directory)\%(Filename)_ps.bin.h;%(RootDir)\%(Directory)\%(Filename)_vs.bin.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)\%(Directory)\%(Filename)_ps.bin.h;%(RootDir)\%(Directory)\%(Filename)_vs.bin.h</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Building binary resource header for %(Filename)%(Extension)...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Building binary resource header for %(Filename)%(Extension)...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building binary resource header for %(Filename)%(Extension)...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building binary resource header for %(Filename)%(Extension)...</Message>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\..\..\src\components\VideoStitch\ProgramsDX11\BuildLUT.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</VariableName>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename)</VariableName>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename)</VariableName>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\VideoStitch\ProgramsDX11\BuildLUTCenter.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</VariableName>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename)</VariableName>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename)</VariableName>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\VideoStitch\ProgramsDX11\BuildShifts.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</VariableName>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename)</VariableName>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename)</VariableName>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\VideoStitch\ProgramsDX11\Color.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</VariableName>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename)</VariableName>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename)</VariableName>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\VideoStitch\ProgramsDX11\Histogram.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</VariableName>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename)</VariableName>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename)</VariableName>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\VideoStitch\ProgramsDX11\NV12toRGB.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</VariableName>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename)</VariableName>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename)</VariableName>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
+    </FxCompile>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

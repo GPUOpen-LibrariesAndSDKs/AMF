@@ -1,0 +1,233 @@
+# ptGui project file
+
+#-encoding utf8
+#-pathseparator \
+#-fileversion 49
+#-previewwidth 2000
+#-previewheight 1000
+#-vfov 180
+#-resolution 300
+#-fixaspect 1
+#-outputfile 
+#-ccdcrop 1
+#-hasbeenoptimized 1
+#-hvcpmode 1
+#-jpegparameters 95 0
+#-tiffparameters 8bit packbits alpha_assoc
+#-psdparameters 8bit packbits layered
+#-qtvrparameters 800 600 1 1000 70 0 0 -180 180 0 -90 90 90 10 120 1
+#-honorexiforientation 1
+#-exrparameters noalpha
+#-hdroutputhdrblended
+#-hdroutputtonemapped
+#-hdrfileformat hdr
+#-hdrmethod fuse
+#-hdrpsdparameters float none layered
+#-tonemapv2settings PTGTM 1 0.5 20 20 0 0 2 1 0.15 0
+#-fusesettings 0.5 0 0.2 0 0
+#-cameracurve 3.441228 -0.551975 0.294423 -0.095632 0.072139
+#-vignettingparams 
+#-wbexposure 0 0 0
+#-pmoptexposuremode auto
+#-pmoptvignettingmode enabled
+#-pmoptwbmode disabled
+#-pmoptflaremode disabled
+#-pmoptcameracurvemode auto
+#-exposurecorrection 0
+#-tonemapldrpanorama 0
+#-blendweight 100 100 100 100
+#-optviewpoint 0000
+#-useexif1
+#-batchbuilder_useexif 0
+#-stitcher ptgui
+#-blender ptgui
+#-blenderfeather -0.6
+#-optimizer ptgui
+#-interpolator default
+#-autocpdone
+#-imgrotate4444
+#-cpinactive
+#-imginactive
+#-linktoprevious
+#-previewinactive
+#-outputcrop 0 1 0 1
+#-location default
+#-viewingdirection default
+#-alignsettings_generatecp 1
+#-alignsettings_optimize 1
+#-alignsettings_optimizeprealign 1
+#-alignsettings_straighten 1
+#-alignsettings_fit 1
+#-alignsettings_chooseprojection 1
+#-alignsettings_setoptimumsize 1
+#-alignsettings_limitsize 500
+#-alignsettings_optimizeexposure 0
+#-hdrsettings_defaultlinkmode nolink
+#-hdrsettings_donotask 0
+#-batchsettings_align 0
+#-batchsettings_stitch 1
+#-batchsettings_stitchonlyifcontrolpoints 1
+#-defaultprojectfilenamemode firstsourceimage
+#-defaultprojectfilename_custom " Panorama"
+#-defaultprojectfoldermode sourcefolder
+#-defaultprojectfolder_custom ""
+#-defaultpanoramafilenamemode asproject
+#-defaultpanoramafilename_custom ""
+#-defaultpanoramafoldermode projectfolder
+#-defaultpanoramafolder_custom ""
+#-userelativesourceimagepaths 1
+#-optimizeraskreinitialize 1
+#-applytemplate_lens 1
+#-applytemplate_imageparams 1
+#-applytemplate_crop 1
+#-applytemplate_mask 1
+#-applytemplate_panoramasettings 1
+#-applytemplate_projectsettings 1
+#-applytemplate_optimizer 1
+#-globalcrop 0 0 0 0 0 0 0 0.5
+#-theoreticalhfov -1
+#-rect_compression_x 0
+#-rect_compression_y 0
+#-cylindrical_compression_y 0
+#-transverse_cylindrical_compression_x 0
+#-vedutismo_compression_x 1
+#-transverse_vedutismo_compression_y 1
+#-stereographic_compression 1
+#-rectifisheye_compression 1
+# Panorama settings:
+p w2896 h1448 f2 v360 u0 n"JPEG g0 q95"
+m g0 i0
+
+# input images:
+#-dummyimage
+# The following line contains a 'dummy image' containing some global parameters for the project
+o w1 h1 y0 r0 p0 v240.2129736240018 a0.307385205488188 b-0.5908824795355683 c0.3081824109336159 f2 d-42.61940499622291 e-14.47458580644251 g0 t0
+#-imgfile 1920 1080 "ZCAM0748_0000_201706091149.MOV.jpg"
+#-metadata -1 -1 -1 0000-00-00T00:00:00 3*8 0 -1 -1 -1 * * * curve -1 * T * 13144873420579482
+#-viewpoint 0 0 0 0 0
+#-exposureparams 0 0 0 0
+o f2 y135.5213450733344 r-90.191728036218 p1.944682994440001 v=0 a=0 b=0 c=0 d=0 e=0 g=0 t=0 C0,1920,-420,1500
+#-imgfile 1920 1080 "ZCAM0748_0001_201706091149.MOV.jpg"
+#-metadata -1 -1 -1 0000-00-00T00:00:00 3*8 0 -1 -1 -1 * * * curve -1 * T * 13144873424718242
+#-viewpoint 0 0 0 0 0
+#-exposureparams 0 0 0 0
+o f2 y44.2195117957059 r-93.82402523294746 p-0.08496197800272398 v=0 a=0 b=0 c=0 d=0 e=0 g=0 t=0 C0,1920,-420,1500
+#-imgfile 1920 1080 "ZCAM0748_0002_201706091149.MOV.jpg"
+#-metadata -1 -1 -1 0000-00-00T00:00:00 3*8 0 -1 -1 -1 * * * curve -1 * T * 13144873430911494
+#-viewpoint 0 0 0 0 0
+#-exposureparams 0 0 0 0
+o f2 y-43.90526798195234 r-89.92930510970453 p-5.462014694886392 v=0 a=0 b=0 c=0 d=0 e=0 g=0 t=0 C0,1920,-420,1500
+#-imgfile 1920 1080 "ZCAM0748_0003_201706091149.MOV.jpg"
+#-metadata -1 -1 -1 0000-00-00T00:00:00 3*8 0 -1 -1 -1 * * * curve -1 * T * 13144873436488954
+#-viewpoint 0 0 0 0 0
+#-exposureparams 0 0 0 0
+o f2 y-135.7512664501676 r-86.49253630766768 p0.3920106122710934 v=0 a=0 b=0 c=0 d=0 e=0 g=0 t=0 C0,1920,-420,1500
+
+# Control points:
+c n2 N3 x931 y160 X943 Y880 t0
+# Control Point No 0: 1.373216042547868
+c n2 N3 x945 y122 X955 Y841 t0
+# Control Point No 1: 1.47997887307264
+c n2 N3 x932 y85 X942 Y805 t0
+# Control Point No 2: 0.9638462511821631
+c n2 N3 x1080 y206 X1097 Y901 t0
+# Control Point No 3: 0.6755176348306491
+c n2 N3 x828 y163 X839 Y877 t0
+# Control Point No 4: 1.29666014666563
+c n2 N3 x975 y291 X994 Y1006 t0
+# Control Point No 5: 0.9892307975333736
+c n2 N3 x1000 y192 X1014 Y907 t0
+# Control Point No 6: 0.6973948278680614
+c n2 N3 x1011 y94 X1016 Y807 t0
+# Control Point No 7: 0.5126603214798148
+c n2 N3 x849 y201 X857 Y919 t0
+# Control Point No 8: 2.010709177511433
+c n2 N3 x780 y185 X789 Y887 t0
+# Control Point No 9: 0.5460352051757599
+c n2 N3 x1008 y257 X1028 Y969 t0
+# Control Point No 10: 0.5845821883210348
+c n2 N3 x865 y111 X880 Y829 t0
+# Control Point No 11: 0.2016882741795021
+c n2 N3 x731 y158 X746 Y846 t0
+# Control Point No 12: 1.905147972741776
+c n2 N3 x999 y153 X1009 Y866 t0
+# Control Point No 13: 2.255198065319966
+c n1 N2 x1176 y344 X1209 Y1012 t0
+# Control Point No 14: 0.9676756309680031
+c n1 N2 x857 y91 X850 Y832 t0
+# Control Point No 15: 0.174865732685401
+c n1 N2 x946 y105 X933 Y849 t0
+# Control Point No 16: 2.732574307366169
+c n1 N2 x1032 y204 X1024 Y941 t0
+# Control Point No 17: 0.6307836733049774
+c n1 N2 x1128 y197 X1121 Y905 t0
+# Control Point No 18: 1.255829878458424
+c n1 N2 x1080 y96 X1057 Y823 t0
+# Control Point No 19: 1.000116503143115
+c n1 N2 x993 y22 X973 Y764 t0
+# Control Point No 20: 1.137627570193786
+c n1 N2 x793 y152 X782 Y882 t0
+# Control Point No 21: 2.380698400067073
+c n1 N2 x1175 y94 X1139 Y782 t0
+# Control Point No 22: 2.959353143211943
+c n1 N2 x1028 y292 X1030 Y1025 t0
+# Control Point No 23: 0.3211028557775108
+c n3 N4 x1166 y140 X1143 Y837 t0
+# Control Point No 24: 0.8643508576422672
+c n3 N4 x1163 y178 X1150 Y875 t0
+# Control Point No 25: 0.461722738141247
+c n3 N4 x1212 y239 X1213 Y904 t0
+# Control Point No 26: 0.3775816821847499
+c n3 N4 x906 y197 X890 Y951 t0
+# Control Point No 27: 3.298476187715086
+c n3 N4 x1092 y139 X1074 Y865 t0
+# Control Point No 28: 0.8881319440302566
+c n3 N4 x1053 y110 X1032 Y848 t0
+# Control Point No 29: 1.590614480272159
+c n3 N4 x1063 y185 X1053 Y919 t0
+# Control Point No 30: 0.2007531547237734
+c n3 N4 x1026 y182 X1016 Y925 t0
+# Control Point No 31: 0.9588465890438945
+c n3 N4 x988 y211 X977 Y958 t0
+# Control Point No 32: 1.1731791256165
+c n3 N4 x963 y118 X949 Y867 t0
+# Control Point No 33: 1.944833428962038
+c n3 N4 x953 y191 X939 Y941 t0
+# Control Point No 34: 1.43437542446856
+c n3 N4 x1161 y371 X1202 Y1049 t0
+# Control Point No 35: 1.241836593617805
+c n3 N4 x1269 y90 X1214 Y734 t0
+# Control Point No 36: 0.1183516136287677
+c n3 N4 x1251 y278 X1265 Y913 t0
+# Control Point No 37: 1.920928373778279
+c n1 N4 x844 y1051 X850 Y336 t0
+# Control Point No 38: 0.6697117888558906
+c n1 N4 x844 y1016 X846 Y300 t0
+# Control Point No 39: 1.218137108354461
+c n1 N4 x980 y943 X968 Y220 t0
+# Control Point No 40: 1.45743502370108
+c n1 N4 x946 y1005 X935 Y282 t0
+# Control Point No 41: 0.6945632625338123
+c n1 N4 x967 y914 X955 Y190 t0
+# Control Point No 42: 0.7877625100367484
+c n1 N4 x1065 y779 X1069 Y73 t0
+# Control Point No 43: 1.736711969038432
+c n1 N4 x777 y938 X778 Y235 t0
+# Control Point No 44: 1.212510886351761
+c n1 N4 x983 y858 X974 Y130 t0
+# Control Point No 45: 4.822308977715117
+c n1 N4 x908 y822 X895 Y99 t0
+# Control Point No 46: 1.827822431500981
+c n1 N4 x862 y959 X857 Y239 t0
+# Control Point No 47: 1.022604930273739
+c n1 N4 x799 y772 X770 Y69 t0
+# Control Point No 48: 1.742592561993301
+c n1 N4 x830 y844 X814 Y129 t0
+# Control Point No 49: 0.4827749051270448
+c n1 N4 x1015 y775 X1014 Y58 t0
+# Control Point No 50: 1.00904321996995
+c n1 N4 x720 y902 X717 Y218 t0
+# Control Point No 51: 0.8450313059692187
+
+# optimizer:
+v v a b c d e y2 r2 p2 y3 r3 p3 y4 r4 p4

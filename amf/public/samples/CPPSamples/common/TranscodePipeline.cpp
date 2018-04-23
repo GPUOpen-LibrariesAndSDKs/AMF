@@ -350,17 +350,17 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
             res = m_pDemuxer->GetOutput(output, &pOutput);
             CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxer->GetOutput() failed");
 
-            amf_int64 eStreamType = DEMUXER_UNKNOWN;
-            pOutput->GetProperty(FFMPEG_DEMUXER_STREAM_TYPE, &eStreamType);
+            amf_int64 eStreamType = AMF_STREAM_UNKNOWN;
+            pOutput->GetProperty(AMF_STREAM_TYPE, &eStreamType);
 
 
-            if(iVideoStreamIndex < 0 && eStreamType == DEMUXER_VIDEO)
+            if(iVideoStreamIndex < 0 && eStreamType == AMF_STREAM_VIDEO)
             {
                 iVideoStreamIndex = output;
                 pVideoOutput = pOutput;
             }
 
-            if(iAudioStreamIndex < 0 && eStreamType == DEMUXER_AUDIO)
+            if(iAudioStreamIndex < 0 && eStreamType == AMF_STREAM_AUDIO)
             {
                 iAudioStreamIndex = output;
                 pAudioOutput = pOutput;
@@ -430,57 +430,55 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
             res = m_pMuxer->GetInput(input, &pInput);
             CHECK_AMF_ERROR_RETURN(res, L"m_pMuxer->GetInput() failed");
 
-            amf_int64 eStreamType = MUXER_UNKNOWN;
-            pInput->GetProperty(FFMPEG_MUXER_STREAM_TYPE, &eStreamType);
+            amf_int64 eStreamType = AMF_STREAM_UNKNOWN;
+            pInput->GetProperty(AMF_STREAM_TYPE, &eStreamType);
 
 
-            if(eStreamType == MUXER_VIDEO)
+            if(eStreamType == AMF_STREAM_VIDEO)
             {
                 outVideoStreamIndex = input;
 
-                pInput->SetProperty(FFMPEG_MUXER_STREAM_ENABLED, true);
+                pInput->SetProperty(AMF_STREAM_ENABLED, true);
                 amf_int32 bitrate = 0;
                 if(m_EncoderID == AMFVideoEncoderVCE_AVC || m_EncoderID == AMFVideoEncoderVCE_SVC)
                 { 
-#define AV_CODEC_ID_H264 28 // works with current FFmpeg only
-                    pInput->SetProperty(FFMPEG_MUXER_CODEC_ID, AV_CODEC_ID_H264); // default
+                    pInput->SetProperty(AMF_STREAM_CODEC_ID, AMF_STREAM_CODEC_ID_H264_AVC); // default
                     m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, &bitrate);
-                    pInput->SetProperty(FFMPEG_MUXER_BIT_RATE, bitrate);
+                    pInput->SetProperty(AMF_STREAM_BIT_RATE, bitrate);
                     amf::AMFInterfacePtr pExtraData;
                     m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_EXTRADATA, &pExtraData);
-                    pInput->SetProperty(FFMPEG_MUXER_EXTRA_DATA, pExtraData);
+                    pInput->SetProperty(AMF_STREAM_EXTRA_DATA, pExtraData);
 
                     AMFSize frameSize;
                     m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, &frameSize);
-                    pInput->SetProperty(FFMPEG_MUXER_VIDEO_FRAMESIZE, frameSize);
+                    pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, frameSize);
 
                     AMFRate frameRate;
                     m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_FRAMERATE, &frameRate);
-                    pInput->SetProperty(FFMPEG_MUXER_VIDEO_FRAME_RATE, frameRate);
+                    pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_RATE, frameRate);
                 }
                 else
                 {
-#define AV_CODEC_ID_H265 174 // works with current FFmpeg only
-                    pInput->SetProperty(FFMPEG_MUXER_CODEC_ID, AV_CODEC_ID_H265);
+                    pInput->SetProperty(AMF_STREAM_CODEC_ID, AMF_STREAM_CODEC_ID_H265_HEVC);
                     m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE, &bitrate);
-                    pInput->SetProperty(FFMPEG_MUXER_BIT_RATE, bitrate);
+                    pInput->SetProperty(AMF_STREAM_BIT_RATE, bitrate);
                     amf::AMFInterfacePtr pExtraData;
                     m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_HEVC_EXTRADATA, &pExtraData);
-                    pInput->SetProperty(FFMPEG_MUXER_EXTRA_DATA, pExtraData);
+                    pInput->SetProperty(AMF_STREAM_EXTRA_DATA, pExtraData);
 
                     AMFSize frameSize;
                     m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE, &frameSize);
-                    pInput->SetProperty(FFMPEG_MUXER_VIDEO_FRAMESIZE, frameSize);
+                    pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, frameSize);
 
                     AMFRate frameRate;
                     m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, &frameRate);
-                    pInput->SetProperty(FFMPEG_MUXER_VIDEO_FRAME_RATE, frameRate);
+                    pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_RATE, frameRate);
                 }
             }
-            else if(eStreamType == MUXER_AUDIO)
+            else if(eStreamType == AMF_STREAM_AUDIO)
             {
                 outAudioStreamIndex = input;
-                pInput->SetProperty(FFMPEG_MUXER_STREAM_ENABLED, true);
+                pInput->SetProperty(AMF_STREAM_ENABLED, true);
 
 
                 amf_int64 codecID = 0;
@@ -504,16 +502,16 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
 
                 amf::AMFInterfacePtr pExtraData;
                 m_pAudioEncoder->GetProperty(AUDIO_ENCODER_OUT_AUDIO_EXTRA_DATA, &pExtraData);
-                pInput->SetProperty(FFMPEG_MUXER_EXTRA_DATA, pExtraData);
+                pInput->SetProperty(AMF_STREAM_EXTRA_DATA, pExtraData);
 
-                pInput->SetProperty(FFMPEG_MUXER_CODEC_ID, codecID);
-                pInput->SetProperty(FFMPEG_MUXER_BIT_RATE, streamBitRate);
-                pInput->SetProperty(FFMPEG_MUXER_AUDIO_SAMPLE_RATE, streamSampleRate);
-                pInput->SetProperty(FFMPEG_MUXER_AUDIO_CHANNELS, streamChannels);
-                pInput->SetProperty(FFMPEG_MUXER_AUDIO_SAMPLE_FORMAT, streamFormat);
-                pInput->SetProperty(FFMPEG_MUXER_AUDIO_CHANNEL_LAYOUT, streamLayout);
-                pInput->SetProperty(FFMPEG_MUXER_AUDIO_BLOCK_ALIGN, streamBlockAlign);
-                pInput->SetProperty(FFMPEG_MUXER_AUDIO_FRAME_SIZE, streamFrameSize);
+                pInput->SetProperty(AMF_STREAM_CODEC_ID, codecID);
+                pInput->SetProperty(AMF_STREAM_BIT_RATE, streamBitRate);
+                pInput->SetProperty(AMF_STREAM_AUDIO_SAMPLE_RATE, streamSampleRate);
+                pInput->SetProperty(AMF_STREAM_AUDIO_CHANNELS, streamChannels);
+                pInput->SetProperty(AMF_STREAM_AUDIO_FORMAT, streamFormat);
+                pInput->SetProperty(AMF_STREAM_AUDIO_CHANNEL_LAYOUT, streamLayout);
+                pInput->SetProperty(AMF_STREAM_AUDIO_BLOCK_ALIGN, streamBlockAlign);
+                pInput->SetProperty(AMF_STREAM_AUDIO_FRAME_SIZE, streamFrameSize);
             }
         }
         res = m_pMuxer->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
@@ -621,17 +619,17 @@ AMF_RESULT  TranscodePipeline::InitAudio(amf::AMFOutput* pOutput)
     amf_int64 streamFrameSize = 0;
     amf::AMFInterfacePtr pExtradata;
 
-    pOutput->GetProperty(FFMPEG_DEMUXER_CODEC_ID, &codecID);
+    pOutput->GetProperty(AMF_STREAM_CODEC_ID, &codecID);
 
-    pOutput->GetProperty(FFMPEG_DEMUXER_BIT_RATE, &streamBitRate);
-    pOutput->GetProperty(FFMPEG_DEMUXER_EXTRA_DATA, &pExtradata);
+    pOutput->GetProperty(AMF_STREAM_BIT_RATE, &streamBitRate);
+    pOutput->GetProperty(AMF_STREAM_EXTRA_DATA, &pExtradata);
 
-    pOutput->GetProperty(FFMPEG_DEMUXER_AUDIO_SAMPLE_RATE, &streamSampleRate);
-    pOutput->GetProperty(FFMPEG_DEMUXER_AUDIO_CHANNELS, &streamChannels);
-    pOutput->GetProperty(FFMPEG_DEMUXER_AUDIO_SAMPLE_FORMAT, &streamFormat);
-    pOutput->GetProperty(FFMPEG_DEMUXER_AUDIO_CHANNEL_LAYOUT, &streamLayout);
-    pOutput->GetProperty(FFMPEG_DEMUXER_AUDIO_BLOCK_ALIGN, &streamBlockAlign);
-    pOutput->GetProperty(FFMPEG_DEMUXER_AUDIO_FRAME_SIZE, &streamFrameSize);
+    pOutput->GetProperty(AMF_STREAM_AUDIO_SAMPLE_RATE, &streamSampleRate);
+    pOutput->GetProperty(AMF_STREAM_AUDIO_CHANNELS, &streamChannels);
+    pOutput->GetProperty(AMF_STREAM_AUDIO_FORMAT, &streamFormat);
+    pOutput->GetProperty(AMF_STREAM_AUDIO_CHANNEL_LAYOUT, &streamLayout);
+    pOutput->GetProperty(AMF_STREAM_AUDIO_BLOCK_ALIGN, &streamBlockAlign);
+    pOutput->GetProperty(AMF_STREAM_AUDIO_FRAME_SIZE, &streamFrameSize);
 
     res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_AUDIO_DECODER, &m_pAudioDecoder);
     CHECK_AMF_ERROR_RETURN(res, L"LoadExternalComponent(" << FFMPEG_AUDIO_DECODER << L") failed");
@@ -692,7 +690,7 @@ AMF_RESULT  TranscodePipeline::InitAudio(amf::AMFOutput* pOutput)
     res = m_pAudioConverter->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
     CHECK_AMF_ERROR_RETURN(res, L"m_pAudioConverter->Init() failed");
 
-    pOutput->SetProperty(FFMPEG_DEMUXER_STREAM_ENABLED, true);
+    pOutput->SetProperty(AMF_STREAM_ENABLED, true);
 
    return AMF_OK;
 }
@@ -770,22 +768,20 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, amf::AMFOut
     else if(pOutput != NULL)
     { 
         amf::AMFInterfacePtr pInterface;
-        pOutput->GetProperty(FFMPEG_DEMUXER_EXTRA_DATA, &pInterface);
+        pOutput->GetProperty(AMF_STREAM_EXTRA_DATA, &pInterface);
         pExtraData = amf::AMFBufferPtr(pInterface);
 
         AMFSize frameSize;
-        pOutput->GetProperty(FFMPEG_DEMUXER_VIDEO_FRAMESIZE, &frameSize);
+        pOutput->GetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, &frameSize);
         videoWidth = frameSize.width;
         videoHeight = frameSize.height;
         
-        amf::AMFVariant var;
-        res= pOutput->GetProperty(FFMPEG_DEMUXER_VIDEO_DECODER_ID, &var);
-        if(res == AMF_OK)  // video stream setup
-        {
-            pVideoDecoderID = var.ToWString().c_str();
-        }
-        pOutput->SetProperty(FFMPEG_DEMUXER_STREAM_ENABLED, true);
-         pOutput->GetProperty(FFMPEG_DEMUXER_VIDEO_FRAME_RATE, &frameRate);
+        amf_int64 codecID;
+        res= pOutput->GetProperty(AMF_STREAM_CODEC_ID, &codecID);
+        pVideoDecoderID = StreamCodecIDtoDecoderID(AMF_STREAM_CODEC_ID_ENUM(codecID));
+
+        pOutput->SetProperty(AMF_STREAM_ENABLED, true);
+         pOutput->GetProperty(AMF_STREAM_VIDEO_FRAME_RATE, &frameRate);
 
     }
     //---------------------------------------------------------------------------------------------
@@ -851,10 +847,6 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, amf::AMFOut
     // Usage is preset that will set many parameters
     PushParamsToPropertyStorage(pParams, ParamEncoderUsage, m_pEncoder); 
     // override some usage parameters
-    PushParamsToPropertyStorage(pParams, ParamEncoderStatic, m_pEncoder);
-
-//    m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(scaleWidth, scaleHeight));
-
     if(frameRate.den != 0 && frameRate.num != 0)
     { 
         if(m_EncoderID == AMFVideoEncoderVCE_AVC || m_EncoderID == AMFVideoEncoderVCE_SVC)
@@ -866,6 +858,11 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, amf::AMFOut
             m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, frameRate);
         }
     }
+
+    PushParamsToPropertyStorage(pParams, ParamEncoderStatic, m_pEncoder);
+
+//    m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(scaleWidth, scaleHeight));
+
 
     res = m_pEncoder->Init(amf::AMF_SURFACE_NV12, scaleWidth, scaleHeight);
     CHECK_AMF_ERROR_RETURN(res, L"m_pEncoder->Init() failed");

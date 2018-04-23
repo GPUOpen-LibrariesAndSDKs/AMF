@@ -54,7 +54,7 @@ PlaybackPipeline::InitContext(amf::AMF_MEMORY_TYPE type)
     {
     case amf::AMF_MEMORY_DX9:
         {
-            const AMF_RESULT res = m_pContext->InitDX9(NULL);
+            AMF_RESULT res = m_pContext->InitDX9(NULL);
             CHECK_AMF_ERROR_RETURN(res, "Init DX9");
             m_bVideoPresenterDirectConnect = true;
             return AMF_OK;
@@ -62,7 +62,7 @@ PlaybackPipeline::InitContext(amf::AMF_MEMORY_TYPE type)
 
     case amf::AMF_MEMORY_DX11:
         {
-            const AMF_RESULT res = m_pContext->InitDX11(NULL);
+            AMF_RESULT res = m_pContext->InitDX11(NULL);
             CHECK_AMF_ERROR_RETURN(res, "Init DX11");
             m_bVideoPresenterDirectConnect = true;
             return AMF_OK;

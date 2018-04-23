@@ -35,6 +35,7 @@
 
 #include "ParametersStorage.h"
 #include "CmdLogger.h"
+#include "public/include/components/VideoDecoderUVD.h"
 #include "public/include/components/VideoEncoderVCE.h"
 #include "public/include/components/VideoEncoderHEVC.h"
 #include "public/include/components/VideoConverter.h"
@@ -428,4 +429,23 @@ AMF_RESULT ParamConverterCodec(const std::wstring& value, amf::AMFVariant& value
     }
     valueOut = paramValue.c_str();
     return AMF_OK;
+}
+
+wchar_t *StreamCodecIDtoDecoderID(AMF_STREAM_CODEC_ID_ENUM eCodec)
+{
+    switch(eCodec)
+    {
+    case AMF_STREAM_CODEC_ID_UNKNOWN: return L"";
+    case AMF_STREAM_CODEC_ID_MPEG2: return AMFVideoDecoderUVD_MPEG2;
+    case AMF_STREAM_CODEC_ID_MPEG4: return AMFVideoDecoderUVD_MPEG4;      
+    case AMF_STREAM_CODEC_ID_WMV3: return AMFVideoDecoderUVD_WMV3;       
+    case AMF_STREAM_CODEC_ID_VC1: return AMFVideoDecoderUVD_VC1;        
+    case AMF_STREAM_CODEC_ID_H264_AVC: return AMFVideoDecoderUVD_H264_AVC;
+    case AMF_STREAM_CODEC_ID_H264_MVC: return AMFVideoDecoderUVD_H264_MVC;  
+    case AMF_STREAM_CODEC_ID_H264_SVC: return AMFVideoDecoderUVD_H264_SVC;  
+    case AMF_STREAM_CODEC_ID_MJPEG: return AMFVideoDecoderUVD_MJPEG;
+    case AMF_STREAM_CODEC_ID_H265_HEVC: return AMFVideoDecoderHW_H265_HEVC;
+    case AMF_STREAM_CODEC_ID_H265_MAIN10: return AMFVideoDecoderHW_H265_MAIN10;
+    }
+    return L"";
 }

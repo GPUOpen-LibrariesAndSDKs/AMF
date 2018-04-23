@@ -3,7 +3,7 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <IncludePath>$(ProgramFiles)\Windows Kits\10\Include\10.0.10586.0\um;$(ProgramFiles)\Windows Kits\10\Include\10.0.10586.0\shared;$(ProgramFiles)\Windows Kits\10\Include\10.0.10586.0\winrt;$(VC_IncludePath);</IncludePath>
+    <IncludePath>$(ProgramFiles)\Windows Kits\10\Include\10.0.10586.0\um;$(ProgramFiles)\Windows Kits\10\Include\10.0.10586.0\shared;$(ProgramFiles)\Windows Kits\10\Include\10.0.10586.0\winrt;$(WindowsSDK_IncludePath);$(VC_IncludePath);</IncludePath>
     <LibraryPath>$(ProgramFiles)\Windows Kits\10\Lib\10.0.10586.0\um\x86;$(ProgramFiles)\Windows Kits\10\Lib\10.0.10586.0\ucrt\x86;;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(FrameworkSDKDir)\lib</LibraryPath>
     <ExecutablePath>$(ProgramFiles)\Windows Kits\10\bin\x86;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>

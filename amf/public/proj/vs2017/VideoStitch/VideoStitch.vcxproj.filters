@@ -1,0 +1,196 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="DirectX11">
+      <UniqueIdentifier>{914aef31-687e-4326-ac11-f692ae62780b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Programs">
+      <UniqueIdentifier>{db865ec8-a7cd-4541-ad00-c9eed3e32fd4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ProgramsDX11">
+      <UniqueIdentifier>{0462a168-f71d-4a47-b430-2e93fc5b307d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include">
+      <UniqueIdentifier>{b5e90977-faad-4d54-946c-630411bc8400}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\components">
+      <UniqueIdentifier>{c5574088-c5c4-459d-857b-e2510889f548}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\core">
+      <UniqueIdentifier>{0901df4b-c20c-477a-9c2b-ad11265e5f32}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common">
+      <UniqueIdentifier>{02f1f550-82ac-4ae6-889b-fe2fddbaf79a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\public\include\core\Buffer.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Context.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Data.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Debug.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Guid.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Interface.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Plane.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Platform.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\PropertyStorage.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\PropertyStorageEx.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Result.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Surface.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Variant.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Version.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\components\VideoStitch\DirectX11\StitchEngineDX11.h">
+      <Filter>DirectX11</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\AudioBuffer.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Compute.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Factory.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\core\Trace.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\AMFFactory.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\Thread.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\ObservableImpl.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\AMFSTL.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\TraceAdapter.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\PropertyStorageExImpl.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\PropertyStorageImpl.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\IOCapsImpl.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\DataStreamFile.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\DataStreamMemory.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\stitch\include\components\VideoStitch.h">
+      <Filter>include\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\components\VideoStitch\HistogramImpl.h" />
+    <ClInclude Include="..\..\..\src\components\VideoStitch\StitchEngineBase.h" />
+    <ClInclude Include="..\..\..\src\components\VideoStitch\VideoStitchCapsImpl.h" />
+    <ClInclude Include="..\..\..\src\components\VideoStitch\VideoStitchImpl.h" />
+    <ClInclude Include="..\..\..\..\public\include\components\Component.h">
+      <Filter>include\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\include\components\ComponentCaps.h">
+      <Filter>include\components</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\src\components\VideoStitch\DirectX11\StitchEngineDX11.cpp">
+      <Filter>DirectX11</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\AMFFactory.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\Thread.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\Windows\ThreadWindows.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\AMFSTL.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\TraceAdapter.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\PropertyStorageExImpl.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\IOCapsImpl.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\DataStreamFactory.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\DataStreamFile.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\DataStreamMemory.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\components\VideoStitch\HistogramImpl.cpp" />
+    <ClCompile Include="..\..\..\src\components\VideoStitch\ProgramsDX11.cpp" />
+    <ClCompile Include="..\..\..\src\components\VideoStitch\StitchEngineBase.cpp" />
+    <ClCompile Include="..\..\..\src\components\VideoStitch\VideoStitchCapsImpl.cpp" />
+    <ClCompile Include="..\..\..\src\components\VideoStitch\VideoStitchImpl.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\..\src\components\VideoStitch\DirectX11\StitchD3D11.hlsl">
+      <Filter>DirectX11</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\src\components\VideoStitch\Programs\Histogram.cl">
+      <Filter>Programs</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\..\..\src\components\VideoStitch\ProgramsDX11\BuildLUT.hlsl">
+      <Filter>ProgramsDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\VideoStitch\ProgramsDX11\BuildLUTCenter.hlsl">
+      <Filter>ProgramsDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\VideoStitch\ProgramsDX11\BuildShifts.hlsl">
+      <Filter>ProgramsDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\VideoStitch\ProgramsDX11\Color.hlsl">
+      <Filter>ProgramsDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\VideoStitch\ProgramsDX11\Histogram.hlsl">
+      <Filter>ProgramsDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\VideoStitch\ProgramsDX11\NV12toRGB.hlsl">
+      <Filter>ProgramsDX11</Filter>
+    </FxCompile>
+  </ItemGroup>
+</Project>

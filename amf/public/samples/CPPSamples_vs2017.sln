@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27004.2005
+VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CapabilityManager", "CPPSamples\CapabilityManager\CapabilityManager_VS2017.vcxproj", "{6C3B9FF8-624F-4D7F-89E1-2B4AFFAAA873}"
 EndProject
@@ -24,6 +24,17 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ComponentsFFMPEG", "..\proj\vs2017\ComponentsFFMPEG\ComponentsFFMPEG.vcxproj", "{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DVR", "CPPSamples\DVR\DVR_VS2017.vcxproj", "{7E7270B4-B894-4BA2-9E89-621276C6BF28}"
+	ProjectSection(ProjectDependencies) = postProject
+		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD} = {16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VideoStitch", "..\proj\vs2017\VideoStitch\VideoStitch.vcxproj", "{0D493826-E26D-42EB-88C7-86D20BBF3929}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Stitch", "CPPSamples\Stitch\Stitch_VS2017.vcxproj", "{EFE185AE-CE9B-4CCB-8A30-FA4B63A40B3D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0D493826-E26D-42EB-88C7-86D20BBF3929} = {0D493826-E26D-42EB-88C7-86D20BBF3929}
+		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD} = {16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -121,6 +132,22 @@ Global
 		{7E7270B4-B894-4BA2-9E89-621276C6BF28}.Release|Win32.Build.0 = Release|Win32
 		{7E7270B4-B894-4BA2-9E89-621276C6BF28}.Release|x64.ActiveCfg = Release|x64
 		{7E7270B4-B894-4BA2-9E89-621276C6BF28}.Release|x64.Build.0 = Release|x64
+		{0D493826-E26D-42EB-88C7-86D20BBF3929}.Debug|Win32.ActiveCfg = Debug|Win32
+		{0D493826-E26D-42EB-88C7-86D20BBF3929}.Debug|Win32.Build.0 = Debug|Win32
+		{0D493826-E26D-42EB-88C7-86D20BBF3929}.Debug|x64.ActiveCfg = Debug|x64
+		{0D493826-E26D-42EB-88C7-86D20BBF3929}.Debug|x64.Build.0 = Debug|x64
+		{0D493826-E26D-42EB-88C7-86D20BBF3929}.Release|Win32.ActiveCfg = Release|Win32
+		{0D493826-E26D-42EB-88C7-86D20BBF3929}.Release|Win32.Build.0 = Release|Win32
+		{0D493826-E26D-42EB-88C7-86D20BBF3929}.Release|x64.ActiveCfg = Release|x64
+		{0D493826-E26D-42EB-88C7-86D20BBF3929}.Release|x64.Build.0 = Release|x64
+		{EFE185AE-CE9B-4CCB-8A30-FA4B63A40B3D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{EFE185AE-CE9B-4CCB-8A30-FA4B63A40B3D}.Debug|Win32.Build.0 = Debug|Win32
+		{EFE185AE-CE9B-4CCB-8A30-FA4B63A40B3D}.Debug|x64.ActiveCfg = Debug|x64
+		{EFE185AE-CE9B-4CCB-8A30-FA4B63A40B3D}.Debug|x64.Build.0 = Debug|x64
+		{EFE185AE-CE9B-4CCB-8A30-FA4B63A40B3D}.Release|Win32.ActiveCfg = Release|Win32
+		{EFE185AE-CE9B-4CCB-8A30-FA4B63A40B3D}.Release|Win32.Build.0 = Release|Win32
+		{EFE185AE-CE9B-4CCB-8A30-FA4B63A40B3D}.Release|x64.ActiveCfg = Release|x64
+		{EFE185AE-CE9B-4CCB-8A30-FA4B63A40B3D}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

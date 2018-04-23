@@ -1,0 +1,152 @@
+# ptGui project file
+
+#-encoding utf8
+#-pathseparator \
+#-fileversion 49
+#-previewwidth 3840
+#-previewheight 1920
+#-vfov 180
+#-resolution 300
+#-fixaspect 1
+#-outputfile 
+#-ccdcrop 1
+#-hasbeenoptimized 0
+#-hvcpmode 1
+#-jpegparameters 95 0
+#-tiffparameters 8bit packbits alpha_assoc
+#-psdparameters 8bit packbits layered
+#-qtvrparameters 800 600 1 1000 70 0 0 -180 180 0 -90 90 90 10 120 1
+#-honorexiforientation 1
+#-exrparameters noalpha
+#-hdroutputhdrblended
+#-hdroutputtonemapped
+#-hdrfileformat hdr
+#-hdrmethod fuse
+#-hdrpsdparameters float none layered
+#-tonemapv2settings PTGTM 1 0.5 20 20 0 0 2 1 0.15 0
+#-fusesettings 0.5 0 0.2 0 0
+#-cameracurve 3.441228 -0.551975 0.294423 -0.095632 0.072139
+#-vignettingparams 
+#-wbexposure 0 0 0
+#-pmoptexposuremode auto
+#-pmoptvignettingmode enabled
+#-pmoptwbmode disabled
+#-pmoptflaremode disabled
+#-pmoptcameracurvemode auto
+#-exposurecorrection 0
+#-tonemapldrpanorama 0
+#-blendweight 100 100
+#-optviewpoint 00
+#-useexif0
+#-batchbuilder_useexif 0
+#-stitcher ptgui
+#-blender ptgui
+#-blenderfeather -0.6
+#-optimizer ptgui
+#-interpolator default
+#-autocpdone
+#-simpleoptimizer
+#-imgrotate44
+#-cpinactive
+#-imginactive
+#-linktoprevious
+#-previewinactive
+#-outputcrop 0 1 0 1
+#-location default
+#-viewingdirection default
+#-alignsettings_generatecp 1
+#-alignsettings_optimize 1
+#-alignsettings_optimizeprealign 1
+#-alignsettings_straighten 1
+#-alignsettings_fit 1
+#-alignsettings_chooseprojection 1
+#-alignsettings_setoptimumsize 1
+#-alignsettings_limitsize 500
+#-alignsettings_optimizeexposure 0
+#-hdrsettings_defaultlinkmode nolink
+#-hdrsettings_donotask 0
+#-batchsettings_align 0
+#-batchsettings_stitch 1
+#-batchsettings_stitchonlyifcontrolpoints 1
+#-defaultprojectfilenamemode firstsourceimage
+#-defaultprojectfilename_custom " Panorama"
+#-defaultprojectfoldermode sourcefolder
+#-defaultprojectfolder_custom ""
+#-defaultpanoramafilenamemode asproject
+#-defaultpanoramafilename_custom ""
+#-defaultpanoramafoldermode projectfolder
+#-defaultpanoramafolder_custom ""
+#-userelativesourceimagepaths 1
+#-optimizeraskreinitialize 1
+#-applytemplate_lens 1
+#-applytemplate_imageparams 1
+#-applytemplate_crop 1
+#-applytemplate_mask 1
+#-applytemplate_panoramasettings 1
+#-applytemplate_projectsettings 1
+#-applytemplate_optimizer 1
+#-globalcrop 0 0 0 0 0 -0.25 0 0.25
+#-theoreticalhfov -1
+#-rect_compression_x 0
+#-rect_compression_y 0
+#-cylindrical_compression_y 0
+#-transverse_cylindrical_compression_x 0
+#-vedutismo_compression_x 1
+#-transverse_vedutismo_compression_y 1
+#-stereographic_compression 1
+#-rectifisheye_compression 1
+# Panorama settings:
+p w3584 h1792 f2 v360 u0 n"JPEG g0 q95"
+m g0 i0
+
+# input images:
+#-dummyimage
+# The following line contains a 'dummy image' containing some global parameters for the project
+o w1 h1 y0 r0 p0 v192.6638042449528 a-1.018691326065929 b0.7629918875524311 c1.255686505752206 f2 d2.172495128197531 e-0.9003851709633292 g0 t0
+#-imgfile 3840 1920 "..\..\temp\100RICOH\R0010016 - Copy.BMP"
+#-metadata -1 -1 -1 0000-00-00T00:00:00 3*8 0 -1 -1 -1 * * * curve -1 * T * 13154479047350852
+#-viewpoint 0 0 0 0 0
+#-exposureparams 0 0 0 0
+#-imgcrop 0 0 0 0 0 -0.2572916666666666 -0.0005208333333333333 0.25
+o f2 y177.6704960440042 r89.26834850327607 p-17.00846784085561 v=0 a=0 b=0 c=0 d=0 e=0 g=0 t=0 C-28,1892,-2,1918
+#-imgfile 3840 1920 "..\..\temp\100RICOH\R0010016.BMP"
+#-metadata -1 -1 -1 0000-00-00T00:00:00 3*8 0 -1 -1 -1 * * * curve -1 * T * 13154479047350852
+#-viewpoint 0 0 0 0 0
+#-exposureparams 0 0 0 0
+#-imgcrop 0 0 0 0 0 0.2541666666666667 0.005208333333333333 0.25
+o f2 y-0.4655900249024857 r-88.00098442362793 p21.65707743718534 v=0 a=0 b=0 c=0 d=0 e=0 g=0 t=0 C1936,3856,20,1940
+
+# Control points:
+c n1 N2 x478 y220 X3380 Y185 t0
+# Control Point No 0: 0.9594726023454667
+c n1 N2 x817 y1890 X3011 Y1811 t0
+# Control Point No 1: 6.977361550009725
+c n1 N2 x809 y1814 X3043 Y1881 t0
+# Control Point No 2: 2.172894434545476
+c n1 N2 x741 y1799 X3117 Y1862 t0
+# Control Point No 3: 5.813021933298105
+c n1 N2 x736 y1754 X3142 Y1886 t0
+# Control Point No 4: 6.00402913280467
+c n1 N2 x804 y1846 X3038 Y1854 t0
+# Control Point No 5: 3.360113780454715
+c n1 N2 x867 y1870 X2971 Y1848 t0
+# Control Point No 6: 3.224820945802795
+c n1 N2 x1583 y1622 X2265 Y1616 t0
+# Control Point No 7: 15.88005544652937
+c n1 N2 x976 y1855 X2865 Y1873 t0
+# Control Point No 8: 0.6407465331813795
+c n1 N2 x989 y1829 X2850 Y1894 t0
+# Control Point No 9: 3.549633484793239
+c n1 N2 x995 y1886 X2848 Y1840 t0
+# Control Point No 10: 4.388595254937433
+c n2 N2 x3382 y185 X475 Y221 t1
+# Control Point No 11: -1
+c n2 N2 x3070 y137 X736 Y38 t1
+# Control Point No 12: -1
+c n2 N2 x3058 y1862 X790 Y1844 t1
+# Control Point No 13: -1
+c n1 N2 x754 y132 X3102 Y39 t0
+# Control Point No 14: -1
+
+# optimizer:
+v v a b c d e y2 r2 p2
