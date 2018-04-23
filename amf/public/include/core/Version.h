@@ -36,8 +36,8 @@
 * @brief Version declaration
 ***************************************************************************************************
 */
-#ifndef __AMFVersion_h__
-#define __AMFVersion_h__
+#ifndef AMF_Version_h
+#define AMF_Version_h
 #pragma once
 
 #include "Platform.h"
@@ -51,9 +51,9 @@
 
 #define AMF_VERSION_MAJOR       1
 #define AMF_VERSION_MINOR       4
-#define AMF_VERSION_RELEASE     6
+#define AMF_VERSION_RELEASE     7
 #define AMF_VERSION_BUILD_NUM   0
 
 #define AMF_FULL_VERSION AMF_MAKE_FULL_VERSION(AMF_VERSION_MAJOR, AMF_VERSION_MINOR, AMF_VERSION_RELEASE, AMF_VERSION_BUILD_NUM)
 
-#endif //#ifndef __AMFVersion_h__
+#endif //#ifndef AMF_Version_h

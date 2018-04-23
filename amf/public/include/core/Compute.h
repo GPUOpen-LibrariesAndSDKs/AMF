@@ -36,8 +36,8 @@
  * @brief AMFCompute interface declaration
  ***************************************************************************************************
  */
-#ifndef __AMFCompute_h__
-#define __AMFCompute_h__
+#ifndef AMF_Compute_h
+#define AMF_Compute_h
 #pragma once
 
 #include "Buffer.h"
@@ -60,6 +60,7 @@ namespace amf
         AMF_CHANNEL_ORDER_BGRA          = 3,
         AMF_CHANNEL_ORDER_RGBA          = 4,
         AMF_CHANNEL_ORDER_ARGB          = 5,
+        AMF_CHANNEL_ORDER_YUY2          = 6,
     } AMF_CHANNEL_ORDER;
     //----------------------------------------------------------------------------------------------
     typedef enum AMF_CHANNEL_TYPE
@@ -298,4 +299,4 @@ namespace amf
 } // namespace amf
 #endif
 
-#endif // __AMFCompute_h__
+#endif // AMF_Compute_h

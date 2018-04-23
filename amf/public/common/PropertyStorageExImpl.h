@@ -34,8 +34,8 @@
 ///  @file   PropertyStorageExImpl.h
 ///  @brief  AMFPropertyStorageExImpl header
 ///-------------------------------------------------------------------------
-#ifndef __AMFPropertyStorageExImpl_h__
-#define __AMFPropertyStorageExImpl_h__
+#ifndef AMF_PropertyStorageExImpl_h
+#define AMF_PropertyStorageExImpl_h
 #pragma once
 
 #include "../include/core/PropertyStorageEx.h"
@@ -551,4 +551,4 @@ namespace amf
 
 } // namespace amf
 
-#endif // #ifndef __AMFPropertyStorageExImpl_h__
+#endif // #ifndef AMF_PropertyStorageExImpl_h

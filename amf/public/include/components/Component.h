@@ -36,8 +36,8 @@
  * @brief AMFComponent interface declaration
  ***************************************************************************************************
  */
-#ifndef __AMFComponent_h__
-#define __AMFComponent_h__
+#ifndef AMF_Component_h
+#define AMF_Component_h
 #pragma once
 
 #include "../core/Data.h"
@@ -383,11 +383,58 @@ namespace amf
     {
         const AMFComponentExVtbl *pVtbl;
     };
-
-
 #endif // #if defined(__cplusplus)
+
+
 #if defined(__cplusplus)
 } // namespace
 #endif
 
-#endif //#ifndef __AMFComponent_h__
+typedef enum AMF_STREAM_TYPE_ENUM
+{
+    AMF_STREAM_UNKNOWN              = 0,
+    AMF_STREAM_VIDEO                = 1,
+    AMF_STREAM_AUDIO                = 2,
+    AMF_STREAM_DATA                 = 3,
+} AMF_STREAM_TYPE_ENUM;
+
+typedef enum AMF_STREAM_CODEC_ID_ENUM     // matched codecs from VideoDecoxcderUVD.h
+{
+    AMF_STREAM_CODEC_ID_UNKNOWN     = 0,
+    AMF_STREAM_CODEC_ID_MPEG2       = 1,  // AMFVideoDecoderUVD_MPEG2      
+    AMF_STREAM_CODEC_ID_MPEG4       = 2,  // AMFVideoDecoderUVD_MPEG4      
+    AMF_STREAM_CODEC_ID_WMV3        = 3,  // AMFVideoDecoderUVD_WMV3       
+    AMF_STREAM_CODEC_ID_VC1         = 4,  // AMFVideoDecoderUVD_VC1        
+    AMF_STREAM_CODEC_ID_H264_AVC    = 5,  // AMFVideoDecoderUVD_H264_AVC   
+    AMF_STREAM_CODEC_ID_H264_MVC    = 6,  // AMFVideoDecoderUVD_H264_MVC   
+    AMF_STREAM_CODEC_ID_H264_SVC    = 7,  // AMFVideoDecoderUVD_H264_SVC   
+    AMF_STREAM_CODEC_ID_MJPEG       = 8,  // AMFVideoDecoderUVD_MJPEG      
+    AMF_STREAM_CODEC_ID_H265_HEVC   = 9,  // AMFVideoDecoderHW_H265_HEVC   
+    AMF_STREAM_CODEC_ID_H265_MAIN10 = 10, // AMFVideoDecoderHW_H265_MAIN10 
+} AMF_STREAM_CODEC_ID_ENUM;
+
+// common stream properties
+#define AMF_STREAM_TYPE                     L"StreamType"           // amf_int64( AMF_STREAM_TYPE_ENUM )
+#define AMF_STREAM_ENABLED                  L"Enabled"              // bool( default = false )
+#define AMF_STREAM_CODEC_ID                 L"CodecID"              // amf_int64(Video: AMF_STREAM_CODEC_ID_ENUM, Audio: AVCodecID) (default = 0 - uncompressed)
+#define AMF_STREAM_BIT_RATE                 L"BitRate"              // amf_int64 (default = codec->bit_rate)
+#define AMF_STREAM_EXTRA_DATA               L"ExtraData"            // interface to AMFBuffer - as is from FFMPEG
+
+// video stream properties
+#define AMF_STREAM_VIDEO_MEMORY_TYPE        L"VideoMemoryType"      // amf_int64(AMF_MEMORY_TYPE); default = AMF_MEMORY_DX11
+#define AMF_STREAM_VIDEO_FORMAT             L"VideoFormat"          // amf_int64(AMF_SURFACE_FORMAT); default = AMF_SURFACE_NV12 (used if AMF_STREAM_CODEC_ID == 0)
+#define AMF_STREAM_VIDEO_FRAME_RATE         L"VideoFrameRate"       // AMFRate; default = (30,1) - video frame rate
+#define AMF_STREAM_VIDEO_FRAME_SIZE         L"VideoFrameSize"       // AMFSize; default = (1920,1080) - video frame rate
+#define AMF_STREAM_VIDEO_SURFACE_POOL       L"VideoSurfacePool"     // amf_int64; default = 5, number of allocated output surfaces
+//TODO support interlaced frames
+
+// audio stream properties
+#define AMF_STREAM_AUDIO_FORMAT             L"AudioFormat"          // amf_int64(AMF_AUDIO_FORMAT); default = AMFAF_S16
+#define AMF_STREAM_AUDIO_SAMPLE_RATE        L"AudioSampleRate"      // amf_int64; default = 48000
+#define AMF_STREAM_AUDIO_CHANNELS           L"AudioChannels"        // amf_int64; default = 2
+#define AMF_STREAM_AUDIO_CHANNEL_LAYOUT     L"AudioChannelLayout"   // amf_int64 (default = codec->channel_layout)
+#define AMF_STREAM_AUDIO_BLOCK_ALIGN        L"AudioBlockAlign"      // amf_int64 (default = codec->block_align)
+#define AMF_STREAM_AUDIO_FRAME_SIZE         L"AudioFrameSize"       // amf_int64 (default = codec->frame_size)
+
+
+#endif //#ifndef AMF_Component_h

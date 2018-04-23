@@ -30,8 +30,8 @@
 // THE SOFTWARE.
 //
 
-#ifndef __AMFPlatform_h__
-#define __AMFPlatform_h__
+#ifndef AMF_Platform_h
+#define AMF_Platform_h
 #pragma once
 
 //----------------------------------------------------------------------------------------------
@@ -68,6 +68,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 #if defined(_WIN32)
 
@@ -126,7 +127,7 @@
 
 #if defined(_MSC_VER)
 #define AMF_WEAK __declspec( selectany ) 
-#elif defined (__GNUC__) || defined(__clang__)//GCC or CLANG
+#elif defined (__GNUC__) || defined (__GCC__) || defined(__clang__)//GCC or CLANG
 #define AMF_WEAK __attribute__((weak))
 #endif
 
@@ -435,4 +436,4 @@ namespace amf
 }
 #endif
 
-#endif //#ifndef __AMFPlatform_h__
+#endif //#ifndef AMF_Platform_h

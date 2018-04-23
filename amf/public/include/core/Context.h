@@ -30,8 +30,8 @@
 // THE SOFTWARE.
 //
 
-#ifndef __AMFContext_h__
-#define __AMFContext_h__
+#ifndef AMF_Context_h
+#define AMF_Context_h
 #pragma once
 
 #include "Buffer.h"
@@ -439,4 +439,4 @@ enum AMF_CONTEXT_DEVICETYPE_ENUM
     AMF_CONTEXT_DEVICE_TYPE_CPU
 };
 #define AMF_CONTEXT_DEVICE_TYPE  L"AMF_Context_DeviceType" //Value type: amf_int64; Values : AMF_CONTEXT_DEVICE_TYPE_GPU for GPU (default) , AMF_CONTEXT_DEVICE_TYPE_CPU for CPU.
-#endif //#ifndef __AMFContext_h__
+#endif //#ifndef AMF_Context_h

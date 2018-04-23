@@ -34,8 +34,8 @@
 // AMFFAudioConverterFFMPEG  interface declaration
 //-------------------------------------------------------------------------------------------------
 
-#ifndef __AMFAudioConverterFFMPEG_h__
-#define __AMFAudioConverterFFMPEG_h__
+#ifndef AMF_AudioConverterFFMPEG_h
+#define AMF_AudioConverterFFMPEG_h
 
 #pragma once
 
@@ -59,4 +59,4 @@
 
 
 
-#endif //#ifndef __AMFAudioConverterFFMPEG_h__
+#endif //#ifndef AMF_AudioConverterFFMPEG_h

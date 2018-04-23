@@ -30,8 +30,8 @@
 // THE SOFTWARE.
 //
 
-#ifndef __AMFInterface_h__
-#define __AMFInterface_h__
+#ifndef AMF_Interface_h
+#define AMF_Interface_h
 #pragma once
 
 #include "Result.h"
@@ -255,4 +255,4 @@ namespace amf
 }
 #endif
 
-#endif //#ifndef __AMFInterface_h__
+#endif //#ifndef AMF_Interface_h

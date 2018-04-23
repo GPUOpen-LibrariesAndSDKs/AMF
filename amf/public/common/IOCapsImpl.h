@@ -30,6 +30,9 @@
 // THE SOFTWARE.
 //
 
+#ifndef AMF_IOCapsImpl_h
+#define AMF_IOCapsImpl_h
+
 #pragma once
 
 #include "InterfaceImpl.h"
@@ -126,3 +129,4 @@ namespace amf
         MemoryType::Collection      m_MemoryTypes;
     };
 }
+#endif // AMF_IOCapsImpl_h

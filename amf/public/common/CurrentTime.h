@@ -20,8 +20,8 @@
 // THE SOFTWARE.
 //
 
-#ifndef __AMFCurrentTime_h__
-#define __AMFCurrentTime_h__
+#ifndef AMF_CurrentTime_h
+#define AMF_CurrentTime_h
 
 #include "public/include/core/Platform.h"
 #include "public/include/core/Interface.h"
@@ -49,4 +49,4 @@ namespace amf
 	typedef AMFInterfacePtr_T<AMFCurrentTime> AMFCurrentTimePtr;
 	//----------------------------------------------------------------------------------------------}
 }
-#endif // __AMFCurrentTime_h__
+#endif // AMF_CurrentTime_h

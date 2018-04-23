@@ -30,8 +30,8 @@
 // THE SOFTWARE.
 //
 
-#ifndef __AMFPlane_h__
-#define __AMFPlane_h__
+#ifndef AMF_Plane_h
+#define AMF_Plane_h
 #pragma once
 
 #include "Interface.h"
@@ -109,4 +109,4 @@ namespace amf
 } // namespace amf
 #endif
 
-#endif //#ifndef __AMFPlane_h__
+#endif //#ifndef AMF_Plane_h

@@ -24,8 +24,8 @@
 //  VideoEncoderHW_HEVC interface declaration
 //-------------------------------------------------------------------------------------------------
 
-#ifndef __AMFVideoEncoderHW_HEVC_h__
-#define __AMFVideoEncoderHW_HEVC_h__
+#ifndef AMF_VideoEncoderHEVC_h
+#define AMF_VideoEncoderHEVC_h
 #pragma once
 
 #include "Component.h"
@@ -187,4 +187,4 @@ enum AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE_ENUM
 #define AMF_VIDEO_ENCODER_HEVC_CAP_MAX_REFERENCE_FRAMES             L"HevcMaxReferenceFrames"       // amf_int64 maximum number of reference frames
 
 
-#endif //#ifndef __AMFVideoEncoderHW_HEVC_h__
+#endif //#ifndef AMF_VideoEncoderHEVC_h

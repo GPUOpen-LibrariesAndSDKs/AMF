@@ -34,11 +34,11 @@
 // Desktop duplication interface declaration
 //-------------------------------------------------------------------------------------------------
 
-#ifndef __AMFDISPLAYCAPTURE__
-#define __AMFDISPLAYCAPTURE__
+#ifndef AMF_DisplayCapture_h
+#define AMF_DisplayCapture_h
 #pragma once
 
-#include "public/include/components/Component.h"
+#include "Component.h"
 
 #define AMFDisplayCapture L"AMFDisplayCapture"
 
@@ -64,4 +64,4 @@ extern "C"
 	//
 	AMF_RESULT AMF_CDECL_CALL AMFCreateComponentDisplayCapture(amf::AMFContext* pContext, amf::AMFComponent** ppComponent);
 }
-#endif // #ifndef __AMFDISPLAYCAPTURE__
+#endif // #ifndef AMF_DisplayCapture_h

@@ -33,8 +33,8 @@
 //-------------------------------------------------------------------------------------------------
 //  VideoDecoderUVD interface declaration
 //-------------------------------------------------------------------------------------------------
-#ifndef __VideoDecoderHW_UVD_h__
-#define __VideoDecoderHW_UVD_h__
+#ifndef AMF_VideoDecoderUVD_h
+#define AMF_VideoDecoderUVD_h
 #pragma once
 
 #include "Component.h"
@@ -86,7 +86,7 @@ enum AMF_TIMESTAMP_MODE_ENUM
 
 
 // metadata information: can be set on output surface
-enum AMF_COLOR_PRIMARIES_ENUM
+enum AMF_COLOR_PRIMARIES_ENUM // as in color_primaries AVC and HEVC
 {
     AMF_COLOR_PRIMARIES_UNDEFINED                       = 0,
     AMF_COLOR_PRIMARIES_BT709                           = 1,
@@ -103,7 +103,7 @@ enum AMF_COLOR_PRIMARIES_ENUM
     AMF_COLOR_PRIMARIES_SMPTE432                        = 12,
     AMF_COLOR_PRIMARIES_JEDEC_P22                       = 22,
 };
-enum AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM
+enum AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM // as in transfer_characteristic AVC and HEVC
 {
     AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED         = 0,
     AMF_COLOR_TRANSFER_CHARACTERISTIC_BT709             = 1,
@@ -119,9 +119,9 @@ enum AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM
     AMF_COLOR_TRANSFER_CHARACTERISTIC_IEC61966_2_4      = 11,
     AMF_COLOR_TRANSFER_CHARACTERISTIC_BT1361_ECG        = 12,
     AMF_COLOR_TRANSFER_CHARACTERISTIC_IEC61966_2_1      = 13,
-    AMF_COLOR_TRANSFER_CHARACTERISTIC_BT2020_10         = 14, 
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_BT2020_10         = 14, //BT709 curve
     AMF_COLOR_TRANSFER_CHARACTERISTIC_BT2020_12         = 15,
-    AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE2084         = 16,
+    AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE2084         = 16, //PQ curve
     AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE428          = 17,
     AMF_COLOR_TRANSFER_CHARACTERISTIC_ARIB_STD_B67      = 18,
 };
@@ -140,8 +140,8 @@ typedef struct AMFHDRMetadata
 
 
 // In addition to component AMF_VIDEO_DECODER_FULL_RANGE_COLOR will be also set on surface 
-#define AMF_VIDEO_DECODER_COLOR_TRANSFER_CHARACTERISTIC L"ColorTransferChar"    // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 § 7.1
-#define AMF_VIDEO_DECODER_COLOR_PRIMARIES               L"ColorPrimaries"       // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 § 7.2
+#define AMF_VIDEO_DECODER_COLOR_TRANSFER_CHARACTERISTIC L"ColorTransferChar"    // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 § 7.2
+#define AMF_VIDEO_DECODER_COLOR_PRIMARIES               L"ColorPrimaries"       // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 § 7.1
 #define AMF_VIDEO_DECODER_HDR_METADATA                  L"HdrMetadata"          // AMFBuffer containing AMFHDRMetadata; default NULL
 
-#endif //#ifndef __VideoDecoderHW_UVD_h__
+#endif //#ifndef AMF_VideoDecoderUVD_h

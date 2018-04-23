@@ -33,8 +33,8 @@
 //-------------------------------------------------------------------------------------------------
 // Audio session  interface declaration
 //-------------------------------------------------------------------------------------------------
-#ifndef __AMFAudioCapture_h__
-#define __AMFAudioCapture_h__
+#ifndef AMF_AudioCapture_h
+#define AMF_AudioCapture_h
 
 #pragma once
 
@@ -81,4 +81,4 @@ extern "C"
 	AMF_RESULT AMF_CDECL_CALL AMFCreateComponentAudioCapture(amf::AMFContext* pContext, amf::AMFComponent** ppComponent);
 }
 
-#endif
+#endif // #ifndef AMF_AudioCapture_h

@@ -30,6 +30,9 @@
 // THE SOFTWARE.
 //
 
+#ifndef AMF_DataStreamMemory_h
+#define AMF_DataStreamMemory_h
+
 #pragma once
 
 #include "DataStream.h"
@@ -70,3 +73,5 @@ namespace amf
         AMFDataStreamMemoryImpl& operator=(const AMFDataStreamMemoryImpl&);
     };
 } //namespace amf
+
+#endif // AMF_DataStreamMemory_h

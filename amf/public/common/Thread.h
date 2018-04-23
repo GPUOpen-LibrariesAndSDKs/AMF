@@ -30,8 +30,8 @@
 // THE SOFTWARE.
 //
 
-#ifndef __AMFThread_h__
-#define __AMFThread_h__
+#ifndef AMF_Thread_h
+#define AMF_Thread_h
 #pragma once
 
 #include <cassert>
@@ -670,4 +670,4 @@ namespace amf
     };
     //----------------------------------------------------------------
 } // namespace amf
-#endif // __AMFThread_h__
+#endif // AMF_Thread_h

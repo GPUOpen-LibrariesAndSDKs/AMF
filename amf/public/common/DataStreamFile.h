@@ -30,6 +30,9 @@
 // THE SOFTWARE.
 //
 
+#ifndef AMF_DataStreamFile_h
+#define AMF_DataStreamFile_h
+
 #pragma once
 
 #include "DataStream.h"
@@ -60,3 +63,4 @@ namespace amf
         std::wstring m_Path;
     };
 } //namespace amf
+#endif // AMF_DataStreamFile_h
