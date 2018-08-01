@@ -291,7 +291,8 @@ AMF_RESULT PlaybackPipelineBase::Init()
             GetParam(PlaybackPipelineBase::PARAM_NAME_LISTEN_FOR_CONNECTION, bListen);
             m_pDemuxerVideo->SetProperty(FFMPEG_DEMUXER_LISTEN, bListen);
         }
-        m_pDemuxerVideo->SetProperty(m_bURL ? FFMPEG_DEMUXER_URL : FFMPEG_DEMUXER_PATH, inputPath.c_str());
+        res = m_pDemuxerVideo->SetProperty(m_bURL ? FFMPEG_DEMUXER_URL : FFMPEG_DEMUXER_PATH, inputPath.c_str());
+        CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxerVideo->SetProperty() - set new file name failed");
         res = m_pDemuxerVideo->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
         CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxerVideo->Init() failed");
 
@@ -406,9 +407,11 @@ AMF_RESULT PlaybackPipelineBase::Init()
         m_AVSync.Reset();
         m_pVideoPresenter->SetAVSyncObject(&m_AVSync);
         m_pAudioPresenter->SetAVSyncObject(&m_AVSync);
+
+        return AMF_OK;
     }
     
-    return AMF_OK;
+    return AMF_FAIL;
 }
 
 AMF_RESULT PlaybackPipelineBase::InitAudioPipeline(amf_uint32 iAudioStreamIndex, PipelineElementPtr pAudioSourceStream)
