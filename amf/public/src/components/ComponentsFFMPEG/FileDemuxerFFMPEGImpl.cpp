@@ -488,7 +488,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*for
         ReadRangeSettings();
     }
 
-    return AMF_OK;
+    return res;
 }
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::ReInit(amf_int32 width, amf_int32 height)
@@ -500,6 +500,8 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::ReInit(amf_int32 width, amf_i
 AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Terminate()
 {
     AMFLock lock(&m_sync);
+
+    m_OutputStreams.clear();
 
     m_ptsPosition = GetMinPosition();
     m_ptsSeekPos = -1;
@@ -782,8 +784,7 @@ void AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::OnPropertyChanged(const wchar_t* pN
     const amf_wstring  name(pName);
     if (name == FFMPEG_DEMUXER_PATH || name == FFMPEG_DEMUXER_URL)
     {
-        m_OutputStreams.clear();
-        ReInit(0, 0);
+        Terminate();
         return;
     }
 
