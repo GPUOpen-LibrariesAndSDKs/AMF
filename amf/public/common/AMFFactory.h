@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -59,7 +59,7 @@ public:
 protected:
     struct ComponentHolder
     {
-        HMODULE         m_hDLLHandle;
+        amf_handle      m_hDLLHandle;
         amf_long        m_iRefCount;
         std::wstring    m_DLL;
 
@@ -70,7 +70,7 @@ protected:
         }
     };
 
-    HMODULE             m_hDLLHandle;
+    amf_handle          m_hDLLHandle;
     amf::AMFFactory*    m_pFactory;
     amf::AMFDebug*      m_pDebug;
     amf::AMFTrace*      m_pTrace;

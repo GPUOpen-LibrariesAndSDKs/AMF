@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -138,6 +138,56 @@ namespace amf
         AMFVariantAssign##varType(&var, val); \
         res = pThis->pVtbl->SetProperty(pThis, name, var ); \
     }
+
+    #define AMF_QUERY_INTERFACE(res, from, InterfaceTypeTo, to) \
+    { \
+        AMFGuid guid_##InterfaceTypeTo = IID_##InterfaceTypeTo(); \
+        res = from->pVtbl->QueryInterface(from, &guid_##InterfaceTypeTo, (void**)&to); \
+    }
+
+    #define AMF_ASSIGN_PROPERTY_INTERFACE(res, pThis, name, val) \
+    { \
+        AMFInterface *amf_interface; \
+        AMFVariantStruct var; \
+        res = AMFVariantInit(&var); \
+        if (res == AMF_OK) \
+        { \
+            AMF_QUERY_INTERFACE(res, val, AMFInterface, amf_interface)\
+            if (res == AMF_OK) \
+            { \
+                res = AMFVariantAssignInterface(&var, amf_interface); \
+                amf_interface->pVtbl->Release(amf_interface); \
+                if (res == AMF_OK) \
+                { \
+                    res = pThis->pVtbl->SetProperty(pThis, name, var); \
+                } \
+            } \
+            AMFVariantClear(&var); \
+        } \
+    }
+
+    #define AMF_GET_PROPERTY_INTERFACE(res, pThis, name, TargetType, val) \
+    { \
+        AMFVariantStruct var; \
+        res = AMFVariantInit(&var); \
+        if (res != AMF_OK) \
+        { \
+            res = pThis->pVtbl->GetProperty(pThis, name, &var); \
+            if (res == AMF_OK) \
+            { \
+                if (var.type == AMF_VARIANT_INTERFACE && AMFVariantInterface(&var)) \
+                { \
+                    AMF_QUERY_INTERFACE(res, AMFVariantInterface(&var), TargetType, val); \
+                } \
+                else \
+                { \
+                    res = AMF_INVALID_DATA_TYPE; \
+                } \
+            } \
+        } \
+        AMFVariantClear(&var); \
+    }
+
     #define AMF_ASSIGN_PROPERTY_TYPE(res, varType, dataType , pThis, name, val )  AMF_ASSIGN_PROPERTY_DATA(res, varType, pThis, name, (dataType)val)
 
     #define AMF_ASSIGN_PROPERTY_INT64(res, pThis, name, val ) AMF_ASSIGN_PROPERTY_TYPE(res, Int64, amf_int64, pThis, name, val)

@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -141,7 +141,7 @@ AMF_RESULT AMF_STD_CALL AMFDataStreamMemoryImpl::Seek(AMF_SEEK_ORIGIN eOrigin, a
 
     if(m_pos > m_uiMemorySize)
     {
-        m_uiMemorySize = m_uiMemorySize;
+        m_pos = m_uiMemorySize;
     }
     if(pNewPosition != NULL)
     {

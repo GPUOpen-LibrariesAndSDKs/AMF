@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -46,6 +46,7 @@
 namespace amf
 {
 #endif
+    //----------------------------------------------------------------------------------------------
     typedef enum AMF_SURFACE_FORMAT
     {
         AMF_SURFACE_UNKNOWN     = 0,
@@ -65,6 +66,22 @@ namespace amf
         AMF_SURFACE_FIRST = AMF_SURFACE_NV12,
         AMF_SURFACE_LAST = AMF_SURFACE_RGBA_F16
     } AMF_SURFACE_FORMAT;
+    //----------------------------------------------------------------------------------------------
+    // AMF_SURFACE_USAGE translates to D3D11_BIND_FLAG or VkImageUsageFlags
+    // bit mask
+    //----------------------------------------------------------------------------------------------
+    typedef enum AMF_SURFACE_USAGE_BITS
+    {                                                       // D3D11                        Vulkan 
+        AMF_SURFACE_USAGE_DEFAULT           = 0x80000000,   // will apply default           VK_IMAGE_USAGE_TRANSFER_SRC_BIT| VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
+        AMF_SURFACE_USAGE_NONE              = 0x00000000,   // 0,                           , 0
+        AMF_SURFACE_USAGE_SHADER_RESOURCE   = 0x00000001,   // D3D11_BIND_SHADER_RESOURCE,  VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
+        AMF_SURFACE_USAGE_RENDER_TARGET     = 0x00000002,   // D3D11_BIND_RENDER_TARGET,    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+        AMF_SURFACE_USAGE_UNORDERED_ACCESS  = 0x00000004,   // D3D11_BIND_UNORDERED_ACCESS, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
+        AMF_SURFACE_USAGE_TRANSFER_SRC      = 0x00000008,   //                              VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+        AMF_SURFACE_USAGE_TRANSFER_DST      = 0x00000010,   //                              VK_IMAGE_USAGE_TRANSFER_DST_BIT
+    } AMF_SURFACE_USAGE_BITS;
+    typedef amf_flags AMF_SURFACE_USAGE;
+    //----------------------------------------------------------------------------------------------
 
 #if defined(_WIN32)
     AMF_WEAK GUID  AMFFormatGUID = { 0x8cd592d0, 0x8063, 0x4af8, 0xa7, 0xd0, 0x32, 0x5b, 0xc5, 0xf7, 0x48, 0xab}; // UINT(AMF_SURFACE_FORMAT), default - AMF_SURFACE_UNKNOWN; to be set on ID3D11Texture2D objects when used natively (i.e. force UYVY on DXGI_FORMAT_YUY2 texture)

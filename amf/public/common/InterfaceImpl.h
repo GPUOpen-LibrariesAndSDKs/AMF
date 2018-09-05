@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -51,7 +51,7 @@ namespace amf
         if(AMFCompareGUIDs(interfaceID, T::IID())) \
         { \
             *ppInterface = (void*)static_cast<T*>(this); \
-            Acquire(); \
+            this->Acquire(); \
             err = AMF_OK; \
         } \
         else \
@@ -60,7 +60,7 @@ namespace amf
         if(AMFCompareGUIDs(interfaceID, T::IID())) \
         { \
             *ppInterface = (void*)static_cast<T*>(static_cast<_TI*>(this)); \
-            Acquire(); \
+            this->Acquire(); \
             err = AMF_OK; \
         } \
         else \

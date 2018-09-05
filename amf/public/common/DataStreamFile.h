@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -37,6 +37,7 @@
 
 #include "DataStream.h"
 #include "InterfaceImpl.h"
+#include "AMFSTL.h"
 #include <string>
 
 namespace amf
@@ -60,7 +61,7 @@ namespace amf
         virtual AMF_RESULT AMF_STD_CALL Open(const wchar_t* pFilePath, AMF_STREAM_OPEN eOpenType, AMF_FILE_SHARE eShareType);
     protected:
         int m_iFileDescriptor;
-        std::wstring m_Path;
+        amf_wstring m_Path;
     };
 } //namespace amf
 #endif // AMF_DataStreamFile_h

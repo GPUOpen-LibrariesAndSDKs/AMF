@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -60,8 +60,9 @@ namespace amf
         AMF_MEMORY_OPENGL           = 5,
         AMF_MEMORY_XV               = 6,
         AMF_MEMORY_GRALLOC          = 7,
-        AMF_MEMORY_COMPUTE_FOR_DX9  = 8,
-        AMF_MEMORY_COMPUTE_FOR_DX11 = 9,
+        AMF_MEMORY_COMPUTE_FOR_DX9  = 8, // deprecated, the same as AMF_MEMORY_OPENCL
+        AMF_MEMORY_COMPUTE_FOR_DX11 = 9, // deprecated, the same as AMF_MEMORY_OPENCL
+        AMF_MEMORY_VULKAN           = 10,
     } AMF_MEMORY_TYPE;
 
     //----------------------------------------------------------------------------------------------
@@ -72,6 +73,21 @@ namespace amf
         AMF_DX11_0                  = 110,
         AMF_DX11_1                  = 111 
     } AMF_DX_VERSION;
+
+    //----------------------------------------------------------------------------------------------
+    // AMF_MEMORY_CPU_ACCESS translates to D3D11_CPU_ACCESS_FLAG or VkImageUsageFlags
+    // bit mask
+    //----------------------------------------------------------------------------------------------
+    typedef enum AMF_MEMORY_CPU_ACCESS_BITS
+    {                                           // D3D11                    Vulkan 
+        AMF_MEMORY_CPU_DEFAULT  = 0x80000000,   // 0                     , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        AMF_MEMORY_CPU_NONE     = 0x00000000,   // 0                     , 0
+        AMF_MEMORY_CPU_READ     = 0x00000001,   // D3D11_CPU_ACCESS_READ,   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+        AMF_MEMORY_CPU_WRITE    = 0x00000002,   // D3D11_CPU_ACCESS_WRITE,  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+        AMF_MEMORY_CPU_LOCAL    = 0x00000004,   //                       ,  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        AMF_MEMORY_CPU_PINNED   = 0x00000008,   //                       ,  VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR
+    } AMF_MEMORY_CPU_ACCESS_BITS;
+    typedef amf_flags AMF_MEMORY_CPU_ACCESS;
     //----------------------------------------------------------------------------------------------
     // AMFData interface
     //----------------------------------------------------------------------------------------------

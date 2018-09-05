@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -43,6 +43,7 @@
 #include "InterfaceImpl.h"
 #include "ObservableImpl.h"
 #include "TraceAdapter.h"
+#include <limits.h>
 
 namespace amf
 {
@@ -51,6 +52,30 @@ namespace amf
         AMF_PROPERTY_CONTENT_TYPE contentType,
         const AMFEnumDescriptionEntry* pEnumDescription = 0);
 
+    //---------------------------------------------------------------------------------------------
+    class AMFPropertyInfoImpl : public AMFPropertyInfo
+    {
+    private:
+        amf_wstring m_name;
+        amf_wstring m_desc;
+
+        void Init(const wchar_t* name, const wchar_t* desc, AMF_VARIANT_TYPE type, AMF_PROPERTY_CONTENT_TYPE contentType,
+            AMFVariantStruct defaultValue, AMFVariantStruct minValue, AMFVariantStruct maxValue, AMF_PROPERTY_ACCESS_TYPE accessType,
+            const AMFEnumDescriptionEntry* pEnumDescription);
+    public:
+        AMFPropertyInfoImpl(const wchar_t* name, const wchar_t* desc, AMF_VARIANT_TYPE type, AMF_PROPERTY_CONTENT_TYPE contentType,
+            AMFVariantStruct defaultValue, AMFVariantStruct minValue, AMFVariantStruct maxValue, bool allowChangeInRuntime,
+            const AMFEnumDescriptionEntry* pEnumDescription);
+        AMFPropertyInfoImpl(const wchar_t* name, const wchar_t* desc, AMF_VARIANT_TYPE type, AMF_PROPERTY_CONTENT_TYPE contentType,
+            AMFVariantStruct defaultValue, AMFVariantStruct minValue, AMFVariantStruct maxValue, AMF_PROPERTY_ACCESS_TYPE accessType,
+            const AMFEnumDescriptionEntry* pEnumDescription);
+        AMFPropertyInfoImpl();
+
+        AMFPropertyInfoImpl(const AMFPropertyInfoImpl& propertyInfo);
+        AMFPropertyInfoImpl& operator=(const AMFPropertyInfoImpl& propertyInfo);
+
+        ~AMFPropertyInfoImpl();
+    };
     //---------------------------------------------------------------------------------------------
     template<typename _TBase> class AMFPropertyStorageExImpl :
         public _TBase,
@@ -412,7 +437,7 @@ namespace amf
             return err;
         }
         //-------------------------------------------------------------------------------------------------
-        template<>
+//        template<>
         inline AMF_RESULT AMF_STD_CALL GetPrivateProperty(const wchar_t* name, AMFInterface** ppValue) const
         {
             AMFVariant var;
@@ -443,111 +468,87 @@ namespace amf
         AMFPropertyStorageExImpl& operator=(const AMFPropertyStorageExImpl&);
     };
     extern AMFCriticalSection ms_csAMFPropertyStorageExImplMaps;
-
     //---------------------------------------------------------------------------------------------
-    class AMFPropertyInfoImpl : public AMFPropertyInfo
-    {
-    private:
-        amf_wstring m_name;
-        amf_wstring m_desc;
-
-        void Init(const wchar_t* name, const wchar_t* desc, AMF_VARIANT_TYPE type, AMF_PROPERTY_CONTENT_TYPE contentType,
-            AMFVariantStruct defaultValue, AMFVariantStruct minValue, AMFVariantStruct maxValue, AMF_PROPERTY_ACCESS_TYPE accessType,
-            const AMFEnumDescriptionEntry* pEnumDescription);
-    public:
-        AMFPropertyInfoImpl(const wchar_t* name, const wchar_t* desc, AMF_VARIANT_TYPE type, AMF_PROPERTY_CONTENT_TYPE contentType,
-            AMFVariantStruct defaultValue, AMFVariantStruct minValue, AMFVariantStruct maxValue, bool allowChangeInRuntime,
-            const AMFEnumDescriptionEntry* pEnumDescription);
-        AMFPropertyInfoImpl(const wchar_t* name, const wchar_t* desc, AMF_VARIANT_TYPE type, AMF_PROPERTY_CONTENT_TYPE contentType,
-            AMFVariantStruct defaultValue, AMFVariantStruct minValue, AMFVariantStruct maxValue, AMF_PROPERTY_ACCESS_TYPE accessType,
-            const AMFEnumDescriptionEntry* pEnumDescription);
-        AMFPropertyInfoImpl();
-
-        AMFPropertyInfoImpl(const AMFPropertyInfoImpl& propertyInfo);
-        AMFPropertyInfoImpl& operator=(const AMFPropertyInfoImpl& propertyInfo);
-
-        ~AMFPropertyInfoImpl();
-    };
 
 
     #define AMFPrimitivePropertyInfoMapBegin \
         { \
-            amf::AMFLock __lock(&ms_csAMFPropertyStorageExImplMaps);\
-            static AMFPropertyInfoImpl s_PropertiesInfo[] = \
+            amf::AMFLock __lock(&amf::ms_csAMFPropertyStorageExImplMaps);\
+            static amf::AMFPropertyInfoImpl s_PropertiesInfo[] = \
             { \
 
     #define AMFPrimitivePropertyInfoMapEnd \
         }; \
-        RegisterProperties(s_PropertiesInfo, sizeof(s_PropertiesInfo) / sizeof(AMFPropertyInfoImpl)); \
+        RegisterProperties(s_PropertiesInfo, sizeof(s_PropertiesInfo) / sizeof(amf::AMFPropertyInfoImpl)); \
         } \
 
 
     #define AMFPropertyInfoBool(_name, _desc, _defaultValue, _AllowChangeInRuntime) \
-        AMFPropertyInfoImpl(_name, _desc, AMF_VARIANT_BOOL, 0, AMFVariant(_defaultValue), \
-            AMFVariant(), AMFVariant(), _AllowChangeInRuntime, 0)
+        amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_BOOL, 0, amf::AMFVariant(_defaultValue), \
+            amf::AMFVariant(), amf::AMFVariant(), _AllowChangeInRuntime, 0)
 
     #define AMFPropertyInfoEnum(_name, _desc, _defaultValue, pEnumDescription, _AllowChangeInRuntime) \
-        AMFPropertyInfoImpl(_name, _desc, AMF_VARIANT_INT64, 0, AMFVariant(amf_int64(_defaultValue)), \
-            AMFVariant(), AMFVariant(), _AllowChangeInRuntime, pEnumDescription)
+        amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_INT64, 0, amf::AMFVariant(amf_int64(_defaultValue)), \
+            amf::AMFVariant(), amf::AMFVariant(), _AllowChangeInRuntime, pEnumDescription)
 
     #define AMFPropertyInfoInt64(_name, _desc, _defaultValue, _minValue, _maxValue, _AllowChangeInRuntime) \
-        AMFPropertyInfoImpl(_name, _desc, AMF_VARIANT_INT64, 0, AMFVariant(amf_int64(_defaultValue)), \
-            AMFVariant(amf_int64(_minValue)), AMFVariant(amf_int64(_maxValue)), _AllowChangeInRuntime, 0)
+        amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_INT64, 0, amf::AMFVariant(amf_int64(_defaultValue)), \
+            amf::AMFVariant(amf_int64(_minValue)), amf::AMFVariant(amf_int64(_maxValue)), _AllowChangeInRuntime, 0)
 
     #define AMFPropertyInfoDouble(_name, _desc, _defaultValue, _minValue, _maxValue, _AllowChangeInRuntime) \
-        AMFPropertyInfoImpl(_name, _desc, AMF_VARIANT_DOUBLE, 0, AMFVariant(amf_double(_defaultValue)), \
-            AMFVariant(amf_double(_minValue)), AMFVariant(amf_double(_maxValue)), _AllowChangeInRuntime, 0)
+        amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_DOUBLE, 0, amf::AMFVariant(amf_double(_defaultValue)), \
+            amf::AMFVariant(amf_double(_minValue)), amf::AMFVariant(amf_double(_maxValue)), _AllowChangeInRuntime, 0)
 
 
     #define AMFPropertyInfoRect(_name, _desc, defaultLeft, defaultTop, defaultRight, defaultBottom, _AllowChangeInRuntime) \
-        AMFPropertyInfoImpl(_name, _desc, AMF_VARIANT_RECT, 0, AMFVariant(AMFConstructRect(defaultLeft, defaultTop, defaultRight, defaultBottom)), \
-            AMFVariant(), AMFVariant(), _AllowChangeInRuntime, 0)
+        amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_RECT, 0, amf::AMFVariant(AMFConstructRect(defaultLeft, defaultTop, defaultRight, defaultBottom)), \
+            amf::AMFVariant(), amf::AMFVariant(), _AllowChangeInRuntime, 0)
 
     #define AMFPropertyInfoPoint(_name, _desc, defaultX, defaultY, _AllowChangeInRuntime) \
-        AMFPropertyInfoImpl(_name, _desc, AMF_VARIANT_POINT, 0, AMFVariant(AMFConstructPoint(defaultX, defaultY)), \
-            AMFVariant(), AMFVariant(), _AllowChangeInRuntime, 0)
+        amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_POINT, 0, amf::AMFVariant(AMFConstructPoint(defaultX, defaultY)), \
+            amf::AMFVariant(), amf::AMFVariant(), _AllowChangeInRuntime, 0)
 
     #define AMFPropertyInfoSize(_name, _desc, _defaultValue, _minValue, _maxValue, _AllowChangeInRuntime) \
-        AMFPropertyInfoImpl(_name, _desc, AMF_VARIANT_SIZE, 0, AMFVariant(AMFSize(_defaultValue)), \
-            AMFVariant(AMFSize(_minValue)), AMFVariant(AMFSize(_maxValue)), _AllowChangeInRuntime, 0)
+        amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_SIZE, 0, amf::AMFVariant(AMFSize(_defaultValue)), \
+            amf::AMFVariant(AMFSize(_minValue)), amf::AMFVariant(AMFSize(_maxValue)), _AllowChangeInRuntime, 0)
 
     #define AMFPropertyInfoRate(_name, _desc, defaultNum, defaultDen, _AllowChangeInRuntime) \
-        AMFPropertyInfoImpl(_name, _desc, AMF_VARIANT_RATE, 0, AMFVariant(AMFConstructRate(defaultNum, defaultDen)), \
-            AMFVariant(), AMFVariant(), _AllowChangeInRuntime, 0)
+        amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_RATE, 0, amf::AMFVariant(AMFConstructRate(defaultNum, defaultDen)), \
+            amf::AMFVariant(), amf::AMFVariant(), _AllowChangeInRuntime, 0)
 
     #define AMFPropertyInfoRatio(_name, _desc, defaultNum, defaultDen, _AllowChangeInRuntime) \
-        AMFPropertyInfoImpl(_name, _desc, AMF_VARIANT_RATIO, 0, AMFVariant(AMFConstructRatio(defaultNum, defaultDen)), \
-            AMFVariant(), AMFVariant(), _AllowChangeInRuntime, 0)
+        amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_RATIO, 0, amf::AMFVariant(AMFConstructRatio(defaultNum, defaultDen)), \
+            amf::AMFVariant(), amf::AMFVariant(), _AllowChangeInRuntime, 0)
 
     #define AMFPropertyInfoColor(_name, _desc, defaultR, defaultG, defaultB, defaultA, _AllowChangeInRuntime) \
-        AMFPropertyInfoImpl(_name, _desc, AMF_VARIANT_COLOR, 0, AMFVariant(AMFConstructColor(defaultR, defaultG, defaultB, defaultA)), \
-            AMFVariant(), AMFVariant(), _AllowChangeInRuntime, 0)
+        amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_COLOR, 0, amf::AMFVariant(AMFConstructColor(defaultR, defaultG, defaultB, defaultA)), \
+            amf::AMFVariant(), amf::AMFVariant(), _AllowChangeInRuntime, 0)
 
 
     #define AMFPropertyInfoString(_name, _desc, _defaultValue, _AllowChangeInRuntime) \
-        AMFPropertyInfoImpl(_name, _desc, AMF_VARIANT_STRING, 0, AMFVariant(_defaultValue), \
-            AMFVariant(), AMFVariant(), _AllowChangeInRuntime, 0)
+        amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_STRING, 0, amf::AMFVariant(_defaultValue), \
+            amf::AMFVariant(), amf::AMFVariant(), _AllowChangeInRuntime, 0)
 
     #define AMFPropertyInfoWString(_name, _desc, _defaultValue, _AllowChangeInRuntime) \
-        AMFPropertyInfoImpl(_name, _desc, AMF_VARIANT_WSTRING, 0, AMFVariant(_defaultValue), \
-            AMFVariant(), AMFVariant(), _AllowChangeInRuntime, 0)
+        amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_WSTRING, 0, amf::AMFVariant(_defaultValue), \
+            amf::AMFVariant(), amf::AMFVariant(), _AllowChangeInRuntime, 0)
 
     #define AMFPropertyInfoInterface(_name, _desc, _defaultValue, _AllowChangeInRuntime) \
-        AMFPropertyInfoImpl(_name, _desc, AMF_VARIANT_INTERFACE, 0, AMFVariant(AMFInterfacePtr(_defaultValue)), \
-            AMFVariant(AMFInterfacePtr()), AMFVariant(AMFInterfacePtr()), _AllowChangeInRuntime, 0)
+        amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_INTERFACE, 0, amf::AMFVariant(amf::AMFInterfacePtr(_defaultValue)), \
+            amf::AMFVariant(amf::AMFInterfacePtr()), amf::AMFVariant(amf::AMFInterfacePtr()), _AllowChangeInRuntime, 0)
 
 
     #define AMFPropertyInfoXML(_name, _desc, _defaultValue, _AllowChangeInRuntime) \
-            AMFPropertyInfoImpl(_name, _desc, AMF_VARIANT_STRING, AMF_PROPERTY_CONTENT_XML, AMFVariant(_defaultValue), \
-                AMFVariant(), AMFVariant(), _AllowChangeInRuntime, 0)
+        amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_STRING, AMF_PROPERTY_CONTENT_XML, amf::AMFVariant(_defaultValue), \
+            amf::AMFVariant(), amf::AMFVariant(), _AllowChangeInRuntime, 0)
 
     #define AMFPropertyInfoPath(_name, _desc, _defaultValue, _AllowChangeInRuntime) \
-            AMFPropertyInfoImpl(_name, _desc, AMF_VARIANT_WSTRING, AMF_PROPERTY_CONTENT_FILE_OPEN_PATH, AMFVariant(_defaultValue), \
-                AMFVariant(), AMFVariant(), _AllowChangeInRuntime, 0)
+        amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_WSTRING, AMF_PROPERTY_CONTENT_FILE_OPEN_PATH, amf::AMFVariant(_defaultValue), \
+            amf::AMFVariant(), amf::AMFVariant(), _AllowChangeInRuntime, 0)
 
     #define AMFPropertyInfoSavePath(_name, _desc, _defaultValue, _AllowChangeInRuntime) \
-            AMFPropertyInfoImpl(_name, _desc, AMF_VARIANT_WSTRING, AMF_PROPERTY_CONTENT_FILE_SAVE_PATH, AMFVariant(_defaultValue), \
-                AMFVariant(), AMFVariant(), _AllowChangeInRuntime, 0)
+        amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_WSTRING, AMF_PROPERTY_CONTENT_FILE_SAVE_PATH, amf::AMFVariant(_defaultValue), \
+            amf::AMFVariant(), amf::AMFVariant(), _AllowChangeInRuntime, 0)
 
 } // namespace amf
 

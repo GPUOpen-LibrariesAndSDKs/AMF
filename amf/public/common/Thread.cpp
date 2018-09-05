@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -475,6 +475,8 @@ namespace amf
 
             AMFThreadObj(const AMFThreadObj&);
             AMFThreadObj& operator=(const AMFThreadObj&);
+            static void* AMF_CDECL_CALL AMFThreadProc(void* pThis);
+
         };
 
     AMFThreadObj::AMFThreadObj(AMFThread* owner)
@@ -491,7 +493,7 @@ namespace amf
         pthread_mutex_destroy(&m_hMutex);
     }
 
-    void* AMF_CDECL_CALL AMFThreadProc(void* pThis)
+    void* AMF_CDECL_CALL AMFThreadObj::AMFThreadProc(void* pThis)
     {
         AMFThreadObj* pT = (AMFThreadObj*)pThis;
         if(!pT->Init())
@@ -500,6 +502,8 @@ namespace amf
         }
         pT->Run();
         pT->Terminate();
+        pT->m_hThread = 0;
+        pT->m_bStopRequested = false;
         return 0;
     }
 
@@ -510,6 +514,10 @@ namespace amf
 
     bool AMFThreadObj::RequestStop()
     {
+        if(m_hThread == (uintptr_t)0L)
+        {
+            return true;
+        }
         pthread_mutex_lock(&m_hMutex);
         m_bStopRequested = true;
         pthread_mutex_unlock(&m_hMutex);
@@ -518,7 +526,7 @@ namespace amf
 
     bool AMFThreadObj::WaitForStop()
     {
-        if(m_hThread)
+        if(m_hThread != (uintptr_t)0L)
         {
             pthread_join(m_hThread, 0);
         }

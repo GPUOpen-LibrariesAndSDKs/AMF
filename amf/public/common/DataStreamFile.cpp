@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +31,6 @@
 //
 
 #include "TraceAdapter.h"
-#include "AMFSTL.h"
 #include "DataStreamFile.h"
 
 #pragma warning(disable: 4996)
@@ -40,18 +39,20 @@
 #endif
 
 #include <fcntl.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 
 #if defined(_WIN32)
-    #define amf_open _open
     #define amf_close _close
     #define amf_read _read
     #define amf_write _write
+    #define amf_seek64 _lseeki64
 #elif defined(__linux) // Linux
-    #define amf_open         open
+    #include <unistd.h>
     #define amf_close        close
     #define amf_read         read
     #define amf_write        write
+    #define amf_seek64       lseek64
 #endif
 
 using namespace amf;
@@ -146,7 +147,7 @@ AMF_RESULT AMF_STD_CALL AMFDataStreamFileImpl::Seek(AMF_SEEK_ORIGIN eOrigin, amf
     }
     amf_int64 new_pos = 0;
 
-    new_pos = _lseeki64(m_iFileDescriptor, iPosition, org);
+    new_pos = amf_seek64(m_iFileDescriptor, iPosition, org);
     if(new_pos == -1L) // check errors
     {
         return AMF_FAIL;
@@ -162,7 +163,7 @@ AMF_RESULT AMF_STD_CALL AMFDataStreamFileImpl::GetPosition(amf_int64* pPosition)
 {
     AMF_RETURN_IF_FALSE(pPosition != NULL, AMF_INVALID_POINTER);
     AMF_RETURN_IF_FALSE(m_iFileDescriptor != -1, AMF_FILE_NOT_OPEN, L"GetPosition() - File not Open");
-    *pPosition = _telli64(m_iFileDescriptor);
+    *pPosition = amf_seek64(m_iFileDescriptor, 0, SEEK_CUR);
     if(*pPosition == -1L)
     {
         return AMF_FAIL;
@@ -175,9 +176,9 @@ AMF_RESULT AMF_STD_CALL AMFDataStreamFileImpl::GetSize(amf_int64* pSize)
     AMF_RETURN_IF_FALSE(pSize != NULL, AMF_INVALID_POINTER);
     AMF_RETURN_IF_FALSE(m_iFileDescriptor != -1, AMF_FILE_NOT_OPEN, L"GetSize() - File not open");
 
-    amf_int64 currPos = _telli64(m_iFileDescriptor);
-    *pSize = _lseeki64(m_iFileDescriptor, 0, SEEK_END);
-    _lseeki64(m_iFileDescriptor, currPos, SEEK_SET);
+    amf_int64 cur_pos = amf_seek64(m_iFileDescriptor, 0, SEEK_CUR);
+    *pSize = amf_seek64(m_iFileDescriptor, 0, SEEK_END);
+    amf_seek64(m_iFileDescriptor, cur_pos, SEEK_SET);
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
