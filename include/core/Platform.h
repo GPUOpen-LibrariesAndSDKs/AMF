@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -37,7 +37,7 @@
 //----------------------------------------------------------------------------------------------
 // export declaration
 //----------------------------------------------------------------------------------------------
-#ifdef _WIN32
+#if defined(_WIN32)
     #if defined(AMF_CORE_STATIC)
         #define AMF_CORE_LINK
     #else
@@ -47,7 +47,13 @@
             #define AMF_CORE_LINK __declspec(dllimport)
         #endif
     #endif
-#else // #ifdef _WIN32
+#elif defined(__linux)        
+        #if defined(AMF_CORE_EXPORTS)
+            #define AMF_CORE_LINK __attribute__((visibility("default")))
+        #else
+            #define AMF_CORE_LINK
+        #endif
+#else 
     #define AMF_CORE_LINK
 #endif // #ifdef _WIN32
 
@@ -167,6 +173,8 @@ typedef     unsigned long       amf_ulong;
 typedef     unsigned int        amf_uint; 
 
 typedef     amf_int64           amf_pts;     // in 100 nanosecs
+
+typedef amf_uint32              amf_flags;
 
 #define AMF_SECOND          10000000L    // 1 second in 100 nanoseconds
 

@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -90,7 +90,7 @@ namespace amf
     // template for AMF smart pointer
     //------------------------------------------------------------------------
 #if defined(__cplusplus)
-    template<typename _Interf>
+    template<class _Interf>
     class AMFInterfacePtr_T
     {
     private:
@@ -124,7 +124,7 @@ namespace amf
             InternalAcquire();
         }
 
-        template<typename _OtherInterf>
+        template<class _OtherInterf>
         explicit AMFInterfacePtr_T(const AMFInterfacePtr_T<_OtherInterf>& cp) : m_pInterf(NULL)
         {
             void* pInterf = NULL;
@@ -135,7 +135,7 @@ namespace amf
             m_pInterf = static_cast<_Interf*>(pInterf);
         }
 
-        template<typename _OtherInterf>
+        template<class _OtherInterf>
         explicit AMFInterfacePtr_T(_OtherInterf* cp) : m_pInterf(NULL)
         {
             void* pInterf = NULL;

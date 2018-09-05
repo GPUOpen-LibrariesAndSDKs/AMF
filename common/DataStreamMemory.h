@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -46,11 +46,11 @@ namespace amf
         AMFDataStreamMemoryImpl();
         virtual ~AMFDataStreamMemoryImpl();
         // interface
-        virtual AMF_RESULT AMF_STD_CALL Open(const wchar_t* pFileUrl, AMF_STREAM_OPEN eOpenType, AMF_FILE_SHARE eShareType)
+        virtual AMF_RESULT AMF_STD_CALL Open(const wchar_t* /*pFileUrl*/, AMF_STREAM_OPEN /*eOpenType*/, AMF_FILE_SHARE /*eShareType*/)
         {
-            pFileUrl;
-            eOpenType;
-            eShareType;
+            //pFileUrl;
+            //eOpenType;
+            //eShareType;
             return AMF_OK;
         }
         virtual AMF_RESULT AMF_STD_CALL Close();

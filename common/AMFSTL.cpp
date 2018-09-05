@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -37,25 +37,31 @@
 #include <stdarg.h>
 #include <locale>
 #include <locale.h>
-#include <codecvt>
+#include <fstream>
 #include <string>
 #include <wchar.h>
 #include <stdarg.h>
+#if defined(__ANDROID__)
+    #include <codecvt>
+#endif
 
 #pragma warning(disable: 4996)
 
-#ifndef _MSC_VER
+#if defined(__linux)
 extern "C"
 {
     extern int vscwprintf(const wchar_t* p_fmt, va_list p_args);
     extern int vscprintf(const char* p_fmt, va_list p_args);
 }
-#elif _MSC_VER <= 1912
+#endif
+
+#ifdef _MSC_VER
     #define snprintf _snprintf
     #define vscprintf _vscprintf
     #define vscwprintf _vscwprintf  //  Count chars without writing to string
     #define vswprintf _vsnwprintf
 #endif
+
 
 using namespace amf;
 
@@ -584,8 +590,8 @@ amf_wstring AMF_STD_CALL amf::amf_string_formatVA(const wchar_t* format, va_list
 #else
     va_copy(argcopy, args);
 #endif
-
     int size = vscwprintf(format, argcopy);
+
     va_end(argcopy);
 
 
@@ -604,8 +610,8 @@ amf_string AMF_STD_CALL amf::amf_string_formatVA(const char* format, va_list arg
 #else
     va_copy(argcopy, args);
 #endif
-
     int size = vscprintf(format, args);
+
     va_end(argcopy);
 
     std::vector<char> buf(size + 1);
@@ -613,6 +619,44 @@ amf_string AMF_STD_CALL amf::amf_string_formatVA(const char* format, va_list arg
     vsnprintf(pBuf, size + 1, format, args);
     return pBuf;
 }
+#if defined(__linux)  && !defined(__ANDROID__)
+int vscprintf(const char* format, va_list argptr)
+{
+    char* p_tmp_buf;
+    size_t tmp_buf_size;
+    FILE* fd = open_memstream(&p_tmp_buf, &tmp_buf_size);
+    if(fd == 0)
+    {
+        return -1;
+    }
+    va_list arg_copy;
+    va_copy(arg_copy, argptr);
+    vfprintf(fd, format, arg_copy);
+    va_end(arg_copy);
+    fclose(fd);
+    free(p_tmp_buf);
+    return tmp_buf_size;
+}
+
+int vscwprintf(const wchar_t* format, va_list argptr)
+{
+    wchar_t* p_tmp_buf;
+    size_t tmp_buf_size;
+    FILE* fd = open_wmemstream(&p_tmp_buf, &tmp_buf_size);
+    if(fd == 0)
+    {
+        return -1;
+    }
+    va_list arg_copy;
+    va_copy(arg_copy, argptr);
+    vfwprintf(fd, format, argptr);
+    va_end(arg_copy);
+    fclose(fd);
+    free(p_tmp_buf);
+    return tmp_buf_size;
+}
+#endif
+
 //----------------------------------------------------------------------------------------
 void* AMF_STD_CALL amf_alloc(size_t count)
 {

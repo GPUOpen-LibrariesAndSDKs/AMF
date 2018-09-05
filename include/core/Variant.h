@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -905,7 +905,7 @@ namespace amf
             {
                 break;
             }
-            mbrtowc(&result[UnicodeBuffSize], pt, length, &mbs);     //MM TODO Android always return 1 char
+            mbrtowc(&((wchar_t*)(result.c_str()))[UnicodeBuffSize], pt, length, &mbs);     //MM TODO Android always return 1 char
             UnicodeBuffSize++;
             len -= length;
             pt += length;
@@ -921,7 +921,7 @@ namespace amf
         }
         UnicodeBuffSize += 8; // get some extra space
         result.resize(UnicodeBuffSize);
-        UnicodeBuffSize = mbstowcs(&result[0], pUtf8Buff, UnicodeBuffSize);
+        UnicodeBuffSize = mbstowcs((wchar_t*)result.c_str(), pUtf8Buff, UnicodeBuffSize + 1);
         setlocale(LC_CTYPE, old_locale);
 #endif
         result.resize(UnicodeBuffSize);
@@ -968,7 +968,7 @@ namespace amf
         {
             //MM TODO Android - not implemented
             //int written = wcrtomb(&result[Utf8BuffSize], pwBuff[i], &mbs);
-            result[Utf8BuffSize] = (char)(pwBuff[i]);
+            ((char*)(result.c_str()))[Utf8BuffSize] = (char)(pwBuff[i]);
             int written = 1;
             // temp replacement
             Utf8BuffSize += written;
@@ -984,7 +984,7 @@ namespace amf
         }
         Utf8BuffSize += 8; // get some extra space
         result.resize(Utf8BuffSize);
-        Utf8BuffSize = wcstombs(&result[0], pwBuff, Utf8BuffSize);
+        Utf8BuffSize = wcstombs((char*)result.c_str(), pwBuff, Utf8BuffSize + 1);
 
         setlocale(LC_CTYPE, old_locale);
 #endif

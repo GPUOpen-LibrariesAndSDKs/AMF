@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -40,10 +40,14 @@
 #pragma once
 
 
-#if defined(_M_AMD64)
-    #define FFMPEG_DLL_NAME    L"amf-component-ffmpeg64.dll"
-#else
-    #define FFMPEG_DLL_NAME    L"amf-component-ffmpeg32.dll"
+#if defined(_WIN32)
+    #if defined(_M_AMD64)
+        #define FFMPEG_DLL_NAME    L"amf-component-ffmpeg64.dll"
+    #else
+        #define FFMPEG_DLL_NAME    L"amf-component-ffmpeg32.dll"
+    #endif
+#elif defined(__linux)
+    #define FFMPEG_DLL_NAME    L"amf-component-ffmpeg.so"
 #endif
 
 

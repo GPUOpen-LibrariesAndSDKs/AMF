@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -105,14 +105,23 @@ extern "C"
     typedef AMF_RESULT             (AMF_CDECL_CALL *AMFQueryVersion_Fn)(amf_uint64 *pVersion);
 #endif
 
-#if defined(_M_AMD64)
-    #define AMF_DLL_NAME    L"amfrt64.dll"
-    #define AMF_DLL_NAMEA   "amfrt64.dll"
-#else
-    #define AMF_DLL_NAME    L"amfrt32.dll"
-    #define AMF_DLL_NAMEA   "amfrt32.dll"
-#endif
-
+#if defined(_WIN32)
+    #if defined(_M_AMD64)
+        #define AMF_DLL_NAME    L"amfrt64.dll"
+        #define AMF_DLL_NAMEA   "amfrt64.dll"
+    #else
+        #define AMF_DLL_NAME    L"amfrt32.dll"
+        #define AMF_DLL_NAMEA   "amfrt32.dll"
+    #endif
+#elif defined(__linux__)
+    #if defined(__x86_64__)
+        #define AMF_DLL_NAME    L"libamfrt64.so.1"
+        #define AMF_DLL_NAMEA   "libamfrt64.so.1"
+    #else
+        #define AMF_DLL_NAME    L"libamfrt32.so.1"
+        #define AMF_DLL_NAMEA   "libamfrt32.so.1"
+    #endif
+#endif 
 //----------------------------------------------------------------------------------------------
 
 #endif  // AMF_Factory_h

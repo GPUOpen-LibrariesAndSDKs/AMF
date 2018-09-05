@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -45,6 +45,25 @@
 namespace amf
 {
 #endif
+
+    //----------------------------------------------------------------------------------------------
+    // AMF_BUFFER_USAGE translates to D3D11_BIND_FLAG or VkBufferUsageFlagBits
+    // bit mask
+    //----------------------------------------------------------------------------------------------
+    typedef enum AMF_BUFFER_USAGE_BITS
+    {                                                      // D3D11                        Vulkan 
+        AMF_BUFFER_USAGE_DEFAULT           = 0x80000000,   // D3D11_USAGE_STAGING,          VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT 
+        AMF_BUFFER_USAGE_NONE              = 0x00000000,   // 0                  ,          0
+        AMF_BUFFER_USAGE_CONSTANT          = 0x00000001,   // D3D11_BIND_CONSTANT_BUFFER,   VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT 
+        AMF_BUFFER_USAGE_SHADER_RESOURCE   = 0x00000002,   // D3D11_BIND_SHADER_RESOURCE,   VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+        AMF_BUFFER_USAGE_UNORDERED_ACCESS  = 0x00000004,   // D3D11_BIND_UNORDERED_ACCESS,  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
+        AMF_BUFFER_USAGE_TRANSFER_SRC      = 0x00000008,   //                               VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+        AMF_BUFFER_USAGE_TRANSFER_DST      = 0x00000010,   //                               VK_BUFFER_USAGE_TRANSFER_DST_BIT
+    } AMF_BUFFER_USAGE_BITS;
+    typedef amf_flags AMF_BUFFER_USAGE;
+    //----------------------------------------------------------------------------------------------
+
+
     //----------------------------------------------------------------------------------------------
     // AMFBufferObserver interface - callback
     //----------------------------------------------------------------------------------------------

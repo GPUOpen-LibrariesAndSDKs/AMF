@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -90,9 +90,9 @@ namespace amf
         AMF_ARGUMENT_ACCESS_READWRITE   = 2,
         AMF_ARGUMENT_ACCESS_READWRITE_MASK  = 0xFFFF,
         //Sampler parameters
-        AMF_ARGUMENT_SAMPLER_POINT         = 0x00000000, // default
         AMF_ARGUMENT_SAMPLER_LINEAR        = 0x10000000, 
         AMF_ARGUMENT_SAMPLER_NORM_COORD    = 0x20000000, 
+        AMF_ARGUMENT_SAMPLER_POINT         = 0x40000000,
         AMF_ARGUMENT_SAMPLER_MASK          = 0xFFFF0000,
     } AMF_ARGUMENT_ACCESS_TYPE;
     //----------------------------------------------------------------------------------------------
