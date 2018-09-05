@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CapabilityManager", "CPPSamples\CapabilityManager\CapabilityManager_VS2017.vcxproj", "{6C3B9FF8-624F-4D7F-89E1-2B4AFFAAA873}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PlaybackHW", "CPPSamples\PlaybackHW\PlaybackHW_VS2017.vcxproj", "{88CB35A2-25B3-4638-898D-A7A3F989A789}"
+	ProjectSection(ProjectDependencies) = postProject
+		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD} = {16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleConverter", "CPPSamples\SimpleConverter\SimpleConverter_VS2017.vcxproj", "{F14957B2-15F4-4E6C-A629-061D31D850ED}"
 EndProject

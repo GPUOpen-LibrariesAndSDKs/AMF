@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +31,7 @@
 //
 #include "VideoPresenterDX9.h"
 
-VideoPresenterDX9::VideoPresenterDX9(HWND hwnd, amf::AMFContext* pContext) :
+VideoPresenterDX9::VideoPresenterDX9(amf_handle hwnd, amf::AMFContext* pContext) :
     BackBufferPresenter(hwnd, pContext),
     m_uiAvailableBackBuffer(0),
     m_uiBackBufferCount(4)
@@ -152,9 +152,7 @@ AMF_RESULT VideoPresenterDX9::Present(amf::AMFSurface* pSurface)
         return err;
     }
 
-    RECT tmpRectClient = {0, 0, 500, 500};
-    GetClientRect((HWND)m_hwnd, &tmpRectClient);
-    AMFRect rectClient = AMFConstructRect(tmpRectClient.left, tmpRectClient.top, tmpRectClient.right, tmpRectClient.bottom);
+    AMFRect rectClient = GetClientRect();
 
     D3DPRESENT_PARAMETERS presentationParameters;
     if(FAILED(m_pSwapChain->GetPresentParameters(&presentationParameters)))

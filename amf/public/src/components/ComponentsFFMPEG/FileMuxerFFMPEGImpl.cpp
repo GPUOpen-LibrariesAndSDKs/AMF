@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -40,7 +40,16 @@ extern "C"
     #endif
         #define     HAVE_STRUCT_POLLFD 1
 #endif
-    #include "libavformat/internal.h"
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable:4244)
+#endif
+
+#include "libavformat/internal.h"
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 }
 
 #include "FileMuxerFFMPEGImpl.h"
@@ -173,7 +182,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AMFInputMuxerImpl::SubmitInput(
     if (m_bEnabled)
     {
         m_iPacketCount++;
-        bool bVideo = m_pHost->m_pOutputContext->streams[m_iIndex]->codec->codec_type == AVMEDIA_TYPE_VIDEO;
+//        bool bVideo = m_pHost->m_pOutputContext->streams[m_iIndex]->codec->codec_type == AVMEDIA_TYPE_VIDEO;
 //        AMFTraceW(L"",0, AMF_TRACE_INFO, AMF_FACILITY, 2, L"Stream# %s, packet # %d, time = %.2f ms", bVideo ? L"Video" : L"Audio", (int)m_iPacketCount, pData->GetPts() / 10000.);
         if(pData != NULL)
         {
@@ -781,7 +790,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::WriteData(AMFData* pData, amf_i
 //            ost->codec->codec_type == AVMEDIA_TYPE_VIDEO ? L"video" : L"audio",
 //            pts, pkt.pts, pkt.dts);
 
-        amf_int64 ptsFFmpeg = pkt.pts;
+//        amf_int64 ptsFFmpeg = pkt.pts;
 #if !FAKE_MUXING
         if (av_interleaved_write_frame(m_pOutputContext,&pkt)<0)
         {

@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -33,6 +33,7 @@
 
 #include "FileDemuxerFFMPEGImpl.h"
 #include "UtilsFFMPEG.h"
+#include <float.h>
 
 #include "public/include/components/VideoDecoderUVD.h"
 #include "public/include/core/Context.h"
@@ -238,7 +239,7 @@ AMF_RESULT  AMFFileDemuxerFFMPEGImpl::AMFOutputDemuxerImpl::CachePacket(AVPacket
 //-------------------------------------------------------------------------------------------------
 void  AMFFileDemuxerFFMPEGImpl::AMFOutputDemuxerImpl::ClearPacketCache()
 {
-    for (amf_list<AVPacket*>::iterator it = m_packetsCache.begin(); it != m_packetsCache.begin(); ++it)
+    for (amf_list<AVPacket*>::iterator it = m_packetsCache.begin(); it != m_packetsCache.end(); ++it)
     {
         ClearPacket(*it);
     }
@@ -320,7 +321,7 @@ AMFFileDemuxerFFMPEGImpl::AMFVideoOutputDemuxerImpl::AMFVideoOutputDemuxerImpl(A
     }
     // figure out the surface format conversion
     AMF_SURFACE_FORMAT  surfaceFormat = AMF_SURFACE_UNKNOWN;
-    for (amf_size i = 0; i < _countof(sFormatMap); i += 1)
+    for (amf_size i = 0; i < amf_countof(sFormatMap); i += 1)
     {
         if (sFormatMap[i].ffmpegFormat == ist->codec->pix_fmt)
         {
@@ -782,8 +783,8 @@ void AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::OnPropertyChanged(const wchar_t* pN
     const amf_wstring  name(pName);
     if (name == FFMPEG_DEMUXER_PATH || name == FFMPEG_DEMUXER_URL)
     {
-        m_OutputStreams.clear();
-        ReInit(0, 0);
+//        m_OutputStreams.clear();
+//        ReInit(0, 0);
         return;
     }
 
@@ -935,7 +936,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
     }
 
     amf_vector<AMFOutputDemuxerImplPtr>  outputStreams;
-    for (amf_uint32 i = 0; i < m_pInputContext->nb_streams; i++)
+    for (amf_int32 i = 0; i < static_cast<amf_int32>(m_pInputContext->nb_streams); i++)
     {
         const AVStream* ist = m_pInputContext->streams[i];
         AMFOutputDemuxerImplPtr newOutput;
@@ -971,7 +972,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
         m_eVideoCodecID = AV_CODEC_ID_H264;
 
         bool checkMVC = true;
-        AMF_RESULT err = GetProperty(FFMPEG_DEMUXER_CHECK_MVC, &checkMVC);
+        GetProperty(FFMPEG_DEMUXER_CHECK_MVC, &checkMVC);
 
         if (checkMVC && CheckH264MVC())
         {
@@ -998,7 +999,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
     }
 
 //    GetProperty(FFMPEG_DEMUXER_SYNC_AV, &m_bSyncAV);
-    AMF_RESULT err = SetProperty(FFMPEG_DEMUXER_DURATION, m_ptsDuration);
+    SetProperty(FFMPEG_DEMUXER_DURATION, m_ptsDuration);
 
     // trace info about file and number of streams
     AMFTrace(AMF_TRACE_INFO, AMF_FACILITY, L"Open(%s) succeeded; streams=%d", Url.c_str(), m_pInputContext->nb_streams);
@@ -1056,7 +1057,6 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::ReadPacket(AVPacket **packet)
     if (pkt.stream_index == m_iVideoStreamIndex)
     {
 //        AMFTraceWarning(AMF_FACILITY, L"ReadPacket() video pts=%" LPRId64 L", dts=% " LPRId64 L" first_dts=%" LPRId64 L" readduration=%5.2f", pkt.pts, pkt.dts, ist->first_dts, float(readDuration) /10000.);
-        int64_t t = INT64_C(234);
         if (pkt.dts == AV_NOPTS_VALUE)
         {
             pkt.dts = av_rescale(m_iPacketCount, ist->time_base.den, (int64_t)ist->time_base.num);
@@ -1396,7 +1396,7 @@ static bool GetNextAnnexbNALUType(amf_uint8 *&buf, amf_int &buf_size, int &nal_u
         iEndPos--;
     }
     // get it
-    int len = iEndPos - iStartPos;
+//    int len = iEndPos - iStartPos;
     nal_unit_type = (buf[iStartPos]) & 0x1f;
     data = buf + iStartPos + 1;
     buf += currStreamPos;

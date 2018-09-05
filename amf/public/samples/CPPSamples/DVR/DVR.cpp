@@ -48,6 +48,7 @@
 #include "DVR.h"
 
 #include "public/common/AMFFactory.h"
+#include "public/include/components/VideoEncoderVCE.h"
 
 #include "public/samples/CPPSamples/common/CmdLineParser.h"
 #include "public/samples/CPPSamples/common/CmdLogger.h"
@@ -152,7 +153,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_CONSOLE, AMF_TRACE_INFO);
 #else
 		g_AMFFactory.GetDebug()->AssertsEnable(false);
-		g_AMFFactory.GetTrace()->SetGlobalLevel(AMF_TRACE_WARNING);
+//		g_AMFFactory.GetTrace()->SetGlobalLevel(AMF_TRACE_WARNING);
+		g_AMFFactory.GetTrace()->SetGlobalLevel(AMF_TRACE_INFO);
+		g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_DEBUG_OUTPUT, AMF_TRACE_INFO);
+		g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_CONSOLE, AMF_TRACE_INFO);
 #endif
 		amf_increase_timer_precision();
 
@@ -162,8 +166,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		s_pPipeline = &pipeline;
 
 		std::wstring codec = L"AMFVideoEncoderVCE_AVC";
-		s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_CODEC, L"AMFVideoEncoderVCE_AVC");
+		s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_CODEC, AMFVideoEncoderVCE_AVC);
 		RegisterEncoderParamsAVC(s_pPipeline);
+
+        s_pPipeline->SetParam(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED);
 
 		s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_ADAPTERID, kDefaultGPUIdx);
 		s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_MONITORID, 0);
@@ -667,6 +673,8 @@ void StartRecording(HWND hWnd)
 			s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_OUTPUT, szFileNew);
 		}
 	}
+
+    parseCmdLineParameters(s_pPipeline);
 
 	AMF_RESULT res = s_pPipeline->Init();
 	if (res != AMF_OK)

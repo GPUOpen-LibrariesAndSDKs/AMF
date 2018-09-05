@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -37,14 +37,15 @@ class PlaybackPipeline : public PlaybackPipelineBase
 {
 public:
     PlaybackPipeline();
-    AMF_RESULT Init(HWND hwnd);
+    AMF_RESULT Init(amf_handle hwnd, amf_handle display = 0);
 
 protected:
     AMF_RESULT InitContext(amf::AMF_MEMORY_TYPE type) override;
     AMF_RESULT CreateVideoPresenter(amf::AMF_MEMORY_TYPE type, amf_int64 bitRate, double fps) override;
     AMF_RESULT CreateAudioPresenter() override;
 
-    HWND m_hwnd;
+    amf_handle m_hwnd;
+    amf_handle m_hDisplay;
 };
 
 typedef std::shared_ptr<PlaybackPipeline> PlaybackPipelinePtr;

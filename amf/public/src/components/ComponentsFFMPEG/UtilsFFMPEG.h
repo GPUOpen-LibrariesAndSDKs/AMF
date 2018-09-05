@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -37,12 +37,19 @@
 
 extern "C"
 {
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable:4244)
+#endif
     #include "libavformat/avformat.h"
     #include "libavformat/url.h"
     #include "libavcodec/avcodec.h"
     #include "libavcodec/audioconvert.h"
     #include "libavresample/avresample.h"
     #include "libavutil/opt.h"
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 }
 
 

@@ -90,6 +90,9 @@
     <ClCompile Include="..\common\StitchPipelineBase.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\common\VulkanImportTable.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\public\common\AMFFactory.h">
@@ -188,6 +191,9 @@
       <Filter>public\components\ZCamLiveStream</Filter>
     </ClInclude>
     <ClInclude Include="..\common\StitchPipelineBase.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\VulkanImportTable.h">
       <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>

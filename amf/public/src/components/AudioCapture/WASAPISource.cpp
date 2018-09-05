@@ -29,21 +29,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 
 #include <windows.h>
 #include <propsys.h>
 #include <functiondiscoverykeys_devpkey.h>
 #include "public/common/TraceAdapter.h"
 #include "WASAPISource.h"
-#include "public/samples/CPPSamples/common/CmdLogger.h"
 
 #pragma warning(disable: 4996)
 
 using namespace amf;
-
-#define REFTIMES_PER_SEC  10000000
-#define REFTIMES_PER_MILLISEC  10000
 
 namespace
 {
@@ -178,16 +176,16 @@ AMF_RESULT AMFWASAPISourceImpl::Terminate()
 }
 
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMFWASAPISourceImpl::Init(bool capture, amf_int32 activeDevice)
+AMF_RESULT AMFWASAPISourceImpl::Init(bool capture, amf_int32 activeDevice, amf_pts bufferDuration)
 {
 	if (capture)
-		return InitCaptureMicrophone(activeDevice);
+		return InitCaptureMicrophone(activeDevice, bufferDuration);
 
-	return InitCaptureDesktop();
+	return InitCaptureDesktop(bufferDuration);
 }
 
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMFWASAPISourceImpl::InitCaptureMicrophone(amf_int32 activeDevice)
+AMF_RESULT AMFWASAPISourceImpl::InitCaptureMicrophone(amf_int32 activeDevice, amf_pts bufferDuration)
 {
 	if (activeDevice < 0)
 	{
@@ -214,15 +212,32 @@ AMF_RESULT AMFWASAPISourceImpl::InitCaptureMicrophone(amf_int32 activeDevice)
 	hr = m_device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&m_client);
 	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"Activate() failed");
 
+    WAVEFORMATEX* supportedFormat = NULL;
 	WAVEFORMATEXWrapper formatWrapper;
 	// DWORD   flags = AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_LOOPBACK;
 	hr = m_client->GetMixFormat(&formatWrapper.m_pFmt);
 	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"GetMixFormat() failed");
 
-	memcpy(&m_waveFormat, formatWrapper.m_pFmt, sizeof(WAVEFORMATEX));
-	if ((formatWrapper.m_pFmt->cbSize > 0) && (formatWrapper.m_pFmt->wFormatTag == WAVE_FORMAT_EXTENSIBLE))
+    WAVEFORMATEXWrapper pClosestMatch;
+    hr = m_client->IsFormatSupported(AUDCLNT_SHAREMODE_SHARED, formatWrapper.m_pFmt, &pClosestMatch.m_pFmt);
+    AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"GetMixFormat() failed");
+    switch (hr)
+    {
+    case S_OK:
+        supportedFormat = formatWrapper.m_pFmt;
+        break;
+    case S_FALSE:
+        supportedFormat = pClosestMatch.m_pFmt;
+        break;
+    default:
+        break;
+    }
+    AMF_RETURN_IF_FALSE(supportedFormat != NULL, AMF_FAIL, L"Unable to determine supported audio capture format");
+
+    memcpy(&m_waveFormat, supportedFormat, sizeof(WAVEFORMATEX));
+    if ((supportedFormat->cbSize > 0) && (supportedFormat->wFormatTag == WAVE_FORMAT_EXTENSIBLE))
 	{
-		WAVEFORMATEXTENSIBLE* pExt = (WAVEFORMATEXTENSIBLE*)formatWrapper.m_pFmt;
+        WAVEFORMATEXTENSIBLE* pExt = (WAVEFORMATEXTENSIBLE*)supportedFormat;
 		if (pExt->SubFormat == KSDATAFORMAT_SUBTYPE_IEEE_FLOAT)
 		{
 			m_waveFormat.wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
@@ -233,8 +248,8 @@ AMF_RESULT AMFWASAPISourceImpl::InitCaptureMicrophone(amf_int32 activeDevice)
 		}
 	}
 
-	REFERENCE_TIME hnsRequestedDuration = REFTIMES_PER_SEC;
-	hr = m_client->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, hnsRequestedDuration, 0, formatWrapper.m_pFmt, NULL);
+	REFERENCE_TIME hnsRequestedDuration = bufferDuration;
+    hr = m_client->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, hnsRequestedDuration, 0, supportedFormat, NULL);
 	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"Initialize() failed");
 
 	hr = m_client->GetService(__uuidof(IAudioCaptureClient), (void**)&m_capture);
@@ -243,9 +258,9 @@ AMF_RESULT AMFWASAPISourceImpl::InitCaptureMicrophone(amf_int32 activeDevice)
 	hr = m_client->GetBufferSize(&m_sampleCount);
 	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"GetBufferSize() failed");
 
-	m_duration = REFTIMES_PER_SEC;
+	m_duration = bufferDuration;
 	m_duration *= m_sampleCount / m_waveFormat.nSamplesPerSec;
-	m_frameSize = formatWrapper.m_pFmt->nBlockAlign;
+    m_frameSize = supportedFormat->nBlockAlign;
 
 	hr = m_client->Start();
 	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"Start() failed");
@@ -254,26 +269,43 @@ AMF_RESULT AMFWASAPISourceImpl::InitCaptureMicrophone(amf_int32 activeDevice)
 }
 
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMFWASAPISourceImpl::InitCaptureDesktop()
+AMF_RESULT AMFWASAPISourceImpl::InitCaptureDesktop(amf_pts bufferDuration)
 {
 	ATL::CComPtr<IMMDeviceEnumerator> pEnumerator;
 	HRESULT hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&pEnumerator);
 
 	hr = pEnumerator->GetDefaultAudioEndpoint(
 		eRender, eConsole, &m_device);
-	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"GetDefaultAudioEndpoint() failed");
+    AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"GetDefaultAudioEndpoint() failed, hr=0x%X", hr);
 
 	hr = m_device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&m_client);
-	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"Activate() failed");
+    AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"Activate() failed, hr=0x%X", hr);
 
+    WAVEFORMATEX* supportedFormat = NULL;
 	WAVEFORMATEXWrapper formatWrapper;
 	hr = m_client->GetMixFormat(&formatWrapper.m_pFmt);
-	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"GetMixFormat() failed");
+    AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"GetMixFormat() failed, hr=0x%X", hr);
 
-	memcpy(&m_waveFormat, formatWrapper.m_pFmt, sizeof(WAVEFORMATEX));
-	if ((formatWrapper.m_pFmt->cbSize > 0) && (formatWrapper.m_pFmt->wFormatTag == WAVE_FORMAT_EXTENSIBLE))
+    WAVEFORMATEXWrapper pClosestMatch;
+    hr = m_client->IsFormatSupported(AUDCLNT_SHAREMODE_SHARED, formatWrapper.m_pFmt, &pClosestMatch.m_pFmt);
+    AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"IsFormatSupported() failed, hr=0x%X", hr);
+    switch (hr)
+    {
+    case S_OK:
+        supportedFormat = formatWrapper.m_pFmt;
+        break;
+    case S_FALSE:
+        supportedFormat = pClosestMatch.m_pFmt;
+        break;
+    default:
+        break;
+    }
+    AMF_RETURN_IF_FALSE(supportedFormat != NULL, AMF_FAIL, L"Unable to determine supported audio capture format");
+
+    memcpy(&m_waveFormat, supportedFormat, sizeof(WAVEFORMATEX));
+    if ((supportedFormat->cbSize > 0) && (supportedFormat->wFormatTag == WAVE_FORMAT_EXTENSIBLE))
 	{
-		WAVEFORMATEXTENSIBLE* pExt = (WAVEFORMATEXTENSIBLE*)formatWrapper.m_pFmt;
+        WAVEFORMATEXTENSIBLE* pExt = (WAVEFORMATEXTENSIBLE*)supportedFormat;
 		if (pExt->SubFormat == KSDATAFORMAT_SUBTYPE_IEEE_FLOAT)
 		{
 			m_waveFormat.wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
@@ -284,22 +316,22 @@ AMF_RESULT AMFWASAPISourceImpl::InitCaptureDesktop()
 		}
 	}
 
-	REFERENCE_TIME hnsRequestedDuration = REFTIMES_PER_SEC;
-	hr = m_client->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_LOOPBACK, hnsRequestedDuration, 0, formatWrapper.m_pFmt, NULL);
-	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"Initialize() failed");
+	REFERENCE_TIME hnsRequestedDuration = bufferDuration;
+    hr = m_client->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_LOOPBACK, hnsRequestedDuration, 0, supportedFormat, NULL);
+	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"Initialize() failed, hr=0x%X", hr);
 
 	hr = m_client->GetService(__uuidof(IAudioCaptureClient), (void**)&m_capture);
-	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"GetService() failed");
+    AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"GetService() failed, hr=0x%X", hr);
 
 	hr = m_client->GetBufferSize(&m_sampleCount);
-	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"GetBufferSize() failed");
+    AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"GetBufferSize() failed, hr=0x%X", hr);
 
-	m_duration = REFTIMES_PER_SEC;
+	m_duration = bufferDuration;
 	m_duration *= m_sampleCount / m_waveFormat.nSamplesPerSec;
-	m_frameSize = formatWrapper.m_pFmt->nBlockAlign;
+    m_frameSize = supportedFormat->nBlockAlign;
 
 	hr = m_client->Start();
-	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"Start() failed");
+    AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"Start() failed, hr=0x%X", hr);
 
 	return AMF_OK;
 }

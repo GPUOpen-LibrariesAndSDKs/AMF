@@ -90,6 +90,15 @@
     </ClCompile>
     <ClCompile Include="StitchPreviewPipeline.cpp" />
     <ClCompile Include="..\..\..\common\PropertyStorageExImpl.cpp" />
+    <ClCompile Include="..\common\VideoPresenterVulkan.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\SwapChainVulkan.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\VulkanImportTable.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\public\common\AMFFactory.h">
@@ -190,6 +199,15 @@
       <Filter>public\components\ZCamLiveStream</Filter>
     </ClInclude>
     <ClInclude Include="StitchPreviewPipeline.h" />
+    <ClInclude Include="..\common\VideoPresenterVulkan.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\SwapChainVulkan.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\VulkanImportTable.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="small.ico" />

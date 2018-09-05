@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -32,29 +32,43 @@
 //
 // this sample converts frames from BGRA to NV12 and scales them down using AMF Video Converter and writes the frames into raw file
 #include <stdio.h>
+
+#ifdef WIN32
 #include <tchar.h>
 #include <d3d9.h>
 #include <d3d11.h>
+#endif
+
+#include "public/common/AMFSTL.h"
 #include "public/common/AMFFactory.h"
 #include "public/include/components/VideoConverter.h"
 #include "public/common/Thread.h"
+#include <fstream>
+#include <iostream>
 
 // On Win7 AMF Encoder can work on DX9 only
 // The next line can be used to demo DX11 input and DX9 output from converter
-static amf::AMF_MEMORY_TYPE memoryTypeIn = amf::AMF_MEMORY_DX11; 
-//static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX9;
+#ifdef WIN32
+static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX9;
+static amf::AMF_MEMORY_TYPE memoryTypeOut = amf::AMF_MEMORY_DX9;
+//static amf::AMF_MEMORY_TYPE memoryTypeOut = amf::AMF_MEMORY_DX11;
+#else
+static amf::AMF_MEMORY_TYPE memoryTypeIn = amf::AMF_MEMORY_VULKAN; 
+static amf::AMF_MEMORY_TYPE memoryTypeOut = amf::AMF_MEMORY_VULKAN;
+#endif
 static amf::AMF_SURFACE_FORMAT formatIn   = amf::AMF_SURFACE_BGRA;
 static amf_int32 widthIn                  = 1920;
 static amf_int32 heightIn                 = 1080;
 static amf_int32 frameCount               = 100;
 
-static wchar_t *fileNameOut               = L"./output_%dx%d.nv12";
-static amf::AMF_MEMORY_TYPE memoryTypeOut = amf::AMF_MEMORY_DX11;
+static const wchar_t *fileNameOut           = L"./output_%dx%d.nv12";
 static amf::AMF_SURFACE_FORMAT formatOut  = amf::AMF_SURFACE_NV12;
-static amf_int32 widthOut                 = 1280;
-static amf_int32 heightOut                = 720;
+//static amf_int32 widthOut                 = 1280;
+//static amf_int32 heightOut                = 720;
+static amf_int32 widthOut                 = 1920;
+static amf_int32 heightOut                = 1080;
 
-static void WritePlane(amf::AMFPlane *plane, FILE *f);
+static void WritePlane(amf::AMFPlane *plane, std::ofstream& f);
 static void FillSurface(amf::AMFContext *context, amf::AMFSurface *surface, amf_int32 i);
 
 #define MILLISEC_TIME     10000
@@ -63,17 +77,19 @@ class PollingThread : public amf::AMFThread
 {
 protected:
     amf::AMFComponentPtr    m_pConverter;
-    FILE                    *m_pFile;
+    std::ofstream           m_pFile;
 public:
-    PollingThread(amf::AMFComponent *converter, const wchar_t *pFileName) : m_pConverter(converter), m_pFile(NULL)
+    PollingThread(amf::AMFComponent *converter, const wchar_t *pFileName) : m_pConverter(converter)
     {
-        m_pFile = _wfopen(pFileName, L"wb");
+        std::wstring wStr(pFileName);
+        std::string str(wStr.begin(), wStr.end()); 
+        m_pFile = std::ofstream(str, std::ios::binary);
     }
     ~PollingThread()
     {
         if(m_pFile)
         {
-            fclose(m_pFile);
+            m_pFile.close();
         }
     }
     virtual void Run()
@@ -135,13 +151,17 @@ public:
     }
 };
 
+#ifdef _WIN32
 int _tmain(int argc, _TCHAR* argv[])
+#else
+int main(int argc, char* argv[])
+#endif
 {
     AMF_RESULT res = AMF_OK; // error checking can be added later
     res = g_AMFFactory.Init();
     if(res != AMF_OK)
     {
-        wprintf(L"AMF Failed to initialize");
+        std::cout << "AMF Failed to initialize";
         return 1;
     }
 
@@ -149,7 +169,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     // open output file with frame size in file name
     wchar_t fileNameOutWidthSize[2000];
-    _swprintf(fileNameOutWidthSize, fileNameOut, widthOut, heightOut);
+    swprintf(fileNameOutWidthSize, amf_countof(fileNameOutWidthSize), fileNameOut, widthOut, heightOut);
 
     // initialize AMF
     amf::AMFContextPtr context;
@@ -159,6 +179,7 @@ int _tmain(int argc, _TCHAR* argv[])
     res = g_AMFFactory.GetFactory()->CreateContext(&context);
 
     // On Win7 AMF Encoder can work on DX9 only we initialize DX11 for input, DX9 fo output and OpenCL for CSC & Scale
+#ifdef _WIN32
     if(memoryTypeIn == amf::AMF_MEMORY_DX9 || memoryTypeOut == amf::AMF_MEMORY_DX9)
     {
         res = context->InitDX9(NULL); // can be DX9 or DX9Ex device
@@ -166,6 +187,12 @@ int _tmain(int argc, _TCHAR* argv[])
     if(memoryTypeIn == amf::AMF_MEMORY_DX11 || memoryTypeOut == amf::AMF_MEMORY_DX11)
     {
         res = context->InitDX11(NULL); // can be DX11 device
+        res = amf::AMFContext1Ptr(context)->InitVulkan(NULL); // can be DX11 device
+    }
+#endif
+    if(memoryTypeIn == amf::AMF_MEMORY_VULKAN || memoryTypeOut == amf::AMF_MEMORY_VULKAN)
+    {
+        res = amf::AMFContext1Ptr(context)->InitVulkan(NULL);
     }
     if(memoryTypeIn != memoryTypeOut )
     {
@@ -216,7 +243,7 @@ int _tmain(int argc, _TCHAR* argv[])
     return 0;
 }
 
-static void WritePlane(amf::AMFPlane *plane, FILE *f)
+static void WritePlane(amf::AMFPlane *plane, std::ofstream &f)
 {
     // write NV12 surface removing offsets and alignments
     amf_uint8 *data     = reinterpret_cast<amf_uint8*>(plane->GetNative());
@@ -230,15 +257,17 @@ static void WritePlane(amf::AMFPlane *plane, FILE *f)
     for( amf_int32 y = 0; y < height; y++)
     {
         amf_uint8 *line = data + (y + offsetY) * pitchH;
-        fwrite(line + offsetX * pixelSize, pixelSize, width, f);
+        f.write(reinterpret_cast<char*>(line) + offsetX * pixelSize, pixelSize * width);
     }
 }
 static void FillSurface(amf::AMFContext *context, amf::AMFSurface *surface, amf_int32 i)
 {
-    HRESULT hr = S_OK;
+#ifdef _WIN32
     // fill surface with something something useful. We fill with color 
     if(surface->GetMemoryType() == amf::AMF_MEMORY_DX9)
     {
+        HRESULT hr = S_OK;
+
         // get native DX objects
         IDirect3DDevice9 *deviceDX9 = (IDirect3DDevice9 *)context->GetDX9Device(); // no reference counting - do not Release()
         IDirect3DSurface9* surfaceDX9 = (IDirect3DSurface9*)surface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
@@ -248,6 +277,8 @@ static void FillSurface(amf::AMFContext *context, amf::AMFSurface *surface, amf_
     }
     else if(surface->GetMemoryType() == amf::AMF_MEMORY_DX11)
     {
+        HRESULT hr = S_OK;
+    
         ID3D11Device *deviceDX11 = (ID3D11Device*)context->GetDX11Device(); // no reference counting - do not Release()
         ID3D11Texture2D *textureDX11 = (ID3D11Texture2D*)surface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
         ID3D11DeviceContext *contextDX11 = NULL;
@@ -262,4 +293,49 @@ static void FillSurface(amf::AMFContext *context, amf::AMFSurface *surface, amf_
         viewDX11->Release();
         contextDX11->Release();
     }
+    else 
+#endif
+    if(surface->GetMemoryType() == amf::AMF_MEMORY_VULKAN)
+    {
+
+        amf::AMFComputePtr compute;
+        context->GetCompute(amf::AMF_MEMORY_VULKAN, &compute);
+
+        amf_uint8 color1[4] ={255, 0, 255, 255};
+        amf_uint8  color2[4] = {255, 255, 0, 255};
+        amf_uint8  *color = (i % 2) ? color1 : color2;
+        amf::AMFPlane *plane = surface->GetPlaneAt(0);
+        amf_size region[3] = {(amf_size)plane->GetWidth(), (amf_size)plane->GetHeight(), (amf_size)1};
+        amf_size origin[3] = {0, 0 , 0};
+        compute->FillPlane(plane, origin, region, color);
+        
+        /*
+        surface->Convert(amf::AMF_MEMORY_HOST);
+
+        amf::AMFPlane *plane = surface->GetPlaneAt(0);
+
+        amf_int32 width = plane->GetWidth();
+        amf_int32 height = plane->GetHeight();
+        amf_int32 pitch = plane->GetHPitch();
+        amf_uint8 *data = (amf_uint8 *)plane->GetNative();
+
+
+        for(amf_int32 y = 0; y < height; y++)
+        {
+
+            amf_uint8 *line = data + y * pitch;
+            for(amf_int32 x = 0; x < width; x++)
+            {
+                line[0] = color[0];
+                line[1] = color[1];
+                line[2] = color[2];
+                line[3] = color[3];
+                line += 4;
+            }
+        }
+
+        surface->Convert(amf::AMF_MEMORY_VULKAN);
+        */
+    }    
+
 }

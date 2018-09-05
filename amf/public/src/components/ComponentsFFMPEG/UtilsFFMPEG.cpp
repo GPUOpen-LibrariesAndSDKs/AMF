@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -129,10 +129,12 @@ static int file_close(URLContext *h)
     h->priv_data = NULL;
     return err == AMF_OK ? 0 : -1;
 }
+
 //-------------------------------------------------------------------------------------------------
 // FFmpeg doesnt support multi-byte file names only so if a file name has Eng + Lang1 + lang2 where one of languages is not default it will fail
 // FFmpeg 3.3.1 disabled custom protocols
 
+#if 0
 int ffurl_register_protocol2(URLProtocol *first_protocol, URLProtocol *protocol, int size)
 {
     /*
@@ -168,6 +170,7 @@ int ffurl_register_protocol2(URLProtocol *first_protocol, URLProtocol *protocol,
     */
     return 0;
 }
+#endif
 //-------------------------------------------------------------------------------------------------
 
 extern "C"
@@ -241,9 +244,9 @@ void my_log_callback(void* ptr, int level, const char* fmt, va_list vl)
     if(name=="libx264"){
         return;
     }
-    if(name=="mp3"){
-        int a=1;
-    }
+//    if(name=="mp3"){
+//        int a=1;
+//    }
     if(name=="wmv3"){
         return;
     }
@@ -310,7 +313,7 @@ static bool g_bRegistered = false;
         const char* name   = avio_enum_protocols(&opaque, 0);
         (void)name;
 
-        ffurl_register_protocol2((URLProtocol*)opaque, &amf_file_protocol, sizeof(amf_file_protocol));
+//        ffurl_register_protocol2((URLProtocol*)opaque, &amf_file_protocol, sizeof(amf_file_protocol));
         g_bRegistered = true;
     }
 }
@@ -407,7 +410,7 @@ amf_int32 AMF_STD_CALL  amf::GetAudioSampleSize(AMF_AUDIO_FORMAT inFormat)
 //-------------------------------------------------------------------------------------------------
 AMF_STREAM_CODEC_ID_ENUM  AMF_STD_CALL   amf::GetAMFVideoFormat(AVCodecID inFormat)
 {
-    switch(inFormat)
+    switch((int)inFormat)   //  Casting to int to avoid compiler warning
     {
     case AV_CODEC_ID_NONE: return AMF_STREAM_CODEC_ID_UNKNOWN;
     case AV_CODEC_ID_MPEG2VIDEO: return AMF_STREAM_CODEC_ID_MPEG2;

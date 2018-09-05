@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -55,7 +55,7 @@ VideoRenderDX9::~VideoRenderDX9()
     Terminate();
 }
 
-AMF_RESULT VideoRenderDX9::Init(HWND hWnd, bool bFullScreen)
+AMF_RESULT VideoRenderDX9::Init(amf_handle hWnd, amf_handle hDisplay, bool bFullScreen)
 {
     AMF_RESULT res = AMF_OK;
     HRESULT hr = S_OK;
@@ -86,7 +86,7 @@ AMF_RESULT VideoRenderDX9::Init(HWND hWnd, bool bFullScreen)
         pp.SwapEffect = D3DSWAPEFFECT_COPY;
     }
     pp.BackBufferFormat = D3DFMT_A8R8G8B8;
-    pp.hDeviceWindow = hWnd;
+    pp.hDeviceWindow = (HWND)hWnd;
     pp.Flags = D3DPRESENTFLAG_VIDEO;
     pp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
     if(bFullScreen)

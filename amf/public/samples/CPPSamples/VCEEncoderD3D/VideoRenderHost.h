@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -42,7 +42,7 @@ public:
     VideoRenderHost(amf_int width, amf_int height, bool bInterlaced, amf_int frames, amf::AMFContext* pContext);
     virtual ~VideoRenderHost();
 
-    virtual AMF_RESULT              Init(HWND hWnd, bool bFullScreen);
+    virtual AMF_RESULT              Init(amf_handle hWnd, amf_handle hDisplay, bool bFullScreen);
     virtual AMF_RESULT              Terminate();
     virtual AMF_RESULT              Render(amf::AMFData** ppData);
 //    virtual amf::AMF_SURFACE_FORMAT GetFormat() { return amf::AMF_SURFACE_BGRA; }

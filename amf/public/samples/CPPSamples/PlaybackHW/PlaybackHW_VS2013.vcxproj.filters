@@ -104,6 +104,15 @@
     <ClInclude Include="..\common\BackBufferPresenter.h">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\VideoPresenterVulkan.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\SwapChainVulkan.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\VulkanImportTable.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PlaybackHW.cpp">
@@ -181,10 +190,27 @@
     <ClCompile Include="..\common\BackBufferPresenter.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="..\common\VideoPresenterVulkan.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\SwapChainVulkan.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\VulkanImportTable.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PlaybackHW.rc">
       <Filter>windows</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\common\quad.frag">
+      <Filter>common</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\common\quad.vert">
+      <Filter>common</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

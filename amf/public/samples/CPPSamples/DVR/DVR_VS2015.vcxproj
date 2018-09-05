@@ -159,6 +159,7 @@
     <ClCompile Include="..\..\..\..\public\src\components\DisplayCapture\DDAPISource.cpp" />
     <ClCompile Include="..\..\..\..\public\src\components\DisplayCapture\DisplayCaptureImpl.cpp" />
     <ClCompile Include="..\..\..\common\CurrentTimeImpl.cpp" />
+    <ClCompile Include="..\common\CmdLineParser.cpp" />
     <ClCompile Include="..\common\DeviceOpenCL.cpp" />
     <ClCompile Include="..\common\OpenCLLoader.cpp" />
     <ClCompile Include="DVR.cpp" />
@@ -188,6 +189,7 @@
     <ClInclude Include="..\..\..\common\CurrentTime.h" />
     <ClInclude Include="..\..\..\common\CurrentTimeImpl.h" />
     <ClInclude Include="..\..\..\src\components\DisplayCapture\CaptureStats.h" />
+    <ClInclude Include="..\common\CmdLineParser.h" />
     <ClInclude Include="..\common\DeviceOpenCL.h" />
     <ClInclude Include="..\common\OpenCLLoader.h" />
     <ClInclude Include="DVR.h" />

@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,6 +31,9 @@
 //
 #include "VideoPresenter.h"
 #include "public/include/components/VideoConverter.h"
+#include "public/common/TraceAdapter.h"
+
+#define AMF_FACILITY L"VideoPresenter"
 
 VideoPresenter::VideoPresenter() :
     m_startTime(-1LL),
@@ -43,10 +46,12 @@ VideoPresenter::VideoPresenter() :
     m_currentTime(0),
     m_bDoWait(true),
     m_pAVSync(NULL),
-    m_iSubresourceIndex(0)
+    m_iSubresourceIndex(0),
+    m_sourceVertexRect(AMFConstructRect(0, 0, 0, 0)),
+    m_destVertexRect(AMFConstructRect(0, 0, 0, 0)),
+    m_InputFrameSize(AMFConstructSize(0, 0))
 {
     amf_increase_timer_precision();
-    memset(&m_InputFrameSize, 0, sizeof(m_InputFrameSize));
 }
 VideoPresenter::~VideoPresenter()
 {
@@ -109,11 +114,11 @@ AMF_RESULT VideoPresenter::SubmitInput(amf::AMFData* pData)
     return AMF_OK;
 }
 
-AMF_RESULT VideoPresenter::CalcOutputRect(const AMFRect* pSrcRect, const AMFRect* pDstRect, AMFRect* pTargetRect)
+AMF_RESULT VideoPresenter::CalcOutputRect(const AMFRect* pSrcRect, const AMFRect* pScreenRect, AMFRect* pOutputRect)
 {
     amf::AMFLock lock(&m_cs);
 
-    amf_double dDstRatio = pDstRect->Height() / (amf_double)pDstRect->Width();
+    amf_double dDstRatio = pScreenRect->Height() / (amf_double)pScreenRect->Width();
     amf_double dSrcRatio = pSrcRect->Height() / (amf_double)pSrcRect->Width();
 
     // TODO : add aspect ratio from frame
@@ -121,19 +126,19 @@ AMF_RESULT VideoPresenter::CalcOutputRect(const AMFRect* pSrcRect, const AMFRect
 
     if(dDstRatio > dSrcRatio)
     {   // empty areas on top and bottom
-        pTargetRect->left = 0;
-        pTargetRect->right = pDstRect->Width();
-        LONG lViewHeight = amf_int(pDstRect->Width() * dSrcRatio);
-        pTargetRect->top = (pDstRect->Height() - lViewHeight) / 2;
-        pTargetRect->bottom = pTargetRect->top + lViewHeight;
+        pOutputRect->left = 0;
+        pOutputRect->right = pScreenRect->Width();
+        amf_int lViewHeight = amf_int(pScreenRect->Width() * dSrcRatio);
+        pOutputRect->top = (pScreenRect->Height() - lViewHeight) / 2;
+        pOutputRect->bottom = pOutputRect->top + lViewHeight;
     }
     else
     {   // empty areas on left and right
-        pTargetRect->bottom = pDstRect->Height();
-        pTargetRect->top = 0;
-        LONG lViewWidth = amf_int(pDstRect->Height() / dSrcRatio);
-        pTargetRect->left = (pDstRect->Width() - lViewWidth) / 2;
-        pTargetRect->right = pTargetRect->left + lViewWidth;
+        pOutputRect->bottom = pScreenRect->Height();
+        pOutputRect->top = 0;
+        amf_int lViewWidth = amf_int(pScreenRect->Height() / dSrcRatio);
+        pOutputRect->left = (pScreenRect->Width() - lViewWidth) / 2;
+        pOutputRect->right = pOutputRect->left + lViewWidth;
     }
     return AMF_OK;
 }
@@ -166,10 +171,8 @@ bool VideoPresenter::WaitForPTS(amf_pts pts, bool bRealWait)
             else
             {
                 m_iFramesDropped++;
-                wchar_t buf[1000];
-                swprintf(buf,L"+++ Drop Frame #%d pts=%5.2f time=%5.2f diff=%5.2f\n",(int)m_iFramesDropped, (float)pts / 10000., (float)currTime / 10000., float(diff) / 10000.);
-                ::OutputDebugStringW(buf);
 
+                AMFTraceWarning(AMF_FACILITY, L"+++ Drop Frame #%d pts=%5.2f time=%5.2f diff=%5.2f\n",(int)m_iFramesDropped, (double)pts / 10000., (double)currTime / 10000., (double)diff / 10000.);
                 bRet = false;
             }
         }

@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,11 +31,18 @@
 //
 #include "VideoPresenterOpenGL.h"
 
-#include <gl\GL.h>
-#include <gl\GLU.h>
-#pragma comment(lib, "opengl32.lib")
+#if defined(_WIN32)
+    #include <GL\GL.h>
+    #include <gl\GLU.h>
+    #pragma comment(lib, "opengl32.lib")
+#elif defined(__linux)
+    #include <GL/gl.h>
+    #include <GL/glx.h>
+    #include <GL/glu.h>
+#endif
 
-VideoPresenterOpenGL::VideoPresenterOpenGL(HWND hwnd, amf::AMFContext* pContext) :
+
+VideoPresenterOpenGL::VideoPresenterOpenGL(amf_handle hwnd, amf::AMFContext* pContext) :
     BackBufferPresenter(hwnd, pContext),
     m_initialized(false)
 {
@@ -60,9 +67,8 @@ AMF_RESULT VideoPresenterOpenGL::Present(amf::AMFSurface* pSurface)
 
     amf::AMFContext::AMFOpenGLLocker glLocker(m_pContext);
 
-    RECT tmpRectClient = {0, 0, 500, 500};
-    BOOL getWindowRectResult = GetClientRect(m_hwnd, &tmpRectClient);
-    AMFRect rectClient = AMFConstructRect(tmpRectClient.left, tmpRectClient.top, tmpRectClient.right, tmpRectClient.bottom);
+    AMFRect rectClient = GetClientRect();
+;
 
     glViewport(0, 0, rectClient.right, rectClient.bottom);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -103,7 +109,15 @@ AMF_RESULT VideoPresenterOpenGL::Present(amf::AMFSurface* pSurface)
 
     }
 
+#if defined(_WIN32)
     BOOL swapResult = ::SwapBuffers((HDC)m_pContext->GetOpenGLDrawable());
+#elif defined(__linux)
+    Display *pXDisplay = static_cast<Display*>(m_hDisplay);
+    GLXWindow window = reinterpret_cast<GLXWindow>(m_hwnd);
+    XLockDisplay(pXDisplay);
+    glXSwapBuffers(pXDisplay, window);
+    XUnlockDisplay(pXDisplay);
+#endif    
     return AMF_OK;
 }
 

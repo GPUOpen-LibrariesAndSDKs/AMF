@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,9 +31,11 @@
 //
 #include "CmdLineParser.h"
 #include "public/common/Thread.h"
+#include "public/common/AMFSTL.h"
 #include <iterator>
 #include <functional>
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <cctype>
 #include <vector>
@@ -48,36 +50,59 @@ bool isParamName(const std::wstring& str)
     return (str.size() > 1) && str.front() == '-';
 }
 
-bool parseCmdLine(CmdArgs* cmdArgs)
+bool parseCmdLine(int argc, char* argv[], CmdArgs* cmdArgs)
 {
     bool ret = true;
-    LPWSTR *szArglist;
-    int nArgs;
-    szArglist = CommandLineToArgvW(GetCommandLineW(), &nArgs);
-    if( NULL == szArglist)
+
+    std::vector<std::wstring> params;
+    
+#ifdef _WIN32
+    if(argc == 0)
+    {
+        LPWSTR* szArglist = nullptr;
+        int nArgs = 0;
+        szArglist = CommandLineToArgvW(GetCommandLineW(), &nArgs);
+        if(szArglist != nullptr)
+        {
+            for(int i = 0; i < nArgs; i++)
+            {
+                params.push_back(szArglist[i]);
+            }
+            LocalFree(szArglist);
+        }
+    }
+#endif    
+    if(params.size() == 0 && argc > 0)
+    {
+        for(int i = 0; i < argc; i++)
+        {
+            params.push_back( amf::amf_from_utf8_to_unicode(amf_string(argv[i]) ).c_str() );
+        }
+    }
+
+    if( params.size() == 0)
     {
         ret = false;
     }
     else
     {
-        for(int i = 1; i < nArgs; i++)
+        for(int i = 1; i < (int)params.size(); i++)
         {
-            std::wstring name = toUpper(szArglist[i]);
+            std::wstring name = toUpper(params[i]);
             std::wstring value;
             if (!isParamName(name))
             {
                 LOG_ERROR(L"Invalid command line parameter name: " << L"\"" << name << L"\"");
                 return false;
             }
-            if (i + 1 < nArgs && !isParamName(szArglist[i+1]))
+            if (i + 1 < (int)params.size() && !isParamName(params[i+1]))
             {
                 i++;
-                value = szArglist[i];
+                value = params[i];
             }
             cmdArgs->push_back( CmdArg(name.substr(1), value));
         }
     }
-    LocalFree(szArglist);
     return ret;
 }
 
@@ -95,10 +120,10 @@ template<class T> bool FromString(const std::wstring& str, T& value)
     return true;
 }
 
-bool parseCmdLineParameters(ParametersStorage* pParams)
+bool parseCmdLineParameters(ParametersStorage* pParams, int argc, char* argv[])
 {
     CmdArgs cmdArgs;
-    if (parseCmdLine(&cmdArgs) && cmdArgs.size())
+    if (parseCmdLine( argc, argv, &cmdArgs) && cmdArgs.size())
     {
         for (CmdArgs::iterator it = cmdArgs.begin(); it != cmdArgs.end(); it++)
         {

@@ -21,6 +21,8 @@
     <None Include="small.ico">
       <Filter>windows</Filter>
     </None>
+    <None Include="..\common\quad.frag" />
+    <None Include="..\common\quad.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PlaybackHW.h">
@@ -104,6 +106,13 @@
     <ClInclude Include="..\common\BackBufferPresenter.h">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\SwapChainVulkan.h" />
+    <ClInclude Include="..\..\..\common\VulkanImportTable.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\VideoPresenterVulkan.h">
+      <Filter>common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PlaybackHW.cpp">
@@ -179,6 +188,13 @@
       <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="..\common\BackBufferPresenter.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\SwapChainVulkan.cpp" />
+    <ClCompile Include="..\..\..\common\VulkanImportTable.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\VideoPresenterVulkan.cpp">
       <Filter>common</Filter>
     </ClCompile>
   </ItemGroup>

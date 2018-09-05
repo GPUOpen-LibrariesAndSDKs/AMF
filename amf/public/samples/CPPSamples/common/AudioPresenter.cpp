@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -40,7 +40,8 @@ AudioPresenter::AudioPresenter()
     : m_ptsSeek(-1LL),
     m_bLowLatency(false),
     m_startTime(-1LL),
-    m_pAVSync(NULL)
+    m_pAVSync(NULL),
+    m_bDoWait(true)
 {}
 
 //-------------------------------------------------------------------------------------------------

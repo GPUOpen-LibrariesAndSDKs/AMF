@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,7 @@
 #include "H264Mp4ToAnnexB.h"
 #include "public/common/AMFFactory.h"
 #include "public/common/TraceAdapter.h"
+#include <limits.h>
 
 using namespace amf;
 
@@ -279,7 +280,7 @@ int H264Mp4ToAnnexB::Filter(amf_uint8** pOutBuf, amf_size* pOutBufSize, amf_uint
     {
         if (pOutBuf != NULL)
         {
-            free(pOutBuf);
+            free(*pOutBuf);
         }
 
         *pOutBufSize = 0;

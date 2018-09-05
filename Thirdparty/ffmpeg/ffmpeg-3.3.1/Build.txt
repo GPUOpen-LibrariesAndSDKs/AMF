@@ -1,0 +1,68 @@
+Build environment for Win10 64bit:
+1. Download msys2-x86_64-xxx.exe from  http://www.msys2.org/
+2. intall msys2 to default path C:\msys64\
+3. Run MSYS2 w64
+4. execute pacman -Syu (confirm with "y" on prompt)
+5, when prompted terminate shell and re-run MSYS2 w64
+6. Execute pacman -Su (confirm with "y" on prompt)
+7. Run (confirm with "y" on prompts)
+pacman -S make
+pacman -S diffutils
+pacman -S yasm
+pacman -S mingw-w64-x86_64-gcc
+pacman -S mingw-w64-i686-gcc
+pacman -S mingw-w64-x86_64-gtk3
+pacman -S mingw-w64-i686-gtk3
+
+9. Download http://ftp.gnome.org/pub/gnome/binaries/win64/dependencies/pkg-config_0.23-2_win64.zip
+10. Unzip and copy pkg-config.exe to E:\msys64\mingw64\bin
+11. Download http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/pkg-config_0.26-1_win32.zip
+12. Unzip and copy pkg-config.exe to E:\msys64\mingw32\bin
+
+
+11. Copy  to intl.dll in two folders:
+
+cd C:\msys64\\mingw32\bin
+cp libintl-8.dll intl.dll
+cd C:\msys64\\mingw64\bin
+cp libintl-8.dll intl.dll
+
+
+12. in E:\msys64\mingw64\x86_64-w64-mingw32\lib rename libpthread.dll.a libwinpthread.dll.a - change extension to a-org, 
+13. In E:\msys64\mingw64\lib rename libbz2.dll.a libz.dll.a libiconv.dll.a liblzma.dll.a optionally libSDL.dll.a - change extension to a-org, 
+14. in E:\msys64\mingw32\i686-w64-mingw32\lib rename libpthread.dll.a libwinpthread.dll.a - change extension to a-org, 
+15. In E:\msys64\mingw32\lib rename libbz2.dll.a libz.dll.a libiconv.dll.a liblzma.dll.a optionally libSDL.dll.a - change extension to a-org, 
+
+
+Getting source code:
+1. In this directory:
+2. Run E:\msys64\msys2_shell.cmd -mingw64
+3. cd /e/dev/ffmpeg
+4. run ./get_sourcecode
+
+
+Build 64
+1. Run E:\msys64\msys2_shell.cmd -mingw64
+2. cd /e/dev/ffmpeg
+3. ./ffmpeg-build-win release 64
+
+Build 32
+1. Run E:\msys64\msys2_shell.cmd -mingw32
+2. cd /e/dev/ffmpeg
+3. ./ffmpeg-build-win release 32
+
+
+Build 64 with VC++
+1. Run 64 bit VC env variable command prompt
+2. Navigate to E:\msys64
+3. Run E:\msys64\msys2_shell.cmd -mingw64 -use-full-path
+4. Navigate to cd /e/dev/ffmpeg
+5. Run ./ffmpeg-build-win release 64 msvc
+
+Build 32 with VC++
+1. Run 32 bit VC env variable command prompt
+2. Navigate to E:\msys64
+3. Run E:\msys64\msys2_shell.cmd -mingw32 -use-full-path
+4. Navigate to cd /e/dev/ffmpeg
+5. Run ./ffmpeg-build-win release 32 msvc
+

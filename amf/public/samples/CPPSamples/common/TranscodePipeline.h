@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -38,10 +38,13 @@
 #include "public/include/components/VideoEncoderVCE.h"
 #include "public/include/components/VideoEncoderHEVC.h"
 
-#if !defined(METRO_APP)
-#include "DeviceDX9.h"
-#endif//#if defined(METRO_APP)
-#include "DeviceDX11.h"
+#if defined(_WIN32)
+    #if !defined(METRO_APP)
+    #include "DeviceDX9.h"
+    #endif//#if defined(METRO_APP)
+    #include "DeviceDX11.h"
+#endif
+    #include "DeviceVulkan.h"
 
 #include "BitStreamParser.h"
 #include "Pipeline.h"
@@ -71,7 +74,7 @@ public:
 
 
 #if !defined(METRO_APP)
-    AMF_RESULT Init(ParametersStorage* pParams, HWND previewTarget, int threadID = -1);
+    AMF_RESULT Init(ParametersStorage* pParams, amf_handle previewTarget, amf_handle display, int threadID = -1);
 #else
     AMF_RESULT Init(const wchar_t* path, IRandomAccessStream^ inputStream, IRandomAccessStream^ outputStream, 
         ISwapChainBackgroundPanelNative* previewTarget, AMFSize swapChainPanelSize, ParametersStorage* pParams);
@@ -85,15 +88,18 @@ public:
 
 protected:
     virtual AMF_RESULT  InitAudio(amf::AMFOutput* pOutput);
-    virtual AMF_RESULT  InitVideo(BitStreamParserPtr pParser, amf::AMFOutput* pOutput, amf::AMF_MEMORY_TYPE presenterEngine, HWND hwnd, ParametersStorage* pParams);
+    virtual AMF_RESULT  InitVideo(BitStreamParserPtr pParser, amf::AMFOutput* pOutput, amf::AMF_MEMORY_TYPE presenterEngine, amf_handle previewTarget, amf_handle display, ParametersStorage* pParams);
 
     virtual AMF_RESULT  InitVideoDecoder(const wchar_t *pDecoderID, amf_int32 videoWidth, amf_int32 videoHeight, amf::AMFBuffer* pExtraData);
     virtual AMF_RESULT  InitVideoProcessor(amf::AMF_MEMORY_TYPE presenterEngine, amf_int32 inWidth, amf_int32 inHeight, amf_int32 outWidth, amf_int32 outHeight);
 
+#if defined(_WIN32)
 #if !defined(METRO_APP)
     DeviceDX9                   m_deviceDX9;
 #endif//#if !defined(METRO_APP)
     DeviceDX11                  m_deviceDX11;
+#endif    
+    DeviceVulkan                m_deviceVulkan;
 
     amf::AMFContextPtr              m_pContext;
 

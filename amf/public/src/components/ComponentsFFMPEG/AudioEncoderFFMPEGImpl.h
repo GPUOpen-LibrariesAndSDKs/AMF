@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -39,9 +39,18 @@
 
 extern "C"
 {
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable:4244)
+#endif
+
     #include "libavformat/avformat.h"
     #include "libavcodec/avcodec.h"
     #include "libavutil/fifo.h"
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 }
 
 
@@ -76,9 +85,9 @@ namespace amf
         virtual AMF_RESULT  AMF_STD_CALL  SubmitInput(AMFData* pData);
         virtual AMF_RESULT  AMF_STD_CALL  QueryOutput(AMFData** ppData);
         virtual AMFContext* AMF_STD_CALL  GetContext()                                              {  return m_pContext;  };
-        virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* callback)    {  return AMF_NOT_SUPPORTED;  };
-        virtual AMF_RESULT  AMF_STD_CALL  GetCaps(AMFCaps** ppCaps)                                 {  return AMF_NOT_SUPPORTED;  };
-        virtual AMF_RESULT  AMF_STD_CALL  Optimize(AMFComponentOptimizationCallback* pCallback)     {  return AMF_OK;  };
+        virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* /*callback*/)    {  return AMF_NOT_SUPPORTED;  };
+        virtual AMF_RESULT  AMF_STD_CALL  GetCaps(AMFCaps** /*ppCaps*/)                                 {  return AMF_NOT_SUPPORTED;  };
+        virtual AMF_RESULT  AMF_STD_CALL  Optimize(AMFComponentOptimizationCallback* /*pCallback*/)     {  return AMF_OK;  };
 
 
         // AMFPropertyStorageObserver interface

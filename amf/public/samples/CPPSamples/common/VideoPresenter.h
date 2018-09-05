@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -37,6 +37,15 @@
 class VideoPresenter;
 typedef std::shared_ptr<VideoPresenter> VideoPresenterPtr;
 
+/*
+#if defined(__linux)
+struct XWindowContext
+{
+    Display             *m_pDisplay;
+    AMFCriticalSection      m_Sect;
+};
+#endif
+*/
 class VideoPresenter: public PipelineElement, public amf::AMFDataAllocatorCB, public amf::AMFSurfaceObserver
 {
 
@@ -98,12 +107,14 @@ public:
 
     virtual void SetAVSyncObject(AVSyncObject *pAVSync) {m_pAVSync = pAVSync;}
 
+    virtual void AMF_STD_CALL  CheckForResize() {} // call from UI thread (for VulkanPresenter on Linux)
+
 protected:
     VideoPresenter();
     virtual AMF_RESULT Freeze();
     virtual AMF_RESULT UnFreeze();
 
-    virtual AMF_RESULT CalcOutputRect(const AMFRect* pSrcRect, const AMFRect* pDstRect, AMFRect* pTargetRect);
+    virtual AMF_RESULT CalcOutputRect(const AMFRect* pSrcRect, const AMFRect* pScreenRect, AMFRect* pOutputRect);
     bool WaitForPTS(amf_pts pts, bool bRealWait = true); // returns false if frame is too late and should be dropped
 
     virtual void        UpdateProcessor();
@@ -128,4 +139,7 @@ protected:
     bool                                m_bDoWait;
     AVSyncObject*                       m_pAVSync;
     amf_int32                           m_iSubresourceIndex;
+    AMFRect                             m_sourceVertexRect;
+    AMFRect                             m_destVertexRect;
+
 };

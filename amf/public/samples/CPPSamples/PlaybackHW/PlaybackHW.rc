@@ -53,6 +53,7 @@ BEGIN
         MENUITEM "VideoPresenter DX9",          ID_OPTIONS_PRESENTER_DX9
         MENUITEM "VideoPresenter DX11",         ID_OPTIONS_PRESENTER_DX11
         MENUITEM "VideoPresenter OpenGL",       ID_OPTIONS_PRESENTER_OPENGL
+        MENUITEM "VideoPresenter Vulkan",       ID_OPTIONS_VIDEOPRESENTER_VULKAN
     END
     MENUITEM "Play",                        ID_PLAYBACK_PLAY
     MENUITEM "Pause",                       ID_PLAYBACK_PAUSE

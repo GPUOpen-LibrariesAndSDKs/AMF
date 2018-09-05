@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -43,6 +43,7 @@ const wchar_t* PlaybackPipelineBase::PARAM_NAME_PRESENTER  = L"PRESENTER";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_FRAMERATE = L"FRAMERATE";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_LOOP = L"LOOP";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_LISTEN_FOR_CONNECTION = L"LISTEN";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_DOTIMING = L"DOTIMING";
 
 PlaybackPipelineBase::PlaybackPipelineBase() :
     m_iVideoWidth(0),
@@ -60,13 +61,14 @@ PlaybackPipelineBase::PlaybackPipelineBase() :
     SetParamDescription(PARAM_NAME_FRAMERATE, ParamCommon,  L"Forces Video Frame Rate (double)", ParamConverterDouble);
     SetParamDescription(PARAM_NAME_LOOP, ParamCommon,  L"Loop Video, boolean, default = true", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_LISTEN_FOR_CONNECTION, ParamCommon,  L"LIsten for connection, boolean, default = true", ParamConverterBoolean);
+    SetParamDescription(PARAM_NAME_DOTIMING, ParamCommon,  L"Play Video and Audio using timestamps, boolean, default = true", ParamConverterBoolean);
     
     SetParam(PARAM_NAME_LISTEN_FOR_CONNECTION, false);
 
-#if defined(METRO_APP)
+#if defined(_WIN32)
     SetParam(PlaybackPipelineBase::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_DX11);
-#else
-    SetParam(PlaybackPipelineBase::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_DX11);
+#elif defined(__linux)
+    SetParam(PlaybackPipelineBase::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_VULKAN);
 #endif
 }
 
@@ -277,7 +279,7 @@ AMF_RESULT PlaybackPipelineBase::Init()
     {
         amf::AMFComponentPtr  pDemuxer;
 
-        res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_DEMUXER, &pDemuxer);
+        res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_DEMUXER, &pDemuxer);
         CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << FFMPEG_DEMUXER << L") failed");
         ++m_nFfmpegRefCount;
         m_pDemuxerVideo = amf::AMFComponentExPtr(pDemuxer);
@@ -291,7 +293,8 @@ AMF_RESULT PlaybackPipelineBase::Init()
             GetParam(PlaybackPipelineBase::PARAM_NAME_LISTEN_FOR_CONNECTION, bListen);
             m_pDemuxerVideo->SetProperty(FFMPEG_DEMUXER_LISTEN, bListen);
         }
-        m_pDemuxerVideo->SetProperty(m_bURL ? FFMPEG_DEMUXER_URL : FFMPEG_DEMUXER_PATH, inputPath.c_str());
+        res = m_pDemuxerVideo->SetProperty(m_bURL ? FFMPEG_DEMUXER_URL : FFMPEG_DEMUXER_PATH, inputPath.c_str());
+        CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxerVideo->Init(" << inputPath << ") failed");
         res = m_pDemuxerVideo->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
         CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxerVideo->Init() failed");
 
@@ -321,7 +324,7 @@ AMF_RESULT PlaybackPipelineBase::Init()
         if(inputUrlAudio.length() > 0)
         {
             amf::AMFComponentPtr  pDemuxerAudio;
-            res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_DEMUXER, &pDemuxerAudio);
+            res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_DEMUXER, &pDemuxerAudio);
             CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << FFMPEG_DEMUXER << L") failed");
             ++m_nFfmpegRefCount;
             m_pDemuxerAudio = amf::AMFComponentExPtr(pDemuxerAudio);
@@ -407,6 +410,18 @@ AMF_RESULT PlaybackPipelineBase::Init()
         m_pVideoPresenter->SetAVSyncObject(&m_AVSync);
         m_pAudioPresenter->SetAVSyncObject(&m_AVSync);
     }
+
+    bool bTiming = true;
+    GetParam(PARAM_NAME_DOTIMING,  bTiming);
+    if(m_pVideoPresenter != NULL)
+    {
+        m_pVideoPresenter->DoActualWait(bTiming);
+    }
+    if(m_pAudioPresenter != NULL)
+    {
+        m_pAudioPresenter->DoActualWait(bTiming);
+    }
+
     
     return AMF_OK;
 }
@@ -417,7 +432,10 @@ AMF_RESULT PlaybackPipelineBase::InitAudioPipeline(amf_uint32 iAudioStreamIndex,
 	{
 		Connect(PipelineElementPtr(new AMFComponentElement(m_pAudioDecoder)), 0, pAudioSourceStream, iAudioStreamIndex, m_bURL ? 1000 : 100, CT_ThreadQueue);
 		Connect(PipelineElementPtr(new AMFComponentElement(m_pAudioConverter)), 10);
-		Connect(m_pAudioPresenter, 10);
+        if(m_pAudioPresenter != nullptr)
+        {
+		    Connect(m_pAudioPresenter, 10);
+        }
 	}
 	return AMF_OK;
 }
@@ -452,6 +470,7 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoProcessor()
         m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_FILL, true);
         m_pVideoPresenter->SetProcessor(m_pVideoProcessor);
     }
+    m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_COLOR_PROFILE, AMF_VIDEO_CONVERTER_COLOR_PROFILE_709);
     m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_MEMORY_TYPE, m_pVideoPresenter->GetMemoryType());
     m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, m_pVideoPresenter->GetInputFormat());
 
@@ -706,7 +725,7 @@ AMF_RESULT  PlaybackPipelineBase::InitAudio(amf::AMFOutput* pOutput)
     pOutput->GetProperty(AMF_STREAM_AUDIO_BLOCK_ALIGN, &streamBlockAlign);
     pOutput->GetProperty(AMF_STREAM_AUDIO_FRAME_SIZE, &streamFrameSize);
 
-    res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_AUDIO_DECODER, &m_pAudioDecoder);
+    res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_AUDIO_DECODER, &m_pAudioDecoder);
     CHECK_AMF_ERROR_RETURN(res, L"LoadExternalComponent(" << FFMPEG_AUDIO_DECODER << L") failed");
     ++m_nFfmpegRefCount;
 
@@ -723,7 +742,7 @@ AMF_RESULT  PlaybackPipelineBase::InitAudio(amf::AMFOutput* pOutput)
     res = m_pAudioDecoder->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
    CHECK_AMF_ERROR_RETURN(res, L"m_pAudioDecoder->Init() failed");
 
-    res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_AUDIO_CONVERTER, &m_pAudioConverter);
+    res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_AUDIO_CONVERTER, &m_pAudioConverter);
     CHECK_AMF_ERROR_RETURN(res, L"LoadExternalComponent(" << FFMPEG_AUDIO_CONVERTER << L") failed");
     ++m_nFfmpegRefCount;
 
@@ -742,7 +761,12 @@ AMF_RESULT  PlaybackPipelineBase::InitAudio(amf::AMFOutput* pOutput)
     m_pAudioConverter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_CHANNEL_LAYOUT, streamLayout);
     m_pAudioConverter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_BLOCK_ALIGN, streamBlockAlign);
 
-    CHECK_AMF_ERROR_RETURN(CreateAudioPresenter(), "Failed to create an audio presenter");
+    res = CreateAudioPresenter();
+    if(res == AMF_NOT_IMPLEMENTED)
+    {
+        return AMF_OK;
+    }
+    CHECK_AMF_ERROR_RETURN(res, "Failed to create an audio presenter");
 
     res = m_pAudioPresenter->Init();
     CHECK_AMF_ERROR_RETURN(res, L"m_pAudioPresenter->Init() failed");

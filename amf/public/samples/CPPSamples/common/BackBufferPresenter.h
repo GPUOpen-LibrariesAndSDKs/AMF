@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -42,16 +42,19 @@ class BackBufferPresenter : public VideoPresenter
 public:    
     ~BackBufferPresenter() override;
 
-    static AMF_RESULT Create(BackBufferPresenterPtr& pResult, amf::AMF_MEMORY_TYPE type, HWND hwnd, amf::AMFContext* pContext);
+    static AMF_RESULT Create(BackBufferPresenterPtr& pResult, amf::AMF_MEMORY_TYPE type, amf_handle hwnd, amf::AMFContext* pContext, amf_handle display = 0);
     virtual void SetRenderToBackBuffer(bool bRenderToBackBuffer) { m_bRenderToBackBuffer = bRenderToBackBuffer; }
     
     // VideoPresenter interface
     AMF_RESULT SetProcessor(amf::AMFComponent* pProcessor) override;
 
 protected:
-    BackBufferPresenter(HWND hwnd, amf::AMFContext* pContext);
+    BackBufferPresenter(amf_handle hwnd, amf::AMFContext* pContext, amf_handle hDisplay = 0);
+    AMFRect GetClientRect();
 
-    HWND m_hwnd;
+    amf_handle              m_hwnd;
+    amf_handle              m_hDisplay;
+    
     amf::AMFContext* m_pContext;
     bool m_bRenderToBackBuffer;
 };

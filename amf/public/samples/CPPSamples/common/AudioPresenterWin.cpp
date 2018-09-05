@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -145,6 +145,9 @@ AMF_RESULT AudioPresenterWin::Terminate()
     m_uiLastBufferDataOffset=0;
     m_eEngineState=AMFAPS_UNKNOWN_STATUS;
 
+    m_iAVSyncDelay = -1LL;
+    m_iLastTime = 0;
+
     return err;
 }
 //-------------------------------------------------------------------------------------------------
@@ -266,14 +269,13 @@ AMF_RESULT AudioPresenterWin::SubmitInput(amf::AMFData* pData)
 
     if(m_pAVSync != NULL && !m_pAVSync->IsVideoStarted())
     {
-        if(m_iAVSyncDelay == 1LL)
+        if(m_iAVSyncDelay == -1LL)
         {
             m_iAVSyncDelay = amf_high_precision_clock();;
         }
         return AMF_INPUT_FULL;
     }
 
-    // there's not much to do in the base class
     amf::AMFAudioBufferPtr pAudioBuffer(pData);
 
     amf_pts  ptsSleepTime = 0;
@@ -356,7 +358,14 @@ AMF_RESULT AudioPresenterWin::Present(AMFAudioBuffer *buffer,amf_pts &sleeptime)
     }
     else
     { 
-        err = AMF_INPUT_FULL;
+        if(m_bDoWait)
+        {
+            err = AMF_INPUT_FULL;
+        }
+		else
+		{
+			err = AMF_OK; // drop frame is not waiting
+		}
     }
     while(m_UnusedBuffers.size()>0)
     {
@@ -471,10 +480,12 @@ AMF_RESULT AudioPresenterWin::Resume(amf_pts currentTime)
     AMF_RESULT err=AMF_OK;
 
     IAudioClient *pAudioClient=(IAudioClient *)m_pAudioClient;
-    if(m_eEngineState==AMFAPS_PAUSED_STATUS)
+    if(m_eEngineState == AMFAPS_PAUSED_STATUS)
     {
         Reset();
         Seek(currentTime);
+        pAudioClient->Start();
+        m_eEngineState = AMFAPS_PLAYING_STATUS;
     }
     return err;
 }
@@ -499,9 +510,12 @@ AMF_RESULT AudioPresenterWin::Reset()
     IAudioClient *pAudioClient=(IAudioClient *)m_pAudioClient;
     pAudioClient->Stop();
     pAudioClient->Reset();
-    pAudioClient->Start();
+    if (m_eEngineState == AMFAPS_PLAYING_STATUS)
+    {
+        pAudioClient->Start();
+        m_eEngineState = AMFAPS_PLAYING_STATUS;
+    }
     m_uiLastBufferDataOffset = 0;
-    m_eEngineState = AMFAPS_PLAYING_STATUS;
     m_iAVSyncDelay = -1LL;
     
     return AMF_OK;

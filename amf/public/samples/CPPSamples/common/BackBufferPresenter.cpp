@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,12 +30,19 @@
 // THE SOFTWARE.
 //
 #include "BackBufferPresenter.h"
+
+#ifdef _WIN32
 #include "VideoPresenterDX11.h"
 #include "VideoPresenterDX9.h"
+#endif
 #include "VideoPresenterOpenGL.h"
+#if !defined(DISABLE_VULKAN)
+#include "VideoPresenterVulkan.h"
+#endif
 
-BackBufferPresenter::BackBufferPresenter(HWND hwnd, amf::AMFContext* pContext)
+BackBufferPresenter::BackBufferPresenter(amf_handle hwnd, amf::AMFContext* pContext, amf_handle hDisplay)
     : m_hwnd(hwnd)
+    , m_hDisplay(hDisplay)
     , m_pContext(pContext)
     , m_bRenderToBackBuffer(false)
 {
@@ -49,20 +56,33 @@ AMF_RESULT
 BackBufferPresenter::Create(
     BackBufferPresenterPtr& pPresenter,
     amf::AMF_MEMORY_TYPE type,
-    HWND hwnd,
-    amf::AMFContext* pContext
+    amf_handle hwnd,
+    amf::AMFContext* pContext,
+    amf_handle display
 )
 {
     switch(type)
     {
+#ifdef _WIN32
     case amf::AMF_MEMORY_DX9:
         pPresenter = std::make_shared<VideoPresenterDX9>(hwnd, pContext);
         return AMF_OK;
+    case amf::AMF_MEMORY_DX11:
+        pPresenter = std::make_shared<VideoPresenterDX11>(hwnd, pContext);
+        return AMF_OK;
+#endif
     case amf::AMF_MEMORY_OPENGL:
         pPresenter = std::make_shared<VideoPresenterOpenGL>(hwnd, pContext);
         return AMF_OK;
-    case amf::AMF_MEMORY_DX11:
+    case amf::AMF_MEMORY_VULKAN:
+#if defined(DISABLE_VULKAN)
+#ifdef _WIN32
+        pContext->InitDX11(NULL);
         pPresenter = std::make_shared<VideoPresenterDX11>(hwnd, pContext);
+#endif        
+#else
+        pPresenter = std::make_shared<VideoPresenterVulkan>(hwnd, pContext, display);
+#endif
         return AMF_OK;
     default:
         return AMF_NOT_SUPPORTED;
@@ -81,4 +101,29 @@ BackBufferPresenter::SetProcessor(amf::AMFComponent* pProcessor)
     }
 
     return res;
+}
+
+AMFRect
+BackBufferPresenter::GetClientRect()
+{
+    AMFRect clientRect;
+    if(m_hwnd!=NULL)
+    {
+#if defined(_WIN32)
+        RECT client;
+        ::GetClientRect((HWND)m_hwnd,&client);
+        clientRect = AMFConstructRect(client.left, client.top, client.right, client.bottom);
+#elif defined(__linux)
+        Window root_return;
+        int x_return, y_return;
+        unsigned int width_return, height_return;
+        unsigned int border_width_return;
+        unsigned int depth_return;
+        XGetGeometry((Display*)m_hDisplay, (Window)m_hwnd, &root_return, &x_return, &y_return, &width_return, 
+                      &height_return, &border_width_return, &depth_return);
+
+        clientRect = AMFConstructRect(0, 0, width_return - 2 * border_width_return, height_return - 2 * border_width_return);
+#endif        
+    }
+    return clientRect;
 }

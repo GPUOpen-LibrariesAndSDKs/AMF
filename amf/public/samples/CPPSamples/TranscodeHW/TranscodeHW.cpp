@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -33,8 +33,15 @@
 
 // TranscodeHW.cpp : Defines the entry point for the console application.
 //
+#if defined(_WIN32)
+    #include <tchar.h>
+    #include <windows.h>
+#else
+    #include <X11/Xlib.h>
+    #include <X11/Xutil.h>
+    #include <X11/Xos.h>
+#endif
 
-#include <tchar.h>
 #include <iterator>
 #include <functional>
 #include <algorithm>
@@ -48,6 +55,7 @@
 #include "../common/CmdLineParser.h"
 #include "public/include/core/Debug.h"
 
+#if defined(_WIN32)
 class PreviewWindow
 {
 public: 
@@ -97,6 +105,7 @@ public:
         ::ShowWindow(m_hWnd, SW_NORMAL);
     
         ::UpdateWindow(m_hWnd);
+        ::ShowWindow(m_hWnd, SW_SHOW);
         return true;
     }
 
@@ -112,14 +121,108 @@ public:
             } 
         }
     }
-    HWND GetHwnd() const
+    amf_handle GetHwnd() const
     {
-        return m_hWnd;
+        return (amf_handle)m_hWnd;
+    }
+    amf_handle GetDisplay() const
+    {
+        return (amf_handle)nullptr;
     }
 
 private:
     HWND            m_hWnd;
 };
+#elif defined(__linux)
+class PreviewWindow
+{
+public: 
+    PreviewWindow()
+    :m_hWnd(0), m_pDisplay(nullptr), WM_DELETE_WINDOW(0)
+    {
+    }
+
+    ~PreviewWindow()
+    {
+        if(m_hWnd)
+        {
+            XDestroyWindow(m_pDisplay, m_hWnd);
+            XCloseDisplay(m_pDisplay);
+        }
+    }
+
+    bool Create(amf_int32 width, amf_int32 height)
+    {
+        if(m_hWnd)
+        {
+            return true;
+        }
+        m_pDisplay = XOpenDisplay(NULL);
+        int screen_num = DefaultScreen(m_pDisplay);
+
+        Window parentWnd = DefaultRootWindow(m_pDisplay);
+
+        m_hWnd = XCreateSimpleWindow(m_pDisplay, 
+        parentWnd, 
+        10, 10, width, height,
+        1, BlackPixel(m_pDisplay, screen_num), WhitePixel(m_pDisplay, screen_num));
+        XSelectInput(m_pDisplay, m_hWnd, ExposureMask | KeyPressMask | StructureNotifyMask);
+        XMapWindow(m_pDisplay, m_hWnd);
+        XStoreName(m_pDisplay, m_hWnd, "PlaybackHW");
+    
+        WM_DELETE_WINDOW = XInternAtom(m_pDisplay, "WM_DELETE_WINDOW", False); 
+        XSetWMProtocols(m_pDisplay, m_hWnd, &WM_DELETE_WINDOW, 1); 
+
+        return true;
+    }
+
+    void ProcessWindowMessages()
+    {
+        if(m_hWnd)
+        {
+            XEvent e;
+            bool bRun = true;
+            
+            while (XCheckMaskEvent(m_pDisplay,0xFFFFFF , &e)) 
+            {
+                switch(e.type)
+                {
+                case Expose:
+                    break;
+                case KeyPress:
+                    break;
+                case ConfigureNotify:
+                    {
+                        XConfigureEvent xce = e.xconfigure;
+//                        s_pPipeline->CheckForResize();
+                    }
+                    break;
+                case ClientMessage:
+                    if((static_cast<unsigned int>(e.xclient.data.l[0]) == WM_DELETE_WINDOW))
+                    {
+                        bRun = false;
+                    }
+                    break;
+                }
+            }            
+        }
+    }
+    amf_handle GetHwnd() const
+    {
+        return (amf_handle)m_hWnd;
+    }
+    amf_handle GetDisplay() const
+    {
+        return (amf_handle)m_pDisplay;
+    }
+
+private:
+    Window            m_hWnd;
+    Display*          m_pDisplay;
+    Atom              WM_DELETE_WINDOW;
+
+};
+#endif
 
 
 static const wchar_t* PARAM_NAME_THREADCOUNT = L"THREADCOUNT";
@@ -143,7 +246,7 @@ AMF_RESULT RegisterParams(ParametersStorage* pParams)
 
     pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_ADAPTERID, ParamCommon, L"Index of GPU adapter (number, default = 0)", NULL);
 
-    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_ENGINE, ParamCommon,  L"Specifiy engine type (DX9, DX11)", NULL);
+    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_ENGINE, ParamCommon,  L"Specifiy engine type (DX9, DX11, Vulkan)", NULL);
     pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_FRAMES, ParamCommon, L"Number of frames to render (in frames, default = 0 - means all )", ParamConverterInt64);
 
 
@@ -155,7 +258,11 @@ AMF_RESULT RegisterParams(ParametersStorage* pParams)
     return AMF_OK;
 }
 
+#if defined(_WIN32)
 int _tmain(int argc, _TCHAR* argv[])
+#else
+int main(int argc, char* argv[])
+#endif
 {
     AMF_RESULT              res = AMF_OK; // error checking can be added later
     res = g_AMFFactory.Init();
@@ -181,7 +288,11 @@ int _tmain(int argc, _TCHAR* argv[])
     ParametersStorage params;
     RegisterCodecParams(&params);
 
+#if defined(_WIN32)
     if (!parseCmdLineParameters(&params))
+#else
+    if (!parseCmdLineParameters(&params, argc, argv))
+#endif        
     {
         LOG_INFO(L"+++ AVC codec +++");
         ParametersStorage paramsAVC;
@@ -215,7 +326,11 @@ int _tmain(int argc, _TCHAR* argv[])
     RegisterParams(&params);
 
     // parse again with codec - dependent set of parameters
+#if defined(_WIN32)
     if (!parseCmdLineParameters(&params))
+#else
+    if (!parseCmdLineParameters(&params, argc, argv))
+#endif        
     {
         return -1;
     }
@@ -225,7 +340,6 @@ int _tmain(int argc, _TCHAR* argv[])
     if(previewMode)
     {
         previewWindow.Create(1024, 768);
-        ShowWindow(previewWindow.GetHwnd(), SW_SHOW);
     }
 
     amf_int32 threadCount = 1;
@@ -243,7 +357,10 @@ int _tmain(int argc, _TCHAR* argv[])
     for(amf_int32 i = 0 ; i < threadCount; i++)
     {
         TranscodePipeline *pipeline= new TranscodePipeline();
-        AMF_RESULT res = pipeline->Init(&params, i == 0 ? previewWindow.GetHwnd() : NULL, threadCount ==1 ? -1 : counter);
+        AMF_RESULT res = pipeline->Init(&params, 
+                i == 0 ? previewWindow.GetHwnd() : NULL, 
+                i == 0 ? previewWindow.GetDisplay() : NULL, 
+                threadCount ==1 ? -1 : counter);
         if(res == AMF_OK)
         {
             threads.push_back(pipeline);

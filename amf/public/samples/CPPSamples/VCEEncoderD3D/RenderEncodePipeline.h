@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -44,10 +44,13 @@
 #include "../common/EncoderParamsAVC.h"
 #include "../common/EncoderParamsHEVC.h"
 
+#if defined(_WIN32)
 #include "../common/DeviceDX9.h"
 #include "../common/DeviceDX11.h"
 #include "../common/DeviceOpenGL.h"
 #include "../common/DeviceOpenCL.h"
+#endif
+#include "../common/DeviceVulkan.h"
 
 #include "VideoRender.h"
 #include "RenderWindow.h"
@@ -94,10 +97,13 @@ private:
     amf::AMFDataStreamPtr            m_pStreamOut2;
     PipelineElementPtr          m_pStreamWriter2;
 
+#if defined(_WIN32)
     DeviceDX9                   m_deviceDX9;
     DeviceDX11                  m_deviceDX11;
     DeviceOpenGL                m_deviceOpenGL;
     DeviceOpenCL                m_deviceOpenCL;
+#endif
+    DeviceVulkan                m_deviceVulkan;
 
     RenderWindow                m_window;
 

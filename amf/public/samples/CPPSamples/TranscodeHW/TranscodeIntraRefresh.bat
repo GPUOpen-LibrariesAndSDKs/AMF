@@ -9,7 +9,7 @@ rem Technologies that are owed as a result of AMD providing the Software to you.
 rem 
 rem MIT license 
 rem  
-rem Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+rem Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 rem
 rem Permission is hereby granted, free of charge, to any person obtaining a copy
 rem of this software and associated documentation files (the "Software"), to deal

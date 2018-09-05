@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -99,12 +99,11 @@ VideoPresenterDX11::VideoPresenterDX11(ISwapChainBackgroundPanelNative* pSwapCha
     m_bResizeSwapChain(false),
     m_eInputFormat(amf::AMF_SURFACE_BGRA)
 {
-    memset(&m_sourceVertexRect, 0, sizeof(m_sourceVertexRect));
 }
 
 #else
 
-VideoPresenterDX11::VideoPresenterDX11(HWND hwnd, amf::AMFContext* pContext) :
+VideoPresenterDX11::VideoPresenterDX11(amf_handle hwnd, amf::AMFContext* pContext) :
     BackBufferPresenter(hwnd, pContext),
     m_stereo(false),
     m_fScale(1.0f),
@@ -120,7 +119,6 @@ VideoPresenterDX11::VideoPresenterDX11(HWND hwnd, amf::AMFContext* pContext) :
 //     m_eInputFormat(amf::AMF_SURFACE_RGBA_F16)
 
 {
-    memset(&m_sourceVertexRect, 0, sizeof(m_sourceVertexRect));
 }
 #endif
 
@@ -176,9 +174,7 @@ AMF_RESULT VideoPresenterDX11::Present(amf::AMFSurface* pSurface)
             rectClient.bottom = desc.Height;
         }
         #else
-            RECT tmpRectClient = {0, 0, 500, 500};
-            GetClientRect((HWND)m_hwnd, &tmpRectClient);
-            rectClient = AMFConstructRect(tmpRectClient.left, tmpRectClient.top, tmpRectClient.right, tmpRectClient.bottom);
+            rectClient = GetClientRect();
         #endif
 
         bool bResized = false;
@@ -292,12 +288,8 @@ AMF_RESULT VideoPresenterDX11::BitBltRender(amf::AMF_FRAME_TYPE eFrameType, ID3D
         srcSize.height = pSrcRect->Height();
 
     }
-    if(newSourceRect.left != m_sourceVertexRect.left || newSourceRect.top != m_sourceVertexRect.top || newSourceRect.right != m_sourceVertexRect.right || newSourceRect.bottom != m_sourceVertexRect.bottom)
-    {
-        AMFRect dstRect = {0, 0, (amf_int32)dstDesc.Width, (amf_int32)dstDesc.Height};
-        UpdateVertices(newSourceRect, srcSize, dstRect);
-        m_sourceVertexRect = newSourceRect;
-    }
+    AMFSize dstSize = {(amf_int32)dstDesc.Width, (amf_int32)dstDesc.Height};
+    UpdateVertices(&newSourceRect, &srcSize, pDstRect, &dstSize);
 
     // setup all states
 
@@ -783,10 +775,10 @@ AMF_RESULT            VideoPresenterDX11::CheckForResize(bool bForce, bool *bRes
     amf_int width = bufferDesc.Width;
     amf_int height = bufferDesc.Height;
 #else
-    RECT client;
+    AMFRect client;
     if(m_hwnd!=NULL)
     {
-        ::GetClientRect((HWND)m_hwnd,&client);
+        client = GetClientRect();
     }
     else if(m_pSwapChain1!=NULL)
     {
@@ -811,13 +803,13 @@ AMF_RESULT            VideoPresenterDX11::CheckForResize(bool bForce, bool *bRes
 }
 AMF_RESULT VideoPresenterDX11::ResizeSwapChain()
 {
-    RECT client;
+    AMFRect client;
 
 #if !defined(METRO_APP)
     if(m_hwnd!=NULL)
     {
 
-        ::GetClientRect((HWND)m_hwnd,&client);
+        client = GetClientRect();
     }
     else
 #endif
@@ -881,8 +873,17 @@ AMF_RESULT VideoPresenterDX11::ResizeSwapChain()
     m_rectClient = AMFConstructRect(client.left, client.top, client.right, client.bottom);
     return AMF_OK;
 }
-AMF_RESULT VideoPresenterDX11::UpdateVertices(AMFRect srcRect, AMFSize srcSize, AMFRect dstRect)
+AMF_RESULT VideoPresenterDX11::UpdateVertices(AMFRect *srcRect, AMFSize *srcSize, AMFRect *dstRect, AMFSize *dstSize)
 {
+
+    if(*srcRect == m_sourceVertexRect  &&  *dstRect == m_destVertexRect)
+    {
+        return AMF_OK;   
+    }
+    m_sourceVertexRect = *srcRect;
+    m_destVertexRect = *dstRect;
+
+
     HRESULT hr=S_OK;
 
     SimpleVertex vertices[4];
@@ -894,34 +895,22 @@ AMF_RESULT VideoPresenterDX11::UpdateVertices(AMFRect srcRect, AMFSize srcSize, 
     w *= m_fScale;
     h *= m_fScale;
 
+    w *= (float)dstRect->Width() / dstSize->width;
+    h *= (float)dstRect->Height() / dstSize->height;
 
-    FLOAT fVideoRatio = static_cast<FLOAT>(srcRect.Width() * m_fPixelAspectRatio / srcRect.Height());
-    FLOAT fScreenRatio = static_cast<FLOAT>(dstRect.Width()) / dstRect.Height();
-
-    if(fVideoRatio > fScreenRatio)
-    {
-        h *= fScreenRatio;
-        h /= fVideoRatio;
-    }
-    else
-    {
-        w /= fScreenRatio;
-        w *= fVideoRatio;
-    }
-
-    FLOAT centerX = m_fOffsetX * 2.f / dstRect.Width();
-    FLOAT centerY = - m_fOffsetY * 2.f/ dstRect.Height();
+    FLOAT centerX = m_fOffsetX * 2.f / dstRect->Width();
+    FLOAT centerY = - m_fOffsetY * 2.f/ dstRect->Height();
 
     FLOAT leftDst = centerX - w / 2;
     FLOAT rightDst = leftDst + w;
     FLOAT topDst = centerY - h / 2;
     FLOAT bottomDst = topDst + h;
 
-    centerX = (srcRect.left + srcRect.right) / 2.f / srcRect.Width();
-    centerY = (srcRect.top + srcRect.bottom) / 2.f / srcRect.Height();
+    centerX = (FLOAT)(srcRect->left + srcRect->right) / 2.f / srcRect->Width();
+    centerY = (FLOAT)(srcRect->top + srcRect->bottom) / 2.f / srcRect->Height();
 
-    w = (FLOAT)(srcRect.Width()) / srcSize.width;
-    h = (FLOAT)(srcRect.Height()) / srcSize.height;
+    w = (FLOAT)srcRect->Width() / srcSize->width;
+    h = (FLOAT)srcRect->Height() / srcSize->height;
 
     FLOAT leftSrc = centerX - w/2;
     FLOAT rightSrc = leftSrc + w;

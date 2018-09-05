@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +31,6 @@
 //
 // CapabilityManager.cpp : Defines the entry point for the console application.
 
-#include "stdafx.h"
 
 #include "public/common/AMFFactory.h"
 #include "public/include/components/VideoDecoderUVD.h"
@@ -40,15 +39,20 @@
 #include "public/include/components/VideoConverter.h"
 #include "public/include/core/Context.h"
 #include "public/include/core/Debug.h"
+#include <stdio.h>
+
+#define USE_VULKAN 0
 
 #ifdef _WIN32
 
-#include "../common/DeviceDX9.h"
-#include "../common/DeviceDX11.h"
-
-#include <windows.h>
+    #include <tchar.h>
+    #include <windows.h>
+    #include "../common/DeviceDX9.h"
+    #include "../common/DeviceDX11.h"
 
 #endif
+
+#include "../common/DeviceVulkan.h"
 
 #include <fstream>
 #include <iostream>
@@ -302,6 +306,7 @@ void QueryDecoderCaps(amf::AMFContext* pContext)
     QueryDecoderForCodec(AMFVideoDecoderUVD_H264_AVC, pContext);
     QueryDecoderForCodec(AMFVideoDecoderUVD_MPEG2, pContext);
     QueryDecoderForCodec(AMFVideoDecoderHW_H265_HEVC, pContext);
+    QueryDecoderForCodec(AMFVideoDecoderHW_H265_MAIN10, pContext);
     
 }
 
@@ -348,7 +353,11 @@ bool QueryConverterCaps(amf::AMFContext* pContext)
     return result;
 }
 
+#ifdef _WIN32
 int _tmain(int argc, _TCHAR* argv[])
+#else
+int main(int argc, char* argv[])
+#endif
 {
     bool result = false;
     AMF_RESULT              res = AMF_OK; // error checking can be added later
@@ -371,7 +380,7 @@ int _tmain(int argc, _TCHAR* argv[])
         {
             bool deviceInit = false;
         
-    #ifdef _WIN32
+    #if defined(_WIN32) && USE_VULKAN==0
 
             OSVERSIONINFO osvi;
             memset(&osvi, 0, sizeof(osvi));
@@ -409,7 +418,18 @@ int _tmain(int argc, _TCHAR* argv[])
             {
                 std::wcerr << L"This version of Windows is too old\n";
             }
-    #endif
+    #else
+            DeviceVulkan   deviceVulkan;
+            if(deviceVulkan.Init(deviceIdx, pContext) == AMF_OK)
+            {
+                deviceInit = (amf::AMFContext1Ptr(pContext)->InitVulkan(deviceVulkan.GetDevice()) == AMF_OK);
+            }            
+            else
+            {
+                break;
+            }
+            
+#endif
             if (deviceInit == true)
             {
                 QueryDecoderCaps(pContext);
@@ -417,6 +437,7 @@ int _tmain(int argc, _TCHAR* argv[])
                 QueryConverterCaps(pContext);
                 result = true;
             }
+            pContext->Terminate();
         }
         else
         {

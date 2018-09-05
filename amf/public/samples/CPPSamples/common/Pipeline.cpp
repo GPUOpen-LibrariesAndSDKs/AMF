@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -135,12 +135,15 @@ public:
     AMF_RESULT UnFreeze();
     AMF_RESULT Flush();
 
+    void SetStatSlot(amf_int32 slot) {m_iStatSlot = slot;}
+
 protected:
     Pipeline*               m_pPipeline;
     PipelineElementPtr      m_pElement;
     bool                    m_bStop;
     amf_int64               m_iSubmitFramesProcessed;
     amf_int64               m_iPollFramesProcessed;
+    amf_int32               m_iStatSlot;
 
     std::vector<InputSlotPtr>               m_InputSlots;
     std::vector<OutputSlotPtr>              m_OutputSlots;
@@ -206,6 +209,27 @@ AMF_RESULT Pipeline::Connect(PipelineElementPtr pElement, amf_int32 slot, Pipeli
     m_connectors.push_back(connector);
 
     m_state = PipelineStateReady;
+    return AMF_OK;
+}
+AMF_RESULT Pipeline::SetStatSlot(PipelineElementPtr pElement, amf_int32 slot)
+{
+    PipelineConnectorPtr connector;
+    for(ConnectorList::iterator it = m_connectors.begin(); it != m_connectors.end(); it++)
+    {
+        if(it->get()->m_pElement.get() == pElement.get())
+        {
+            connector = *it;
+        }
+    }
+
+    if(connector == NULL)
+    {
+        return AMF_FAIL;
+    }
+
+    connector->SetStatSlot(slot);
+
+
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
@@ -531,7 +555,7 @@ AMF_RESULT InputSlot::SubmitInput(amf::AMFData* pData, amf_ulong ulTimeout, bool
             {
                 if(res == AMF_OK || res == AMF_RESOLUTION_UPDATED)
                 {
-                    if(pData != NULL)
+                    if(pData != NULL && m_iThisSlot == m_pConnector->m_iStatSlot)
                     {
                         m_pConnector->m_iSubmitFramesProcessed++;
                     }
@@ -656,7 +680,7 @@ AMF_RESULT OutputSlot::Poll()
         {
             OnEof();
         }
-        if(data != NULL)
+        if(data != NULL && m_iThisSlot == m_pConnector->m_iStatSlot)
         {
             m_pConnector->m_iPollFramesProcessed++; // EOF is not included
         }
@@ -725,7 +749,8 @@ PipelineConnector::PipelineConnector(Pipeline *host, PipelineElementPtr element)
   m_pElement(element),
   m_bStop(false),
   m_iSubmitFramesProcessed(0),
-  m_iPollFramesProcessed(0)
+  m_iPollFramesProcessed(0),
+  m_iStatSlot(0)
 {
 }
 //-------------------------------------------------------------------------------------------------
@@ -810,6 +835,7 @@ void PipelineConnector::Restart()
     {
         m_OutputSlots[i]->Restart();
     }
+    m_iSubmitFramesProcessed = 0;
 }
 //-------------------------------------------------------------------------------------------------
 // a-sync operations from threads

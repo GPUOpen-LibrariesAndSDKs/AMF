@@ -33,16 +33,7 @@
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\BitStreamParser.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\BitStreamParserH264.h">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\ByteArray.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\CmdLineParser.h">
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\common\CmdLogger.h">
@@ -54,26 +45,20 @@
     <ClInclude Include="..\common\DeviceDX9.h">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\EncoderParams.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\ParametersStorage.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\Pipeline.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\PipelineElement.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\BitStreamParserH265.h">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\common\AMFFactory.h">
       <Filter>public\common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\common\Thread.h">
       <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\VulkanImportTable.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\DeviceVulkan.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\TraceAdapter.h">
+      <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -82,15 +67,6 @@
     </ClCompile>
     <ClCompile Include="CapabilityManager.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\common\BitStreamParser.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\common\BitStreamParserH264.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\common\CmdLineParser.cpp">
-      <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="..\common\CmdLogger.cpp">
       <Filter>common</Filter>
@@ -101,23 +77,26 @@
     <ClCompile Include="..\common\DeviceDX9.cpp">
       <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="..\common\ParametersStorage.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\common\Pipeline.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\common\BitStreamParserH265.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\common\AMFFactory.cpp">
       <Filter>public\common</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\common\Thread.cpp">
       <Filter>public\common</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\common\AMFSTL.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\common\Windows\ThreadWindows.cpp">
       <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\VulkanImportTable.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\DeviceVulkan.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\TraceAdapter.cpp">
+      <Filter>common</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

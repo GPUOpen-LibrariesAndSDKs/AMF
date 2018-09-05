@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -112,7 +112,7 @@ VideoRenderDX11::~VideoRenderDX11()
     Terminate();
 }
 
-AMF_RESULT VideoRenderDX11::Init(HWND hWnd, bool bFullScreen)
+AMF_RESULT VideoRenderDX11::Init(amf_handle hWnd, amf_handle hDisplay, bool bFullScreen)
 {
     AMF_RESULT res = AMF_OK;
     HRESULT hr = S_OK;
@@ -137,8 +137,8 @@ AMF_RESULT VideoRenderDX11::Init(HWND hWnd, bool bFullScreen)
 //    sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // this works if needed
     sd.BufferDesc.RefreshRate.Numerator = 60;
     sd.BufferDesc.RefreshRate.Denominator = 1;
-    sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    sd.OutputWindow = hWnd;
+    sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHADER_INPUT;
+    sd.OutputWindow = (HWND)hWnd;
     sd.SampleDesc.Count = 1;
     sd.SampleDesc.Quality = 0;
     sd.Windowed = TRUE;

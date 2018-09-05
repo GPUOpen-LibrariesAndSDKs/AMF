@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -85,12 +85,20 @@ public:
             { // apply dynamic properties to the encoder
                 PushParamsToPropertyStorage(m_pParams, ParamEncoderDynamic, m_pComponent);
             }
+            if (m_framesSubmitted == 0)
+            {
+                pData->SetProperty(AMF_VIDEO_ENCODER_INSERT_SPS, true);
+                pData->SetProperty(AMF_VIDEO_ENCODER_INSERT_PPS, true);
+            }
             res = m_pComponent->SubmitInput(pData);
             if(res == AMF_DECODER_NO_FREE_SURFACES || res == AMF_INPUT_FULL)
             {
                 return AMF_INPUT_FULL;
             }
-            m_framesSubmitted++;
+            if (res == AMF_OK)
+            {
+                m_framesSubmitted++;
+            }
         }
         return res;
     }
@@ -208,10 +216,13 @@ void RenderEncodePipeline::Terminate()
 
     m_pStreamWriter = NULL;
 
+#if defined(_WIN32)
     m_deviceDX9.Terminate();
     m_deviceDX11.Terminate();
     m_deviceOpenGL.Terminate();
     m_deviceOpenCL.Terminate();
+#endif
+    m_deviceVulkan.Terminate();
 }
 
 AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
@@ -243,7 +254,11 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
     pParams->GetParam(PARAM_NAME_FRAMES, frames);
     pParams->GetParam(PARAM_NAME_ADAPTERID, adapterID);
 
+#if defined(_WIN32)
     std::wstring renderType = L"DX9";
+#elif defined(__linux)
+    std::wstring renderType = L"VULKAN";
+#endif    
     pParams->GetParamWString(PARAM_NAME_RENDER, renderType);
     std::wstring uppValue = toUpper(renderType);
 
@@ -332,6 +347,12 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
         renderMemoryType = amf::AMF_MEMORY_DX11;
         encoderMemoryType = amf::AMF_MEMORY_DX9;
         deviceEX = true;
+    }else
+    if(uppValue == L"VULKAN")
+    {
+        renderMemoryType = amf::AMF_MEMORY_VULKAN;
+        encoderMemoryType = amf::AMF_MEMORY_VULKAN;
+        deviceEX = true;
     }
     else
     {
@@ -348,18 +369,29 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
 
     //---------------------------------------------------------------------------------------------
     // Create window if needed
-    HWND hWnd = NULL;
+    amf_handle hWnd = NULL;
+    amf_handle hDisplay = NULL;
     if(bWnd)
     {
         if(!m_window.CreateD3Window(width, height, adapterID, bFullScreen))
         {
-            CHECK_RETURN(false, AMF_FAIL, L"CreateD3Window() failed. Error " << GetLastError());
+            CHECK_RETURN(false, AMF_FAIL, L"CreateD3Window() failed.");
         }
         hWnd = m_window.GetHwnd();
+        hDisplay = m_window.GetDisplay();
     }
     else
     {
+#if defined(_WIN32)
         hWnd = ::GetDesktopWindow();
+#else        
+        if(!m_window.CreateD3Window(width, height, adapterID, bFullScreen))
+        {
+            CHECK_RETURN(false, AMF_FAIL, L"CreateD3Window() failed.");
+        }
+        hWnd = m_window.GetHwnd();
+        hDisplay = m_window.GetDisplay();
+#endif        
     }
 
     //---------------------------------------------------------------------------------------------
@@ -367,6 +399,7 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
 
     g_AMFFactory.GetFactory()->CreateContext(&m_pContext);
     std::wstring displayDeviceName;
+#if defined(_WIN32)
     if(renderMemoryType == amf::AMF_MEMORY_DX9 || encoderMemoryType == amf::AMF_MEMORY_DX9)
     {
         res = m_deviceDX9.Init(deviceEX, adapterID, bFullScreen, width, height);
@@ -396,16 +429,14 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
 			CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX9() failed");
 		}
     }
-
     if(renderMemoryType == amf::AMF_MEMORY_OPENGL || secondaryMemoryType == amf::AMF_MEMORY_OPENGL)
     {
-        res = m_deviceOpenGL.Init(hWnd, displayDeviceName.c_str());
+        res = m_deviceOpenGL.Init((HWND)hWnd, displayDeviceName.c_str());
         CHECK_AMF_ERROR_RETURN(res, L"m_deviceOpenGL.Init() failed");
 
         res = m_pContext->InitOpenGL(m_deviceOpenGL.GetContextOpenGL(), m_deviceOpenGL.GetWindowOpenGL(), m_deviceOpenGL.GetDCOpenGL());
         CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitOpenGL() failed");
     }
-
     if(renderMemoryType == amf::AMF_MEMORY_OPENCL || renderMemoryType == amf::AMF_MEMORY_OPENGL || secondaryMemoryType == amf::AMF_MEMORY_OPENGL)
     {
         res = m_deviceOpenCL.Init(m_deviceDX9.GetDevice(), m_deviceDX11.GetDevice(), m_deviceOpenGL.GetContextOpenGL(), m_deviceOpenGL.GetDCOpenGL());
@@ -413,6 +444,15 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
 
         res = m_pContext->InitOpenCL(m_deviceOpenCL.GetCommandQueue());
         CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitOpenCL() failed");
+    }
+#endif    
+    if(renderMemoryType == amf::AMF_MEMORY_VULKAN)
+    {
+        res = m_deviceVulkan.Init(adapterID, m_pContext);
+        CHECK_AMF_ERROR_RETURN(res, L"m_deviceVulkan.Init() failed");
+
+        res = amf::AMFContext1Ptr(m_pContext)->InitVulkan(m_deviceVulkan.GetDevice());
+        CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitVulkan() failed");
     }
 
     if(renderMemoryType == amf::AMF_MEMORY_HOST)
@@ -424,7 +464,7 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
 
     m_pVideoRender = VideoRender::Create(width, height, bInterlaced, frames, renderMemoryType, encoderMemoryType, m_pContext);
 
-    res = m_pVideoRender->Init(hWnd, bFullScreen);
+    res = m_pVideoRender->Init(hWnd, hDisplay, bFullScreen);
     CHECK_AMF_ERROR_RETURN(res, L"m_pVideoRender->Init() failed");
 
     //---------------------------------------------------------------------------------------------

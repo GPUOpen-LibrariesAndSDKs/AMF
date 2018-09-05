@@ -105,7 +105,21 @@
     <ClInclude Include="..\common\EncoderParamsAVC.h">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\OpenCLLoader.h" />
+    <ClInclude Include="..\common\DeviceVulkan.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\SwapChainVulkan.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\OpenCLLoader.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="VideoRenderVulkan.h">
+      <Filter>RenderEncoder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\VulkanImportTable.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\common\CmdLogger.cpp">
@@ -190,7 +204,21 @@
     <ClCompile Include="..\common\EncoderParamsAVC.cpp">
       <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="..\common\OpenCLLoader.cpp" />
+    <ClCompile Include="..\common\DeviceVulkan.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\SwapChainVulkan.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\OpenCLLoader.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoRenderVulkan.cpp">
+      <Filter>RenderEncoder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\VulkanImportTable.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="VCEEncoderD3D.bat">

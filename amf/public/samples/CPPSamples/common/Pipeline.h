@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -49,7 +49,7 @@ enum ConnectionThreading
     CT_Direct,
 };
 
-
+class PipelineConnector;
 class Pipeline
 {
     friend class PipelineConnector;
@@ -60,6 +60,7 @@ public:
 
     AMF_RESULT Connect(PipelineElementPtr pElement, amf_int32 queueSize, ConnectionThreading eThreading = CT_ThreadQueue);
     AMF_RESULT Connect(PipelineElementPtr pElement, amf_int32 slot, PipelineElementPtr upstreamElement, amf_int32 upstreamSlot, amf_int32 queueSize, ConnectionThreading eThreading = CT_ThreadQueue);
+    AMF_RESULT SetStatSlot(PipelineElementPtr pElement, amf_int32 slot);
 
     virtual AMF_RESULT      Start();
     virtual AMF_RESULT      Stop();

@@ -184,12 +184,30 @@ AMF_RESULT AMFDDAPISourceImpl::AcquireSurface(amf::AMFSurface** ppSurface)
 	}
 
 	// Get new frame
-	UINT kAcquireTimeout = UINT(waitTime / 10000); // to ms
+
 	DXGI_OUTDUPL_FRAME_INFO frameInfo = {};
 	ATL::CComPtr<IDXGIResource> desktopResource;
 	ATL::CComPtr<ID3D11Texture2D> displayTexture;
 	ATL::CComPtr<ID3D11Texture2D> returnTexture;
-	HRESULT hr = m_displayDuplicator->AcquireNextFrame(kAcquireTimeout, &frameInfo, &desktopResource);
+
+// MM AcquireNextFrame() blocks DX11 calls including calls to query encoder. Wait ourselves here
+//	UINT kAcquireTimeout = UINT(waitTime / 10000); // to ms
+    UINT kAcquireTimeout = 0;
+
+    while(waitTime > 0)
+    {
+        amf_sleep(1);
+
+	    startTime = amf_high_precision_clock();
+    	waitTime = m_firstPts + m_frameCount  * m_frameDuration + m_frameDuration - startTime;
+	    if (waitTime < 0)
+	    {
+		    waitTime = 0;
+	    }
+    }
+
+    HRESULT hr = m_displayDuplicator->AcquireNextFrame(kAcquireTimeout, &frameInfo, &desktopResource);
+
 	if (hr == S_OK)
 	{
 		hr = desktopResource->QueryInterface(__uuidof(ID3D11Texture2D), reinterpret_cast<void **>(&displayTexture));
@@ -226,8 +244,11 @@ AMF_RESULT AMFDDAPISourceImpl::AcquireSurface(amf::AMFSurface** ppSurface)
 		res = GetFreeTexture(&copyDesc, &returnTexture);
 		AMF_RETURN_IF_FAILED(res, L"GetFreeTexture() failed");
 
-		m_context->CopyResource(returnTexture, m_copyTexture);
-		m_context->Flush();
+        if(returnTexture != m_copyTexture)
+        {
+		    m_context->CopyResource(returnTexture, m_copyTexture);
+		    m_context->Flush();
+        }
 	}
 	else if (DXGI_ERROR_ACCESS_LOST == hr)
 	{

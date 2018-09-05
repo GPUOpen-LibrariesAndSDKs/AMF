@@ -90,6 +90,9 @@
     <ClCompile Include="..\common\OpenCLLoader.cpp">
       <Filter>public\samples\CPPSamples\common</Filter>
     </ClCompile>
+    <ClCompile Include="..\common\CmdLineParser.cpp">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DVR.h">
@@ -174,6 +177,9 @@
       <Filter>public\components</Filter>
     </ClInclude>
     <ClInclude Include="..\common\OpenCLLoader.h">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\CmdLineParser.h">
       <Filter>public\samples\CPPSamples\common</Filter>
     </ClInclude>
   </ItemGroup>

@@ -10,7 +10,7 @@ rem
 rem MIT license
 rem
 rem
-rem Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+rem Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 rem
 rem Permission is hereby granted, free of charge, to any person obtaining a copy
 rem of this software and associated documentation files (the "Software"), to deal
@@ -31,6 +31,6 @@ rem OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 rem THE SOFTWARE.
 rem
 
-VCEEncoderD3D.exe -output VideoSample_1280x720.svc -width 1280 -height 720 -usage webcam -NumOfTemporalEnhancmentLayers 3 -targetBitrate 500000 -FRAMES 400 -render dx9 -THREADCOUNT 1 -WINDOWMODE false
+VCEEncoderD3D.exe -output VideoSample_1280x720.svc -width 1280 -height 720 -usage webcam -NumOfTemporalEnhancmentLayers 3 -targetBitrate 500000 -FRAMES 400 -render dx9Ex -THREADCOUNT 1 -WINDOWMODE false
 SVCSplitter.exe -n 3 VideoSample_1280x720.svc VideoSample_1280x720.h264 
 PlaybackHW.exe -input VideoSample_1280x720_1.h264

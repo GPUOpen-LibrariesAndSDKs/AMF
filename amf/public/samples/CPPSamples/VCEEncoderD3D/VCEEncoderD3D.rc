@@ -9,7 +9,7 @@
 //
 //MIT license 
 //
-//Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+//Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 //Permission is hereby granted, free of charge, to any person obtaining a copy
 //of this software and associated documentation files (the "Software"), to deal
@@ -38,7 +38,12 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#include "afxres.h"
+#ifdef RC_INVOKED
+#ifndef _INC_WINDOWS
+#define _INC_WINDOWS
+#include "winres.h"           // extract from windows header
+#endif
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS

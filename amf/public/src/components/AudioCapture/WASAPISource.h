@@ -47,7 +47,7 @@ namespace amf
 		virtual ~AMFWASAPISourceImpl();
 
 		// Setup and teardown
-		AMF_RESULT Init(bool capture, amf_int32 activeDevice = 0);
+		AMF_RESULT Init(bool capture, amf_int32 activeDevice = 0, amf_pts bufferDuration = AMF_SECOND);
 		AMF_RESULT Terminate();
 
 		// Capture start and done
@@ -67,8 +67,8 @@ namespace amf
 		void SetAtEOF() { m_eof = true;  }
 
 	private:
-		AMF_RESULT InitCaptureMicrophone(amf_int32 activeDevice = 0);
-		AMF_RESULT InitCaptureDesktop();
+		AMF_RESULT InitCaptureMicrophone(amf_int32 activeDevice, amf_pts bufferDuration);
+		AMF_RESULT InitCaptureDesktop(amf_pts bufferDuration);
 
 		AMF_RESULT CreateDeviceList();
 

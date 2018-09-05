@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -34,26 +34,31 @@
 // this sample encodes NV12 frames using AMF Encoder and writes them to H.264 elmentary stream 
 
 #include <stdio.h>
+#ifdef _WIN32
 #include <tchar.h>
 #include <d3d9.h>
 #include <d3d11.h>
+#endif
 #include "public/common/AMFFactory.h"
 #include "public/include/components/VideoEncoderVCE.h"
 #include "public/include/components/VideoEncoderHEVC.h"
 #include "public/common/Thread.h"
 #include "public/common/AMFSTL.h"
 #include "public/common/TraceAdapter.h"
+#include <fstream>
 
 #define AMF_FACILITY L"SimpleEncoder"
 
-
-static wchar_t *pCodec = AMFVideoEncoderVCE_AVC;
-//static wchar_t *pCodec = AMFVideoEncoder_HEVC;
+static const wchar_t *pCodec = AMFVideoEncoderVCE_AVC;
+//static const wchar_t *pCodec = AMFVideoEncoder_HEVC;
 
  //#define ENABLE_4K
 
-//static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX9;
-static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX11;
+#ifdef _WIN32
+static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX9;
+#else
+static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_VULKAN;
+#endif
 static amf::AMF_SURFACE_FORMAT formatIn   = amf::AMF_SURFACE_NV12;
 
 #if defined(ENABLE_4K)
@@ -71,13 +76,17 @@ static bool bMaximumSpeed = true;
 
 #define START_TIME_PROPERTY L"StartTimeProperty" // custom property ID to store submission time in a frame - all custom properties are copied from input to output
 
-static wchar_t *fileNameOut = L"./output.h264";
+static const wchar_t *fileNameOut = L"./output.h264";
 
 static amf_int32 xPos = 0;
 static amf_int32 yPos = 0;
+
+#ifdef _WIN32
 static void FillSurfaceDX9(amf::AMFContext *context, amf::AMFSurface *surface);
 static void FillSurfaceDX11(amf::AMFContext *context, amf::AMFSurface *surface);
-static void PrepareFillDX11(amf::AMFContext *context);
+#endif
+static void PrepareFillFromHost(amf::AMFContext *context);
+static void FillSurfaceVulkan(amf::AMFContext *context, amf::AMFSurface *surface);
 
 amf::AMFSurfacePtr pColor1;
 amf::AMFSurfacePtr pColor2;
@@ -89,13 +98,18 @@ class PollingThread : public amf::AMFThread
 protected:
     amf::AMFContextPtr      m_pContext;
     amf::AMFComponentPtr    m_pEncoder;
-    FILE                    *m_pFile;
+    std::ofstream           m_pFile;
 public:
     PollingThread(amf::AMFContext *context, amf::AMFComponent *encoder, const wchar_t *pFileName);
     ~PollingThread();
     virtual void Run();
 };
+
+#ifdef _WIN32
 int _tmain(int argc, _TCHAR* argv[])
+#else
+int main(int argc, char* argv[])
+#endif
 {
     AMF_RESULT res = AMF_OK; // error checking can be added later
     res = g_AMFFactory.Init();
@@ -110,7 +124,6 @@ int _tmain(int argc, _TCHAR* argv[])
     amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_CONSOLE, true);
     amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, true);
     
-
     // initialize AMF
     amf::AMFContextPtr context;
     amf::AMFComponentPtr encoder;
@@ -120,18 +133,27 @@ int _tmain(int argc, _TCHAR* argv[])
     res = g_AMFFactory.GetFactory()->CreateContext(&context);
     AMF_RETURN_IF_FAILED(res, L"CreateContext() failed");
 
-    if(memoryTypeIn == amf::AMF_MEMORY_DX9)
+    if(memoryTypeIn == amf::AMF_MEMORY_VULKAN)
     {
+        res = amf::AMFContext1Ptr(context)->InitVulkan(NULL);
+        AMF_RETURN_IF_FAILED(res, L"InitVulkan(NULL) failed");
+        PrepareFillFromHost(context);
+    }
+#ifdef _WIN32
+    else if(memoryTypeIn == amf::AMF_MEMORY_DX9)
+    {
+
         res = context->InitDX9(NULL); // can be DX9 or DX9Ex device
         AMF_RETURN_IF_FAILED(res, L"InitDX9(NULL) failed");
     }
-    if(memoryTypeIn == amf::AMF_MEMORY_DX11)
+    else if(memoryTypeIn == amf::AMF_MEMORY_DX11)
     {
         res = context->InitDX11(NULL); // can be DX11 device
         AMF_RETURN_IF_FAILED(res, L"InitDX11(NULL) failed");
-        PrepareFillDX11(context);
-
+        PrepareFillFromHost(context);
     }
+#endif
+    
     // component: encoder
     res = g_AMFFactory.GetFactory()->CreateComponent(context, pCodec, &encoder);
     AMF_RETURN_IF_FAILED(res, L"CreateComponent(%s) failed", pCodec);
@@ -207,7 +229,13 @@ int _tmain(int argc, _TCHAR* argv[])
             surfaceIn = NULL;
             res = context->AllocSurface(memoryTypeIn, formatIn, widthIn, heightIn, &surfaceIn);
             AMF_RETURN_IF_FAILED(res, L"AllocSurface() failed");
-            if(memoryTypeIn  == amf::AMF_MEMORY_DX9)
+            
+            if(memoryTypeIn == amf::AMF_MEMORY_VULKAN)
+            {
+                FillSurfaceVulkan(context, surfaceIn);
+            }
+#ifdef _WIN32
+            else if(memoryTypeIn  == amf::AMF_MEMORY_DX9)
             { 
                 FillSurfaceDX9(context, surfaceIn);
             }
@@ -215,6 +243,7 @@ int _tmain(int argc, _TCHAR* argv[])
             {
                 FillSurfaceDX11(context, surfaceIn);
             }
+#endif
         }
         // encode
         amf_pts start_time = amf_high_precision_clock();
@@ -258,6 +287,8 @@ int _tmain(int argc, _TCHAR* argv[])
     g_AMFFactory.Terminate();
     return 0;
 }
+
+#ifdef _WIN32
 static void FillSurfaceDX9(amf::AMFContext *context, amf::AMFSurface *surface)
 {
     HRESULT hr = S_OK;
@@ -284,6 +315,44 @@ static void FillSurfaceDX9(amf::AMFContext *context, amf::AMFSurface *surface)
     yPos+=2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
 }
 
+
+
+
+static void FillSurfaceDX11(amf::AMFContext *context, amf::AMFSurface *surface)
+{
+    HRESULT hr = S_OK;
+    // fill surface with something something useful. We fill with color and color rect
+    // get native DX objects
+    ID3D11Device *deviceDX11 = (ID3D11Device *)context->GetDX11Device(); // no reference counting - do not Release()
+    ID3D11Texture2D* surfaceDX11 = (ID3D11Texture2D*)surface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
+
+    ID3D11DeviceContext *deviceContextDX11 = NULL;
+    deviceDX11->GetImmediateContext(&deviceContextDX11);
+
+    ID3D11Texture2D* surfaceDX11Color1 = (ID3D11Texture2D*)pColor1->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
+    deviceContextDX11->CopyResource(surfaceDX11, surfaceDX11Color1);
+
+    if(xPos + rectSize > widthIn)
+    {
+        xPos = 0;
+    }
+    if(yPos + rectSize > heightIn)
+    {
+        yPos = 0;
+    }
+    D3D11_BOX rect = {0, 0, 0, (UINT) rectSize, (UINT) rectSize, 1};
+
+    ID3D11Texture2D* surfaceDX11Color2 = (ID3D11Texture2D*)pColor2->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
+
+    deviceContextDX11->CopySubresourceRegion(surfaceDX11, 0, xPos, yPos, 0, surfaceDX11Color2, 0, &rect);
+    deviceContextDX11->Flush();
+
+    xPos+=2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
+    yPos+=2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
+
+    deviceContextDX11->Release();
+}
+#endif
 
 static void FillNV12SurfaceWithColor(amf::AMFSurface* surface, amf_uint8 Y, amf_uint8 U, amf_uint8 V)
 {
@@ -319,8 +388,7 @@ static void FillNV12SurfaceWithColor(amf::AMFSurface* surface, amf_uint8 Y, amf_
     }
 
 }
-
-static void PrepareFillDX11(amf::AMFContext *context)
+static void PrepareFillFromHost(amf::AMFContext *context)
 {
     AMF_RESULT res = AMF_OK; // error checking can be added later
     res = context->AllocSurface(amf::AMF_MEMORY_HOST, formatIn, widthIn, heightIn, &pColor1);
@@ -333,49 +401,52 @@ static void PrepareFillDX11(amf::AMFContext *context)
     pColor2->Convert(memoryTypeIn);
 }
 
-static void FillSurfaceDX11(amf::AMFContext *context, amf::AMFSurface *surface)
+static void FillSurfaceVulkan(amf::AMFContext *context, amf::AMFSurface *surface)
 {
-    HRESULT hr = S_OK;
-    // fill surface with something something useful. We fill with color and color rect
-    // get native DX objects
-    ID3D11Device *deviceDX11 = (ID3D11Device *)context->GetDX11Device(); // no reference counting - do not Release()
-    ID3D11Texture2D* surfaceDX11 = (ID3D11Texture2D*)surface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
+        amf::AMFComputePtr compute;
+        context->GetCompute(amf::AMF_MEMORY_VULKAN, &compute);
 
-    ID3D11DeviceContext *deviceContextDX11 = NULL;
-    deviceDX11->GetImmediateContext(&deviceContextDX11);
+        if(xPos + rectSize > widthIn)
+        {
+            xPos = 0;
+        }
+        if(yPos + rectSize > heightIn)
+        {
+            yPos = 0;
+        }
 
-    ID3D11Texture2D* surfaceDX11Color1 = (ID3D11Texture2D*)pColor1->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
-    deviceContextDX11->CopyResource(surfaceDX11, surfaceDX11Color1);
+        for(int p = 0; p <2; p++)
+        {
+            amf::AMFPlane *plane = pColor1->GetPlaneAt(p);
+            amf_size origin1[3] = {0, 0 , 0};
+            amf_size region1[3] = {(amf_size)plane->GetWidth() , (amf_size)plane->GetHeight(), (amf_size)1};
+            compute->CopyPlane(plane, origin1,region1, surface->GetPlaneAt(p), origin1);
 
-    if(xPos + rectSize > widthIn)
-    {
-        xPos = 0;
-    }
-    if(yPos + rectSize > heightIn)
-    {
-        yPos = 0;
-    }
-    D3D11_BOX rect = {0, 0, 0, rectSize, rectSize, 1};
 
-    ID3D11Texture2D* surfaceDX11Color2 = (ID3D11Texture2D*)pColor2->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
+            plane = pColor2->GetPlaneAt(p);
 
-    deviceContextDX11->CopySubresourceRegion(surfaceDX11, 0, xPos, yPos, 0, surfaceDX11Color2, 0, &rect);
-    deviceContextDX11->Flush();
+            amf_size region2[3] = {(amf_size)plane->GetWidth(), (amf_size)plane->GetHeight(), (amf_size)1};
+            amf_size origin2[3] = {(amf_size)xPos / ( p+1), (amf_size)yPos / ( p+1) ,     0};
 
-    xPos+=2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
-    yPos+=2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
+            compute->CopyPlane(plane, origin1,region2, surface->GetPlaneAt(0), origin2);
 
-    deviceContextDX11->Release();
+        }
+        xPos+=2; // NV12 surfaces do not accept odd positions - do not use ++
+        yPos+=2; // NV12 surfaces do not accept odd positions - do not use ++
+
 }
-PollingThread::PollingThread(amf::AMFContext *context, amf::AMFComponent *encoder, const wchar_t *pFileName) : m_pContext(context), m_pEncoder(encoder), m_pFile(NULL)
+
+PollingThread::PollingThread(amf::AMFContext *context, amf::AMFComponent *encoder, const wchar_t *pFileName) : m_pContext(context), m_pEncoder(encoder)
 {
-    m_pFile = _wfopen(pFileName, L"wb");
+    std::wstring wStr(pFileName);
+    std::string str(wStr.begin(), wStr.end()); 
+    m_pFile = std::ofstream(str, std::ios::binary);
 }
 PollingThread::~PollingThread()
 {
     if(m_pFile)
     {
-        fclose(m_pFile);
+        m_pFile.close();
     }
 }
 void PollingThread::Run()
@@ -415,7 +486,7 @@ void PollingThread::Run()
             }
 
             amf::AMFBufferPtr buffer(data); // query for buffer interface
-            fwrite(buffer->GetNative(), 1, buffer->GetSize(), m_pFile);
+            m_pFile.write(reinterpret_cast<char*>(buffer->GetNative()), buffer->GetSize());
             
             write_duration += amf_high_precision_clock() - poll_time;
         }

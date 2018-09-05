@@ -66,9 +66,9 @@ namespace amf
 
 		virtual AMF_RESULT  AMF_STD_CALL  SubmitInput(AMFData* pData);
 		virtual AMF_RESULT  AMF_STD_CALL  QueryOutput(AMFData** ppData);
-		virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* callback)    { return AMF_OK; };
-		virtual AMF_RESULT  AMF_STD_CALL  GetCaps(AMFCaps** ppCaps)                                 { return AMF_NOT_SUPPORTED; };
-		virtual AMF_RESULT  AMF_STD_CALL  Optimize(AMFComponentOptimizationCallback* pCallback)     { return AMF_OK; };
+		virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* /*callback*/)    { return AMF_OK; };
+		virtual AMF_RESULT  AMF_STD_CALL  GetCaps(AMFCaps** /*ppCaps*/)                                 { return AMF_NOT_SUPPORTED; };
+		virtual AMF_RESULT  AMF_STD_CALL  Optimize(AMFComponentOptimizationCallback* /*pCallback*/)     { return AMF_OK; };
 		virtual AMFContext* AMF_STD_CALL  GetContext()                                              { return m_pContext; };
 
 		// AMFPropertyStorageObserver interface
@@ -114,6 +114,8 @@ namespace amf
 		AMFQueue<AMFDataPtr>			m_AudioDataQueue;
 
 		amf_pts							m_prevPts;
+        bool                            m_bFlush;
+        amf_pts							m_CurrentPts;
 
 		AMFAudioCaptureImpl(const AMFAudioCaptureImpl&);
 		AMFAudioCaptureImpl& operator=(const AMFAudioCaptureImpl&);

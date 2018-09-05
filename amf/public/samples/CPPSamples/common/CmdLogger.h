@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -108,6 +108,15 @@ void WriteLog(const wchar_t* message, AMFLogLevel level);
             LOG_WRITE(text << L" OpenCL Error: " << err<< std::endl, AMFLogLevelError); \
             return AMF_FAIL; \
         } \
+    }
+
+#define CHECK_VULKAN_ERROR_RETURN(err, text) \
+    { \
+        if(err) \
+				        {  \
+            LOG_WRITE(text << L" Vulkan Error: " << err<< std::endl, AMFLogLevelError); \
+            return AMF_FAIL; \
+				        } \
     }
 
 

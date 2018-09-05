@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,7 @@
 #include "RenderWindow.h"
 #include "../common/CmdLogger.h"
 
+#if defined(_WIN32)
 RenderWindow::RenderWindow() :
     m_hWnd(0)
 {
@@ -156,9 +157,9 @@ void RenderWindow::ProcessWindowMessages()
         } 
     }
 }
-HWND RenderWindow::GetHwnd() const 
+amf_handle RenderWindow::GetHwnd() const 
 {
-    return m_hWnd;
+    return (amf_handle)m_hWnd;
 }
 void RenderWindow::Resize(amf_int32  width, amf_int32 height)
 {
@@ -198,3 +199,96 @@ LRESULT CALLBACK MyDefWindowProcW(
     }
     return DefWindowProc( hWnd,Msg,wParam,lParam);
 }
+#elif defined (__linux)
+
+RenderWindow::RenderWindow() :
+m_hWnd(0),
+m_pDisplay(nullptr),
+WM_DELETE_WINDOW(0)
+{
+
+}
+RenderWindow::~RenderWindow()
+{
+    if(m_hWnd)
+    {
+        XDestroyWindow(m_pDisplay, m_hWnd);
+        XCloseDisplay(m_pDisplay);
+    }
+}
+
+bool RenderWindow::CreateD3Window(amf_int32 width, amf_int32 height, amf_int32 adapterID, bool bFullScreen)
+{
+        if(m_hWnd)
+        {
+            return true;
+        }
+        m_pDisplay = XOpenDisplay(NULL);
+        int screen_num = DefaultScreen(m_pDisplay);
+
+        Window parentWnd = DefaultRootWindow(m_pDisplay);
+
+        int x = 10;
+        int y = 10;
+
+        if(bFullScreen)
+        {
+            XWindowAttributes getWinAttr;
+            XGetWindowAttributes(m_pDisplay, parentWnd, &getWinAttr);
+            x = 0;
+            y = 0;
+            width = getWinAttr.width;
+            height = getWinAttr.height;
+        }
+
+        m_hWnd = XCreateSimpleWindow(m_pDisplay, 
+        parentWnd, 
+        x, y, width, height,
+        1, BlackPixel(m_pDisplay, screen_num), WhitePixel(m_pDisplay, screen_num));
+        XSelectInput(m_pDisplay, m_hWnd, ExposureMask | KeyPressMask | StructureNotifyMask);
+        XMapWindow(m_pDisplay, m_hWnd);
+        XStoreName(m_pDisplay, m_hWnd, "RenderWindow");
+    
+        WM_DELETE_WINDOW = XInternAtom(m_pDisplay, "WM_DELETE_WINDOW", False); 
+        XSetWMProtocols(m_pDisplay, m_hWnd, &WM_DELETE_WINDOW, 1); 
+
+        return true;
+}
+
+void RenderWindow::ProcessWindowMessages()
+{
+    if(m_hWnd)
+    {
+        XEvent e;
+        bool bRun = true;
+        
+        while (XCheckMaskEvent(m_pDisplay,0xFFFFFF , &e)) 
+        {
+            switch(e.type)
+            {
+            case Expose:
+                break;
+            case KeyPress:
+                break;
+            case ConfigureNotify:
+                {
+                    XConfigureEvent xce = e.xconfigure;
+//                    s_pPipeline->CheckForResize();
+                }
+                break;
+            case ClientMessage:
+                if((static_cast<unsigned int>(e.xclient.data.l[0]) == WM_DELETE_WINDOW))
+                {
+                    bRun = false;
+                }
+                break;
+            }
+        }            
+    }
+}
+void RenderWindow::Resize(amf_int32 width, amf_int32 height)
+{
+    //TODO
+}
+
+#endif

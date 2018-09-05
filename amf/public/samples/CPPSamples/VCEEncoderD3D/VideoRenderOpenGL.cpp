@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -76,7 +76,7 @@ VideoRenderOpenGL::~VideoRenderOpenGL()
     Terminate();
 }
 
-AMF_RESULT VideoRenderOpenGL::Init(HWND hWnd, bool bFullScreen)
+AMF_RESULT VideoRenderOpenGL::Init(amf_handle hWnd, amf_handle hDisplay, bool bFullScreen)
 {
     AMF_RESULT res = AMF_OK;
 
@@ -84,7 +84,7 @@ AMF_RESULT VideoRenderOpenGL::Init(HWND hWnd, bool bFullScreen)
     m_hContextOGL = (HGLRC)m_pContext->GetOpenGLContext();
     if(m_hWnd != ::GetDesktopWindow())
     {
-        m_hWnd = hWnd; // windowed mode
+        m_hWnd = (HWND)hWnd; // windowed mode
     }
     BOOL glRET = wglMakeCurrent(m_hDC, m_hContextOGL);
     if(!glRET) 

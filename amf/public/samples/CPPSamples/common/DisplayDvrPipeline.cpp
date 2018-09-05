@@ -80,6 +80,8 @@ namespace
 			m_pDisplayDvrPipeline = NULL;
 		}
 
+        virtual amf_int32 GetInputSlotCount() const { return 0; }
+
 		virtual AMF_RESULT QueryOutput(amf::AMFData** ppData)
 		{
 			AMF_RESULT res = AMFComponentElement::QueryOutput(ppData);
@@ -183,9 +185,9 @@ class DisplayDvrPipeline::PipelineElementEncoder : public AMFComponentElement
 {
 public:
 	//-------------------------------------------------------------------------------------------------
-	PipelineElementEncoder(amf::AMFComponentPtr pComponent, ParametersStorage* pParams, amf_int64 frameParameterFreq, amf_int64 dynamicParameterFreq)
+	PipelineElementEncoder(amf::AMFComponentPtr pComponent, DisplayDvrPipeline* pParams, amf_int64 frameParameterFreq, amf_int64 dynamicParameterFreq)
 		:AMFComponentElement(pComponent),
-		m_pParams(pParams),
+		m_pDisplayDvrPipeline(pParams),
 		m_framesSubmitted(0),
 		m_frameParameterFreq(frameParameterFreq),
 		m_dynamicParameterFreq(dynamicParameterFreq)
@@ -209,13 +211,12 @@ public:
 		{
 			if(m_frameParameterFreq != 0 && m_framesSubmitted !=0 && (m_framesSubmitted % m_frameParameterFreq) == 0)
 			{ // apply frame-specific properties to the current frame
-				PushParamsToPropertyStorage(m_pParams, ParamEncoderFrame, pData);
+				PushParamsToPropertyStorage(m_pDisplayDvrPipeline, ParamEncoderFrame, pData);
 			}
 			if(m_dynamicParameterFreq != 0 && m_framesSubmitted !=0 && (m_framesSubmitted % m_dynamicParameterFreq) == 0)
 			{ // apply dynamic properties to the encoder
-				PushParamsToPropertyStorage(m_pParams, ParamEncoderDynamic, m_pComponent);
+				PushParamsToPropertyStorage(m_pDisplayDvrPipeline, ParamEncoderDynamic, m_pComponent);
 			}
-
 
 			res = m_pComponent->SubmitInput(pData);
 			if(res == AMF_DECODER_NO_FREE_SURFACES)
@@ -226,9 +227,23 @@ public:
 		}
 		return res; 
 	}
-
+    virtual AMF_RESULT QueryOutput(amf::AMFData** ppData)
+    {
+        AMF_RESULT res = AMFComponentElement::QueryOutput(ppData);
+        if(res == AMF_OK && *ppData != nullptr)
+        {
+            amf_pts capturePts = (*ppData)->GetPts();
+            amf_pts encodedPts = m_pDisplayDvrPipeline->m_pCurrentTime->Get();
+            // AMFTraceInfo(L"Latency", L"latency = %5.2f", (encodedPts - capturePts) / 10000. );
+        }
+        else
+        {
+            int a = 1;
+        }
+        return res;
+    }
 protected:
-	ParametersStorage*      m_pParams;
+	DisplayDvrPipeline*      m_pDisplayDvrPipeline;
 	amf_int                 m_framesSubmitted;
 	amf_int64               m_frameParameterFreq;
 	amf_int64               m_dynamicParameterFreq;
@@ -676,17 +691,26 @@ AMF_RESULT DisplayDvrPipeline::ConnectPipeline()
 	amf_int dynamicParameterFreq = 0;
 
 	// Connect components of the video pipeline together
-	PipelineElementPtr pPipelineElementVideoEncoder =
-		PipelineElementPtr(new PipelineElementEncoder(m_pEncoder, this, frameParameterFreq, dynamicParameterFreq));
-	PipelineElementPtr pPipelineElementMuxer =
-		PipelineElementPtr(new AMFComponentExElement(m_pMuxer));
+	PipelineElementPtr pPipelineElementVideoEncoder = PipelineElementPtr(new PipelineElementEncoder(m_pEncoder, this, frameParameterFreq, dynamicParameterFreq));
+	PipelineElementPtr pPipelineElementMuxer = PipelineElementPtr(new AMFComponentExElement(m_pMuxer));
 
 	Connect(PipelineElementPtr(new AMFComponentElementDisplayCaptureInterceptor(this, m_pDisplayCapture)), 1, CT_Direct);
 	AMFComponentElementConverterInterceptor* interceptor = new AMFComponentElementConverterInterceptor(this, m_pConverter);
-	Connect(PipelineElementPtr(interceptor), 4, CT_ThreadQueue);
 	m_converterInterceptor = interceptor;
-	Connect(pPipelineElementVideoEncoder, 10, CT_ThreadQueue);
-	Connect(pPipelineElementMuxer, m_outVideoStreamMuxerIndex, pPipelineElementVideoEncoder, 0, 10, CT_ThreadQueue);
+
+    bool bLowLatency = true;
+
+    if(bLowLatency)
+    {
+    	Connect(PipelineElementPtr(interceptor), 0, CT_Direct);
+	    Connect(pPipelineElementVideoEncoder, 0, CT_Direct);
+    }
+    else
+    {
+    	Connect(PipelineElementPtr(interceptor), 4, CT_ThreadQueue);
+	    Connect(pPipelineElementVideoEncoder, 10, CT_ThreadQueue);
+    }
+    Connect(pPipelineElementMuxer, m_outVideoStreamMuxerIndex, pPipelineElementVideoEncoder, 0, 10, CT_ThreadQueue);
 
 	if (m_outAudioStreamMuxerIndex >= 0)
 	{

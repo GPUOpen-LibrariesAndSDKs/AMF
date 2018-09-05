@@ -6,7 +6,7 @@
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,11 +28,17 @@
 //
 
 New features are available in 
-Driver: Radeon Software Adrenalin Edition 18.3.4 Software: 17.50 and later 
+Driver: Radeon Software Edition Crimson; 18.8.1 Software: 18.30 and later 
 
-1.4.7.0 (04.12.2018) version
+1.4.9.0 (23.08.2018) version
 --------------------------
-    - 360 video stitch sample
+    - Vulkan support
+    - Vulkan encoder supports H.264 only
+    - Linux support (see public/make/common_defs.mak for packages and build parameters)
+
+1.4.7.0 (23.04.2018) version
+--------------------------
+    - 360 stich sample
 
 1.4.6.0 (11.30.2017) version
 --------------------------

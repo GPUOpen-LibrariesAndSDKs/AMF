@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -39,11 +39,17 @@
 
 
 //define export declaration
-#ifdef _WIN32
+#if defined(_WIN32)
         #if defined(AMF_COMPONENT_FFMPEG_EXPORTS)
             #define AMF_COMPONENT_FFMPEG_LINK __declspec(dllexport)
         #else
             #define AMF_COMPONENT_FFMPEG_LINK __declspec(dllimport)
+        #endif
+#elif defined(__linux)        
+        #if defined(AMF_COMPONENT_FFMPEG_EXPORTS)
+            #define AMF_COMPONENT_FFMPEG_LINK __attribute__ ((visibility ("default")))
+        #else
+            #define AMF_COMPONENT_FFMPEG_LINK
         #endif
 #else
     #define AMF_COMPONENT_FFMPEG_LINK
@@ -51,7 +57,7 @@
 
 extern "C"
 {
-    AMF_COMPONENT_FFMPEG_LINK AMF_RESULT AMF_CDECL_CALL AMFCreateComponentInt(amf::AMFContext* pContext, void* reserved, amf::AMFComponent** ppComponent)
+     AMF_COMPONENT_FFMPEG_LINK AMF_RESULT  AMF_CDECL_CALL AMFCreateComponentInt(amf::AMFContext* pContext, void* reserved, amf::AMFComponent** ppComponent)
     {
         // if no component name passed in, we don't know
         // which component to create
@@ -91,3 +97,4 @@ extern "C"
         return AMF_FAIL;
     }
 }
+

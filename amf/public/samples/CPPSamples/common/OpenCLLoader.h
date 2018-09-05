@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,6 +31,9 @@
 //
 #pragma once
 #define CL_USE_DEPRECATED_OPENCL_2_0_APIS
+#if !defined(CL_EXT_PREFIX__VERSION_2_0_DEPRECATED)
+    #define CL_EXT_SUFFIX__VERSION_2_0_DEPRECATED
+#endif
 #include <CL/cl.h>
 #include "public/include/core/Result.h"
 

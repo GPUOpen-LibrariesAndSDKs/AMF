@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -32,19 +32,27 @@
 //
 // this sample decodes H.264 elmentary stream to NV12 frames using AMF Decoder and writes the frames into raw file
 #include <stdio.h>
+#ifdef _WIN32
 #include <tchar.h>
 #include <d3d9.h>
 #include <d3d11.h>
+#endif
 #include "public/common/AMFFactory.h"
 #include "public/include/components/VideoDecoderUVD.h"
 #include "public/common/DataStream.h"
 #include "../common/BitStreamParser.h"
+#include <fstream>
+#include <iostream>
 
-//static wchar_t *fileNameIn                  = L"./nasa_720p.264";
-//static wchar_t *fileNameIn                  = L"./bbc_1080p.264";
-static wchar_t *fileNameIn                  = NULL;
-static wchar_t *fileNameOut                 = L"./output_%dx%d.nv12";
+//static const wchar_t *fileNameIn          = L"./nasa_720p.264";
+//static const wchar_t *fileNameIn          = L"./bbc_1080p.264";
+static const wchar_t *fileNameIn            = NULL;
+static const wchar_t *fileNameOut           = L"./output_%dx%d.nv12";
+#if defined (_WIN32)
 static amf::AMF_MEMORY_TYPE memoryTypeOut   = amf::AMF_MEMORY_DX11;
+#elif defined (__linux)
+static amf::AMF_MEMORY_TYPE memoryTypeOut   = amf::AMF_MEMORY_VULKAN;
+#endif
 static amf::AMF_SURFACE_FORMAT formatOut    = amf::AMF_SURFACE_NV12;
 static amf_int32 frameCount                 = 500; // -1 means entire file
 static amf_int32 submitted = 0;
@@ -63,15 +71,28 @@ class PollingThread : public amf::AMFThread
 protected:
     amf::AMFContextPtr      m_pContext;
     amf::AMFComponentPtr    m_pDecoder;
-    FILE                    *m_pFile;
+    std::ofstream           m_pFile;
 public:
     PollingThread(amf::AMFContext *context, amf::AMFComponent *decoder, const wchar_t *pFileName);
     ~PollingThread();
     virtual void Run();
 };
 
-int _tmain(int argc, _TCHAR* argv[])
+template<class charT>
+std::wstring convert2WString(const charT * p)
 {
+    std::basic_string<charT> str(p);
+    return std::wstring(str.begin(), str.end());
+} 
+
+#ifdef _WIN32
+int _tmain(int argc, _TCHAR* argv[])
+#else
+int main(int argc, char* argv[])
+#endif
+{
+    std::wstring fileNameInW{};
+
     if(argc <= 1 && fileNameIn == NULL)
     {
         wprintf(L"input file name is missing in command line");
@@ -79,7 +100,8 @@ int _tmain(int argc, _TCHAR* argv[])
     }
     if(argc > 1)
     { 
-        fileNameIn = argv[1];
+        fileNameInW = convert2WString(argv[1]);
+        fileNameIn = fileNameInW.c_str();
     }
     AMF_RESULT              res = AMF_OK; // error checking can be added later
     res = g_AMFFactory.Init();
@@ -106,13 +128,17 @@ int _tmain(int argc, _TCHAR* argv[])
     }
     // context
     res = g_AMFFactory.GetFactory()->CreateContext(&context);
-    if(memoryTypeOut == amf::AMF_MEMORY_DX9)
+    switch(memoryTypeOut)
     {
+    case amf::AMF_MEMORY_DX9:
         res = context->InitDX9(NULL); // can be DX9 or DX9Ex device
-    }
-    if(memoryTypeOut == amf::AMF_MEMORY_DX11)
-    {
+        break;
+    case amf::AMF_MEMORY_DX11:
         res = context->InitDX11(NULL); // can be DX11 device
+        break;
+    case amf::AMF_MEMORY_VULKAN:
+        res = amf::AMFContext1Ptr(context)->InitVulkan(NULL); // can be Vulkan device
+        break;
     }
 
 	BitStreamType bsType = GetStreamType(fileNameIn);
@@ -121,7 +147,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     // open output file with frame size in file name
     wchar_t fileNameOutWidthSize[2000];
-    _swprintf(fileNameOutWidthSize, fileNameOut, parser->GetPictureWidth(), parser->GetPictureHeight());
+    swprintf(fileNameOutWidthSize, amf_countof(fileNameOutWidthSize), fileNameOut, parser->GetPictureWidth(), parser->GetPictureHeight());
 
 	// component: decoder
 	if (bsType == BitStreamH264AnnexB)
@@ -177,7 +203,6 @@ int _tmain(int argc, _TCHAR* argv[])
         { // submission succeeded. read new buffer from parser
 			submitted++;
 			bNeedNewInput = true;
-            
         }
     }
     // drain decoder queue 
@@ -196,7 +221,7 @@ int _tmain(int argc, _TCHAR* argv[])
     g_AMFFactory.Terminate();
 	return 0;
 }
-static void WritePlane(amf::AMFPlane *plane, FILE *f)
+static void WritePlane(amf::AMFPlane *plane, std::ofstream &f)
 {
     // write NV12 surface removing offsets and alignments
     amf_uint8 *data     = reinterpret_cast<amf_uint8*>(plane->GetNative());
@@ -210,21 +235,23 @@ static void WritePlane(amf::AMFPlane *plane, FILE *f)
     for( amf_int32 y = 0; y < height; y++)
     {
         amf_uint8 *line = data + (y + offsetY) * pitchH;
-        fwrite(line + offsetX * pixelSize, pixelSize, width, f);
+        f.write(reinterpret_cast<char*>(line) + offsetX * pixelSize, pixelSize * width);
     }
 }
 // Waits till decoder finishes decode the surface. Need for accurate profiling only. Do not use in the product!!!
 static void WaitDecoder(amf::AMFContext *context, amf::AMFSurface *surface) 
 {
     // copy of four pixels will force DX to wait for UVD decoder and will not add a significant delay
-    HRESULT hr = S_OK;
     amf::AMFSurfacePtr outputSurface;
     context->AllocSurface(surface->GetMemoryType(), surface->GetFormat(), 2, 2, &outputSurface); // NV12 must be devisible by 2
 
     switch(surface->GetMemoryType())
     {
+#ifdef _WIN32        
     case amf::AMF_MEMORY_DX9:
         {
+            HRESULT hr = S_OK;
+    
             IDirect3DDevice9 *deviceDX9 = (IDirect3DDevice9 *)context->GetDX9Device(); // no reference counting - do not Release()
             IDirect3DSurface9* surfaceDX9src = (IDirect3DSurface9*)surface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
             IDirect3DSurface9* surfaceDX9dst = (IDirect3DSurface9*)outputSurface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
@@ -237,6 +264,8 @@ static void WaitDecoder(amf::AMFContext *context, amf::AMFSurface *surface)
         break;
     case amf::AMF_MEMORY_DX11:
         {
+            HRESULT hr = S_OK;
+    
             ID3D11Device *deviceDX11 = (ID3D11Device*)context->GetDX11Device(); // no reference counting - do not Release()
             ID3D11Texture2D *textureDX11src = (ID3D11Texture2D*)surface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
             ID3D11Texture2D *textureDX11dst = (ID3D11Texture2D*)outputSurface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
@@ -248,24 +277,37 @@ static void WaitDecoder(amf::AMFContext *context, amf::AMFSurface *surface)
             // release temp objects
             contextDX11->Release();
             outputSurface->Convert(amf::AMF_MEMORY_HOST);
-
+        }
+        break;
+#endif
+    case amf::AMF_MEMORY_VULKAN:
+        {
+            // release temp objects
+            outputSurface->Convert(amf::AMF_MEMORY_HOST);
         }
         break;
     }
 }
 
-PollingThread::PollingThread(amf::AMFContext *context, amf::AMFComponent *decoder, const wchar_t *pFileName) : m_pContext(context), m_pDecoder(decoder), m_pFile(NULL)
+PollingThread::PollingThread(amf::AMFContext *context, amf::AMFComponent *decoder, const wchar_t *pFileName) : m_pContext(context), m_pDecoder(decoder)
 {
     if(bWriteToFile)
     {
-        m_pFile = _wfopen(pFileName, L"wb");
+        std::wstring wStr(pFileName);
+        std::string str(wStr.begin(), wStr.end()); 
+        m_pFile = std::ofstream(str, std::ofstream::binary | std::ofstream::out);
+
+        if(!m_pFile.is_open())
+        {
+            std::cerr << "Error(" << strerror(errno) << ")" << "Unable to open file: " << str  << std::endl; 
+        }
     }
 }
 PollingThread::~PollingThread()
 {
     if(m_pFile)
     {
-        fclose(m_pFile);
+        m_pFile.close();
     }
 }
 void PollingThread::Run()

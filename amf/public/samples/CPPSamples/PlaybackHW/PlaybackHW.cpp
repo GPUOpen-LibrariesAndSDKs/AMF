@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -33,134 +33,99 @@
 // PlaybackHW.cpp : Defines the entry point for the application.
 //
 
-#include "targetver.h"
-
-//#define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
-#include <windows.h>
-
+#if defined(_WIN32)
+    #include "targetver.h"
+    //#define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
+    #include <windows.h>
+#else
+    #include <X11/Xlib.h>
+    #include <X11/Xutil.h>
+    #include <X11/Xos.h>
+#endif
 // C RunTime Header Files
 #include <stdlib.h>
 #include <malloc.h>
 #include <memory.h>
-#include <tchar.h>
-#include "PlaybackHW.h"
-#include <objbase.h>
-#include <Commdlg.h>
-#include <CommCtrl.h>
+#if defined(_WIN32)
+    #include <tchar.h>
+    #include "PlaybackHW.h"
+    #include <objbase.h>
+    #include <Commdlg.h>
+    #include <CommCtrl.h>
+#endif
 
 #include "public/common/AMFFactory.h"
+#include "public/common/TraceAdapter.h"
 
 #include "../common/PlaybackPipeline.h"
 #include "../common/CmdLineParser.h"
 #include "../common/CmdLogger.h"
 
+class MyPlaybackPipeline : public PlaybackPipeline
+{
+    public:
+    MyPlaybackPipeline(){}
+    void AMF_STD_CALL  CheckForResize()
+     {
+         if(m_pVideoPresenter != nullptr)
+         {
+             m_pVideoPresenter->CheckForResize();
+         }
+     }
+    
+};
+
+static MyPlaybackPipeline *s_pPipeline = NULL;
+
+
+#if defined(_WIN32)
+
+
 #define MAX_LOADSTRING 100
 
 // Global Variables:
 static HWND    hToolbar; 
-HINSTANCE hInst;                                // current instance
 TCHAR szTitle[MAX_LOADSTRING];                    // The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 static  UINT_PTR uiTimerID = 0;
 static  UINT_PTR uiTimerToolbarID = 0;
 static  bool bTrackingStarted = false;
 
-static PlaybackPipeline *s_pPipeline = NULL;
 
 // Forward declarations of functions included in this code module:
-ATOM                MyRegisterClass(HINSTANCE hInstance);
-BOOL                InitInstance(HINSTANCE, HWND* , int);
+ATOM                MyRegisterClass();
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    OpenStreamProc(HWND, UINT, WPARAM, LPARAM);
 void                FileOpen(HWND hwnd);
 void                StreamOpen(HWND hwnd);
-void                UpdateMenuItems(HMENU hMenu);
 HWND                CreateClientWindow(HWND hWndParent);
 void                ResizeClient(HWND hWndParent);
 void                UpdateCaption(HWND hWnd);
 void                ToggleToolbar(HWND hwnd);
 void                CloseToolbar();
 
+HWND                hMainWindow;
 HWND                hClientWindow;
 
+static INT_PTR CALLBACK ProgressDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
 
-static INT_PTR CALLBACK ProgressDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
-{
-    class OptimizationThread : public amf::AMFThread, public amf::AMFComponentOptimizationCallback
-    {
-        bool m_started;
-        amf_uint m_percent;
-    public:
-        OptimizationThread()
-            :m_started(true), m_percent(0)
-        {
-        }
-        ~OptimizationThread()
-        {
-        }
-        bool started() {return m_started;}
-        amf_uint percent() {return m_percent;}
+#else
+Atom WM_DELETE_WINDOW = 0;
+Window                hMainWindow;
+Window                hClientWindow;
 
-    protected:
-        virtual AMF_RESULT AMF_STD_CALL OnComponentOptimizationProgress(amf_uint percent)
-        {
-            m_percent = percent;
-            return AMF_OK;
-        }
+#endif
 
-        virtual void Run()
-        {
-            RequestStop();
-            amf::AMFContextPtr pContext;
-            g_AMFFactory.GetFactory()->CreateContext(&pContext);
-            pContext->InitDX11(NULL);
-            amf::AMFComponentPtr pComponent;
-            g_AMFFactory.GetFactory()->CreateComponent(pContext, AMFVideoConverter, &pComponent);
-            pComponent->Optimize(this);
 
-            m_started = false;
-        }
-    };
-    static OptimizationThread s_optimizationThread;
+amf_handle          hInst;
 
-    switch(Message)
-    {
-    case WM_COMMAND:
-        switch(LOWORD(wParam))
-        {
-        case IDCANCEL:
-            EndDialog(hwnd, IDCANCEL);
-            break;
-        }
-        break;
-    case WM_INITDIALOG:
-        {
-            HWND hProgress = GetDlgItem(hwnd, IDC_PROGRESS_BAR);
-            SendMessage(hProgress, PBM_SETRANGE, 0, MAKELPARAM(0, 100));
-            s_optimizationThread.Start();
-            SetTimer(hwnd, 100, 1, NULL);
-        }
-        return TRUE;
-    case WM_TIMER:
-        if(s_optimizationThread.started())
-        {
-            HWND hProgress = GetDlgItem(hwnd, IDC_PROGRESS_BAR);
-            SendMessage(hProgress, PBM_SETPOS, DWORD(s_optimizationThread.percent()), 0);
-        }
-        else
-        {
-            s_optimizationThread.WaitForStop();
-            KillTimer(hwnd, 100);
-            EndDialog(hwnd, IDOK);
-        }
+bool                InitInstance(int);
+int                 RunMessageLoop();
+void                CloseInstance();
+void                UpdateMenuItems();
 
-    default:
-        return FALSE;
-    }
-    return TRUE;
-}
-
+#if defined(_WIN32)
 int APIENTRY _tWinMain(HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,
                      LPTSTR    lpCmdLine,
@@ -168,51 +133,70 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
+    hInst = amf_handle(hInstance);
+    ::CoInitializeEx(NULL,COINIT_MULTITHREADED);
 
-    MSG msg;
-
-    g_AMFFactory.Init();
+#else
+int main(int argc, char* argv[])
+{
+    int nCmdShow = 0;
+    hInst = amf_handle(XOpenDisplay(NULL));
+    if (hInst == NULL) 
     {
-        PlaybackPipeline        pipeline;
-        s_pPipeline = &pipeline;
-        ::CoInitializeEx(NULL,COINIT_MULTITHREADED);
+        printf("Cannot open display\n");
+        return -1;
+    }
 
-        AMF_RESULT              res = AMF_OK; // error checking can be added later
-        res = g_AMFFactory.Init();
-        if(res != AMF_OK)
+#endif
+
+
+    int ret = -1;
+    AMF_RESULT              res = AMF_OK; // error checking can be added later
+
+    res = g_AMFFactory.Init();
+    if(res != AMF_OK)
+    {
+        printf("AMF Failed to initialize");
+        g_AMFFactory.Terminate();
+        return 1;
+    }
+
+    {
+        amf::AMFTraceSetGlobalLevel(AMF_TRACE_INFO); 
+        amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, true);
+        amf::AMFTraceSetWriterLevel(AMF_TRACE_WRITER_DEBUG_OUTPUT, AMF_TRACE_INFO);
+
+        g_AMFFactory.GetDebug()->AssertsEnable(true);
+
+        MyPlaybackPipeline        pipeline;
+        s_pPipeline = &pipeline;
+
+        if (!InitInstance(nCmdShow))
         {
-            wprintf(L"AMF Failed to initialize");
+            CloseInstance();
             g_AMFFactory.Terminate();
             return 1;
         }
 
-
-        g_AMFFactory.GetDebug()->AssertsEnable(true);
-
-        HACCEL hAccelTable;
-
-        // Initialize global strings
-        LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-        LoadString(hInstance, IDC_PLAYBACKHW, szWindowClass, MAX_LOADSTRING);
-        MyRegisterClass(hInstance);
-        HWND hWnd = NULL;
-
-        // Perform application initialization:
-        if (!InitInstance (hInstance, &hWnd, nCmdShow))
+#if defined(_WIN32)
+        if(DialogBox((HINSTANCE)hInst, MAKEINTRESOURCE(IDD_PROGRESS_DLG),  hMainWindow,  (DLGPROC) ProgressDlgProc ) != IDOK)
         {
-            CoUninitialize();
-            g_AMFFactory.Terminate();
-            return FALSE;
+            return 1;
         }
-
-        PostMessage(hWnd, WM_USER+1000, 0, 0);
+#endif
         //------------------------------------------------------------------------------------------------------------
+#if defined(_WIN32)
         if (parseCmdLineParameters(s_pPipeline))
+#else
+        if (parseCmdLineParameters(s_pPipeline, argc, argv))
+#endif        
         {
-            if(s_pPipeline->Init(hClientWindow) == AMF_OK)
+
+
+            if(s_pPipeline->Init((amf_handle)hClientWindow, hInst) == AMF_OK)
             {
                 s_pPipeline->Play();
-                UpdateMenuItems(::GetMenu(hWnd));
+                UpdateMenuItems();
             }
         }
         else
@@ -221,26 +205,39 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         }
         //------------------------------------------------------------------------------------------------------------
 
+        ret = RunMessageLoop();
+        s_pPipeline->Stop();
 
-        hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_PLAYBACKHW));
-
-        // Main message loop:
-        while (GetMessage(&msg, NULL, 0, 0))
-        {
-                if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
-                {
-                    TranslateMessage(&msg);
-                    DispatchMessage(&msg);
-                }
-            }
-        CoUninitialize();
+        CloseInstance();
     }
     g_AMFFactory.Terminate();
 
-    return (int) msg.wParam;
+    return ret;
 }
 
 
+#if defined(_WIN32)
+int                RunMessageLoop()
+{
+    MSG msg = {};
+    HACCEL hAccelTable = LoadAccelerators((HINSTANCE)hInst, MAKEINTRESOURCE(IDC_PLAYBACKHW));
+
+    // Main message loop:
+    while (GetMessage(&msg, NULL, 0, 0))
+    {
+        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+        {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+    }
+    return (int) msg.wParam;
+}
+
+void CloseInstance()
+{
+    CoUninitialize();
+}
 
 //
 //  FUNCTION: MyRegisterClass()
@@ -255,23 +252,23 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 //    so that the application will get 'well formed' small icons associated
 //    with it.
 //
-ATOM MyRegisterClass(HINSTANCE hInstance)
+ATOM MyRegisterClass()
 {
     WNDCLASSEX wcex;
 
     wcex.cbSize = sizeof(WNDCLASSEX);
 
-    wcex.style            = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc    = WndProc;
-    wcex.cbClsExtra        = 0;
-    wcex.cbWndExtra        = 0;
-    wcex.hInstance        = hInstance;
-    wcex.hIcon            = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_PLAYBACKHW));
-    wcex.hCursor        = LoadCursor(NULL, IDC_ARROW);
-    wcex.hbrBackground    = (HBRUSH)(COLOR_WINDOW+1);
-    wcex.lpszMenuName    = MAKEINTRESOURCE(IDC_PLAYBACKHW);
-    wcex.lpszClassName    = szWindowClass;
-    wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+    wcex.style              = CS_HREDRAW | CS_VREDRAW;
+    wcex.lpfnWndProc        = WndProc;
+    wcex.cbClsExtra         = 0;
+    wcex.cbWndExtra         = 0;
+    wcex.hInstance          = (HINSTANCE)hInst;
+    wcex.hIcon              = LoadIcon((HINSTANCE)hInst, MAKEINTRESOURCE(IDI_PLAYBACKHW));
+    wcex.hCursor            = LoadCursor(NULL, IDC_ARROW);
+    wcex.hbrBackground      = (HBRUSH)(COLOR_WINDOW+1);
+    wcex.lpszMenuName       = MAKEINTRESOURCE(IDC_PLAYBACKHW);
+    wcex.lpszClassName      = szWindowClass;
+    wcex.hIconSm            = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
     return RegisterClassEx(&wcex);
 }
@@ -287,33 +284,32 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //        In this function, we save the instance handle in a global variable and
 //        create and display the main program window.
 //
-BOOL InitInstance(HINSTANCE hInstance, HWND* phWnd, int nCmdShow)
+bool InitInstance(int nCmdShow)
 {
+    LoadString((HINSTANCE)hInst, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
+    LoadString((HINSTANCE)hInst, IDC_PLAYBACKHW, szWindowClass, MAX_LOADSTRING);
 
-    hInst = hInstance; // Store instance handle in our global variable
-    
-    HWND hWnd = NULL;
+    ATOM atom = MyRegisterClass();
+    hMainWindow = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, (HINSTANCE)hInst, NULL);
 
-    hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
-
-    if (!hWnd)
+    if (!hMainWindow)
     {
-        return FALSE;
+        return false;
     }
 
-    uiTimerID = ::SetTimer(hWnd, 10000, 1000, NULL);
+    uiTimerID = ::SetTimer(hMainWindow, 10000, 1000, NULL);
 
-    ShowWindow(hWnd, nCmdShow);
-    UpdateWindow(hWnd);
-    UpdateMenuItems(::GetMenu(hWnd));
-    *phWnd = hWnd;
+    ShowWindow(hMainWindow, nCmdShow);
+    UpdateWindow(hMainWindow);
+    UpdateMenuItems();
 
-    return TRUE;
+    return true;
 }
 
-void UpdateMenuItems(HMENU hMenu)
+void UpdateMenuItems()
 {
+    HMENU hMenu = ::GetMenu(hMainWindow);
     amf::AMF_MEMORY_TYPE    presenterType = amf::AMF_MEMORY_DX11;
     {
         amf_int64 engineInt = amf::AMF_MEMORY_UNKNOWN;
@@ -333,7 +329,8 @@ void UpdateMenuItems(HMENU hMenu)
     CheckMenuItem(hMenu,ID_OPTIONS_PRESENTER_DX11,      MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_DX11 ? MF_CHECKED : MF_UNCHECKED));
     CheckMenuItem(hMenu,ID_OPTIONS_PRESENTER_DX9,       MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_DX9 ? MF_CHECKED: MF_UNCHECKED));
     CheckMenuItem(hMenu,ID_OPTIONS_PRESENTER_OPENGL,    MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_OPENGL ? MF_CHECKED: MF_UNCHECKED));
-
+    CheckMenuItem(hMenu,ID_OPTIONS_VIDEOPRESENTER_VULKAN,    MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_VULKAN ? MF_CHECKED: MF_UNCHECKED));
+    
 }
 
 //
@@ -354,12 +351,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     switch (message)
     {
-    case WM_USER+1000:
-        if(DialogBox( hInst, MAKEINTRESOURCE(IDD_PROGRESS_DLG),  hWnd,  (DLGPROC) ProgressDlgProc ) != IDOK)
-        {
-            PostQuitMessage(0);
-        }
-        break;
     case WM_COMMAND:
         wmId    = LOWORD(wParam);
         wmEvent = HIWORD(wParam);
@@ -367,7 +358,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         switch (wmId)
         {
         case IDM_ABOUT:
-            DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+            DialogBox((HINSTANCE)hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
             break;
         case IDM_EXIT:
             DestroyWindow(hWnd);
@@ -384,7 +375,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 if(s_pPipeline->Init(hClientWindow) == AMF_OK)
                 {
                     s_pPipeline->Play();
-                    UpdateMenuItems(::GetMenu(hWnd));
+                    UpdateMenuItems();
                 }
             }else if(s_pPipeline->GetState() == PipelineStateRunning)
             {
@@ -403,15 +394,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             break;
         case ID_OPTIONS_PRESENTER_DX11:
             s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_DX11);
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems();
             break;
         case ID_OPTIONS_PRESENTER_DX9:
             s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_DX9);
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems();
             break;
         case ID_OPTIONS_PRESENTER_OPENGL:
             s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_OPENGL);
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems();
+            break;
+        case ID_OPTIONS_VIDEOPRESENTER_VULKAN:
+            s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_VULKAN);
+            UpdateMenuItems();
             break;
         case ID_TOOLBAR:
             ToggleToolbar(hWnd);
@@ -474,7 +469,7 @@ void FileOpen(HWND hwnd)
         if(s_pPipeline->Init(hClientWindow) == AMF_OK)
         {
             s_pPipeline->Play();
-            UpdateMenuItems(::GetMenu(hwnd));
+            UpdateMenuItems();
         }
     }
 }
@@ -510,7 +505,7 @@ HWND CreateClientWindow(HWND hWndParent)
     wcex.lpfnWndProc    = DefWindowProc;
     wcex.cbClsExtra        = 0;
     wcex.cbWndExtra        = 0;
-    wcex.hInstance        = hInst;
+    wcex.hInstance        = (HINSTANCE)hInst;
     wcex.hIcon            = 0;
     wcex.hCursor        = LoadCursor(NULL, IDC_ARROW);
     wcex.hbrBackground    = (HBRUSH)(COLOR_WINDOW+1);
@@ -523,7 +518,7 @@ HWND CreateClientWindow(HWND hWndParent)
 
     HWND hClientWnd = CreateWindowEx( 0, ChildClassName, NULL, WS_CHILD | WS_VISIBLE,
         0, 0, 100, 100, 
-        hWndParent, (HMENU) (int) (1) , hInst, NULL);
+        hWndParent, (HMENU) (int) (1) , (HINSTANCE)hInst, NULL);
     return hClientWnd;
 }
 void ResizeClient(HWND hWndParent)
@@ -607,7 +602,7 @@ void ToggleToolbar(HWND hwnd)
     else
     { 
         // modeless dialog
-        hToolbar = CreateDialog(hInst, MAKEINTRESOURCE(IDD_TOOLBAR_DLG),  hwnd,  (DLGPROC) ToolbarDlgProc );
+        hToolbar = CreateDialog((HINSTANCE)hInst, MAKEINTRESOURCE(IDD_TOOLBAR_DLG),  hwnd,  (DLGPROC) ToolbarDlgProc );
         uiTimerToolbarID = ::SetTimer(hToolbar, 10001, 200, NULL); // timer for slider update 
         ShowWindow(hToolbar, SW_SHOW); 
     }
@@ -627,14 +622,14 @@ void CloseToolbar()
 //-------------------------------------------------------------------------------------------------
 void                StreamOpen(HWND hWnd)
 {
-    if(DialogBox(hInst, MAKEINTRESOURCE(IDD_OPEN_STREAM), hWnd, OpenStreamProc) == IDOK)
+    if(DialogBox((HINSTANCE)hInst, MAKEINTRESOURCE(IDD_OPEN_STREAM), hWnd, OpenStreamProc) == IDOK)
     {
         s_pPipeline->Stop();
         if(s_pPipeline->Init(hClientWindow) == AMF_OK)
         {
 //            s_pPipeline->SetParam(PLAYBACK360_URL_PARAM, L"");
             s_pPipeline->Play();
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems();
         }
         else
         {
@@ -684,6 +679,149 @@ INT_PTR CALLBACK    OpenStreamProc(HWND hDlg, UINT message, WPARAM wParam, LPARA
     return (INT_PTR)FALSE;
 }
 
+static INT_PTR CALLBACK ProgressDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
+{
+    class OptimizationThread : public amf::AMFThread, public amf::AMFComponentOptimizationCallback
+    {
+        bool m_started;
+        amf_uint m_percent;
+    public:
+        OptimizationThread()
+            :m_started(true), m_percent(0)
+        {
+        }
+        ~OptimizationThread()
+        {
+        }
+        bool started() {return m_started;}
+        amf_uint percent() {return m_percent;}
+
+    protected:
+        virtual AMF_RESULT AMF_STD_CALL OnComponentOptimizationProgress(amf_uint percent)
+        {
+            m_percent = percent;
+            return AMF_OK;
+        }
+
+        virtual void Run()
+        {
+            RequestStop();
+            amf::AMFContextPtr pContext;
+            g_AMFFactory.GetFactory()->CreateContext(&pContext);
+            pContext->InitDX11(NULL);
+            amf::AMFComponentPtr pComponent;
+            g_AMFFactory.GetFactory()->CreateComponent(pContext, AMFVideoConverter, &pComponent);
+            pComponent->Optimize(this);
+
+            m_started = false;
+        }
+    };
+    static OptimizationThread s_optimizationThread;
+
+    switch(Message)
+    {
+    case WM_COMMAND:
+        switch(LOWORD(wParam))
+        {
+        case IDCANCEL:
+            EndDialog(hwnd, IDCANCEL);
+            break;
+        }
+        break;
+    case WM_INITDIALOG:
+        {
+            HWND hProgress = GetDlgItem(hwnd, IDC_PROGRESS_BAR);
+            SendMessage(hProgress, PBM_SETRANGE, 0, MAKELPARAM(0, 100));
+            s_optimizationThread.Start();
+            SetTimer(hwnd, 100, 1, NULL);
+        }
+        return TRUE;
+    case WM_TIMER:
+        if(s_optimizationThread.started())
+        {
+            HWND hProgress = GetDlgItem(hwnd, IDC_PROGRESS_BAR);
+            SendMessage(hProgress, PBM_SETPOS, DWORD(s_optimizationThread.percent()), 0);
+        }
+        else
+        {
+            s_optimizationThread.WaitForStop();
+            KillTimer(hwnd, 100);
+            EndDialog(hwnd, IDOK);
+        }
+
+    default:
+        return FALSE;
+    }
+    return TRUE;
+}
+#else
+
+bool                InitInstance(int)
+{
+    Display* dpy = (Display*)hInst;
+    int screen_num = DefaultScreen(dpy);
+
+    Window parentWnd = DefaultRootWindow(dpy);
+    XWindowAttributes getWinAttr;
+    XGetWindowAttributes(dpy, parentWnd, &getWinAttr);
+
+    hMainWindow = XCreateSimpleWindow(dpy, 
+        parentWnd, 
+//        10, 10, 800, 600,
+        0, 0, getWinAttr.width, getWinAttr.height, 
+        1, BlackPixel(dpy, screen_num), WhitePixel(dpy, screen_num));
+    XSelectInput(dpy, hMainWindow, ExposureMask | KeyPressMask | StructureNotifyMask);
+    XMapWindow(dpy, hMainWindow);
+    XStoreName(dpy, hMainWindow, "PlaybackHW");
+ 
+    WM_DELETE_WINDOW = XInternAtom(dpy, "WM_DELETE_WINDOW", False); 
+    XSetWMProtocols(dpy, hMainWindow, &WM_DELETE_WINDOW, 1); 
+    hClientWindow = hMainWindow; // for now
+
+    return true;
+}
+
+int                RunMessageLoop()
+{
+    Display* dpy = (Display*)hInst;
+    XEvent e;
+    bool bRun = true;
+    while (bRun) 
+    {
+        XNextEvent(dpy, &e);
+        switch(e.type)
+        {
+        case Expose:
+            break;
+        case KeyPress:
+            break;
+        case ConfigureNotify:
+            {
+                XConfigureEvent xce = e.xconfigure;
+                s_pPipeline->CheckForResize();
+            }
+            break;
+        case ClientMessage:
+            if((static_cast<unsigned int>(e.xclient.data.l[0]) == WM_DELETE_WINDOW))
+            {
+                bRun = false;
+            }
+            break;
+        }
+    }    
+    return 0;    
+}
+
+void CloseInstance()
+{
+    Display* dpy = (Display*)hInst;
+    XDestroyWindow(dpy, hMainWindow);
+    XCloseDisplay(dpy);
+}
+void UpdateMenuItems()
+{
+}
+#endif
 
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------

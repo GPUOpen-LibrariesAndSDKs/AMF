@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -181,10 +181,13 @@ void TranscodePipeline::Terminate()
         m_pContext->Terminate();
         m_pContext = NULL;
     }
+#if defined(_WIN32)
 #if !defined(METRO_APP)
     m_deviceDX9.Terminate();
 #endif//#if !defined(METRO_APP)
     m_deviceDX11.Terminate();
+#endif    
+    m_deviceVulkan.Terminate();
 
 }
 
@@ -208,7 +211,7 @@ double TranscodePipeline::GetProgressPosition()
     return (double)pos;}
 
 #if !defined(METRO_APP)
-AMF_RESULT TranscodePipeline::Init(ParametersStorage* pParams, HWND previewTarget, int threadID)
+AMF_RESULT TranscodePipeline::Init(ParametersStorage* pParams, amf_handle previewTarget, amf_handle display, int threadID)
 #else
 AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inputStream, IRandomAccessStream^ outputStream, 
                                    ISwapChainBackgroundPanelNative* previewTarget, AMFSize swapChainPanelSize, ParametersStorage* pParams)
@@ -228,7 +231,11 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     std::wstring outputPath = L"";
     res= pParams->GetParamWString(PARAM_NAME_OUTPUT, outputPath);
     CHECK_AMF_ERROR_RETURN(res, L"Output Path");
+#if defined(_WIN32)    
     std::wstring engineStr = L"DX9";
+#else
+    std::wstring engineStr = L"VULKAN";
+#endif    
     pParams->GetParamWString(PARAM_NAME_ENGINE, engineStr);
     engineStr = toUpper(engineStr);
 #else
@@ -245,6 +252,10 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     else if(engineStr == L"DX11")
     {
         engineMemoryType = amf::AMF_MEMORY_DX11;
+    }
+    else if(engineStr == L"VULKAN")
+    {
+        engineMemoryType = amf::AMF_MEMORY_VULKAN;
     }
     else
     {
@@ -273,6 +284,7 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
 
     switch(engineMemoryType)
     {
+#if defined(_WIN32)
 #if !defined(METRO_APP)
     case amf::AMF_MEMORY_DX9:
 
@@ -289,6 +301,12 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
 
         res = m_pContext->InitDX11(m_deviceDX11.GetDevice());
         CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX11() failed");
+        break;
+#endif        
+    case amf::AMF_MEMORY_VULKAN:
+//        res = m_deviceVulkan.Init(adapterID, m_pContext);
+        res = amf::AMFContext1Ptr(m_pContext)->InitVulkan(NULL);
+        CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitVulkan() failed");
         break;
     }
 
@@ -330,7 +348,7 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     else
     {
         amf::AMFComponentPtr  pDemuxer;
-        res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_DEMUXER, &pDemuxer);
+        res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_DEMUXER, &pDemuxer);
         CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << FFMPEG_DEMUXER << L") failed");
         m_pDemuxer = amf::AMFComponentExPtr(pDemuxer);
 
@@ -371,7 +389,7 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     // init streams
     if(iVideoStreamIndex >= 0)
     {
-        InitVideo(pParser, pVideoOutput, engineMemoryType, previewTarget, pParams);
+        InitVideo(pParser, pVideoOutput, engineMemoryType,  previewTarget, display, pParams);
     }
     if(iAudioStreamIndex >= 0 && outStreamType == BitStreamUnknown) // do not process audio if we write elmentary stream
     {
@@ -408,7 +426,7 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     else
     {
         amf::AMFComponentPtr  pMuxer;
-        res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_MUXER, &pMuxer);
+        res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_MUXER, &pMuxer);
         CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << FFMPEG_DEMUXER << L") failed");
         m_pMuxer = amf::AMFComponentExPtr(pMuxer);
 
@@ -541,6 +559,7 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     // video
     if(iVideoStreamIndex >= 0)
     {
+        SetStatSlot( pPipelineElementDemuxer, iVideoStreamIndex);
         Connect(PipelineElementPtr(new AMFComponentElement(m_pDecoder)), 0, pPipelineElementDemuxer, iVideoStreamIndex, 4, CT_Direct);
         if(m_pSplitter != 0)
         {
@@ -560,6 +579,7 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     {
         PipelineElementPtr pPipelineElementMuxer = PipelineElementPtr(new AMFComponentExElement(m_pMuxer));
         Connect(pPipelineElementMuxer, outVideoStreamIndex, pPipelineElementEncoder, 0, 10, CT_ThreadQueue);
+        SetStatSlot( pPipelineElementMuxer, 0);
 
         // audio
         if(iAudioStreamIndex >= 0)
@@ -631,7 +651,7 @@ AMF_RESULT  TranscodePipeline::InitAudio(amf::AMFOutput* pOutput)
     pOutput->GetProperty(AMF_STREAM_AUDIO_BLOCK_ALIGN, &streamBlockAlign);
     pOutput->GetProperty(AMF_STREAM_AUDIO_FRAME_SIZE, &streamFrameSize);
 
-    res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_AUDIO_DECODER, &m_pAudioDecoder);
+    res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_AUDIO_DECODER, &m_pAudioDecoder);
     CHECK_AMF_ERROR_RETURN(res, L"LoadExternalComponent(" << FFMPEG_AUDIO_DECODER << L") failed");
 
     m_pAudioDecoder->SetProperty(AUDIO_DECODER_IN_AUDIO_CODEC_ID, codecID);
@@ -647,7 +667,7 @@ AMF_RESULT  TranscodePipeline::InitAudio(amf::AMFOutput* pOutput)
     res = m_pAudioDecoder->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
    CHECK_AMF_ERROR_RETURN(res, L"m_pAudioDecoder->Init() failed");
 
-    res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_AUDIO_CONVERTER, &m_pAudioConverter);
+    res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_AUDIO_CONVERTER, &m_pAudioConverter);
     CHECK_AMF_ERROR_RETURN(res, L"LoadExternalComponent(" << FFMPEG_AUDIO_CONVERTER << L") failed");
 
     m_pAudioDecoder->GetProperty(AUDIO_DECODER_OUT_AUDIO_BIT_RATE, &streamBitRate);
@@ -667,7 +687,7 @@ AMF_RESULT  TranscodePipeline::InitAudio(amf::AMFOutput* pOutput)
 
 
 
-    res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_AUDIO_ENCODER, &m_pAudioEncoder);
+    res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_AUDIO_ENCODER, &m_pAudioEncoder);
     CHECK_AMF_ERROR_RETURN(res, L"LoadExternalComponent(" << FFMPEG_AUDIO_ENCODER << L") failed");
 
     m_pAudioEncoder->SetProperty(AUDIO_ENCODER_AUDIO_CODEC_ID, codecID); // currently the same codec as input
@@ -734,7 +754,7 @@ AMF_RESULT  TranscodePipeline::InitVideoProcessor(amf::AMF_MEMORY_TYPE presenter
 }
 
 
-AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, amf::AMFOutput* pOutput, amf::AMF_MEMORY_TYPE presenterEngine, HWND hwnd, ParametersStorage* pParams)
+AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, amf::AMFOutput* pOutput, amf::AMF_MEMORY_TYPE presenterEngine, amf_handle hwnd, amf_handle display, ParametersStorage* pParams)
 {
     bool decodeAsAnnexBStream = false; // switches between Annex B and AVCC types of decode input.
 
@@ -815,7 +835,7 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, amf::AMFOut
     { 
         // Init Presenter
         CHECK_AMF_ERROR_RETURN(
-            BackBufferPresenter::Create(m_pPresenter, presenterEngine, hwnd, m_pContext),
+            BackBufferPresenter::Create(m_pPresenter, presenterEngine, hwnd, m_pContext, display),
             "Failed to create a video presenter"
         );
 

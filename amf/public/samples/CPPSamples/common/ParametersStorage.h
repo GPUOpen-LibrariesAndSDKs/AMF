@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -52,7 +52,7 @@ enum ParamType
     ParamVideoProcessor
 };
 
-wchar_t *StreamCodecIDtoDecoderID(AMF_STREAM_CODEC_ID_ENUM eCodec);
+const wchar_t *StreamCodecIDtoDecoderID(AMF_STREAM_CODEC_ID_ENUM eCodec);
 
 AMF_RESULT ParamConverterInt64(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterDouble(const std::wstring& value, amf::AMFVariant& valueOut);

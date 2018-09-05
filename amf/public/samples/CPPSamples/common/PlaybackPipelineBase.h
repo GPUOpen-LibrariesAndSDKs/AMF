@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -64,6 +64,7 @@ public:
     static const wchar_t* PARAM_NAME_PRESENTER;
     static const wchar_t* PARAM_NAME_FRAMERATE;
     static const wchar_t* PARAM_NAME_LOOP;
+    static const wchar_t* PARAM_NAME_DOTIMING;
 
     virtual AMF_RESULT Play();
     virtual AMF_RESULT Pause();

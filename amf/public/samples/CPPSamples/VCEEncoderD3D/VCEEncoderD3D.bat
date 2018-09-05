@@ -10,7 +10,7 @@ rem
 rem MIT license
 rem
 rem
-rem Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+rem Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 rem
 rem Permission is hereby granted, free of charge, to any person obtaining a copy
 rem of this software and associated documentation files (the "Software"), to deal
@@ -33,4 +33,4 @@ rem
 
 @echo off
 echo running VCEEncoderD3D...
-VCEEncoderD3D.exe -output VideoSample_1280x720.h264 -width 1280 -height 720 -usage transcoding -RateControlMethod cbr -targetBitrate 500000 -FRAMES 400 -render dx9
+VCEEncoderD3D.exe -output VideoSample_1280x720.h264 -width 1280 -height 720 -usage transcoding -RateControlMethod cbr -targetBitrate 500000 -FRAMES 400 -render dx9Ex

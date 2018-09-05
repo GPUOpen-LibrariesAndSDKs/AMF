@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,7 @@
 #include <iostream>
 #include <iomanip>
 
+#ifdef _WIN32
 void ChangeTextColor(AMFLogLevel level)
 {
 #if !defined(METRO_APP)
@@ -50,11 +51,50 @@ void ChangeTextColor(AMFLogLevel level)
     case AMFLogLevelError:
 //        SetConsoleTextAttribute(hCmd, FOREGROUND_RED);
         SetConsoleTextAttribute(hCmd, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
-        
         break;
     }
 #endif
 }
+#elif defined(__linux)
+void ChangeTextColor(AMFLogLevel level)
+{
+#define     COL_RESET L"\033[0m"
+/*
+\033[22;30m - black
+\033[22;31m - red
+\033[22;32m - green
+\033[22;33m - brown
+\033[22;34m - blue
+\033[22;35m - magenta
+\033[22;36m - cyan
+\033[22;37m - gray
+\033[01;30m - dark gray
+\033[01;31m - light red
+\033[01;32m - light green
+\033[01;33m - yellow
+\033[01;34m - light blue
+\033[01;35m - light magenta
+\033[01;36m - light cyan
+\033[01;37m - white
+*/
+	switch (level)
+    {
+    case AMFLogLevelInfo:
+        wprintf(COL_RESET); // default
+        break;
+    case AMFLogLevelSuccess:
+        wprintf(L"\033[22;32m"); // green
+        break;
+    case AMFLogLevelError:
+        wprintf(L"\033[01;36m"); // light cyan
+        break;
+    }
+}
+#else
+void ChangeTextColor(AMFLogLevel level)
+{
+}
+#endif
 
 amf::AMFCriticalSection      s_std_out_cs;
 

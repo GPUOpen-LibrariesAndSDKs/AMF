@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,17 +31,19 @@
 //
 #include "PlaybackPipeline.h"
 #include "AudioPresenterWin.h"
+#include "AudioPresenterLinux.h"
 #include "BackBufferPresenter.h"
 
 PlaybackPipeline::PlaybackPipeline()
-    : m_hwnd(NULL)
+    : m_hwnd(NULL), m_hDisplay(NULL)
 {
 }
 
 AMF_RESULT
-PlaybackPipeline::Init(HWND hwnd)
+PlaybackPipeline::Init(amf_handle hwnd, amf_handle display)
 {
     m_hwnd = hwnd;
+    m_hDisplay = display;
     return PlaybackPipelineBase::Init();
 }
 
@@ -77,6 +79,13 @@ PlaybackPipeline::InitContext(amf::AMF_MEMORY_TYPE type)
             m_bVideoPresenterDirectConnect = false;
             return AMF_OK;
         }
+    case amf::AMF_MEMORY_VULKAN:
+        {
+            const AMF_RESULT res = amf::AMFContext1Ptr(m_pContext)->InitVulkan(NULL);
+            CHECK_AMF_ERROR_RETURN(res, "Init Vulkan");
+            m_bVideoPresenterDirectConnect = true;
+            return AMF_OK;
+        }
 
     default:
         return AMF_NOT_SUPPORTED;
@@ -87,7 +96,7 @@ AMF_RESULT
 PlaybackPipeline::CreateVideoPresenter(amf::AMF_MEMORY_TYPE type, amf_int64 /*bitRate*/, double /*fps*/)
 {
     BackBufferPresenterPtr pBackBufferPresenter;
-    AMF_RESULT res = BackBufferPresenter::Create(pBackBufferPresenter, type, m_hwnd, m_pContext);
+    AMF_RESULT res = BackBufferPresenter::Create(pBackBufferPresenter, type, m_hwnd, m_pContext, m_hDisplay);
     m_pVideoPresenter = pBackBufferPresenter;
     return res;
 }
@@ -97,6 +106,9 @@ PlaybackPipeline::CreateAudioPresenter()
 {
 #if defined(_WIN32)
     m_pAudioPresenter = std::make_shared<AudioPresenterWin>();
+    return AMF_OK;
+#elif defined(__linux)
+    m_pAudioPresenter = std::make_shared<AudioPresenterLinux>();
     return AMF_OK;
 #else
     return AMF_NOT_IMPLEMENTED;

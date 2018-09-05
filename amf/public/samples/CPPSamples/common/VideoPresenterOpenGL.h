@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,7 @@
 class VideoPresenterOpenGL : public BackBufferPresenter
 {
 public:
-    VideoPresenterOpenGL(HWND hwnd, amf::AMFContext* pContext);
+    VideoPresenterOpenGL(amf_handle hwnd, amf::AMFContext* pContext);
     virtual ~VideoPresenterOpenGL();
 
     virtual AMF_RESULT Present(amf::AMFSurface* pSurface);

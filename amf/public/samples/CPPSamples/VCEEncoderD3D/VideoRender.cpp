@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -32,11 +32,14 @@
 //
 
 #include "VideoRender.h"
+#if defined(_WIN32)
 #include "VideoRenderOpenGL.h"
 #include "VideoRenderOpenCL.h"
 #include "VideoRenderDX9.h"
 #include "VideoRenderDX11.h"
+#endif
 #include "VideoRenderHost.h"
+#include "VideoRenderVulkan.h"
 
 VideoRender::VideoRender(amf_int width, amf_int height, bool bInterlaced, amf_int frames, amf::AMFContext* pContext)
     :m_pContext(pContext),
@@ -58,6 +61,7 @@ VideoRenderPtr VideoRender::Create(amf_int width, amf_int height, bool bInterlac
     VideoRenderPtr engine;
     switch(type)
     {
+#if defined(_WIN32)
     case amf::AMF_MEMORY_DX9:
         engine = VideoRenderPtr(new VideoRenderDX9(width, height, bInterlaced, frames, pContext));
         break;
@@ -70,8 +74,12 @@ VideoRenderPtr VideoRender::Create(amf_int width, amf_int height, bool bInterlac
     case amf::AMF_MEMORY_OPENCL:
         engine = VideoRenderPtr(new VideoRenderOpenCL(width, height, bInterlaced, frames, pContext, encodertype));
         break;
+#endif
     case amf::AMF_MEMORY_HOST:
         engine = VideoRenderPtr(new VideoRenderHost(width, height, bInterlaced, frames, pContext));
+        break;
+    case amf::AMF_MEMORY_VULKAN:
+        engine = VideoRenderPtr(new VideoRenderVulkan(width, height, bInterlaced, frames, pContext));
         break;
     default:
         break;

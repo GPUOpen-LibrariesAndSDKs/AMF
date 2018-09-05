@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -58,11 +58,13 @@ public:
 #if defined(METRO_APP)
     VideoPresenterDX11(ISwapChainBackgroundPanelNative* pSwapChainPanel, AMFSize swapChainPanelSize, amf::AMFContext* pContext);
 #else
-    VideoPresenterDX11(HWND hwnd, amf::AMFContext* pContext);
+    VideoPresenterDX11(amf_handle hwnd, amf::AMFContext* pContext);
 #endif
     virtual ~VideoPresenterDX11();
 
     virtual AMF_RESULT Present(amf::AMFSurface* pSurface);
+
+    virtual bool                SupportAllocator() const { return true; }
 
     virtual amf::AMF_MEMORY_TYPE GetMemoryType() const { return amf::AMF_MEMORY_DX11; }
 //    virtual amf::AMF_SURFACE_FORMAT GetInputFormat() { return amf::AMF_SURFACE_BGRA; }
@@ -92,7 +94,7 @@ private:
     AMF_RESULT PrepareStates();
     AMF_RESULT CheckForResize(bool bForce, bool *bResized);
     AMF_RESULT ResizeSwapChain();
-    AMF_RESULT UpdateVertices(AMFRect srcRect, AMFSize srcSize, AMFRect dstRect);
+    AMF_RESULT UpdateVertices(AMFRect *srcRect, AMFSize *srcSize, AMFRect *dstRect, AMFSize *dstSize);
     AMF_RESULT DrawFrame(ID3D11Texture2D* pSrcSurface, bool bLeft);
     AMF_RESULT CopySurface(amf::AMF_FRAME_TYPE eFrameType, ID3D11Texture2D* pSrcSurface, AMFRect* pSrcRect);
 
@@ -138,7 +140,6 @@ private:
     volatile UINT               m_uiAvailableBackBuffer;
     UINT                        m_uiBackBufferCount;
     std::vector<amf::AMFSurface*>    m_TrackSurfaces; // raw pointer  doent want keep references to ensure object is destroying
-    AMFRect                     m_sourceVertexRect;
 
     bool                            m_bResizeSwapChain;
 

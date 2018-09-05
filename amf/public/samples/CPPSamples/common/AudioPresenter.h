@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -47,6 +47,16 @@ using namespace Windows::UI::Xaml;
 using namespace Windows::UI::Xaml::Controls;
 #endif
 
+enum AMF_AUDIO_PLAYBACK_STATUS
+{
+    AMFAPS_UNKNOWN_STATUS = -1,
+    AMFAPS_PLAYING_STATUS = 2,
+    AMFAPS_PAUSED_STATUS = 3,
+    AMFAPS_STOPPED_STATUS = 6,
+    AMFAPS_STOPPING_STATUS = 7,
+    AMFAPS_EOF_STATUS = 8,
+};
+
 class AudioPresenter;
 typedef std::shared_ptr<AudioPresenter> AudioPresenterPtr;
 
@@ -77,6 +87,8 @@ public:
     virtual void SetLowLatency(bool bLowLatency){m_bLowLatency = bLowLatency;}
     virtual void SetAVSyncObject(AVSyncObject *pAVSync) {m_pAVSync = pAVSync;}
 
+    virtual void                DoActualWait(bool bDoWait) {m_bDoWait = bDoWait;}
+
 protected:
     AudioPresenter();
 
@@ -84,4 +96,5 @@ protected:
     bool    m_bLowLatency;
     amf_pts                             m_startTime;
     AVSyncObject *m_pAVSync;
+    bool m_bDoWait;
 };

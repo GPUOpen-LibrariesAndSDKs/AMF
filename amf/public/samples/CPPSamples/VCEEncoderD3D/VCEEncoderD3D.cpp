@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,9 +31,11 @@
 // THE SOFTWARE.
 //
 
-#include <comdef.h>
-#include "INITGUID.H"
-#include "DXGIDebug.h"
+#if defined(_WIN32)
+    #include <comdef.h>
+    #include "INITGUID.H"
+    #include "DXGIDebug.h"
+#endif
 #include "public/common/AMFFactory.h"
 
 #include "../common/CmdLogger.h"
@@ -44,7 +46,7 @@
 
 static const wchar_t* PARAM_NAME_THREADCOUNT = L"THREADCOUNT";
 
-
+/*
 static AMF_RESULT ParamConverterCodec(const std::wstring& value, amf::AMFVariant& valueOut)
 {
     std::wstring paramValue;
@@ -66,6 +68,7 @@ static AMF_RESULT ParamConverterCodec(const std::wstring& value, amf::AMFVariant
     valueOut = paramValue.c_str();
     return AMF_OK;
 }
+*/
 static AMF_RESULT RegisterCodecParams(ParametersStorage* pParams)
 {
     pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_CODEC, ParamCommon, L"Codec name (AVC or H264, HEVC or H265)", ParamConverterCodec);
@@ -76,7 +79,7 @@ static AMF_RESULT RegisterParams(ParametersStorage* pParams)
 {
     
     pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_OUTPUT, ParamCommon, L"Output file name", NULL);
-    pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_RENDER, ParamCommon,  L"Specifies render type (DX9, DX9Ex, DX11, OpenGL, OpenCL, Host, OpenCLDX9, OpenCLDX11, OpenGLDX9, OpenGLDX11, OpenCLOpenGLDX9, OpenCLOpenGLDX11, HostDX9, HostDX11, DX11DX9)", NULL);
+    pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_RENDER, ParamCommon,  L"Specifies render type (DX9, DX9Ex, DX11, OpenGL, OpenCL, Host, OpenCLDX9, OpenCLDX11, OpenGLDX9, OpenGLDX11, OpenCLOpenGLDX9, OpenCLOpenGLDX11, HostDX9, HostDX11, DX11DX9, Vulkan)", NULL);
 
     pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_WIDTH, ParamCommon, L"Frame width (integer, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_HEIGHT, ParamCommon, L"Frame height (integer, default = 0)", ParamConverterInt64);
@@ -97,7 +100,11 @@ static AMF_RESULT RegisterParams(ParametersStorage* pParams)
     return AMF_OK;
 }
 
+#if defined(_WIN32)
 int _tmain(int argc, _TCHAR* argv[])
+#else
+int main(int argc, char* argv[])
+#endif
 {
     AMF_RESULT              res = AMF_OK; // error checking can be added later
     res = g_AMFFactory.Init();
@@ -109,13 +116,28 @@ int _tmain(int argc, _TCHAR* argv[])
 
     AMFCustomTraceWriter writer(AMF_TRACE_WARNING);
     g_AMFFactory.GetDebug()->AssertsEnable(false);
+
+#ifdef _DEBUG
+    g_AMFFactory.GetTrace()->TraceEnableAsync(false);
+    g_AMFFactory.GetTrace()->SetGlobalLevel(AMF_TRACE_INFO);
+    g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_DEBUG_OUTPUT, AMF_TRACE_INFO);
+    g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_CONSOLE, AMF_TRACE_INFO);
+    g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_FILE, AMF_TRACE_INFO);
+    g_AMFFactory.GetTrace()->EnableWriter(AMF_TRACE_WRITER_FILE, true);
+
+#endif
+
     amf_increase_timer_precision();
 
     ParametersStorage params;
     RegisterCodecParams(&params);
 
     // parse for codec name
+#if defined(_WIN32)
     if (!parseCmdLineParameters(&params))
+#else
+    if (!parseCmdLineParameters(&params, argc, argv))
+#endif        
     {
         LOG_INFO(L"+++ AVC codec +++");
         ParametersStorage paramsAVC;
@@ -149,7 +171,11 @@ int _tmain(int argc, _TCHAR* argv[])
     RegisterParams(&params);
 
     // parse again with codec - dependent set of parameters
+#if defined(_WIN32)
     if (!parseCmdLineParameters(&params))
+#else
+    if (!parseCmdLineParameters(&params, argc, argv))
+#endif        
     {
         return -1;
     }

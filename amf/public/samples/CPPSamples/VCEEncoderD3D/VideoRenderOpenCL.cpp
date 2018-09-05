@@ -10,7 +10,7 @@
 // MIT license 
 // 
 //
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -47,7 +47,7 @@ VideoRenderOpenCL::~VideoRenderOpenCL()
     Terminate();
 }
 
-AMF_RESULT      VideoRenderOpenCL::Init(HWND hWnd, bool bFullScreen)
+AMF_RESULT      VideoRenderOpenCL::Init(amf_handle hWnd, amf_handle hDisplay, bool bFullScreen)
 {
     return AMF_OK;
 }

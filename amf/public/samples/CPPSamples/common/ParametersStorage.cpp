@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -235,6 +235,10 @@ AMF_RESULT ParamConverterVideoPresenter(const std::wstring& value, amf::AMFVaria
     if(uppValue == L"OPENGL"  || uppValue == L"5")
     {
         paramValue = amf::AMF_MEMORY_OPENGL;
+    }else 
+    if(uppValue == L"VULKAN"  || uppValue == L"10")
+    {
+        paramValue = amf::AMF_MEMORY_VULKAN;
     }
     valueOut = amf_int64(paramValue);
     return AMF_OK;
@@ -263,7 +267,11 @@ AMF_RESULT ParamConverterMemoryType(const std::wstring& value, amf::AMFVariant& 
     if(uppValue == L"HOST"  || uppValue == L"1")
     {
         paramValue = amf::AMF_MEMORY_HOST;
-    }
+    }else
+	if (uppValue == L"VULKAN" || uppValue == L"10")
+	{
+		paramValue = amf::AMF_MEMORY_VULKAN;
+	}
     valueOut = amf_int64(paramValue);
     return AMF_OK;
 }
@@ -272,27 +280,31 @@ AMF_RESULT ParamConverterFormat(const std::wstring& value, amf::AMFVariant& valu
 {
     amf::AMF_SURFACE_FORMAT paramValue = amf::AMF_SURFACE_UNKNOWN;
     std::wstring uppValue = toUpper(value);
-    if(uppValue == L"NV12" || uppValue == L"0")
+    if(uppValue == L"NV12" || uppValue == L"1")
     {
         paramValue =  amf::AMF_SURFACE_NV12;
-    } else if(uppValue == L"YV12" || uppValue == L"1") {
+    } else if(uppValue == L"YV12" || uppValue == L"2") {
         paramValue =  amf::AMF_SURFACE_YV12;
-    } else if(uppValue == L"BGRA" || uppValue == L"2") {
+    } else if(uppValue == L"BGRA" || uppValue == L"3") {
         paramValue =  amf::AMF_SURFACE_BGRA;
-    } else if(uppValue == L"ARGB" || uppValue == L"3") {
+    } else if(uppValue == L"ARGB" || uppValue == L"4") {
         paramValue =  amf::AMF_SURFACE_ARGB;
-    } else if(uppValue == L"RGBA" || uppValue == L"4") {
+    } else if(uppValue == L"RGBA" || uppValue == L"5") {
         paramValue =  amf::AMF_SURFACE_RGBA;
-    } else if(uppValue == L"GRAY8" || uppValue == L"5") {
+    } else if(uppValue == L"GRAY8" || uppValue == L"6") {
         paramValue =  amf::AMF_SURFACE_GRAY8;
-	} else if (uppValue == L"YUV420P" || uppValue == L"420P" || uppValue == L"6") {
+	} else if (uppValue == L"YUV420P" || uppValue == L"420P" || uppValue == L"7") {
         paramValue =  amf::AMF_SURFACE_YUV420P;
-    } else if(uppValue == L"U8V8" || uppValue == L"7") {
+    } else if(uppValue == L"U8V8" || uppValue == L"8") {
         paramValue =  amf::AMF_SURFACE_U8V8;
+    } else if(uppValue == L"YUY2" || uppValue == L"9") {
+        paramValue =  amf::AMF_SURFACE_YUY2;
     } else if(uppValue == L"P010" || uppValue == L"10") {
         paramValue =  amf::AMF_SURFACE_P010;
     } else if(uppValue == L"RGBAF16" || uppValue == L"RGBA_F16" || uppValue == L"11") {
         paramValue =  amf::AMF_SURFACE_RGBA_F16;
+    } else if(uppValue == L"UYVY" || uppValue == L"12") {
+        paramValue =  amf::AMF_SURFACE_UYVY;
     } else {
         LOG_ERROR(L"AMF_SURFACE_FORMAT hasn't \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
@@ -431,7 +443,7 @@ AMF_RESULT ParamConverterCodec(const std::wstring& value, amf::AMFVariant& value
     return AMF_OK;
 }
 
-wchar_t *StreamCodecIDtoDecoderID(AMF_STREAM_CODEC_ID_ENUM eCodec)
+const wchar_t *StreamCodecIDtoDecoderID(AMF_STREAM_CODEC_ID_ENUM eCodec)
 {
     switch(eCodec)
     {
