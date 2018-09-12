@@ -489,7 +489,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*for
         ReadRangeSettings();
     }
 
-    return AMF_OK;
+    return res;
 }
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::ReInit(amf_int32 width, amf_int32 height)

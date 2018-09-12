@@ -264,7 +264,7 @@ amf_string AMF_STD_CALL amf::amf_from_unicode_to_multibyte(const amf_wstring& st
 */
 #else
     amf_size Utf8BuffSize = wcstombs(NULL, pwBuff, 0);
-    if(0 == Utf8BuffSize)
+    if(static_cast<std::size_t>(-1) == Utf8BuffSize)
     {
         return result;
     }
