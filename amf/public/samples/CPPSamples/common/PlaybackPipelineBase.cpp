@@ -197,6 +197,8 @@ AMF_RESULT PlaybackPipelineBase::Seek(amf_pts pts)
             }
 
             UnFreeze();
+
+            return AMF_OK;
         }
     }
     return AMF_NOT_SUPPORTED;
