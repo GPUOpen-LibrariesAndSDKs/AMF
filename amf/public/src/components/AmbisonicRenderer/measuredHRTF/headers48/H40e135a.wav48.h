@@ -1,3 +1,23 @@
+//***** The data in this file is reformatted from original work of MIT Media Laboratory *****//
+//***** The original copyright notice is below:                                                 *****//
+
+// This is a makehrtf HRIR definition file.  It is used to define the layout
+// and source data to be processed into an OpenAL Soft compatible HRTF.
+//
+// This definition is used to transform the left ear HRIRs from the full set
+// of KEMAR HRIRs provided by Bill Gardner <billg@media.mit.edu> and Keith
+// Martin <kdm@media.mit.edu> of MIT Media Laboratory.
+//
+// The data full.tar.Z or full.zip is available from:
+//
+//  http://sound.media.mit.edu/resources/KEMAR.html
+//
+// It is copyright 1994 by MIT Media Laboratory, and provided free of charge
+// with no restrictions on use so long as the authors above are cited.
+//
+// This definition is used to generate the internal HRTF table used by OpenAL
+// Soft.
+
 #pragma once
 
 const amf_uint8 HRTF40e135aS48[] = 
