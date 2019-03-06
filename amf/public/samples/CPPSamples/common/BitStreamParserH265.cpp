@@ -1305,6 +1305,11 @@ void HevcParser::SpsData::ParseHrdParameters(AMFH265_hrd_parameters_t *hrd, amf_
         {
             hrd->fixed_pic_rate_within_cvs_flag[i] = Parser::getBit(nalu, offset);
         }
+        else
+        {
+            hrd->fixed_pic_rate_within_cvs_flag[i] = hrd->fixed_pic_rate_general_flag[i];
+        }
+
         if (hrd->fixed_pic_rate_within_cvs_flag[i])
         {
             hrd->elemental_duration_in_tc_minus1[i] = Parser::ExpGolomb::readUe(nalu, offset);
