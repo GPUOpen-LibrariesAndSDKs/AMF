@@ -24,7 +24,7 @@ toolchain=$3
 fldr_build=$PWD/build
 fldr_redist=$PWD/redist
 
-fldr_src_ffmpeg=$PWD/ffmpeg-3.3.1
+fldr_src_ffmpeg=$PWD/ffmpeg-4.1.1
 
 if [ "$bitness" = "32" ]
 then
