@@ -10,7 +10,7 @@ if [[ ! -e "$archive_name" ]]; then
 fi
 }
 
-download_extract "ffmpeg-3.3.1.tar.bz2" "http://ffmpeg.org/releases/ffmpeg-3.3.1.tar.bz2" "j"
+download_extract "ffmpeg-4.1.1.tar.bz2" "http://ffmpeg.org/releases/ffmpeg-4.1.1.tar.bz2" "j"
 
 
 
