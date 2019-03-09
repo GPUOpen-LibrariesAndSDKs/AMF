@@ -132,7 +132,7 @@ static int file_close(URLContext *h)
 
 //-------------------------------------------------------------------------------------------------
 // FFmpeg doesnt support multi-byte file names only so if a file name has Eng + Lang1 + lang2 where one of languages is not default it will fail
-// FFmpeg 3.3.1 disabled custom protocols
+// FFmpeg 4.1.1 disabled custom protocols
 
 #if 0
 int ffurl_register_protocol2(URLProtocol *first_protocol, URLProtocol *protocol, int size)
@@ -151,7 +151,7 @@ int ffurl_register_protocol2(URLProtocol *first_protocol, URLProtocol *protocol,
     *p = protocol;
     protocol->next = NULL;
     */
-    //MM total hack. FFMPEG 3.3.1 removed a way to register external protocols. So we reuse one
+    //MM total hack. FFMPEG 4.1.1 removed a way to register external protocols. So we reuse one
 //    *((URLProtocol*)&ff_unix_protocol) = *protocol;
     /*
     const URLProtocol **protocols = ffurl_get_protocols(NULL, NULL);
