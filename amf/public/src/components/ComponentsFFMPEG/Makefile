@@ -30,7 +30,7 @@ include $(amf_root)/public/make/common_defs.mak
 target_name = amf-component-ffmpeg
 target_type = so
 
-ffmpeg_dir = $(amf_root)/../Thirdparty/ffmpeg/ffmpeg-3.3.1/lnx$(host_bits)/release
+ffmpeg_dir = $(amf_root)/../Thirdparty/ffmpeg/ffmpeg-4.1.1/lnx$(host_bits)/release
 
 pp_defines += \
   AMF_COMPONENT_FFMPEG_EXPORTS
