@@ -74,6 +74,7 @@ namespace amf
         AMF_CHANNEL_FLOAT               = 6,
         AMF_CHANNEL_FLOAT16             = 7,
         AMF_CHANNEL_UNSIGNED_INT16      = 8,
+        AMF_CHANNEL_UNORM_INT_101010    = 9,
 } AMF_CHANNEL_TYPE;
     //----------------------------------------------------------------------------------------------
 #define AMF_STRUCTURED_BUFFER_FORMAT        L"StructuredBufferFormat"                                                             // amf_int64(AMF_CHANNEL_TYPE), default - AMF_CHANNEL_UNSIGNED_INT32; to be set on AMFBuffer objects

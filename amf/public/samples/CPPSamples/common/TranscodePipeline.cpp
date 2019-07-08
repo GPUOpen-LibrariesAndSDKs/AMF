@@ -34,6 +34,7 @@
 #include "public/include/components/VideoConverter.h"
 #include "public/include/components/FFMPEGComponents.h"
 #include "public/include/components/FFMPEGAudioDecoder.h"
+#include "public/include/components/FFMPEGVideoDecoder.h"
 #include "public/include/components/FFMPEGAudioConverter.h"
 #include "public/include/components/FFMPEGAudioEncoder.h"
 #include "public/include/components/FFMPEGFileDemuxer.h"
@@ -714,27 +715,87 @@ AMF_RESULT  TranscodePipeline::InitAudio(amf::AMFOutput* pOutput)
 
    return AMF_OK;
 }
-AMF_RESULT  TranscodePipeline::InitVideoDecoder(const wchar_t *pDecoderID, amf_int32 videoWidth, amf_int32 videoHeight, amf::AMFBuffer* pExtraData)
+AMF_RESULT  TranscodePipeline::InitVideoDecoder(const wchar_t *pDecoderID, amf_int64 codecID, amf_int32 videoWidth, amf_int32 videoHeight, AMFRate frameRate, amf::AMFBuffer* pExtraData)
 {
     AMF_VIDEO_DECODER_MODE_ENUM   decoderMode = AMF_VIDEO_DECODER_MODE_COMPLIANT; //amf:::AMF_VIDEO_DECODER_MODE_REGULAR , AMF_VIDEO_DECODER_MODE_LOW_LATENCY;
+    AMF_RESULT res = AMF_OK;
 
-    AMF_RESULT res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, pDecoderID, &m_pDecoder);
+    res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, pDecoderID, &m_pDecoder);
     CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFVideoDecoderUVD_H264_AVC << L") failed");
 
-    m_pDecoder->SetProperty(AMF_VIDEO_DECODER_REORDER_MODE, amf_int64(decoderMode));
-        
-    m_pDecoder->SetProperty(AMF_VIDEO_DECODER_EXTRADATA, amf::AMFVariant(pExtraData));
+    // check resolution
 
-    m_pDecoder->SetProperty(AMF_TIMESTAMP_MODE, amf_int64(AMF_TS_DECODE)); // our sample H264 parser provides decode order timestamps- change depend on demuxer
-
-    m_eDecoderFormat = amf::AMF_SURFACE_NV12;
-    if(std::wstring(pDecoderID) == AMFVideoDecoderHW_H265_MAIN10)
+    amf::AMFCapsPtr pCaps;
+    m_pDecoder->GetCaps(&pCaps);
+    if (pCaps != nullptr)
     {
-        m_eDecoderFormat = amf::AMF_SURFACE_P010;
+        amf::AMFIOCapsPtr pInputCaps;
+        pCaps->GetInputCaps(&pInputCaps);
+        if (pInputCaps != nullptr)
+        {
+            amf_int32 minWidth = 0;
+            amf_int32 maxWidth = 0;
+            amf_int32 minHeight = 0;
+            amf_int32 maxHeight = 0;
+            pInputCaps->GetWidthRange(&minWidth, &maxWidth);
+            pInputCaps->GetHeightRange(&minHeight, &maxHeight);
+            if (minWidth <= videoWidth && videoWidth <= maxWidth && minHeight <= videoHeight && videoHeight <= maxHeight)
+            {
+                m_pDecoder->SetProperty(AMF_VIDEO_DECODER_REORDER_MODE, amf_int64(decoderMode));
+                m_pDecoder->SetProperty(AMF_VIDEO_DECODER_EXTRADATA, amf::AMFVariant(pExtraData));
+                m_pDecoder->SetProperty(AMF_TIMESTAMP_MODE, amf_int64(AMF_TS_DECODE)); // our sample H264 parser provides decode order timestamps- change depend on demuxer
+                m_eDecoderFormat = amf::AMF_SURFACE_NV12;
+                if (std::wstring(pDecoderID) == AMFVideoDecoderHW_H265_MAIN10)
+                {
+                    m_eDecoderFormat = amf::AMF_SURFACE_P010;
+                }
+                res = m_pDecoder->Init(m_eDecoderFormat, videoWidth, videoHeight);
+                CHECK_AMF_ERROR_RETURN(res, L"m_pDecoder->Init(" << videoWidth << videoHeight << L") failed " << pDecoderID);
+                //m_bCPUDecoder = false;
+            }
+            else
+            {
+                m_pDecoder = nullptr;
+            }
+        }
     }
 
-    m_pDecoder->Init(m_eDecoderFormat, videoWidth, videoHeight);
+    if (m_pDecoder == nullptr)
+    {
+        res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_VIDEO_DECODER, &m_pDecoder);
+        CHECK_AMF_ERROR_RETURN(res, L"LoadExternalComponent(" << FFMPEG_VIDEO_DECODER << L") failed");
 
+        if (codecID == 0)
+        {
+            if (std::wstring(pDecoderID) == AMFVideoDecoderUVD_H264_AVC)
+            {
+                codecID = AMF_STREAM_CODEC_ID_H264_AVC;
+            }
+            else if (std::wstring(pDecoderID) == AMFVideoDecoderHW_H265_MAIN10)
+            {
+                codecID = AMF_STREAM_CODEC_ID_H265_MAIN10;
+            }
+            else if (std::wstring(pDecoderID) == AMFVideoDecoderHW_H265_HEVC)
+            {
+                codecID = AMF_STREAM_CODEC_ID_H265_HEVC;
+            }
+        }
+        m_pDecoder->SetProperty(VIDEO_DECODER_CODEC_ID, codecID);
+        m_pDecoder->SetProperty(VIDEO_DECODER_BITRATE, 0);
+        m_pDecoder->SetProperty(VIDEO_DECODER_FRAMERATE, frameRate);
+
+        //      m_pVideoDecoder->SetProperty(AMF_VIDEO_DECODER_REORDER_MODE, amf_int64(decoderMode));
+        m_pDecoder->SetProperty(VIDEO_DECODER_EXTRA_DATA, amf::AMFVariant(pExtraData));
+
+        m_eDecoderFormat = amf::AMF_SURFACE_NV12;
+        if (std::wstring(pDecoderID) == AMFVideoDecoderHW_H265_MAIN10)
+        {
+            m_eDecoderFormat = amf::AMF_SURFACE_P010;
+        }
+        res = m_pDecoder->Init(m_eDecoderFormat, videoWidth, videoHeight);
+        CHECK_AMF_ERROR_RETURN(res, L"m_pDecoder->Init(" << videoWidth << videoHeight << L") failed " << pDecoderID);
+        //m_bCPUDecoder = true;
+    }
     return AMF_OK;
 }
 
@@ -765,6 +826,7 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, amf::AMFOut
     std::wstring pVideoDecoderID;
     AMFRate frameRate = {};
 
+    amf_int64 codecID = 0;
     if(pParser != NULL)
     {
         if(!decodeAsAnnexBStream) // need to provide SPS/PPS if input stream will be AVCC ( not Annex B)
@@ -796,7 +858,6 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, amf::AMFOut
         videoWidth = frameSize.width;
         videoHeight = frameSize.height;
         
-        amf_int64 codecID;
         res= pOutput->GetProperty(AMF_STREAM_CODEC_ID, &codecID);
         pVideoDecoderID = StreamCodecIDtoDecoderID(AMF_STREAM_CODEC_ID_ENUM(codecID));
 
@@ -806,7 +867,7 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, amf::AMFOut
     }
     //---------------------------------------------------------------------------------------------
     // Init Video Decoder
-    res = InitVideoDecoder(pVideoDecoderID.c_str(), videoWidth, videoHeight, pExtraData);
+    res = InitVideoDecoder(pVideoDecoderID.c_str(), codecID, videoWidth, videoHeight, frameRate, pExtraData);
     CHECK_AMF_ERROR_RETURN(res, L"InitVideoDecoder() failed");
 
     //---------------------------------------------------------------------------------------------

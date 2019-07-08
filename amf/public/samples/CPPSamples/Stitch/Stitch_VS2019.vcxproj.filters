@@ -1,0 +1,222 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\public\common\AMFFactory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\Thread.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\Windows\ThreadWindows.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\DataStreamFactory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\DataStreamFile.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\DataStreamMemory.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\AMFSTL.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\TraceAdapter.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\StitchPipeline.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="Profiling.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="Stitch.cpp" />
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\BackBufferPresenter.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\BitStreamParser.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\BitStreamParserH264.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\BitStreamParserH265.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\CmdLineParser.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\CmdLogger.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\ParametersStorage.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\Pipeline.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\VideoPresenter.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\VideoPresenterDX9.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\VideoPresenterDX11.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\VideoPresenterOpenGL.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\StitchPipelineBase.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\components\VideoCapture\MFSource.cpp">
+      <Filter>public\components\VideoCapture</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\components\VideoCapture\VideoCaptureImpl.cpp">
+      <Filter>public\components\VideoCapture</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\components\ZCamLiveStream\DataStreamZCam.cpp">
+      <Filter>public\components\ZCamLiveStream</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\components\ZCamLiveStream\ZCamLiveStreamImpl.cpp">
+      <Filter>public\components\ZCamLiveStream</Filter>
+    </ClCompile>
+    <ClCompile Include="StitchPreviewPipeline.cpp" />
+    <ClCompile Include="..\..\..\common\VulkanImportTable.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\PropertyStorageExImpl.cpp" />
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\EncoderParamsAVC.cpp" />
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\EncoderParamsHEVC.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\public\common\AMFFactory.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\Thread.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\DataStreamFile.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\DataStreamMemory.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\AMFSTL.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\common\TraceAdapter.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\StitchPipeline.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="Stitch.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\BackBufferPresenter.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\BitStreamParser.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\BitStreamParserH264.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\BitStreamParserH265.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\ByteArray.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\CmdLineParser.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\CmdLogger.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\ParametersStorage.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\Pipeline.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\PipelineElement.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\VideoPresenter.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\VideoPresenterDX9.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\VideoPresenterDX11.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\VideoPresenterOpenGL.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\StitchPipelineBase.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\components\VideoCapture.h">
+      <Filter>public\components\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\components\VideoStitch.h">
+      <Filter>public\components\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\components\ZCamLiveStream.h">
+      <Filter>public\components\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\components\VideoCapture\MFSource.h">
+      <Filter>public\components\VideoCapture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\components\VideoCapture\VideoCaptureImpl.h">
+      <Filter>public\components\VideoCapture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\components\ZCamLiveStream\DataStreamZCam.h">
+      <Filter>public\components\ZCamLiveStream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\components\ZCamLiveStream\ZCamLiveStreamImpl.h">
+      <Filter>public\components\ZCamLiveStream</Filter>
+    </ClInclude>
+    <ClInclude Include="StitchPreviewPipeline.h" />
+    <ClInclude Include="..\..\..\common\VulkanImportTable.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\EncoderParamsAVC.h" />
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\EncoderParamsHEVC.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="small.ico" />
+    <None Include="Stitch.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="public">
+      <UniqueIdentifier>{2299fe67-4163-463c-bc37-35037a539a07}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\common">
+      <UniqueIdentifier>{10f84691-f9a5-4cb9-b7ed-adf7954eb4a7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common">
+      <UniqueIdentifier>{d98e77c8-1e48-4122-b6ef-f6e5113b7a0d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\components">
+      <UniqueIdentifier>{4667c354-e1d3-40c5-b2d0-a3a85ca622fd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\components\include">
+      <UniqueIdentifier>{ac813e2d-c67d-4056-84ba-079d8db4f610}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\components\ZCamLiveStream">
+      <UniqueIdentifier>{b24feacc-f509-4695-abbb-0684e0862e48}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\components\VideoCapture">
+      <UniqueIdentifier>{76139613-4604-4d76-b8ef-49ad0759994b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Stitch.rc" />
+  </ItemGroup>
+</Project>

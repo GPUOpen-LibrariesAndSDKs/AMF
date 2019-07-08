@@ -123,14 +123,15 @@ template<class T> bool FromString(const std::wstring& str, T& value)
 bool parseCmdLineParameters(ParametersStorage* pParams, int argc, char* argv[])
 {
     CmdArgs cmdArgs;
-    if (parseCmdLine( argc, argv, &cmdArgs) && cmdArgs.size())
+    if (parseCmdLine( argc, argv, &cmdArgs))
     {
         for (CmdArgs::iterator it = cmdArgs.begin(); it != cmdArgs.end(); it++)
         {
             const std::wstring& name = it->first;
-            if(name == L"help" || name == L"?")
+            if(name == L"HELP" || name == L"?")
             {
                 LOG_INFO(pParams->GetParamUsage());
+                return false;
             }
             else
             {

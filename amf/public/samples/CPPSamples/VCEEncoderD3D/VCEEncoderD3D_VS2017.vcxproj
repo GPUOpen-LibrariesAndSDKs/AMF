@@ -89,9 +89,9 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <MinimalRebuild>true</MinimalRebuild>
       <SDLCheck>true</SDLCheck>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -104,7 +104,7 @@
       </Command>
     </CustomBuild>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProgramFiles)\Windows Kits\10\bin\$(PlatformShortName)\d3dcompiler_47.dll" $(OutDir)</Command>
+      <Command>xcopy /Y "$(ProgramFiles)\Windows Kits\10\bin\$(TargetPlatformVersion)\$(PlatformShortName)\d3dcompiler_47.dll" $(OutDir)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -120,6 +120,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <SDLCheck>true</SDLCheck>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -130,7 +131,7 @@
       <AdditionalDependencies>opengl32.lib;DXGI.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProgramFiles)\Windows Kits\10\bin\$(PlatformShortName)\d3dcompiler_47.dll" $(OutDir)</Command>
+      <Command>xcopy /Y "$(ProgramFiles)\Windows Kits\10\bin\$(TargetPlatformVersion)\$(PlatformShortName)\d3dcompiler_47.dll" $(OutDir)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -144,6 +145,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <SDLCheck>true</SDLCheck>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)..\..\lib\vs2017x$(PlatformArchitecture)$(Configuration)\;$(VK_SDK_PATH)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -151,14 +153,13 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProgramFiles)\Windows Kits\10\bin\$(PlatformShortName)\d3dcompiler_47.dll" $(OutDir)</Command>
+      <Command>xcopy /Y "$(ProgramFiles)\Windows Kits\10\bin\$(TargetPlatformVersion)\$(PlatformShortName)\d3dcompiler_47.dll" $(OutDir)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)../../;$(OCL_ROOT)\include;$(VK_SDK_PATH)\include;</AdditionalIncludeDirectories>
-      <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
@@ -168,6 +169,7 @@
       <ExceptionHandling>Async</ExceptionHandling>
       <SDLCheck>true</SDLCheck>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)..\..\lib\vs2017x$(PlatformArchitecture)$(Configuration)\;$(VK_SDK_PATH)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -175,7 +177,7 @@
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProgramFiles)\Windows Kits\10\bin\$(PlatformShortName)\d3dcompiler_47.dll" $(OutDir)</Command>
+      <Command>xcopy /Y "$(ProgramFiles)\Windows Kits\10\bin\$(TargetPlatformVersion)\$(PlatformShortName)\d3dcompiler_47.dll" $(OutDir)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

@@ -48,7 +48,7 @@ public:
     virtual AMF_RESULT              Init(amf_handle hWnd, amf_handle hDisplay, bool bFullScreen, amf_int32 width, amf_int32 height, amf_uint32 format);
     virtual AMF_RESULT              Terminate();
     virtual AMF_RESULT              AcquireBackBuffer(amf_uint32 *pIndex);
-    virtual AMF_RESULT              Present(amf_uint32 index);
+    virtual AMF_RESULT              Present(amf_uint32 index, bool WaitForVSync);
 protected:
 	VulkanImportTable * GetVulkan();
 
@@ -78,13 +78,13 @@ protected:
 
     struct BackBuffer
     {
-        amf::AMFVulkanSurface    m_Surface;
-        VkImageView                m_hImageView;
-        VkFramebuffer           m_hFrameBuffer;
-        VkCommandBuffer            m_hCommandBuffer;
+        amf::AMFVulkanSurface       m_Surface;
+        VkImageView                 m_hImageView;
+        VkFramebuffer               m_hFrameBuffer;
+        VkCommandBuffer             m_hCommandBuffer;
     };
-    std::vector<BackBuffer>            m_BackBuffers;
-    std::list<VkSemaphore>            m_Semaphores;
+    std::vector<BackBuffer>         m_BackBuffers;
+    std::list<VkSemaphore>          m_Semaphores;
 
     AMFSize                         m_SwapChainExtent;
     VkCommandBuffer                 m_hTransitionCommandBuffer;

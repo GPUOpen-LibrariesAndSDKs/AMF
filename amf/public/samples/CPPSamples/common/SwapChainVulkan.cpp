@@ -513,7 +513,7 @@ AMF_RESULT SwapChainVulkan::AcquireBackBuffer(amf_uint32 *pIndex)
     return AMF_OK;
 
 }
-AMF_RESULT              SwapChainVulkan::Present(amf_uint32 imageIndex)
+AMF_RESULT              SwapChainVulkan::Present(amf_uint32 imageIndex, bool WaitForVSync)
 {
     VkResult res = VK_INCOMPLETE;
 
@@ -543,8 +543,10 @@ AMF_RESULT              SwapChainVulkan::Present(amf_uint32 imageIndex)
     backBuffer.m_Surface.Sync.hSemaphore = VK_NULL_HANDLE;
 
     //vkDeviceWaitIdle(pVulkanDev->hDevice);
-    GetVulkan()->vkQueueWaitIdle(m_hQueuePresent);
-
+    if (WaitForVSync)
+    {
+        GetVulkan()->vkQueueWaitIdle(m_hQueuePresent);
+    }
     return AMF_OK;
 
 }

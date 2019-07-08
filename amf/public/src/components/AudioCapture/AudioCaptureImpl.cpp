@@ -150,14 +150,39 @@ AMF_RESULT AMF_STD_CALL  AMFAudioCaptureImpl::Init(AMF_SURFACE_FORMAT /*format*/
 	SetProperty(AUDIOCAPTURE_BITRATE, (amf_int32)pWaveFormat->nAvgBytesPerSec * 8);
 	SetProperty(AUDIOCAPTURE_SAMPLES, (amf_int32)m_pAMFDataStreamAudio->GetSampleCount());
 	SetProperty(AUDIOCAPTURE_CHANNELS, pWaveFormat->nChannels);
-	SetProperty(AUDIOCAPTURE_FORMAT, pWaveFormat->wFormatTag);
+
+
+    amf_int64 format = AMFAF_UNKNOWN;
+
+    switch (pWaveFormat->wFormatTag)
+    {
+    case WAVE_FORMAT_PCM:
+        switch (pWaveFormat->wBitsPerSample)
+        {
+        case 8:
+            format = AMFAF_U8;
+            break;
+        case 16:
+            format = AMFAF_S16;
+            break;
+        case 32:
+            format = AMFAF_S32;
+            break;
+        }
+        break;
+    case WAVE_FORMAT_IEEE_FLOAT:
+        format = AMFAF_FLT;
+        break;
+    }
+
+	SetProperty(AUDIOCAPTURE_FORMAT, format);
 	SetProperty(AUDIOCAPTURE_BLOCKALIGN, pWaveFormat->nBlockAlign);
 	SetProperty(AUDIOCAPTURE_FRAMESIZE, (amf_int32)m_pAMFDataStreamAudio->GetFrameSize());
 
 	if (m_deviceActive < 0) //query device list
 	{
-		std::vector<std::string> deviceList = m_pAMFDataStreamAudio->GetDeviceList();
-		std::string nameList("");
+		amf_vector<amf_string> deviceList = m_pAMFDataStreamAudio->GetDeviceList();
+		amf_string nameList("");
 		for (UINT idx = 0; idx < deviceList.size(); idx++)
 		{
 			nameList += (idx == 0) ? deviceList[idx] : "\t" + deviceList[idx];

@@ -93,6 +93,7 @@ ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, HWND*, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    Dialog(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK    AboutDialog(HWND, UINT, WPARAM, LPARAM);
 void                UpdateMenuItems();
 void                PopulateMenus(HMENU hMenu);
 void                ChangeFileLocation(HWND hWnd);
@@ -261,8 +262,12 @@ BOOL InitInstance(HINSTANCE hInstance, HWND* phWnd, int nCmdShow)
 
 	HWND hWnd = NULL;
 
+	const HWND hDesktop = ::GetDesktopWindow();
+	RECT desktopRect;
+	::GetWindowRect(hDesktop, &desktopRect);
+
 	hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, 0, 600, 400, NULL, NULL, hInstance, NULL);
+		CW_USEDEFAULT, 0, desktopRect.right / 2, desktopRect.bottom / 2, NULL, NULL, hInstance, NULL);
 
 	if (!hWnd)
 	{
@@ -476,7 +481,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// Parse the menu selections:
 		if (wmId == IDM_ABOUT)
 		{
-			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, Dialog);
+			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, AboutDialog);
 		}
 		else if (wmId == IDM_EXIT)
 		{
@@ -769,3 +774,23 @@ INT_PTR CALLBACK Dialog(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	return (INT_PTR)FALSE;
 }
 
+//-------------------------------------------------------------------------------------------------
+// Message handler for About dialog box
+INT_PTR CALLBACK AboutDialog(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	UNREFERENCED_PARAMETER(lParam);
+	switch (message)
+	{
+	case WM_INITDIALOG:
+		return (INT_PTR)TRUE;
+
+	case WM_COMMAND:
+		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCLOSE || LOWORD(wParam) == IDCANCEL)
+		{
+			EndDialog(hDlg, LOWORD(wParam));
+			return (INT_PTR)TRUE;
+		}
+		break;
+	}
+	return (INT_PTR)FALSE;
+}

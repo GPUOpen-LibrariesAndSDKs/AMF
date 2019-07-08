@@ -70,6 +70,7 @@ src_files = \
     public/src/components/ComponentsFFMPEG/AudioConverterFFMPEGImpl.cpp \
     public/src/components/ComponentsFFMPEG/AudioDecoderFFMPEGImpl.cpp \
     public/src/components/ComponentsFFMPEG/AudioEncoderFFMPEGImpl.cpp \
+    public/src/components/ComponentsFFMPEG/VideoDecoderFFMPEGImpl.cpp \
     public/src/components/ComponentsFFMPEG/ComponentFactory.cpp \
     public/src/components/ComponentsFFMPEG/FileDemuxerFFMPEGImpl.cpp \
     public/src/components/ComponentsFFMPEG/FileMuxerFFMPEGImpl.cpp \

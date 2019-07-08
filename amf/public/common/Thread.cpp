@@ -509,7 +509,12 @@ namespace amf
 
     bool AMFThreadObj::Start()
     {
-        return 0 == pthread_create(&m_hThread, 0, AMFThreadProc, (void*)this);
+        bool result = true;
+        if (IsRunning() == false)
+        {
+            result = (0 == pthread_create(&m_hThread, 0, AMFThreadProc, (void*)this));
+        }
+        return result;
     }
 
     bool AMFThreadObj::RequestStop()

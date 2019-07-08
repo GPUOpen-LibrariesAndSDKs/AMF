@@ -117,6 +117,7 @@ VideoPresenterDX11::VideoPresenterDX11(amf_handle hwnd, amf::AMFContext* pContex
 //    m_eInputFormat(amf::AMF_SURFACE_BGRA)
     m_eInputFormat(amf::AMF_SURFACE_RGBA)
 //     m_eInputFormat(amf::AMF_SURFACE_RGBA_F16)
+//    m_eInputFormat(amf::AMF_SURFACE_R10G10B10A2)
 
 {
 }
@@ -997,7 +998,7 @@ void AMF_STD_CALL VideoPresenterDX11::OnSurfaceDataRelease(amf::AMFSurface* pSur
 
 AMF_RESULT              VideoPresenterDX11::SetInputFormat(amf::AMF_SURFACE_FORMAT format)
 {
-    if(format != amf::AMF_SURFACE_BGRA && format != amf::AMF_SURFACE_RGBA  && format != amf::AMF_SURFACE_RGBA_F16)
+    if(format != amf::AMF_SURFACE_BGRA && format != amf::AMF_SURFACE_RGBA  && format != amf::AMF_SURFACE_RGBA_F16 && format != amf::AMF_SURFACE_R10G10B10A2)
     {
         return AMF_FAIL;
     }
@@ -1018,6 +1019,9 @@ DXGI_FORMAT VideoPresenterDX11::GetDXGIFormat() const
     case amf::AMF_SURFACE_RGBA_F16:
         format = DXGI_FORMAT_R16G16B16A16_FLOAT;
         break;
+    case amf::AMF_SURFACE_R10G10B10A2:
+        format = DXGI_FORMAT_R10G10B10A2_UNORM;
+        break;
     }
     return format;
 }
@@ -1035,6 +1039,7 @@ AMF_RESULT              VideoPresenterDX11::Flush()
 
 #define USE_COLOR_TWITCH_IN_DISPLAY 0
 
+
 void        VideoPresenterDX11::UpdateProcessor()
 {
     VideoPresenter::UpdateProcessor();
@@ -1050,14 +1055,11 @@ void        VideoPresenterDX11::UpdateProcessor()
             {
                 pSwapChain3->CheckColorSpaceSupport((DXGI_COLOR_SPACE_TYPE)i, &supported[i]);
             }
-            if(GetInputFormat() == amf::AMF_SURFACE_RGBA_F16 && 
+            if((GetInputFormat() == amf::AMF_SURFACE_RGBA_F16 || GetInputFormat() == amf::AMF_SURFACE_R10G10B10A2) &&
                 (supported[DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709] & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT))
             {
 
                 DXGI_COLOR_SPACE_TYPE colorSpace = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
-                {
-
-
                     pSwapChain3->SetColorSpace1(colorSpace);
                     m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_USE_DECODER_HDR_METADATA, false);
                 }

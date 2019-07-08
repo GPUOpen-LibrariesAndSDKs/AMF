@@ -47,7 +47,6 @@ extern "C"
     #include "libavformat/avformat.h"
     #include "libavcodec/avcodec.h"
     #include "libavresample/avresample.h"
-    #include "libavcodec/audioconvert.h"
     #include "libavutil/opt.h"
 
 #if defined(_MSC_VER)
@@ -101,7 +100,6 @@ namespace amf
 
         // member variables from AMFAudioConverterFFMPEG
         AVAudioResampleContext*  m_pResampler;
-        AVAudioConvert*          m_pReformat;
 
         AMFAudioBufferPtr        m_pInputData;
 

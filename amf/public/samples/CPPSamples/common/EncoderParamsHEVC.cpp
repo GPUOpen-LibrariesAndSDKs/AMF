@@ -241,6 +241,7 @@ AMF_RESULT RegisterEncoderParamsHEVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_MAX_LTR_FRAMES, ParamEncoderStatic, L"Max Of LTR frames (integer, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_MAX_NUM_REFRAMES, ParamEncoderStatic,  L" Maximum number of reference frames default = 1", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_ENABLE_VBAQ, ParamEncoderStatic, L"Enable VBAQ(true, false default =  false)", ParamConverterBoolean);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_HIGH_MOTION_QUALITY_BOOST_ENABLE, ParamEncoderStatic, L"High motion quality boost mode enabled(integer, default = 0)", ParamConverterBoolean);
 
     // Picture control properties
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_DE_BLOCKING_FILTER_DISABLE, ParamEncoderStatic, L"De-blocking Filter(true, false default =  false)", ParamConverterBoolean);

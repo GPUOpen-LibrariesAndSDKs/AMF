@@ -191,8 +191,7 @@ int main(int argc, char* argv[])
         res = decoder->SubmitInput(data);
         if(res == AMF_NEED_MORE_INPUT)
         {
-			break;
-            // do nothing
+			// do nothing
         }
         else if(res == AMF_INPUT_FULL || res == AMF_DECODER_NO_FREE_SURFACES)
         { // queue is full; sleep, try to get ready surfaces  in polling thread and repeat submission

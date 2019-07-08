@@ -815,7 +815,7 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::ApplyMode(
         float b = XMVectorGetY(plane);
         float c = XMVectorGetZ(plane);
         float d = XMVectorGetW(plane);
-        float sqrtabsd = sqrt(a * a + b * b + c * c + d * d);
+        float sqrtabsd = sqrtf(a * a + b * b + c * c + d * d);
 
         float heightPixelSize = 2.0f / (float)heightOutput;
 

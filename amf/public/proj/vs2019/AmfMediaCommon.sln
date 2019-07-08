@@ -1,0 +1,41 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.16
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AmfMediaCommon", "AmfMediaCommon\AmfMediaCommon.vcxproj", "{BE74F945-D4A5-4840-8C55-919030E8DC47}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ComponentsFFMPEG", "ComponentsFFMPEG\ComponentsFFMPEG.vcxproj", "{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BE74F945-D4A5-4840-8C55-919030E8DC47}.Debug|Win32.ActiveCfg = Debug|Win32
+		{BE74F945-D4A5-4840-8C55-919030E8DC47}.Debug|Win32.Build.0 = Debug|Win32
+		{BE74F945-D4A5-4840-8C55-919030E8DC47}.Debug|x64.ActiveCfg = Debug|x64
+		{BE74F945-D4A5-4840-8C55-919030E8DC47}.Debug|x64.Build.0 = Debug|x64
+		{BE74F945-D4A5-4840-8C55-919030E8DC47}.Release|Win32.ActiveCfg = Release|Win32
+		{BE74F945-D4A5-4840-8C55-919030E8DC47}.Release|Win32.Build.0 = Release|Win32
+		{BE74F945-D4A5-4840-8C55-919030E8DC47}.Release|x64.ActiveCfg = Release|x64
+		{BE74F945-D4A5-4840-8C55-919030E8DC47}.Release|x64.Build.0 = Release|x64
+		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}.Debug|Win32.ActiveCfg = Debug|Win32
+		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}.Debug|Win32.Build.0 = Debug|Win32
+		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}.Debug|x64.ActiveCfg = Debug|x64
+		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}.Debug|x64.Build.0 = Debug|x64
+
+		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}.Release|Win32.ActiveCfg = Release|Win32
+		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}.Release|Win32.Build.0 = Release|Win32
+		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}.Release|Win32.Deploy.0 = Release|Win32
+		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}.Release|x64.ActiveCfg = Release|x64
+		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}.Release|x64.Build.0 = Release|x64
+
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

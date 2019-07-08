@@ -46,7 +46,8 @@ m_hQueueCompute(NULL),
 m_uQueueGraphicsFamilyIndex(UINT32_MAX),
 m_uQueueComputeFamilyIndex(UINT32_MAX)
 {
-    memset(&m_VulkanDev, 0, sizeof(m_VulkanDev));
+	m_VulkanDev = {};
+	m_VulkanDev.cbSizeof = sizeof(amf::AMFVulkanDevice);
 }
 DeviceVulkan::~DeviceVulkan()
 {
@@ -110,8 +111,8 @@ AMF_RESULT DeviceVulkan::Terminate()
     {
         GetVulkan()->vkDestroyInstance(m_VulkanDev.hInstance, nullptr);
     }
-    memset(&m_VulkanDev, 0, sizeof(m_VulkanDev));
-
+	m_VulkanDev = {};
+	m_VulkanDev.cbSizeof = sizeof(amf::AMFVulkanDevice);
     return AMF_OK;
 }
 

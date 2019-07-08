@@ -305,8 +305,11 @@ AMF_RESULT ParamConverterFormat(const std::wstring& value, amf::AMFVariant& valu
         paramValue =  amf::AMF_SURFACE_RGBA_F16;
     } else if(uppValue == L"UYVY" || uppValue == L"12") {
         paramValue =  amf::AMF_SURFACE_UYVY;
+    }else if (uppValue == L"R10G10B10A2" || uppValue == L"13") {
+        paramValue = amf::AMF_SURFACE_R10G10B10A2;
     } else {
-        LOG_ERROR(L"AMF_SURFACE_FORMAT hasn't \"" << value << L"\" value.");
+        
+            LOG_ERROR(L"AMF_SURFACE_FORMAT hasn't \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
     }
     valueOut = amf_int64(paramValue);

@@ -51,8 +51,19 @@ AMF_RESULT amf::CastVariantToAMFProperty(amf::AMFVariantStruct* pDest, const amf
     AMF_RETURN_IF_INVALID_POINTER(pDest);
 
     AMF_RESULT err = AMF_OK;
-    switch(eType)
+    switch (eType)
     {
+    case AMF_VARIANT_INTERFACE:
+        if (pSrc->type == eType)
+        {
+            err = AMFVariantCopy(pDest, pSrc);
+        }
+        else
+        {
+            pDest->type = AMF_VARIANT_INTERFACE;
+            pDest->pInterface = nullptr;
+        }
+        break;
 
     case AMF_VARIANT_INT64:
     {
@@ -116,8 +127,8 @@ AMFPropertyInfoImpl::AMFPropertyInfoImpl(const wchar_t* name, const wchar_t* des
         AMFVariantStruct defaultValue, AMFVariantStruct minValue, AMFVariantStruct maxValue, bool allowChangeInRuntime,
         const AMFEnumDescriptionEntry* pEnumDescription) : m_name(), m_desc()
 {
-    AMF_PROPERTY_ACCESS_TYPE accessType = allowChangeInRuntime ? AMF_PROPERTY_ACCESS_FULL : AMF_PROPERTY_ACCESS_READ_WRITE;
-    Init(name, desc, type, contentType, defaultValue, minValue, maxValue, accessType, pEnumDescription);
+    AMF_PROPERTY_ACCESS_TYPE accessTypeTmp = allowChangeInRuntime ? AMF_PROPERTY_ACCESS_FULL : AMF_PROPERTY_ACCESS_READ_WRITE;
+    Init(name, desc, type, contentType, defaultValue, minValue, maxValue, accessTypeTmp, pEnumDescription);
 }
 //-------------------------------------------------------------------------------------------------
 AMFPropertyInfoImpl::AMFPropertyInfoImpl(const wchar_t* name, const wchar_t* desc, AMF_VARIANT_TYPE type, AMF_PROPERTY_CONTENT_TYPE contentType,
@@ -140,87 +151,95 @@ AMFPropertyInfoImpl::AMFPropertyInfoImpl() : m_name(), m_desc()
     accessType = AMF_PROPERTY_ACCESS_FULL;
 }
 //-------------------------------------------------------------------------------------------------
-void AMFPropertyInfoImpl::Init(const wchar_t* name, const wchar_t* desc, AMF_VARIANT_TYPE type, AMF_PROPERTY_CONTENT_TYPE contentType,
-        AMFVariantStruct defaultValue, AMFVariantStruct minValue, AMFVariantStruct maxValue, AMF_PROPERTY_ACCESS_TYPE accessType,
-        const AMFEnumDescriptionEntry* pEnumDescription)
+void AMFPropertyInfoImpl::Init(const wchar_t* name_, const wchar_t* desc_, AMF_VARIANT_TYPE type_, AMF_PROPERTY_CONTENT_TYPE contentType_,
+        AMFVariantStruct defaultValue_, AMFVariantStruct minValue_, AMFVariantStruct maxValue_, AMF_PROPERTY_ACCESS_TYPE accessType_,
+        const AMFEnumDescriptionEntry* pEnumDescription_)
 {
-    m_name = name;
-    this->name = m_name.c_str();
+    m_name = name_;
+    name = m_name.c_str();
 
-    m_desc = desc;
-    this->desc = m_desc.c_str();
+    m_desc = desc_;
+    desc = m_desc.c_str();
 
-    this->type = type;
-    this->contentType = contentType;
-    this->accessType = accessType;
-    AMFVariantInit(&this->defaultValue);
-    AMFVariantInit(&this->minValue);
-    AMFVariantInit(&this->maxValue);
-    this->pEnumDescription = pEnumDescription;
+    type = type_;
+    contentType = contentType_;
+    accessType = accessType_;
+    AMFVariantInit(&defaultValue);
+    AMFVariantInit(&minValue);
+    AMFVariantInit(&maxValue);
+    pEnumDescription = pEnumDescription_;
 
     switch(type)
     {
     case AMF_VARIANT_BOOL:
     {
-        if(CastVariantToAMFProperty(&this->defaultValue, &defaultValue, type, contentType, pEnumDescription) != AMF_OK)
+        if(CastVariantToAMFProperty(&defaultValue, &defaultValue_, type, contentType, pEnumDescription) != AMF_OK)
         {
-            AMFVariantAssignBool(&this->defaultValue, false);
+            AMFVariantAssignBool(&defaultValue, false);
         }
     }
     break;
     case AMF_VARIANT_RECT:
     {
-        if(CastVariantToAMFProperty(&this->defaultValue, &defaultValue, type, contentType, pEnumDescription) != AMF_OK)
+        if(CastVariantToAMFProperty(&defaultValue, &defaultValue_, type, contentType, pEnumDescription) != AMF_OK)
         {
-            AMFVariantAssignRect(&this->defaultValue, AMFConstructRect(0, 0, 0, 0));
+            AMFVariantAssignRect(&defaultValue, AMFConstructRect(0, 0, 0, 0));
         }
     }
     break;
     case AMF_VARIANT_SIZE:
     {
-        if(CastVariantToAMFProperty(&this->defaultValue, &defaultValue, type, contentType, pEnumDescription) != AMF_OK)
+        if(CastVariantToAMFProperty(&defaultValue, &defaultValue_, type, contentType, pEnumDescription) != AMF_OK)
         {
-            AMFVariantAssignSize(&this->defaultValue, AMFConstructSize(0, 0));
+            AMFVariantAssignSize(&defaultValue, AMFConstructSize(0, 0));
         }
-        if (CastVariantToAMFProperty(&this->minValue, &minValue, type, contentType, pEnumDescription) != AMF_OK)
+        if (CastVariantToAMFProperty(&minValue, &minValue_, type, contentType, pEnumDescription) != AMF_OK)
         {
-            AMFVariantAssignSize(&this->minValue, AMFConstructSize(0, 0));
+            AMFVariantAssignSize(&minValue, AMFConstructSize(INT_MIN, INT_MIN));
         }
-        if (CastVariantToAMFProperty(&this->maxValue, &maxValue, type, contentType, pEnumDescription) != AMF_OK)
+        if (CastVariantToAMFProperty(&maxValue, &maxValue_, type, contentType, pEnumDescription) != AMF_OK)
         {
-            AMFVariantAssignSize(&this->maxValue, AMFConstructSize(0, 0));
+            AMFVariantAssignSize(&maxValue, AMFConstructSize(INT_MAX, INT_MAX));
         }
     }
     break;
     case AMF_VARIANT_POINT:
     {
-        if(CastVariantToAMFProperty(&this->defaultValue, &defaultValue, type, contentType, pEnumDescription) != AMF_OK)
+        if(CastVariantToAMFProperty(&defaultValue, &defaultValue_, type, contentType, pEnumDescription) != AMF_OK)
         {
-            AMFVariantAssignPoint(&this->defaultValue, AMFConstructPoint(0, 0));
+            AMFVariantAssignPoint(&defaultValue, AMFConstructPoint(0, 0));
+        }
+        if (CastVariantToAMFProperty(&minValue, &minValue_, type, contentType, pEnumDescription) != AMF_OK)
+        {
+            AMFVariantAssignPoint(&minValue, AMFConstructPoint(INT_MIN, INT_MIN));
+        }
+        if (CastVariantToAMFProperty(&maxValue, &maxValue_, type, contentType, pEnumDescription) != AMF_OK)
+        {
+            AMFVariantAssignPoint(&maxValue, AMFConstructPoint(INT_MAX, INT_MAX));
         }
     }
     break;
     case AMF_VARIANT_RATE:
     {
-        if(CastVariantToAMFProperty(&this->defaultValue, &defaultValue, type, contentType, pEnumDescription) != AMF_OK)
+        if(CastVariantToAMFProperty(&defaultValue, &defaultValue_, type, contentType, pEnumDescription) != AMF_OK)
         {
-            AMFVariantAssignRate(&this->defaultValue, AMFConstructRate(0, 0));
+            AMFVariantAssignRate(&defaultValue, AMFConstructRate(0, 0));
         }
     }
     break;
     case AMF_VARIANT_RATIO:
     {
-        if(CastVariantToAMFProperty(&this->defaultValue, &defaultValue, type, contentType, pEnumDescription) != AMF_OK)
+        if(CastVariantToAMFProperty(&defaultValue, &defaultValue_, type, contentType, pEnumDescription) != AMF_OK)
         {
-            AMFVariantAssignRatio(&this->defaultValue, AMFConstructRatio(0, 0));
+            AMFVariantAssignRatio(&defaultValue, AMFConstructRatio(0, 0));
         }
     }
     break;
     case AMF_VARIANT_COLOR:
     {
-        if(CastVariantToAMFProperty(&this->defaultValue, &defaultValue, type, contentType, pEnumDescription) != AMF_OK)
+        if(CastVariantToAMFProperty(&defaultValue, &defaultValue_, type, contentType, pEnumDescription) != AMF_OK)
         {
-            AMFVariantAssignColor(&this->defaultValue, AMFConstructColor(0, 0, 0, 255));
+            AMFVariantAssignColor(&defaultValue, AMFConstructColor(0, 0, 0, 255));
         }
     }
     break;
@@ -229,24 +248,24 @@ void AMFPropertyInfoImpl::Init(const wchar_t* name, const wchar_t* desc, AMF_VAR
     {
         if(pEnumDescription)
         {
-            if(CastVariantToAMFProperty(&this->defaultValue, &defaultValue, type, contentType, pEnumDescription) != AMF_OK)
+            if(CastVariantToAMFProperty(&defaultValue, &defaultValue_, type, contentType, pEnumDescription) != AMF_OK)
             {
-                AMFVariantAssignInt64(&this->defaultValue, pEnumDescription->value);
+                AMFVariantAssignInt64(&defaultValue, pEnumDescription->value);
             }
         }
         else //AMF_PROPERTY_CONTENT_DEFAULT
         {
-            if(CastVariantToAMFProperty(&this->defaultValue, &defaultValue, type, contentType, pEnumDescription) != AMF_OK)
+            if(CastVariantToAMFProperty(&defaultValue, &defaultValue_, type, contentType, pEnumDescription) != AMF_OK)
             {
-                AMFVariantAssignInt64(&this->defaultValue, 0);
+                AMFVariantAssignInt64(&defaultValue, 0);
             }
-            if(CastVariantToAMFProperty(&this->minValue, &minValue, type, contentType, pEnumDescription) != AMF_OK)
+            if(CastVariantToAMFProperty(&minValue, &minValue_, type, contentType, pEnumDescription) != AMF_OK)
             {
-                AMFVariantAssignInt64(&this->minValue, INT_MIN);
+                AMFVariantAssignInt64(&minValue, INT_MIN);
             }
-            if(CastVariantToAMFProperty(&this->maxValue, &maxValue, type, contentType, pEnumDescription) != AMF_OK)
+            if(CastVariantToAMFProperty(&maxValue, &maxValue_, type, contentType, pEnumDescription) != AMF_OK)
             {
-                AMFVariantAssignInt64(&this->maxValue, INT_MAX);
+                AMFVariantAssignInt64(&maxValue, INT_MAX);
             }
         }
     }
@@ -254,45 +273,122 @@ void AMFPropertyInfoImpl::Init(const wchar_t* name, const wchar_t* desc, AMF_VAR
 
     case AMF_VARIANT_DOUBLE:
     {
-        if(CastVariantToAMFProperty(&this->defaultValue, &defaultValue, type, contentType, pEnumDescription) != AMF_OK)
+        if(CastVariantToAMFProperty(&defaultValue, &defaultValue_, type, contentType, pEnumDescription) != AMF_OK)
         {
-            AMFVariantAssignDouble(&this->defaultValue, 0);
+            AMFVariantAssignDouble(&defaultValue, 0);
         }
-        if(CastVariantToAMFProperty(&this->minValue, &minValue, type, contentType, pEnumDescription) != AMF_OK)
+        if(CastVariantToAMFProperty(&minValue, &minValue_, type, contentType, pEnumDescription) != AMF_OK)
         {
-            AMFVariantAssignDouble(&this->minValue, INT_MIN);
+            AMFVariantAssignDouble(&minValue, DBL_MIN);
         }
-        if(CastVariantToAMFProperty(&this->maxValue, &maxValue, type, contentType, pEnumDescription) != AMF_OK)
+        if(CastVariantToAMFProperty(&maxValue, &maxValue_, type, contentType, pEnumDescription) != AMF_OK)
         {
-            AMFVariantAssignDouble(&this->maxValue, INT_MAX);
+            AMFVariantAssignDouble(&maxValue, DBL_MAX);
         }
     }
     break;
 
     case AMF_VARIANT_STRING:
     {
-        if(CastVariantToAMFProperty(&this->defaultValue, &defaultValue, type, contentType, pEnumDescription) != AMF_OK)
+        if(CastVariantToAMFProperty(&defaultValue, &defaultValue_, type, contentType, pEnumDescription) != AMF_OK)
         {
-            AMFVariantAssignString(&this->maxValue, "");
+            AMFVariantAssignString(&maxValue, "");
         }
     }
     break;
 
     case AMF_VARIANT_WSTRING:
     {
-        if(CastVariantToAMFProperty(&this->defaultValue, &defaultValue, type, contentType, pEnumDescription) != AMF_OK)
+        if(CastVariantToAMFProperty(&defaultValue, &defaultValue_, type, contentType, pEnumDescription) != AMF_OK)
         {
-            AMFVariantAssignWString(&this->maxValue, L"");
+            AMFVariantAssignWString(&maxValue, L"");
         }
     }
     break;
 
     case AMF_VARIANT_INTERFACE:
-        if(CastVariantToAMFProperty(&this->defaultValue, &defaultValue, type, contentType, pEnumDescription) != AMF_OK)
+        if(CastVariantToAMFProperty(&defaultValue, &defaultValue_, type, contentType, pEnumDescription) != AMF_OK)
         {
-            AMFVariantAssignWString(&this->maxValue, L"");
+            AMFVariantAssignWString(&maxValue, L"");
         }
         break;
+    case AMF_VARIANT_FLOAT:
+    {
+        if (CastVariantToAMFProperty(&defaultValue, &defaultValue_, type, contentType, pEnumDescription) != AMF_OK)
+        {
+            AMFVariantAssignFloat(&defaultValue, 0);
+        }
+        if (CastVariantToAMFProperty(&minValue, &minValue_, type, contentType, pEnumDescription) != AMF_OK)
+        {
+            AMFVariantAssignFloat(&minValue, FLT_MIN);
+        }
+        if (CastVariantToAMFProperty(&maxValue, &maxValue_, type, contentType, pEnumDescription) != AMF_OK)
+        {
+            AMFVariantAssignFloat(&maxValue, FLT_MAX);
+        }
+    }
+    break;
+    case AMF_VARIANT_FLOAT_SIZE:
+    {
+        if (CastVariantToAMFProperty(&defaultValue, &defaultValue_, type, contentType, pEnumDescription) != AMF_OK)
+        {
+            AMFVariantAssignFloatSize(&defaultValue, AMFConstructFloatSize(0, 0));
+        }
+        if (CastVariantToAMFProperty(&minValue, &minValue_, type, contentType, pEnumDescription) != AMF_OK)
+        {
+            AMFVariantAssignFloatSize(&minValue, AMFConstructFloatSize(FLT_MIN, FLT_MIN));
+        }
+        if (CastVariantToAMFProperty(&maxValue, &maxValue_, type, contentType, pEnumDescription) != AMF_OK)
+        {
+            AMFVariantAssignFloatSize(&maxValue, AMFConstructFloatSize(FLT_MAX, FLT_MAX));
+        }
+    }
+    break;
+    case AMF_VARIANT_FLOAT_POINT2D:
+    {
+        if (CastVariantToAMFProperty(&defaultValue, &defaultValue, type, contentType, pEnumDescription) != AMF_OK)
+        {
+            AMFVariantAssignFloatPoint2D(&defaultValue, AMFConstructFloatPoint2D(0, 0));
+        }
+        if (CastVariantToAMFProperty(&minValue, &minValue_, type, contentType, pEnumDescription) != AMF_OK)
+        {
+            AMFVariantAssignFloatPoint2D(&minValue, AMFConstructFloatPoint2D(FLT_MIN, FLT_MIN));
+        }
+        if (CastVariantToAMFProperty(&maxValue, &maxValue_, type, contentType, pEnumDescription) != AMF_OK)
+        {
+            AMFVariantAssignFloatPoint2D(&maxValue, AMFConstructFloatPoint2D(FLT_MAX, FLT_MAX));
+        }
+    }
+    case AMF_VARIANT_FLOAT_POINT3D:
+    {
+        if (CastVariantToAMFProperty(&defaultValue, &defaultValue_, type, contentType, pEnumDescription) != AMF_OK)
+        {
+            AMFVariantAssignFloatPoint3D(&defaultValue, AMFConstructFloatPoint3D(0, 0, 0));
+        }
+        if (CastVariantToAMFProperty(&minValue, &minValue_, type, contentType, pEnumDescription) != AMF_OK)
+        {
+            AMFVariantAssignFloatPoint3D(&minValue, AMFConstructFloatPoint3D(FLT_MIN, FLT_MIN, FLT_MIN));
+        }
+        if (CastVariantToAMFProperty(&maxValue, &maxValue_, type, contentType, pEnumDescription) != AMF_OK)
+        {
+            AMFVariantAssignFloatPoint3D(&maxValue, AMFConstructFloatPoint3D(FLT_MAX, FLT_MAX, FLT_MAX));
+        }
+    }
+    case AMF_VARIANT_FLOAT_VECTOR4D:
+    {
+        if (CastVariantToAMFProperty(&defaultValue, &defaultValue_, type, contentType, pEnumDescription) != AMF_OK)
+        {
+            AMFVariantAssignFloatVector4D(&defaultValue, AMFConstructFloatVector4D(0, 0, 0, 0));
+        }
+        if (CastVariantToAMFProperty(&minValue, &minValue_, type, contentType, pEnumDescription) != AMF_OK)
+        {
+            AMFVariantAssignFloatVector4D(&minValue, AMFConstructFloatVector4D(FLT_MIN, FLT_MIN, FLT_MIN, FLT_MIN));
+        }
+        if (CastVariantToAMFProperty(&maxValue, &maxValue_, type, contentType, pEnumDescription) != AMF_OK)
+        {
+            AMFVariantAssignFloatVector4D(&maxValue, AMFConstructFloatVector4D(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX));
+        }
+    }
 
     default:
         break;

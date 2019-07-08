@@ -76,7 +76,6 @@ const AMFEnumDescriptionEntry AMF_SAMPLE_FORMAT_ENUM_DESCRIPTION[] =
 AMFAudioConverterFFMPEGImpl::AMFAudioConverterFFMPEGImpl(AMFContext* pContext)
   : m_pContext(pContext),
     m_pResampler(NULL),
-    m_pReformat(NULL),
     m_pTempBuffer(NULL),
     m_uiTempBufferSize(0),
     m_inSampleFormat(AMFAF_UNKNOWN),
@@ -148,6 +147,8 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*
     {
 
         m_pResampler = avresample_alloc_context();
+        av_opt_set_int(m_pResampler, "in_channel_count", (int)m_inChannels, 0);
+        av_opt_set_int(m_pResampler, "out_channel_count", (int)m_outChannels, 0);
 
         av_opt_set_int(m_pResampler, "in_channel_layout", (int) inChannelLayout, 0);
         av_opt_set_int(m_pResampler, "out_channel_layout", (int) outChannelLayout, 0);
@@ -156,6 +157,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*
         av_opt_set_int(m_pResampler, "in_sample_rate", m_inSampleRate, 0);
         av_opt_set_int(m_pResampler, "out_sample_rate", m_outSampleRate, 0);
 
+
         if (avresample_open(m_pResampler) == 0)
         {
         }
@@ -163,26 +165,6 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*
         {
             avresample_free(&m_pResampler);
             m_pResampler = NULL;
-
-            // try to do reformat
-            //MM: FFMPEG pass 1 as number of channels for easy convert - we will follow
-            m_pReformat = av_audio_convert_alloc(GetFFMPEGAudioFormat(m_outSampleFormat), 1,
-                                                 GetFFMPEGAudioFormat(m_inSampleFormat), 1, NULL, 0);
-
-            //AK: this code should be moved to Connect output slot to pass valid descr out
-            if (m_pReformat != NULL)
-            {
-                AMF_RETURN_IF_FAILED(SetProperty(AUDIO_CONVERTER_OUT_AUDIO_SAMPLE_RATE, m_inSampleRate));
-                AMF_RETURN_IF_FAILED(SetProperty(AUDIO_CONVERTER_OUT_AUDIO_CHANNELS, m_inChannels));
-                AMF_RETURN_IF_FAILED(SetProperty(AUDIO_CONVERTER_OUT_AUDIO_CHANNEL_LAYOUT, inChannelLayout));
-
-                const amf_int64  blockAlign = m_inChannels * GetAudioSampleSize(m_outSampleFormat);
-                AMF_RETURN_IF_FAILED(SetProperty(AUDIO_CONVERTER_OUT_AUDIO_BLOCK_ALIGN, blockAlign));
-            }
-            else
-            {
-                return AMF_NOT_IMPLEMENTED;
-            }
         }
     }
 
@@ -213,12 +195,6 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::Terminate()
         }
         avresample_free(&m_pResampler);
         m_pResampler = NULL;
-    }
-
-    if (m_pReformat != NULL)
-    {
-        av_audio_convert_free(m_pReformat);
-        m_pReformat = NULL;
     }
 
     if (m_pTempBuffer != NULL)
@@ -291,7 +267,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::SubmitInput(AMFData* pData
         m_audioFrameSubmitCount++;
 
         // just pass through
-        if (m_pResampler == NULL && m_pReformat == NULL) 
+        if (m_pResampler == NULL) 
         {
             return AMF_OK;
         }
@@ -322,7 +298,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::QueryOutput(AMFData** ppDa
     }
 
     // just pass through
-    if (m_pResampler == NULL && m_pReformat == NULL) 
+    if (m_pResampler == NULL) 
     {
         if (m_pInputData == NULL)
         {
@@ -360,7 +336,6 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::QueryOutput(AMFData** ppDa
     {
         iSamplesOut = iSamplesIn;
     }
-
     amf_int64 new_size       = (amf_int64) iSamplesOut * m_outChannels * iSampleSizeOut;
     if (m_uiTempBufferSize < (amf_uint) new_size)
     {
@@ -392,14 +367,12 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::QueryOutput(AMFData** ppDa
             ostride[ch] = iSampleSizeOut;
         }
     }
-
     if (m_pResampler != NULL)
     {
         int  writtenSamples = avresample_convert(m_pResampler,
                                         obuf, (int) (iSampleSizeOut * iSamplesOut), (int) iSamplesOut,
                                         pMemIn != NULL ? ibuf : NULL, (int) (iSampleSizeIn * iSamplesIn), (int) iSamplesIn);
-//        writtenSamples = avresample_available(m_pResampler);
-//        avresample_read(m_pResampler, obuf, writtenSamples);
+
         if(pMemIn != NULL)
         { 
             if (writtenSamples == 0)
@@ -414,15 +387,6 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::QueryOutput(AMFData** ppDa
         }
         iSamplesOut = writtenSamples;
     }
-    else if (m_pReformat != NULL)
-    {
-        const int  len = (int) iSamplesOut * (int) m_inChannels;
-        if (av_audio_convert(m_pReformat, (void**) obuf, ostride, (void**) ibuf, istride, len) < 0)
-        {
-            return AMF_FAIL;
-        }
-    }
-
     if(iSamplesOut == 0)
     { 
         if(m_bEof)

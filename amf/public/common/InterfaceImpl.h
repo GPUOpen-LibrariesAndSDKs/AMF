@@ -166,14 +166,19 @@ namespace amf
     };
 
     //---------------------------------------------------------------
-    template<class _Base, class _BaseInterface, typename _Param1 = int, typename _Param2 = int, typename _Param3 = int>
+    template<class _Base, class _BaseInterface, typename _Param1 = int, typename _Param2 = int, typename _Param3 = int, typename _Param4 = int, typename _Param5 = int, typename _Param6 = int>
     class AMFInterfaceMultiImpl : public _Base
     {
     protected:
         virtual ~AMFInterfaceMultiImpl()
         {}
     public:
-        
+        AMFInterfaceMultiImpl(_Param1 param1, _Param2 param2, _Param3 param3, _Param4 param4, _Param5 param5, _Param6 param6) : _Base(param1, param2, param3, param4, param5, param6)
+        {}
+        AMFInterfaceMultiImpl(_Param1 param1, _Param2 param2, _Param3 param3, _Param4 param4, _Param5 param5) : _Base(param1, param2, param3, param4, param5)
+        {}
+        AMFInterfaceMultiImpl(_Param1 param1, _Param2 param2, _Param3 param3, _Param4 param4) : _Base(param1, param2, param3, param4)
+        {}
         AMFInterfaceMultiImpl(_Param1 param1, _Param2 param2, _Param3 param3) : _Base(param1, param2, param3)
         {}
         AMFInterfaceMultiImpl(_Param1 param1, _Param2 param2) : _Base(param1, param2)
