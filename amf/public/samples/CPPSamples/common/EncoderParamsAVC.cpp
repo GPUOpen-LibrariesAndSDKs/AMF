@@ -283,6 +283,7 @@ AMF_RESULT RegisterEncoderParamsAVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_MAX_LTR_FRAMES, ParamEncoderStatic, L"Max Of LTR frames (integer, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_MAX_NUM_REFRAMES, ParamEncoderStatic, L"Max Of Reference frames (integer, default = 4)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_ENABLE_VBAQ, ParamEncoderStatic, L"Eanble VBAQ (integer, default = 0)", ParamConverterBoolean);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HIGH_MOTION_QUALITY_BOOST_ENABLE, ParamEncoderStatic, L"High motion quality boost mode enabled(integer, default = 0)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_RATE_CONTROL_PREANALYSIS_ENABLE, ParamEncoderStatic, L"Rate Control Preanalysis Enabled (EANBLED, DISABLED, default = DISABLED)", ParamPreAnalysisAVC);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_ASPECT_RATIO, ParamEncoderStatic, L"Controls aspect ratio, defulat (1,1)", ParamConverterRatio);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_FULL_RANGE_COLOR, ParamEncoderStatic, L"Inidicates that YUV input is (0,255) (bool, default = false)", ParamConverterBoolean);

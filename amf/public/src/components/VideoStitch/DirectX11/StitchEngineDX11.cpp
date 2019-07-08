@@ -732,7 +732,7 @@ AMF_RESULT StitchEngineDX11::UpdateRibs(amf_int32 widthInput, amf_int32 heightIn
                 }
 
                 float middle = (distanceOwn + distanceMin) / 2.0f;
-                float dist = fabs(distanceOwn - middle);
+                float dist = fabsf(distanceOwn - middle);
 
                 //skip if the distance is greater than the threshold
                 if(dist < 0.1f)
@@ -759,7 +759,7 @@ AMF_RESULT StitchEngineDX11::UpdateRibs(amf_int32 widthInput, amf_int32 heightIn
                        XMVECTOR point3 = m_StreamList[i].m_Corners[quadrant];
 
                         XMVECTOR plane = XMPlaneFromPoints(point1, point2, point3);
-                        float distToPlane = fabs(XMVectorGetX(XMPlaneDotCoord(plane, point)));
+                        float distToPlane = (float) fabs(XMVectorGetX(XMPlaneDotCoord(plane, point)));
                         diff = distToPlane;
                     }
 
@@ -798,7 +798,7 @@ AMF_RESULT StitchEngineDX11::UpdateRibs(amf_int32 widthInput, amf_int32 heightIn
                         float diff0 = v1.Pos[0] - v2.Pos[0];
                         float diff1 = v1.Pos[1] - v2.Pos[1];
                         float diff2 = v1.Pos[2] - v2.Pos[2];
-                        float distance12 = sqrt(diff0 * diff0 + diff1 * diff1 + diff2 * diff2);
+                        float distance12 = sqrtf(diff0 * diff0 + diff1 * diff1 + diff2 * diff2);
                         float distanceEpsilon = 0.30f;
 
                         if(distance12 < distanceEpsilon)
@@ -897,7 +897,7 @@ AMF_RESULT StitchEngineDX11::UpdateRibs(amf_int32 widthInput, amf_int32 heightIn
                                 diff0 = corner.pos[0] - m_Corners[c].pos[0];
                                 diff1 = corner.pos[1] - m_Corners[c].pos[1];
                                 diff2 = corner.pos[2] - m_Corners[c].pos[2];
-                                float distance = sqrt(diff0 * diff0 + diff1 * diff1 + diff2 * diff2);
+                                float distance = sqrtf(diff0 * diff0 + diff1 * diff1 + diff2 * diff2);
 
                                 if(distance < distanceEpsilon)
                                 {
@@ -1188,7 +1188,7 @@ AMF_RESULT          StitchEngineDX11::ApplyControlPoints()
             TextureVertex  pointVertex = k == 0 ? it->point0 : it->point1;
             XMVECTOR pointOnPlane = XMVectorSet(pointVertex.Pos[0], pointVertex.Pos[1], pointVertex.Pos[2], 1.0f);
 
-            float distanceShift = fabs(XMVectorGetX(XMVector3Length(XMVectorSubtract(pointOnPlane, middleOnPlane))));
+            float distanceShift = (float) fabs(XMVectorGetX(XMVector3Length(XMVectorSubtract(pointOnPlane, middleOnPlane))));
 
             // value to move from control point to middle point
             XMVECTOR add = XMVectorSubtract(middleOnPlane, pointOnPlane);
@@ -1201,7 +1201,7 @@ AMF_RESULT          StitchEngineDX11::ApplyControlPoints()
                 XMVECTOR veretexOnPlane = XMVectorSet(v.Pos[0], v.Pos[1], v.Pos[2], 1.0f);
 
                 // distance from control point to the current point
-                float distance = fabs(XMVectorGetX(XMVector3Length(XMVectorSubtract(pointOnPlane, veretexOnPlane))));
+                float distance = (float) fabs(XMVectorGetX(XMVector3Length(XMVectorSubtract(pointOnPlane, veretexOnPlane))));
                 float maxRadius = 0.05f;
 
                 maxRadius = max(maxRadius, distanceShift * 2.0f);
@@ -1229,9 +1229,9 @@ AMF_RESULT          StitchEngineDX11::ApplyControlPoints()
                     IntermediatePoint intermediatePoint;
                     intermediatePoint.distance = distance;
 
-                    float addX = (1.0f - fabs(XMVectorGetX(ptProjection) - v.Pos[0] ) / maxRadius) * XMVectorGetX(addThis);
-                    float addY = (1.0f - fabs(XMVectorGetY(ptProjection) - v.Pos[1] ) / maxRadius) * XMVectorGetY(addThis);
-                    float addZ = (1.0f - fabs(XMVectorGetZ(ptProjection) - v.Pos[2] ) / maxRadius) * XMVectorGetZ(addThis);
+                    float addX = (float) (1.0f - fabs(XMVectorGetX(ptProjection) - v.Pos[0] ) / maxRadius) * XMVectorGetX(addThis);
+                    float addY = (float) (1.0f - fabs(XMVectorGetY(ptProjection) - v.Pos[1] ) / maxRadius) * XMVectorGetY(addThis);
+                    float addZ = (float) (1.0f - fabs(XMVectorGetZ(ptProjection) - v.Pos[2] ) / maxRadius) * XMVectorGetZ(addThis);
                     intermediatePoint.add = XMVectorSet(addX, addY, addZ, 0);
                     holders[index][i].push_back(intermediatePoint);
                     modifiedVerttexes++;
@@ -1430,7 +1430,7 @@ AMF_RESULT          StitchEngineDX11::UpdateTransparency(AMFPropertyStorage *pSt
             for(amf_int32 v = 0; v < (amf_int32)m_StreamList[channelPoint].m_Vertices.size(); v++)
             {
                 TextureVertex &vertex = m_StreamList[channelPoint].m_Vertices[v];
-                float dist = (a * vertex.Pos[0] + b * vertex.Pos[1] + c * vertex.Pos[2] + d) / sqrt(a * a + b * b + c * c + d * d);
+                float dist = (a * vertex.Pos[0] + b * vertex.Pos[1] + c * vertex.Pos[2] + d) / sqrtf(a * a + b * b + c * c + d * d);
 
 #if defined(DEBUG_TRANSPARENT)
                 vertex.Tex[2] = transparencyMax; //MM - this line is temporary - do not check in

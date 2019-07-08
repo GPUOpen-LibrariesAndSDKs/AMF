@@ -51,22 +51,28 @@ namespace amf
     //----------------------------------------------------------------------------------------------
     typedef enum AMF_VARIANT_TYPE
     {
-        AMF_VARIANT_EMPTY       = 0,
+        AMF_VARIANT_EMPTY           = 0,
 
-        AMF_VARIANT_BOOL        = 1,
-        AMF_VARIANT_INT64       = 2,
-        AMF_VARIANT_DOUBLE      = 3,
+        AMF_VARIANT_BOOL            = 1,
+        AMF_VARIANT_INT64           = 2,
+        AMF_VARIANT_DOUBLE          = 3,
 
-        AMF_VARIANT_RECT        = 4,
-        AMF_VARIANT_SIZE        = 5,
-        AMF_VARIANT_POINT       = 6,
-        AMF_VARIANT_RATE        = 7,
-        AMF_VARIANT_RATIO       = 8,
-        AMF_VARIANT_COLOR       = 9,
+        AMF_VARIANT_RECT            = 4,
+        AMF_VARIANT_SIZE            = 5,
+        AMF_VARIANT_POINT           = 6,
+        AMF_VARIANT_RATE            = 7,
+        AMF_VARIANT_RATIO           = 8,
+        AMF_VARIANT_COLOR           = 9,
 
-        AMF_VARIANT_STRING      = 10,  // value is char*
-        AMF_VARIANT_WSTRING     = 11,  // value is wchar_t*
-        AMF_VARIANT_INTERFACE   = 12,  // value is AMFInterface*
+        AMF_VARIANT_STRING          = 10,  // value is char*
+        AMF_VARIANT_WSTRING         = 11,  // value is wchar_t*
+        AMF_VARIANT_INTERFACE       = 12,  // value is AMFInterface*
+        AMF_VARIANT_FLOAT           = 13,
+
+        AMF_VARIANT_FLOAT_SIZE      = 14,
+        AMF_VARIANT_FLOAT_POINT2D   = 15,
+        AMF_VARIANT_FLOAT_POINT3D   = 16,
+        AMF_VARIANT_FLOAT_VECTOR4D  = 17
     } AMF_VARIANT_TYPE;
     //----------------------------------------------------------------------------------------------
     // variant struct
@@ -88,6 +94,11 @@ namespace amf
             struct AMFRate          rateValue;
             struct AMFRatio         ratioValue;
             struct AMFColor         colorValue;
+            amf_float               floatValue;
+            struct AMFFloatSize     floatSizeValue;
+            struct AMFFloatPoint2D  floatPoint2DValue;
+            struct AMFFloatPoint3D  floatPoint3DValue;
+            struct AMFFloatVector4D floatVector4DValue;
         };
     } AMFVariantStruct;
     //----------------------------------------------------------------------------------------------
@@ -101,6 +112,7 @@ namespace amf
     static AMF_INLINE amf_bool             AMF_STD_CALL AMFVariantGetBool(const AMFVariantStruct* _variant) { return (_variant)->boolValue; }
     static AMF_INLINE amf_int64            AMF_STD_CALL AMFVariantGetInt64(const AMFVariantStruct* _variant) { return (_variant)->int64Value; }
     static AMF_INLINE amf_double           AMF_STD_CALL AMFVariantGetDouble(const AMFVariantStruct* _variant) { return (_variant)->doubleValue; }
+    static AMF_INLINE amf_float            AMF_STD_CALL AMFVariantGetFloat(const AMFVariantStruct* _variant) { return (_variant)->floatValue; }
     static AMF_INLINE const char*          AMF_STD_CALL AMFVariantGetString(const AMFVariantStruct* _variant) { return (_variant)->stringValue; }
     static AMF_INLINE const wchar_t*       AMF_STD_CALL AMFVariantGetWString(const AMFVariantStruct* _variant) { return (_variant)->wstringValue; }
 #if defined(__cplusplus)
@@ -112,6 +124,10 @@ namespace amf
     static AMF_INLINE const AMFRect &      AMF_STD_CALL AMFVariantGetRect (const AMFVariantStruct* _variant) { return (_variant)->rectValue; }
     static AMF_INLINE const AMFSize &      AMF_STD_CALL AMFVariantGetSize (const AMFVariantStruct* _variant) { return (_variant)->sizeValue; }
     static AMF_INLINE const AMFPoint&      AMF_STD_CALL AMFVariantGetPoint(const AMFVariantStruct* _variant) { return (_variant)->pointValue; }
+    static AMF_INLINE const AMFFloatSize& AMF_STD_CALL AMFVariantGetFloatSize(const AMFVariantStruct* _variant) { return (_variant)->floatSizeValue; }
+    static AMF_INLINE const AMFFloatPoint2D& AMF_STD_CALL AMFVariantGetFloatPoint2D(const AMFVariantStruct* _variant) { return (_variant)->floatPoint2DValue; }
+    static AMF_INLINE const AMFFloatPoint3D& AMF_STD_CALL AMFVariantGetFloatPoint3D(const AMFVariantStruct* _variant) { return (_variant)->floatPoint3DValue; }
+    static AMF_INLINE const AMFFloatVector4D& AMF_STD_CALL AMFVariantGetFloatVector4D(const AMFVariantStruct* _variant) { return (_variant)->floatVector4DValue; }
     static AMF_INLINE const AMFRate &      AMF_STD_CALL AMFVariantGetRate (const AMFVariantStruct* _variant) { return (_variant)->rateValue; }
     static AMF_INLINE const AMFRatio&      AMF_STD_CALL AMFVariantGetRatio(const AMFVariantStruct* _variant) { return (_variant)->ratioValue; }
     static AMF_INLINE const AMFColor&      AMF_STD_CALL AMFVariantGetColor(const AMFVariantStruct* _variant) { return (_variant)->colorValue; }
@@ -119,6 +135,10 @@ namespace amf
     static AMF_INLINE const AMFRect        AMF_STD_CALL AMFVariantGetRect (const AMFVariantStruct* _variant) { return (_variant)->rectValue; }
     static AMF_INLINE const AMFSize        AMF_STD_CALL AMFVariantGetSize (const AMFVariantStruct* _variant) { return (_variant)->sizeValue; }
     static AMF_INLINE const AMFPoint       AMF_STD_CALL AMFVariantGetPoint(const AMFVariantStruct* _variant) { return (_variant)->pointValue; }
+    static AMF_INLINE const AMFFloatSize  AMF_STD_CALL AMFVariantGetFloatSize(const AMFVariantStruct* _variant) { return (_variant)->floatSizeValue; }
+    static AMF_INLINE const AMFFloatPoint2D  AMF_STD_CALL AMFVariantGetFloatPoint2D(const AMFVariantStruct* _variant) { return (_variant)->floatPoint2DValue; }
+    static AMF_INLINE const AMFFloatPoint3D  AMF_STD_CALL AMFVariantGetFloatPoint3D(const AMFVariantStruct* _variant) { return (_variant)->floatPoint3DValue; }
+    static AMF_INLINE const AMFFloatVector4D  AMF_STD_CALL AMFVariantGetFloatVector4D(const AMFVariantStruct* _variant) { return (_variant)->floatVector4DValue; }
     static AMF_INLINE const AMFRate        AMF_STD_CALL AMFVariantGetRate (const AMFVariantStruct* _variant) { return (_variant)->rateValue; }
     static AMF_INLINE const AMFRatio       AMF_STD_CALL AMFVariantGetRatio(const AMFVariantStruct* _variant) { return (_variant)->ratioValue; }
     static AMF_INLINE const AMFColor       AMF_STD_CALL AMFVariantGetColor(const AMFVariantStruct* _variant) { return (_variant)->colorValue; }
@@ -129,10 +149,15 @@ namespace amf
     #define AMFVariantBool(_variant)      (_variant)->boolValue
     #define AMFVariantInt64(_variant)     (_variant)->int64Value
     #define AMFVariantDouble(_variant)    (_variant)->doubleValue
+    #define AMFVariantFloat(_variant)    (_variant)->floatValue
 
     #define AMFVariantRect(_variant)      (_variant)->rectValue
     #define AMFVariantSize(_variant)      (_variant)->sizeValue
     #define AMFVariantPoint(_variant)     (_variant)->pointValue
+    #define AMFVariantFloatSize(_variant)     (_variant)->floatSizeValue
+    #define AMFVariantFloatPoint2D(_variant)     (_variant)->floatPoint2DValue
+    #define AMFVariantFloatPoint3D(_variant)     (_variant)->floatPoint3DValue
+    #define AMFVariantFloatVector4D(_variant)     (_variant)->floatVector4DValue
     #define AMFVariantRate(_variant)      (_variant)->rateValue
     #define AMFVariantRatio(_variant)     (_variant)->ratioValue
     #define AMFVariantColor(_variant)     (_variant)->colorValue
@@ -150,12 +175,17 @@ namespace amf
     static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignBool(AMFVariantStruct* pDest, amf_bool value);
     static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignInt64(AMFVariantStruct* pDest, amf_int64 value);
     static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignDouble(AMFVariantStruct* pDest, amf_double value);
+    static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignFloat(AMFVariantStruct* pDest, amf_float value);
     static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignString(AMFVariantStruct* pDest, const char* value);
     static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignWString(AMFVariantStruct* pDest, const wchar_t* value);
     static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignInterface(AMFVariantStruct* pDest, AMFInterface* value);
     static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignRect(AMFVariantStruct* pDest, const AMFRect* value);
     static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignSize(AMFVariantStruct* pDest, const AMFSize* value);
     static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignPoint(AMFVariantStruct* pDest, const AMFPoint* value);
+    static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignFloatSize(AMFVariantStruct* pDest, const AMFFloatSize* value);
+    static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignFloatPoint2D(AMFVariantStruct* pDest, const AMFFloatPoint2D* value);
+    static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignFloatPoint3D(AMFVariantStruct* pDest, const AMFFloatPoint3D* value);
+    static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignFloatVector4D(AMFVariantStruct* pDest, const AMFFloatVector4D* value);
     static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignRate(AMFVariantStruct* pDest, const AMFRate* value);
     static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignRatio(AMFVariantStruct* pDest, const AMFRatio* value);
     static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignColor(AMFVariantStruct* pDest, const AMFColor* value);
@@ -164,6 +194,10 @@ namespace amf
     static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignRect(AMFVariantStruct* pDest, const AMFRect& value);
     static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignSize(AMFVariantStruct* pDest, const AMFSize& value);
     static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignPoint(AMFVariantStruct* pDest, const AMFPoint& value);
+    static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignFloatSize(AMFVariantStruct* pDest, const AMFFloatSize& value);
+    static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignFloatPoint2D(AMFVariantStruct* pDest, const AMFFloatPoint2D& value);
+    static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignFloatPoint3D(AMFVariantStruct* pDest, const AMFFloatPoint3D& value);
+    static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignFloatVector4D(AMFVariantStruct* pDest, const AMFFloatVector4D& value);
     static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignRate(AMFVariantStruct* pDest, const AMFRate& value);
     static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignRatio(AMFVariantStruct* pDest, const AMFRatio& value);
     static AMF_INLINE AMF_RESULT       AMF_CDECL_CALL AMFVariantAssignColor(AMFVariantStruct* pDest, const AMFColor& value);
@@ -201,9 +235,14 @@ namespace amf
         explicit AMF_INLINE AMFVariant(amf_int32 value)         { AMFVariantInit(this); AMFVariantAssignInt64(this, value); }
         explicit AMF_INLINE AMFVariant(amf_uint32 value)        { AMFVariantInit(this); AMFVariantAssignInt64(this, value); }
         explicit AMF_INLINE AMFVariant(amf_double value)        { AMFVariantInit(this); AMFVariantAssignDouble(this, value); }
+        explicit AMF_INLINE AMFVariant(amf_float value)         { AMFVariantInit(this); AMFVariantAssignFloat(this, value); }
         explicit AMF_INLINE AMFVariant(const AMFRect & value)   { AMFVariantInit(this); AMFVariantAssignRect(this, &value); }
         explicit AMF_INLINE AMFVariant(const AMFSize & value)   { AMFVariantInit(this); AMFVariantAssignSize(this, &value); }
         explicit AMF_INLINE AMFVariant(const AMFPoint& value)   { AMFVariantInit(this); AMFVariantAssignPoint(this, &value); }
+        explicit AMF_INLINE AMFVariant(const AMFFloatSize& value) { AMFVariantInit(this); AMFVariantAssignFloatSize(this, &value); }
+        explicit AMF_INLINE AMFVariant(const AMFFloatPoint2D& value) { AMFVariantInit(this); AMFVariantAssignFloatPoint2D(this, &value); }
+        explicit AMF_INLINE AMFVariant(const AMFFloatPoint3D& value) { AMFVariantInit(this); AMFVariantAssignFloatPoint3D(this, &value); }
+        explicit AMF_INLINE AMFVariant(const AMFFloatVector4D& value) { AMFVariantInit(this); AMFVariantAssignFloatVector4D(this, &value); }
         explicit AMF_INLINE AMFVariant(const AMFRate & value)   { AMFVariantInit(this); AMFVariantAssignRate(this, &value); }
         explicit AMF_INLINE AMFVariant(const AMFRatio& value)   { AMFVariantInit(this); AMFVariantAssignRatio(this, &value); }
         explicit AMF_INLINE AMFVariant(const AMFColor& value)   { AMFVariantInit(this); AMFVariantAssignColor(this, &value); }
@@ -223,9 +262,14 @@ namespace amf
         AMFVariant& operator=(amf_int32         value)      { AMFVariantAssignInt64(this, value);  return *this;}
         AMFVariant& operator=(amf_uint32        value)      { AMFVariantAssignInt64(this, value);  return *this;}
         AMFVariant& operator=(amf_double        value)      { AMFVariantAssignDouble(this, value);  return *this;}
+        AMFVariant& operator=(amf_float        value)       { AMFVariantAssignFloat(this, value);  return *this; }
         AMFVariant& operator=(const AMFRect &   value)      { AMFVariantAssignRect(this, &value);  return *this;}
         AMFVariant& operator=(const AMFSize &   value)      { AMFVariantAssignSize(this, &value);  return *this;}
         AMFVariant& operator=(const AMFPoint&   value)      { AMFVariantAssignPoint(this, &value);  return *this;}
+        AMFVariant& operator=(const AMFFloatSize&   value) { AMFVariantAssignFloatSize(this, &value);  return *this; }
+        AMFVariant& operator=(const AMFFloatPoint2D&   value) { AMFVariantAssignFloatPoint2D(this, &value);  return *this; }
+        AMFVariant& operator=(const AMFFloatPoint3D&   value) { AMFVariantAssignFloatPoint3D(this, &value);  return *this; }
+        AMFVariant& operator=(const AMFFloatVector4D&   value) { AMFVariantAssignFloatVector4D(this, &value);  return *this; }
         AMFVariant& operator=(const AMFRate &   value)      { AMFVariantAssignRate(this, &value);  return *this;}
         AMFVariant& operator=(const AMFRatio&   value)      { AMFVariantAssignRatio(this, &value);  return *this;}
         AMFVariant& operator=(const AMFColor&   value)      { AMFVariantAssignColor(this, &value);  return *this;}
@@ -235,20 +279,24 @@ namespace amf
 
         template<typename T> AMFVariant& operator=(const AMFInterfacePtr_T<T>& value);
 
-        operator amf_bool() const          { return ToBool();       }
-        operator amf_int64() const         { return ToInt64();      }
-        operator amf_uint64() const        { return ToUInt64();     }
-        operator amf_int32() const         { return ToInt32();      }
-        operator amf_uint32() const        { return ToUInt32();     }
-        operator amf_double() const        { return ToDouble();     }
-        operator amf_float() const         { return ToFloat();      }
-        operator AMFRect () const          { return ToRect ();      }
-        operator AMFSize () const          { return ToSize ();      }
-        operator AMFPoint() const          { return ToPoint();      }
-        operator AMFRate () const          { return ToRate ();      }
-        operator AMFRatio() const          { return ToRatio();      }
-        operator AMFColor() const          { return ToColor();      }
-        operator AMFInterface*() const     { return ToInterface();  }
+        operator amf_bool() const           { return ToBool();       }
+        operator amf_int64() const          { return ToInt64();      }
+        operator amf_uint64() const         { return ToUInt64();     }
+        operator amf_int32() const          { return ToInt32();      }
+        operator amf_uint32() const         { return ToUInt32();     }
+        operator amf_double() const         { return ToDouble();     }
+        operator amf_float() const          { return ToFloat();      }
+        operator AMFRect () const           { return ToRect ();      }
+        operator AMFSize () const           { return ToSize ();      }
+        operator AMFPoint() const           { return ToPoint();      }
+        operator AMFFloatSize() const       { return ToFloatSize(); }
+        operator AMFFloatPoint2D() const    { return ToFloatPoint2D(); }
+        operator AMFFloatPoint3D() const    { return ToFloatPoint3D(); }
+        operator AMFFloatVector4D() const   { return ToFloatVector4D(); }
+        operator AMFRate () const           { return ToRate ();      }
+        operator AMFRatio() const           { return ToRatio();      }
+        operator AMFColor() const           { return ToColor();      }
+        operator AMFInterface*() const      { return ToInterface();  }
 
         AMF_INLINE amf_bool         ToBool() const      { return Empty() ? false        : GetValue<amf_bool,   AMF_VARIANT_BOOL>(AMFVariantGetBool); }
         AMF_INLINE amf_int64        ToInt64() const     { return Empty() ? 0            : GetValue<amf_int64,  AMF_VARIANT_INT64>(AMFVariantGetInt64); }
@@ -256,10 +304,14 @@ namespace amf
         AMF_INLINE amf_int32        ToInt32() const     { return Empty() ? 0            : GetValue<amf_int32,  AMF_VARIANT_INT64>(AMFVariantGetInt64); }
         AMF_INLINE amf_uint32       ToUInt32() const    { return Empty() ? 0            : GetValue<amf_uint32, AMF_VARIANT_INT64>(AMFVariantGetInt64); }
         AMF_INLINE amf_double       ToDouble() const    { return Empty() ? 0            : GetValue<amf_double, AMF_VARIANT_DOUBLE>(AMFVariantGetDouble); }
-        AMF_INLINE amf_float        ToFloat() const     { return Empty() ? 0            : GetValue<amf_float,  AMF_VARIANT_DOUBLE>(AMFVariantGetDouble); }
+        AMF_INLINE amf_float        ToFloat() const     { return Empty() ? 0            : GetValue<amf_float,  AMF_VARIANT_FLOAT>(AMFVariantGetFloat); }
         AMF_INLINE AMFRect          ToRect () const     { return Empty() ? AMFRect()    : GetValue<AMFRect,  AMF_VARIANT_RECT>(AMFVariantGetRect); }
         AMF_INLINE AMFSize          ToSize () const     { return Empty() ? AMFSize()    : GetValue<AMFSize,  AMF_VARIANT_SIZE>(AMFVariantGetSize); }
         AMF_INLINE AMFPoint         ToPoint() const     { return Empty() ? AMFPoint()   : GetValue<AMFPoint, AMF_VARIANT_POINT>(AMFVariantGetPoint); }
+        AMF_INLINE AMFFloatSize     ToFloatSize() const { return Empty() ? AMFFloatSize() : GetValue<AMFFloatSize, AMF_VARIANT_FLOAT_SIZE>(AMFVariantGetFloatSize); }
+        AMF_INLINE AMFFloatPoint2D  ToFloatPoint2D() const { return Empty() ? AMFFloatPoint2D() : GetValue<AMFFloatPoint2D, AMF_VARIANT_FLOAT_POINT2D>(AMFVariantGetFloatPoint2D); }
+        AMF_INLINE AMFFloatPoint3D  ToFloatPoint3D() const { return Empty() ? AMFFloatPoint3D() : GetValue<AMFFloatPoint3D, AMF_VARIANT_FLOAT_POINT3D>(AMFVariantGetFloatPoint3D); }
+        AMF_INLINE AMFFloatVector4D ToFloatVector4D() const { return Empty() ? AMFFloatVector4D() : GetValue<AMFFloatVector4D, AMF_VARIANT_FLOAT_VECTOR4D>(AMFVariantGetFloatVector4D); }
         AMF_INLINE AMFRate          ToRate () const     { return Empty() ? AMFRate()    : GetValue<AMFRate,  AMF_VARIANT_RATE>(AMFVariantGetRate); }
         AMF_INLINE AMFRatio         ToRatio() const     { return Empty() ? AMFRatio()   : GetValue<AMFRatio, AMF_VARIANT_RATIO>(AMFVariantGetRatio); }
         AMF_INLINE AMFColor         ToColor() const     { return Empty() ? AMFColor()   : GetValue<AMFColor, AMF_VARIANT_COLOR>(AMFVariantGetColor); }
@@ -603,6 +655,9 @@ namespace amf
             case AMF_VARIANT_DOUBLE:
                 *bEqual = AMFVariantGetDouble(pFirst) == AMFVariantDouble(pSecond);
                 break;
+            case AMF_VARIANT_FLOAT:
+                *bEqual = AMFVariantGetFloat(pFirst) == AMFVariantFloat(pSecond);
+                break;
             case AMF_VARIANT_RECT:
 #if defined(__cplusplus)
                 *bEqual = AMFVariantGetRect(pFirst) == AMFVariantGetRect(pSecond);
@@ -622,6 +677,34 @@ namespace amf
                 *bEqual = AMFVariantGetPoint(pFirst) == AMFVariantGetPoint(pSecond);
 #else
                 *bEqual = memcmp(&pFirst->pointValue, &pSecond->pointValue, sizeof(AMFPoint)) == 0;
+#endif
+                break;
+            case AMF_VARIANT_FLOAT_SIZE:
+#if defined(__cplusplus)
+                *bEqual = AMFVariantGetFloatSize(pFirst) == AMFVariantGetFloatSize(pSecond);
+#else
+                *bEqual = memcmp(&pFirst->floatSizeValue, &pSecond->floatSizeValue, sizeof(AMFFloatPoint2D)) == 0;
+#endif
+                break;
+            case AMF_VARIANT_FLOAT_POINT2D:
+#if defined(__cplusplus)
+                *bEqual = AMFVariantGetFloatPoint2D(pFirst) == AMFVariantGetFloatPoint2D(pSecond);
+#else
+                *bEqual = memcmp(&pFirst->floatPoint2DValue, &pSecond->floatPoint2DValue, sizeof(AMFFloatPoint2D)) == 0;
+#endif
+                break;
+            case AMF_VARIANT_FLOAT_POINT3D:
+#if defined(__cplusplus)
+                *bEqual = AMFVariantGetFloatPoint3D(pFirst) == AMFVariantGetFloatPoint3D(pSecond);
+#else
+                *bEqual = memcmp(&pFirst->floatPoint3DValue, &pSecond->floatPoint3DValue, sizeof(AMFFloatPoint3D)) == 0;
+#endif
+                break;
+            case AMF_VARIANT_FLOAT_VECTOR4D:
+#if defined(__cplusplus)
+                *bEqual = AMFVariantGetFloatVector4D(pFirst) == AMFVariantGetFloatVector4D(pSecond);
+#else
+                *bEqual = memcmp(&pFirst->floatVector4DValue, &pSecond->floatVector4DValue, sizeof(AMFFloatPoint3D)) == 0;
 #endif
                 break;
             case AMF_VARIANT_RATE:
@@ -683,6 +766,9 @@ namespace amf
             case AMF_VARIANT_DOUBLE:
                 errRet = AMFVariantAssignDouble(pDest, AMFVariantDouble(pSrc));
                 break;
+            case AMF_VARIANT_FLOAT:
+                errRet = AMFVariantAssignFloat(pDest, AMFVariantFloat(pSrc));
+                break;
             case AMF_VARIANT_RECT:
                 errRet = AMFVariantAssignRect(pDest, &pSrc->rectValue);
                 break;
@@ -691,6 +777,18 @@ namespace amf
                 break;
             case AMF_VARIANT_POINT:
                 errRet = AMFVariantAssignPoint(pDest, &pSrc->pointValue);
+                break;
+            case AMF_VARIANT_FLOAT_SIZE:
+                errRet = AMFVariantAssignFloatSize(pDest, &pSrc->floatSizeValue);
+                break;
+            case AMF_VARIANT_FLOAT_POINT2D:
+                errRet = AMFVariantAssignFloatPoint2D(pDest, &pSrc->floatPoint2DValue);
+                break;
+            case AMF_VARIANT_FLOAT_POINT3D:
+                errRet = AMFVariantAssignFloatPoint3D(pDest, &pSrc->floatPoint3DValue);
+                break;
+            case AMF_VARIANT_FLOAT_VECTOR4D:
+                errRet = AMFVariantAssignFloatVector4D(pDest, &pSrc->floatVector4DValue);
                 break;
             case AMF_VARIANT_RATE:
                 errRet = AMFVariantAssignRate(pDest, &pSrc->rateValue);
@@ -722,10 +820,15 @@ namespace amf
     #define AMFVariantTypeBool          AMF_VARIANT_BOOL
     #define AMFVariantTypeInt64         AMF_VARIANT_INT64
     #define AMFVariantTypeDouble        AMF_VARIANT_DOUBLE
+    #define AMFVariantTypeFloat         AMF_VARIANT_FLOAT
 
     #define AMFVariantTypeRect          AMF_VARIANT_RECT
     #define AMFVariantTypeSize          AMF_VARIANT_SIZE
     #define AMFVariantTypePoint         AMF_VARIANT_POINT
+    #define AMFVariantTypeFloatPoint2D  AMF_VARIANT_FLOAT_POINT2D
+    #define AMFVariantTypeFloatPoint3D  AMF_VARIANT_FLOAT_POINT3D
+    #define AMFVariantTypeFloatVector4D AMF_VARIANT_FLOAT_VECTOR4D
+    
     #define AMFVariantTypeRate          AMF_VARIANT_RATE
     #define AMFVariantTypeRatio         AMF_VARIANT_RATIO
     #define AMFVariantTypeColor         AMF_VARIANT_COLOR
@@ -748,16 +851,19 @@ namespace amf
     static AMF_INLINE amf_bool AMFConvertEmptyToBool(void*, AMF_RESULT& res) { res = AMF_OK; return false; }
     static AMF_INLINE amf_int64 AMFConvertEmptyToInt64(void*, AMF_RESULT& res) {res = AMF_OK; return 0; }
     static AMF_INLINE amf_double AMFConvertEmptyToDouble(void*, AMF_RESULT& res) {res = AMF_OK; return 0; }
-    
+    static AMF_INLINE amf_float AMFConvertEmptyToFloat(void*, AMF_RESULT& res) { res = AMF_OK; return 0; }
+
     
     static AMF_INLINE AMFVariant::String AMFConvertEmptyToString(void*, AMF_RESULT& res) {res = AMF_OK; return ""; }
     static AMF_INLINE AMFVariant::WString AMFConvertEmptyToWString(void*, AMF_RESULT& res) {res = AMF_OK; return L""; }
     static AMF_INLINE amf_int64 AMFConvertBoolToInt64(bool value, AMF_RESULT& res){res = AMF_OK; return value ? 1 : 0;}
-    static AMF_INLINE amf_double AMFConvertBoolToDouble(bool value, AMF_RESULT& res){res = AMF_OK; return value ? 1 : 0;}
+    static AMF_INLINE amf_double AMFConvertBoolToDouble(bool value, AMF_RESULT& res){res = AMF_OK; return value ? 1.0 : 0.0;}
+    static AMF_INLINE amf_float AMFConvertBoolToFloat(bool value, AMF_RESULT& res) { res = AMF_OK; return value ? 1.0f : 0.0f; }
     static AMF_INLINE AMFVariant::String AMFConvertBoolToString(bool value, AMF_RESULT& res){res = AMF_OK; return value ? "true" : "false";}
     static AMF_INLINE AMFVariant::WString AMFConvertBoolToWString(bool value, AMF_RESULT& res){res = AMF_OK; return value ? L"true" : L"false";}
     static AMF_INLINE bool AMFConvertInt64ToBool(amf_int64 value, AMF_RESULT& res){res = AMF_OK;return value != 0;}
     static AMF_INLINE amf_double AMFConvertInt64ToDouble(amf_int64 value, AMF_RESULT& res){res = AMF_OK;return (amf_double)value;}
+    static AMF_INLINE amf_float AMFConvertInt64ToFloat(amf_int64 value, AMF_RESULT& res) { res = AMF_OK; return (amf_float)value; }
     static AMF_INLINE AMFVariant::String AMFConvertInt64ToString(amf_int64 value, AMF_RESULT& res)
     {
         res = AMF_OK;
@@ -774,7 +880,9 @@ namespace amf
     }
 
     static AMF_INLINE bool AMFConvertDoubleToBool(amf_double value, AMF_RESULT& res){res = AMF_OK;return value != 0;}
+    static AMF_INLINE bool AMFConvertFloatToBool(amf_float value, AMF_RESULT& res) { res = AMF_OK; return value != 0; }
     static AMF_INLINE amf_int64 AMFConvertDoubleToInt64(amf_double value, AMF_RESULT& res){res = AMF_OK;return amf_int64(value);}
+    static AMF_INLINE amf_int64 AMFConvertFloatToInt64(amf_float value, AMF_RESULT& res) { res = AMF_OK; return amf_int64(value); }
     static AMF_INLINE AMFVariant::String AMFConvertDoubleToString(amf_double value, AMF_RESULT& res)
     {
         res = AMF_OK;
@@ -782,11 +890,25 @@ namespace amf
         sprintf(buff, "%lf", value);
         return buff;
     }
+    static AMF_INLINE AMFVariant::String AMFConvertFloatToString(amf_float value, AMF_RESULT& res)
+    {
+        res = AMF_OK;
+        char buff[0xFF];
+        sprintf(buff, "%f", value);
+        return buff;
+    }
     static AMF_INLINE AMFVariant::WString AMFConvertDoubleToWString(amf_double value, AMF_RESULT& res)
     {
         res = AMF_OK;
         wchar_t buff[0xFF];
         swprintf(buff, 0xFF, L"%lf", value);
+        return buff;
+    }
+    static AMF_INLINE AMFVariant::WString AMFConvertFloatToWString(amf_float value, AMF_RESULT& res)
+    {
+        res = AMF_OK;
+        wchar_t buff[0xFF];
+        swprintf(buff, 0xFF, L"%f", value);
         return buff;
     }
 
@@ -841,6 +963,22 @@ namespace amf
             readElements = sscanf(value.c_str(), "%lf", &tmp);
         }
         if(readElements)
+        {
+            return tmp;
+        }
+        res = AMF_INVALID_ARG;
+        return 0;
+    }
+    static AMF_INLINE amf_float AMFConvertStringToFloat(const AMFVariant::String& value, AMF_RESULT& res)
+    {
+        res = AMF_OK;
+        amf_float tmp = 0;
+        int readElements = 0;
+        if (value.size() > 0)
+        {
+            readElements = sscanf(value.c_str(), "%f", &tmp);
+        }
+        if (readElements)
         {
             return tmp;
         }
@@ -1005,6 +1143,10 @@ namespace amf
     {
         return AMFConvertStringToDouble(AMFConvertWStringToString(value, res), res);
     }
+    static AMF_INLINE amf_float AMFConvertWStringToFloat(const AMFVariant::WString& value, AMF_RESULT& res)
+    {
+        return AMFConvertStringToFloat(AMFConvertWStringToString(value, res), res);
+    }
 
     static AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertRectToString(const AMFRect& value, AMF_RESULT& res)
     {
@@ -1025,6 +1167,34 @@ namespace amf
         res = AMF_OK;
         char buff[0xFF];
         sprintf(buff, "%d,%d", value.x, value.y);
+        return buff;
+    }
+    static AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertFloatSizeToString(const AMFFloatSize& value, AMF_RESULT& res)
+    {
+        res = AMF_OK;
+        char buff[0xFF];
+        sprintf(buff, "%f,%f", value.width, value.height);
+        return buff;
+    }
+    static AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertFloatPoint2DToString(const AMFFloatPoint2D& value, AMF_RESULT& res)
+    {
+        res = AMF_OK;
+        char buff[0xFF];
+        sprintf(buff, "%f,%f", value.x, value.y);
+        return buff;
+    }
+    static AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertFloatPoint3DToString(const AMFFloatPoint3D& value, AMF_RESULT& res)
+    {
+        res = AMF_OK;
+        char buff[0xFF];
+        sprintf(buff, "%f,%f,%f", value.x, value.y, value.z);
+        return buff;
+    }
+    static AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertFloatVector4DToString(const AMFFloatVector4D& value, AMF_RESULT& res)
+    {
+        res = AMF_OK;
+        char buff[0xFF];
+        sprintf(buff, "%f,%f,%f,%f", value.x, value.y, value.z, value.w);
         return buff;
     }
     static AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertRateToString(const AMFRate& value, AMF_RESULT& res)
@@ -1098,6 +1268,70 @@ namespace amf
         res = AMF_INVALID_ARG;
         return tmp;
     }
+    static AMF_INLINE AMFFloatSize AMF_STD_CALL AMFConvertStringToFloatSize(const AMFVariant::String& value, AMF_RESULT& res)
+    {
+        res = AMF_OK;
+        AMFFloatSize tmp = {};
+        int readElements = 0;
+        if (value.size() > 0)
+        {
+            readElements = sscanf(value.c_str(), "%f,%f", &tmp.width, &tmp.height);
+        }
+        if (readElements)
+        {
+            return tmp;
+        }
+        res = AMF_INVALID_ARG;
+        return tmp;
+    }
+    static AMF_INLINE AMFFloatPoint2D AMF_STD_CALL AMFConvertStringToFloatPoint2D(const AMFVariant::String& value, AMF_RESULT& res)
+    {
+        res = AMF_OK;
+        AMFFloatPoint2D tmp = {};
+        int readElements = 0;
+        if (value.size() > 0)
+        {
+            readElements = sscanf(value.c_str(), "%f,%f", &tmp.x, &tmp.y);
+        }
+        if (readElements)
+        {
+            return tmp;
+        }
+        res = AMF_INVALID_ARG;
+        return tmp;
+    }
+    static AMF_INLINE AMFFloatPoint3D AMF_STD_CALL AMFConvertStringToFloatPoint3D(const AMFVariant::String& value, AMF_RESULT& res)
+    {
+        res = AMF_OK;
+        AMFFloatPoint3D tmp = {};
+        int readElements = 0;
+        if (value.size() > 0)
+        {
+            readElements = sscanf(value.c_str(), "%f,%f,%f", &tmp.x, &tmp.y, &tmp.z);
+        }
+        if (readElements)
+        {
+            return tmp;
+        }
+        res = AMF_INVALID_ARG;
+        return tmp;
+    }
+    static AMF_INLINE AMFFloatVector4D AMF_STD_CALL AMFConvertStringToFloatVector4D(const AMFVariant::String& value, AMF_RESULT& res)
+    {
+        res = AMF_OK;
+        AMFFloatVector4D tmp = {};
+        int readElements = 0;
+        if (value.size() > 0)
+        {
+            readElements = sscanf(value.c_str(), "%f,%f,%f,%f", &tmp.x, &tmp.y, &tmp.z, &tmp.w);
+        }
+        if (readElements)
+        {
+            return tmp;
+        }
+        res = AMF_INVALID_ARG;
+        return tmp;
+    }
     static AMF_INLINE AMFRate  AMF_STD_CALL AMFConvertStringToRate(const AMFVariant::String& value, AMF_RESULT& res)
     {
         res = AMF_OK;
@@ -1162,6 +1396,22 @@ namespace amf
     {
         return AMFConvertStringToWString(AMFConvertPointToString(value, res), res);
     }
+    static AMF_INLINE AMFVariant::WString AMF_STD_CALL AMFConvertFloatSizeToWString(const AMFFloatSize& value, AMF_RESULT& res)
+    {
+        return AMFConvertStringToWString(AMFConvertFloatSizeToString(value, res), res);
+    }
+    static AMF_INLINE AMFVariant::WString AMF_STD_CALL AMFConvertFloatPoint2DToWString(const AMFFloatPoint2D& value, AMF_RESULT& res)
+    {
+        return AMFConvertStringToWString(AMFConvertFloatPoint2DToString(value, res), res);
+    }
+    static AMF_INLINE AMFVariant::WString AMF_STD_CALL AMFConvertFloatPoint3DToWString(const AMFFloatPoint3D& value, AMF_RESULT& res)
+    {
+        return AMFConvertStringToWString(AMFConvertFloatPoint3DToString(value, res), res);
+    }
+    static AMF_INLINE AMFVariant::WString AMF_STD_CALL AMFConvertFloatVector4DToWString(const AMFFloatVector4D& value, AMF_RESULT& res)
+    {
+        return AMFConvertStringToWString(AMFConvertFloatVector4DToString(value, res), res);
+    }
     static AMF_INLINE AMFVariant::WString AMF_STD_CALL AMFConvertRateToWString(const AMFRate& value, AMF_RESULT& res)
     {
         return AMFConvertStringToWString(AMFConvertRateToString(value, res), res);
@@ -1187,6 +1437,22 @@ namespace amf
     static AMF_INLINE AMFPoint AMF_STD_CALL AMFConvertWStringToPoint(const AMFVariant::WString& value, AMF_RESULT& res)
     {
         return AMFConvertStringToPoint(AMFConvertWStringToString(value, res), res);
+    }
+    static AMF_INLINE AMFFloatSize AMF_STD_CALL AMFConvertWStringToFloatSize(const AMFVariant::WString& value, AMF_RESULT& res)
+    {
+        return AMFConvertStringToFloatSize(AMFConvertWStringToString(value, res), res);
+    }
+    static AMF_INLINE AMFFloatPoint2D AMF_STD_CALL AMFConvertWStringToFloatPoint2D(const AMFVariant::WString& value, AMF_RESULT& res)
+    {
+        return AMFConvertStringToFloatPoint2D(AMFConvertWStringToString(value, res), res);
+    }
+    static AMF_INLINE AMFFloatPoint3D AMF_STD_CALL AMFConvertWStringToFloatPoint3D(const AMFVariant::WString& value, AMF_RESULT& res)
+    {
+        return AMFConvertStringToFloatPoint3D(AMFConvertWStringToString(value, res), res);
+    }
+    static AMF_INLINE AMFFloatVector4D AMF_STD_CALL AMFConvertWStringToFloatVector4D(const AMFVariant::WString& value, AMF_RESULT& res)
+    {
+        return AMFConvertStringToFloatVector4D(AMFConvertWStringToString(value, res), res);
     }
     static AMF_INLINE AMFRate  AMF_STD_CALL AMFConvertWStringToRate(const AMFVariant::WString& value, AMF_RESULT& res)
     {
@@ -1232,16 +1498,19 @@ namespace amf
         AMFConvertTool(Empty, Bool);
         AMFConvertTool(Empty, Int64);
         AMFConvertTool(Empty, Double);
+        AMFConvertTool(Empty, Float);
         AMFConvertTool(Empty, String);
         AMFConvertTool(Empty, WString);
 
         AMFConvertTool(Bool, Int64);
         AMFConvertTool(Bool, Double);
+        AMFConvertTool(Bool, Float);
         AMFConvertTool(Bool, String);
         AMFConvertTool(Bool, WString);
 
         AMFConvertTool(Int64, Bool);
         AMFConvertTool(Int64, Double);
+        AMFConvertTool(Int64, Float);
         AMFConvertTool(Int64, String);
         AMFConvertTool(Int64, WString);
 
@@ -1250,14 +1519,21 @@ namespace amf
         AMFConvertTool(Double, String);
         AMFConvertTool(Double, String);
 
+        AMFConvertTool(Float, Bool);
+        AMFConvertTool(Float, Int64);
+        AMFConvertTool(Float, String);
+        AMFConvertTool(Float, String);
+
         AMFConvertTool(String, Bool);
         AMFConvertTool(String, Int64);
         AMFConvertTool(String, Double);
+        AMFConvertTool(String, Float);
         AMFConvertTool(String, WString);
 
         AMFConvertTool(WString, Bool);
         AMFConvertTool(WString, Int64);
         AMFConvertTool(WString, Double);
+        AMFConvertTool(WString, Float);
         AMFConvertTool(WString, String);
 
         AMFConvertTool(String, Rect);
@@ -1331,6 +1607,20 @@ namespace amf
         {
             pDest->type = AMF_VARIANT_DOUBLE;
             AMFVariantDouble(pDest) = value;
+        }
+        return errRet;
+    }
+    //-------------------------------------------------------------------------------------------------
+    static AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignFloat(AMFVariantStruct* pDest, amf_float value)
+    {
+        AMF_RESULT errRet = AMF_OK;
+        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
+
+        errRet = AMFVariantClear(pDest);
+        if (errRet == AMF_OK)
+        {
+            pDest->type = AMF_VARIANT_FLOAT;
+            AMFVariantFloat(pDest) = value;
         }
         return errRet;
     }
@@ -1454,6 +1744,22 @@ namespace amf
     {
         return AMFVariantAssignPoint(pDest, &value);
     }
+    static AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignFloatSize(AMFVariantStruct* pDest, const AMFFloatSize& value)
+    {
+        return AMFVariantAssignFloatSize(pDest, &value);
+    }
+    static AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignFloatPoint2D(AMFVariantStruct* pDest, const AMFFloatPoint2D& value)
+    {
+        return AMFVariantAssignFloatPoint2D(pDest, &value);
+    }
+    static AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignFloatPoint3D(AMFVariantStruct* pDest, const AMFFloatPoint3D& value)
+    {
+        return AMFVariantAssignFloatPoint3D(pDest, &value);
+    }
+    static AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignFloatVector4D(AMFVariantStruct* pDest, const AMFFloatVector4D& value)
+    {
+        return AMFVariantAssignFloatVector4D(pDest, &value);
+    }
 #endif
     //-------------------------------------------------------------------------------------------------
     static AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignPoint(AMFVariantStruct* pDest, const AMFPoint* value)
@@ -1466,6 +1772,62 @@ namespace amf
         {
             pDest->type = AMF_VARIANT_POINT;
             AMFVariantPoint(pDest) = *value;
+        }
+        return errRet;
+    }
+    //-------------------------------------------------------------------------------------------------
+    static AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignFloatSize(AMFVariantStruct* pDest, const AMFFloatSize* value)
+    {
+        AMF_RESULT errRet = AMF_OK;
+        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
+
+        errRet = AMFVariantClear(pDest);
+        if (errRet == AMF_OK)
+        {
+            pDest->type = AMF_VARIANT_FLOAT_SIZE;
+            AMFVariantFloatSize(pDest) = *value;
+        }
+        return errRet;
+    }
+    //-------------------------------------------------------------------------------------------------
+    static AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignFloatPoint2D(AMFVariantStruct* pDest, const AMFFloatPoint2D* value)
+    {
+        AMF_RESULT errRet = AMF_OK;
+        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
+
+        errRet = AMFVariantClear(pDest);
+        if (errRet == AMF_OK)
+        {
+            pDest->type = AMF_VARIANT_FLOAT_POINT2D;
+            AMFVariantFloatPoint2D(pDest) = *value;
+        }
+        return errRet;
+    }
+    //-------------------------------------------------------------------------------------------------
+    static AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignFloatPoint3D(AMFVariantStruct* pDest, const AMFFloatPoint3D* value)
+    {
+        AMF_RESULT errRet = AMF_OK;
+        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
+
+        errRet = AMFVariantClear(pDest);
+        if (errRet == AMF_OK)
+        {
+            pDest->type = AMF_VARIANT_FLOAT_POINT3D;
+            AMFVariantFloatPoint3D(pDest) = *value;
+        }
+        return errRet;
+    }
+    //-------------------------------------------------------------------------------------------------
+    static AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantAssignFloatVector4D(AMFVariantStruct* pDest, const AMFFloatVector4D* value)
+    {
+        AMF_RESULT errRet = AMF_OK;
+        AMF_VARIANT_RETURN_IF_INVALID_POINTER(pDest);
+
+        errRet = AMFVariantClear(pDest);
+        if (errRet == AMF_OK)
+        {
+            pDest->type = AMF_VARIANT_FLOAT_VECTOR4D;
+            AMFVariantFloatVector4D(pDest) = *value;
         }
         return errRet;
     }

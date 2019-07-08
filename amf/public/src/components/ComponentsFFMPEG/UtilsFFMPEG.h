@@ -44,7 +44,6 @@ extern "C"
     #include "libavformat/avformat.h"
     #include "libavformat/url.h"
     #include "libavcodec/avcodec.h"
-    #include "libavcodec/audioconvert.h"
     #include "libavresample/avresample.h"
     #include "libavutil/opt.h"
 #if defined(_MSC_VER)

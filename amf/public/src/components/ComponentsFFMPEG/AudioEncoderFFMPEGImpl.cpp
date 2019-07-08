@@ -196,7 +196,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
     //m_pCodecContext->strict_std_compliance = FF_COMPLIANCE_STRICT;
     m_pCodecContext->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
     
-    m_pCodecContext->flags |= CODEC_FLAG_GLOBAL_HEADER;
+    m_pCodecContext->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
     m_pCodecContext->time_base.num= 1;
     m_pCodecContext->time_base.den = m_iSampleRate;

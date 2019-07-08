@@ -1328,7 +1328,7 @@ static float OneCrossCorrelation(
             sx += x[i] * x[i];
             sy += y[i] * y[i];
         }
-        float denom = sqrt(sx*sy);
+        float denom = sqrtf(sx*sy);
 
         // Calculate the correlation
         float sxy = 0;

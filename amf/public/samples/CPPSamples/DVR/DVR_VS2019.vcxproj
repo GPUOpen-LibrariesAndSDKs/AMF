@@ -1,0 +1,233 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{7E7270B4-B894-4BA2-9E89-621276C6BF28}</ProjectGuid>
+    <RootNamespace>DVR</RootNamespace>
+    <ProjectName>DVR</ProjectName>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\props\AMF_VS2019.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\props\AMF_VS2019.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\props\AMF_VS2019.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\props\AMF_VS2019.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)..\..\bin\vs2019x$(PlatformArchitecture)$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)..\..\bin\obj\vs2019x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(OCL_ROOT)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
+      <AdditionalDependencies>opengl32.lib;dxgi.lib;dxva2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(OCL_ROOT)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
+      <AdditionalDependencies>opengl32.lib;dxgi.lib;dxva2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SubSystem>
+      </SubSystem>
+      <ImportLibrary>$(SolutionDir)..\..\bin\lib\vs2019x$(PlatformArchitecture)$(Configuration)\$(TargetName).lib</ImportLibrary>
+      <AdditionalLibraryDirectories>C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.21.27702\atlmfc\lib\spectre\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(OCL_ROOT)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>opengl32.lib;dxgi.lib;dxva2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(OCL_ROOT)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>opengl32.lib;dxgi.lib;dxva2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.21.27702\atlmfc\lib\spectre\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\public\common\AMFFactory.cpp" />
+    <ClCompile Include="..\..\..\..\public\common\AMFSTL.cpp" />
+    <ClCompile Include="..\..\..\..\public\common\PropertyStorageExImpl.cpp" />
+    <ClCompile Include="..\..\..\..\public\common\Thread.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\common\TraceAdapter.cpp" />
+    <ClCompile Include="..\..\..\..\public\common\Windows\ThreadWindows.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\CmdLogger.cpp" />
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\DeviceDX11.cpp" />
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\DeviceDX9.cpp" />
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\DisplayDvrPipeline.cpp" />
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\EncoderParamsAVC.cpp" />
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\EncoderParamsHEVC.cpp" />
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\ParametersStorage.cpp" />
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\Pipeline.cpp" />
+    <ClCompile Include="..\..\..\..\public\src\components\AudioCapture\AudioCaptureImpl.cpp" />
+    <ClCompile Include="..\..\..\..\public\src\components\AudioCapture\WASAPISource.cpp" />
+    <ClCompile Include="..\..\..\..\public\src\components\DisplayCapture\DDAPISource.cpp" />
+    <ClCompile Include="..\..\..\..\public\src\components\DisplayCapture\DisplayCaptureImpl.cpp" />
+    <ClCompile Include="..\..\..\common\CurrentTimeImpl.cpp" />
+    <ClCompile Include="..\common\CmdLineParser.cpp" />
+    <ClCompile Include="..\common\DeviceOpenCL.cpp" />
+    <ClCompile Include="..\common\OpenCLLoader.cpp" />
+    <ClCompile Include="DVR.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\public\common\AMFFactory.h" />
+    <ClInclude Include="..\..\..\..\public\common\AMFSTL.h" />
+    <ClInclude Include="..\..\..\..\public\common\PropertyStorageExImpl.h" />
+    <ClInclude Include="..\..\..\..\public\common\PropertyStorageImpl.h" />
+    <ClInclude Include="..\..\..\..\public\common\Thread.h" />
+    <ClInclude Include="..\..\..\..\public\common\TraceAdapter.h" />
+    <ClInclude Include="..\..\..\..\public\include\components\AudioCapture.h" />
+    <ClInclude Include="..\..\..\..\public\include\components\DisplayCapture.h" />
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\CmdLogger.h" />
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\DeviceDX11.h" />
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\DeviceDX9.h" />
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\DisplayDvrPipeline.h" />
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\EncoderParamsAVC.h" />
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\EncoderParamsHEVC.h" />
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\ParametersStorage.h" />
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\Pipeline.h" />
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\PipelineElement.h" />
+    <ClInclude Include="..\..\..\..\public\src\components\AudioCapture\AudioCaptureImpl.h" />
+    <ClInclude Include="..\..\..\..\public\src\components\AudioCapture\WASAPISource.h" />
+    <ClInclude Include="..\..\..\..\public\src\components\DisplayCapture\DDAPISource.h" />
+    <ClInclude Include="..\..\..\..\public\src\components\DisplayCapture\DisplayCaptureImpl.h" />
+    <ClInclude Include="..\..\..\common\CurrentTime.h" />
+    <ClInclude Include="..\..\..\common\CurrentTimeImpl.h" />
+    <ClInclude Include="..\..\..\src\components\DisplayCapture\CaptureStats.h" />
+    <ClInclude Include="..\common\CmdLineParser.h" />
+    <ClInclude Include="..\common\DeviceOpenCL.h" />
+    <ClInclude Include="..\common\OpenCLLoader.h" />
+    <ClInclude Include="DVR.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="targetver.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="DVR.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="DVR.rc" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -57,6 +57,7 @@
 
 // video stream properties
 #define FFMPEG_DEMUXER_VIDEO_PIXEL_ASPECT_RATIO L"PixelAspectRatio"         // double (default = calculated)
+#define FFMPEG_DEMUXER_VIDEO_CODEC              L"FFmpegCodec"              // enum (from source)
 
 
 // buffer properties

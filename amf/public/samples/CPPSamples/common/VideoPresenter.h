@@ -109,6 +109,7 @@ public:
 
     virtual void AMF_STD_CALL  CheckForResize() {} // call from UI thread (for VulkanPresenter on Linux)
 
+    virtual void AMF_STD_CALL SetDropThreshold(amf_pts ptsDropThreshold) { m_ptsDropThreshold = ptsDropThreshold; }
 protected:
     VideoPresenter();
     virtual AMF_RESULT Freeze();
@@ -137,6 +138,7 @@ protected:
     
     amf_pts                             m_currentTime;
     bool                                m_bDoWait;
+    amf_pts                             m_ptsDropThreshold;
     AVSyncObject*                       m_pAVSync;
     amf_int32                           m_iSubresourceIndex;
     AMFRect                             m_sourceVertexRect;

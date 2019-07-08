@@ -508,6 +508,8 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
 	// override some usage parameters
 	PushParamsToPropertyStorage(pParams, ParamEncoderStatic, m_pEncoder);
 
+    PushParamsToPropertyStorage(pParams, ParamEncoderDynamic, m_pEncoder);
+
     // Query Number of VCE Independent Instances and selecting proper one.
     amf_bool toQuery;
 	amf_int32   numOfInstances = 0;

@@ -405,7 +405,7 @@ void StitchConvertNV12ToRGB(
             }
 
             uint4 colorOUT = yuv_to_rgb(colorLUT, linear);
-            write_imageui(frameRGB, pos , colorOUT);
+            write_imagef(frameRGB, pos , colorOUT / 255.f);
         }
     }
 }

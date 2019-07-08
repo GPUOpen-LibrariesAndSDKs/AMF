@@ -44,6 +44,7 @@
 #include "ObservableImpl.h"
 #include "TraceAdapter.h"
 #include <limits.h>
+#include <float.h>
 
 namespace amf
 {
@@ -301,6 +302,13 @@ namespace amf
                     err = AMF_OUT_OF_RANGE;
                 }
                 break;
+            case AMF_VARIANT_FLOAT:
+                if ((AMFVariantGetFloat(pOutValidated) < AMFVariantGetFloat(&pParamInfo->minValue)) ||
+                    (AMFVariantGetFloat(pOutValidated) > AMFVariantGetFloat(&pParamInfo->maxValue)))
+                {
+                    err = AMF_OUT_OF_RANGE;
+                }
+                break;
             case AMF_VARIANT_SIZE:
                 {
                     AMFSize validatedSize = AMFVariantGetSize(pOutValidated);
@@ -319,9 +327,27 @@ namespace amf
                     {
                         err = AMF_OUT_OF_RANGE;
                     }
-
                 }
-
+                break;
+            case AMF_VARIANT_FLOAT_SIZE:
+                {
+                    AMFFloatSize validatedSize = AMFVariantGetFloatSize(pOutValidated);
+                    AMFFloatSize minSize = AMFConstructFloatSize(0, 0);
+                    AMFFloatSize maxSize = AMFConstructFloatSize(FLT_MIN, FLT_MAX);
+                    if (pParamInfo->minValue.type != AMF_VARIANT_EMPTY)
+                    {
+                        minSize = AMFVariantGetFloatSize(&pParamInfo->minValue);
+                    }
+                    if (pParamInfo->maxValue.type != AMF_VARIANT_EMPTY)
+                    {
+                        maxSize = AMFVariantGetFloatSize(&pParamInfo->maxValue);
+                    }
+                    if (validatedSize.width < minSize.width || validatedSize.height < minSize.height ||
+                        validatedSize.width > maxSize.width || validatedSize.height > maxSize.height)
+                    {
+                        err = AMF_OUT_OF_RANGE;
+                    }
+                }
             }
             return err;
         }
@@ -342,6 +368,26 @@ namespace amf
         virtual void        AMF_STD_CALL RemoveObserver(AMFPropertyStorageObserver* pObserver) { AMFObservableImpl<AMFPropertyStorageObserver>::RemoveObserver(pObserver); }
         //-------------------------------------------------------------------------------------------------
     protected:
+		//-------------------------------------------------------------------------------------------------
+		AMF_PROPERTY_ACCESS_TYPE GetAccessType(const wchar_t* name) const
+		{
+			AMF_PROPERTY_ACCESS_TYPE accessType = AMF_PROPERTY_ACCESS_INVALID;
+			AMFPropertyInfo* pPropertyInfo = NULL;
+			for (amf_size i = 0; i < m_szPropertiesInfoCount; ++i)
+			{
+				if (wcscmp(m_pPropertiesInfo[i].name, name) == 0)
+				{
+					pPropertyInfo = &m_pPropertiesInfo[i];
+					break;
+				}
+			}
+
+			if (pPropertyInfo != NULL)
+			{
+				accessType = pPropertyInfo->accessType;
+			}
+			return accessType;
+		}
         //-------------------------------------------------------------------------------------------------
         AMF_RESULT SetAccessType(const wchar_t* name, AMF_PROPERTY_ACCESS_TYPE accessType)
         {
@@ -379,11 +425,11 @@ namespace amf
                 amf_map<amf_wstring, AMFVariant>::iterator found = m_PropertyValues.find(name);
                 if(found != m_PropertyValues.end())
                 {
-                    if(found->second == value)
+                    if(found->second == validatedValue)
                     {
                         return AMF_OK;
                     }
-                    found->second = value;
+                    found->second = validatedValue;
                 }
                 else
                 {
@@ -499,6 +545,10 @@ namespace amf
         amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_DOUBLE, 0, amf::AMFVariant(amf_double(_defaultValue)), \
             amf::AMFVariant(amf_double(_minValue)), amf::AMFVariant(amf_double(_maxValue)), _AllowChangeInRuntime, 0)
 
+    #define AMFPropertyInfoFloat(_name, _desc, _defaultValue, _minValue, _maxValue, _AllowChangeInRuntime) \
+        amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_FLOAT, 0, amf::AMFVariant(amf_float(_defaultValue)), \
+            amf::AMFVariant(amf_float(_minValue)), amf::AMFVariant(amf_float(_maxValue)), _AllowChangeInRuntime, 0)
+
 
     #define AMFPropertyInfoRect(_name, _desc, defaultLeft, defaultTop, defaultRight, defaultBottom, _AllowChangeInRuntime) \
         amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_RECT, 0, amf::AMFVariant(AMFConstructRect(defaultLeft, defaultTop, defaultRight, defaultBottom)), \
@@ -511,6 +561,10 @@ namespace amf
     #define AMFPropertyInfoSize(_name, _desc, _defaultValue, _minValue, _maxValue, _AllowChangeInRuntime) \
         amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_SIZE, 0, amf::AMFVariant(AMFSize(_defaultValue)), \
             amf::AMFVariant(AMFSize(_minValue)), amf::AMFVariant(AMFSize(_maxValue)), _AllowChangeInRuntime, 0)
+
+    #define AMFPropertyInfoFloatSize(_name, _desc, _defaultValue, _minValue, _maxValue, _AllowChangeInRuntime) \
+        amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_FLOAT_SIZE, 0, amf::AMFVariant(AMFFloatSize(_defaultValue)), \
+            amf::AMFVariant(AMFFloatSize(_minValue)), amf::AMFVariant(AMFFloatSize(_maxValue)), _AllowChangeInRuntime, 0)
 
     #define AMFPropertyInfoRate(_name, _desc, defaultNum, defaultDen, _AllowChangeInRuntime) \
         amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_RATE, 0, amf::AMFVariant(AMFConstructRate(defaultNum, defaultDen)), \

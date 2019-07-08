@@ -643,6 +643,10 @@ namespace amf
         {}
         amf_pts Wait(amf_pts waittime)
         {
+            if (waittime < 0)
+            {
+                return 0;
+            }
             m_bCancel = false;
             amf_pts start = amf_high_precision_clock();
             amf_pts waited = 0;
@@ -659,6 +663,34 @@ namespace amf
                 {
                     break;
                 }
+            }
+            return waited;
+        }
+        amf_pts WaitEx(amf_pts waittime)
+        {
+            m_bCancel = false;
+            amf_pts start = amf_high_precision_clock();
+            amf_pts waited = 0;
+            int count = 0;
+            while (!m_bCancel && waited < waittime)
+            {
+                if (waittime - waited < 2 * AMF_SECOND / 1000)// last 2 ms burn CPU for precision
+                {
+                    for (int i = 0; i < 1000; i++)
+                    {
+                        count++;
+#ifdef _WIN32
+                        YieldProcessor();
+#endif
+                    }
+
+                }
+                else if (!m_WaitEvent.LockTimeout(1))
+                {
+                    	break;
+                }
+
+                waited = amf_high_precision_clock() - start;
             }
             return waited;
         }

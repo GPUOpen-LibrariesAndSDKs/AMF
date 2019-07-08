@@ -90,7 +90,7 @@ protected:
     virtual AMF_RESULT  InitAudio(amf::AMFOutput* pOutput);
     virtual AMF_RESULT  InitVideo(BitStreamParserPtr pParser, amf::AMFOutput* pOutput, amf::AMF_MEMORY_TYPE presenterEngine, amf_handle previewTarget, amf_handle display, ParametersStorage* pParams);
 
-    virtual AMF_RESULT  InitVideoDecoder(const wchar_t *pDecoderID, amf_int32 videoWidth, amf_int32 videoHeight, amf::AMFBuffer* pExtraData);
+    virtual AMF_RESULT  InitVideoDecoder(const wchar_t *pDecoderID, amf_int64 codecID, amf_int32 videoWidth, amf_int32 videoHeight, AMFRate frameRate, amf::AMFBuffer* pExtraData);
     virtual AMF_RESULT  InitVideoProcessor(amf::AMF_MEMORY_TYPE presenterEngine, amf_int32 inWidth, amf_int32 inHeight, amf_int32 outWidth, amf_int32 outHeight);
 
 #if defined(_WIN32)

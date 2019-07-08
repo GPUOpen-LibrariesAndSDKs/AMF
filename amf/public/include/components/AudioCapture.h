@@ -54,19 +54,19 @@
 // Codec used for audio capture
 #define AUDIOCAPTURE_CODEC                  L"AudioCaptureCodec"           // amf_int64, AV_CODEC_ID_PCM_F32LE
 // Sample rate used for audio capture
-#define AUDIOCAPTURE_SAMPLERATE             L"AudioCaptureSampleRate"      // amf_int64, 44100,def
+#define AUDIOCAPTURE_SAMPLERATE             L"AudioCaptureSampleRate"      // amf_int64, 44100 in samples
 // Sample count used for audio capture
 #define AUDIOCAPTURE_SAMPLES                L"AudioCaptureSampleCount"     // amf_int64, 1024
 // Bitrate used for audio capture
-#define AUDIOCAPTURE_BITRATE                L"AudioCaptureBitRate"         // amf_int64, 1024
+#define AUDIOCAPTURE_BITRATE                L"AudioCaptureBitRate"         // amf_int64, in bits
 // Channel count used for audio capture
 #define AUDIOCAPTURE_CHANNELS               L"AudioCaptureChannelCount"    // amf_int64, 2
 // Format used for audio capture
 #define AUDIOCAPTURE_FORMAT                 L"AudioCaptureFormat"          // amf_int64, AMFAF_U8
 // Block alignment
-#define AUDIOCAPTURE_BLOCKALIGN             L"AudioCaptureBlockAlign"      // amf_int64, AMFAF_U8
+#define AUDIOCAPTURE_BLOCKALIGN             L"AudioCaptureBlockAlign"      // amf_int64, bytes
 // Audio frame size
-#define AUDIOCAPTURE_FRAMESIZE              L"AudioCaptureFrameSize"       // amf_int64, AMFAF_U8
+#define AUDIOCAPTURE_FRAMESIZE              L"AudioCaptureFrameSize"       // amf_int64, bytes
 // Audio low latency state
 #define AUDIOCAPTURE_LOWLATENCY             L"AudioCaptureLowLatency"      // amf_int64;
 

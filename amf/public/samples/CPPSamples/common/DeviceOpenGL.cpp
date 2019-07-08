@@ -31,35 +31,40 @@
 //
 #include "DeviceOpenGL.h"
 #include "CmdLogger.h"
+#include "public/common/TraceAdapter.h"
 #include <set>
 
 #pragma comment(lib, "opengl32.lib")
 
-
 static bool ReportGLErrors(const char* file, int line)
 {
-    unsigned int err = glGetError();
-    if(err != GL_NO_ERROR)
+    unsigned int err = GL_NO_ERROR;
+    unsigned int errTmp = GL_NO_ERROR;
+    bool errorHappened = false;
+    do
     {
-        std::wstringstream ss;
-        ss << "GL failed. Error numbers: ";
-        while(err != GL_NO_ERROR)
+        err = errTmp;
+        errTmp = glGetError();
+        if (errTmp != GL_NO_ERROR)
         {
-            ss  << std::hex << err << ", ";
-            err = glGetError();
+#if defined(__ANDROID__)  || defined(__linux)
+            AMFTraceError(AMF_FACILITY, L"GL failed error: %d, file: %hs, line: %d", errTmp, file, line);
+#else
+            AMFTraceError(L"DeviceOpenGL", L"GL failed error: %d, file: %hs, line: %d", errTmp, file, line);
+#endif
+            errorHappened = true;
         }
-        ss << std::dec << " file: " << file << ", line: " << line;
-        LOG_ERROR(ss.str());
-        return false;
-    }
-    return true;
+    } while (err != GL_NO_ERROR && errTmp != err);
+
+    return errorHappened;
 }
+
 
 
 #define CALL_GL(exp) \
 { \
     exp; \
-    if( !ReportGLErrors(__FILE__, __LINE__) ) return AMF_FAIL; \
+    if( ReportGLErrors(__FILE__, __LINE__) ) return AMF_FAIL; \
 }
 
 DeviceOpenGL::DeviceOpenGL() : 

@@ -95,7 +95,7 @@ namespace amf
             virtual void        AMF_STD_CALL  OnPropertyChanged(const wchar_t* pName);
 
             AMFFileDemuxerFFMPEGImpl*   m_pHost;
-            amf_int32                   m_iIndex;
+            amf_int32                   m_iIndexFFmpeg;
             bool                        m_bEnabled;
             // packet cache...
             amf_list<AVPacket*>        m_packetsCache;
@@ -208,12 +208,17 @@ namespace amf
 
         void AMF_STD_CALL        ReadRangeSettings();
         bool AMF_STD_CALL        IsCached();
+        amf_int32 OpenAsImageSequence(amf_string filename, AVInputFormat* pFmt, AVDictionary* pOptions);
+        amf_int32 OpenFile(amf_string filename, AVInputFormat* pFmt, AVDictionary* pOptions, amf_bool& bIsImage);
 
     private:
       mutable AMFCriticalSection  m_sync;
 
         AMFContextPtr                        m_pContext;
         amf_vector<AMFOutputDemuxerImplPtr>  m_OutputStreams;
+
+        amf_int32               FromFFmpegToOutputIndex(amf_int32 indexFFmpeg);
+        amf_int32               FromOutputToFFmpegIndex(amf_int32 indexOutput);
 
         // member variables from AMFDemuxerFFMPEG
         AVFormatContext*        m_pInputContext;
@@ -232,9 +237,8 @@ namespace amf
         amf_pts                 m_ptsSeekPos;
 
         // two main streams for sync
-        amf_int32               m_iVideoStreamIndex;
-        amf_int32               m_iAudioStreamIndex;
-        amf_int                 m_eVideoCodecID;
+        amf_int32               m_iVideoStreamIndexFFmpeg;
+        amf_int32               m_iAudioStreamIndexFFmpeg;
 
 #ifdef __USE_H264Mp4ToAnnexB
         amf::H264Mp4ToAnnexB    m_H264Mp4ToAnnexB;

@@ -778,7 +778,7 @@ AMF_RESULT VideoPresenterVulkan::Present(amf::AMFSurface* pSurface)
     WaitForPTS(pSurface->GetPts());
 
 
-    err = SwapChainVulkan::Present(imageIndex);
+    err = SwapChainVulkan::Present(imageIndex, true);
     CHECK_AMF_ERROR_RETURN(err, L"Present() failed");
     
     if(m_bRenderToBackBuffer)

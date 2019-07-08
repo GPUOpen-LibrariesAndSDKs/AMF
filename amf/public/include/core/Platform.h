@@ -177,6 +177,7 @@ typedef     amf_int64           amf_pts;     // in 100 nanosecs
 typedef amf_uint32              amf_flags;
 
 #define AMF_SECOND          10000000L    // 1 second in 100 nanoseconds
+#define AMF_MILLISECOND		(AMF_SECOND / 1000)
 
 #define AMF_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define AMF_MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -246,9 +247,89 @@ typedef struct AMFPoint
 
 static AMF_INLINE struct AMFPoint AMFConstructPoint(amf_int32 x, amf_int32 y)
 {
-    struct AMFPoint object = {x, y};
+    struct AMFPoint object = { x, y };
     return object;
 }
+
+typedef struct AMFFloatPoint2D
+{
+    amf_float x;
+    amf_float y;
+#if defined(__cplusplus)
+    bool operator==(const AMFFloatPoint2D& other) const
+    {
+        return x == other.x && y == other.y;
+    }
+    AMF_INLINE bool operator!=(const AMFFloatPoint2D& other) const { return !operator==(other); }
+#endif
+} AMFFloatPoint2D;
+
+static AMF_INLINE struct AMFFloatPoint2D AMFConstructFloatPoint2D(amf_float x, amf_float y)
+{
+    struct AMFFloatPoint2D object = {x, y};
+    return object;
+}
+typedef struct AMFFloatSize
+{
+    amf_float width;
+    amf_float height;
+#if defined(__cplusplus)
+    bool operator==(const AMFFloatSize& other) const
+    {
+        return width == other.width && height == other.height;
+    }
+    AMF_INLINE bool operator!=(const AMFFloatSize& other) const { return !operator==(other); }
+#endif
+} AMFFloatSize;
+
+static AMF_INLINE struct AMFFloatSize AMFConstructFloatSize(amf_float w, amf_float h)
+{
+    struct AMFFloatSize object = { w, h };
+    return object;
+}
+
+
+typedef struct AMFFloatPoint3D
+{
+    amf_float x;
+    amf_float y;
+    amf_float z;
+#if defined(__cplusplus)
+    bool operator==(const AMFFloatPoint3D& other) const
+    {
+        return x == other.x && y == other.y && z == other.z;
+    }
+    AMF_INLINE bool operator!=(const AMFFloatPoint3D& other) const { return !operator==(other); }
+#endif
+} AMFFloatPoint3D;
+
+static AMF_INLINE struct AMFFloatPoint3D AMFConstructFloatPoint3D(amf_float x, amf_float y, amf_float z)
+{
+    struct AMFFloatPoint3D object = { x, y, z };
+    return object;
+}
+
+typedef struct AMFFloatVector4D
+{
+    amf_float x;
+    amf_float y;
+    amf_float z;
+    amf_float w;
+#if defined(__cplusplus)
+    bool operator==(const AMFFloatVector4D& other) const
+    {
+        return x == other.x && y == other.y && z == other.z && w == other.w;
+    }
+    AMF_INLINE bool operator!=(const AMFFloatVector4D& other) const { return !operator==(other); }
+#endif
+} AMFFloatVector4D;
+
+static AMF_INLINE struct AMFFloatVector4D AMFConstructFloatVector4D(amf_float x, amf_float y, amf_float z, amf_float w)
+{
+    struct AMFFloatVector4D object = { x, y, z, w };
+    return object;
+}
+
 
 typedef struct AMFRate
 {

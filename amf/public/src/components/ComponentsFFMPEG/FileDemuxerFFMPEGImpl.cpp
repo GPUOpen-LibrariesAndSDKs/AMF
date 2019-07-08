@@ -66,15 +66,19 @@ static const AMFEnumDescriptionEntry VIDEO_CODEC_IDS_ENUM[] =
 
 static const AMFEnumDescriptionEntry AMF_OUTPUT_FORMATS_ENUM[] =
 {
-    { AMF_SURFACE_UNKNOWN, L"DEFAULT" },
-    { AMF_SURFACE_BGRA, L"BGRA" },
-    { AMF_SURFACE_RGBA, L"RGBA" },
-    { AMF_SURFACE_ARGB, L"ARGB" },
-    { AMF_SURFACE_NV12, L"NV12" },
-    { AMF_SURFACE_YUV420P, L"YUV420P" },
-    { AMF_SURFACE_YV12, L"YV12" },
-    { AMF_SURFACE_P010, L"P010" },
-    { AMF_SURFACE_UNKNOWN, 0 }  // This is end of description mark
+    { AMF_SURFACE_UNKNOWN,  L"DEFAULT" },
+    { AMF_SURFACE_BGRA,     L"BGRA" },
+    { AMF_SURFACE_RGBA,     L"RGBA" },
+    { AMF_SURFACE_ARGB,     L"ARGB" },
+    { AMF_SURFACE_NV12,     L"NV12" },
+    { AMF_SURFACE_YUV420P,  L"YUV420P" },
+    { AMF_SURFACE_YV12,     L"YV12" },
+    { AMF_SURFACE_P010,     L"P010" },
+    { AMF_SURFACE_Y210,     L"Y210" },
+    { AMF_SURFACE_Y410,     L"Y410" },
+    { AMF_SURFACE_Y416,     L"Y416" },
+    { AMF_SURFACE_RGBA_F16, L"RGBA_F16" },
+    { AMF_SURFACE_UNKNOWN,  0 }  // This is end of description mark
 };
 
 const AMFEnumDescriptionEntry AMF_SAMPLE_FORMAT_ENUM_DESCRIPTION[] =
@@ -113,19 +117,25 @@ struct FormatMap
 
 static const sFormatMap[] =
 {
-    FormatMap(AV_PIX_FMT_NONE, AMF_SURFACE_UNKNOWN),
-    FormatMap(AV_PIX_FMT_NV12, AMF_SURFACE_NV12),
-    FormatMap(AV_PIX_FMT_BGRA, AMF_SURFACE_BGRA),
-    FormatMap(AV_PIX_FMT_ARGB, AMF_SURFACE_ARGB),
-    FormatMap(AV_PIX_FMT_RGBA, AMF_SURFACE_RGBA),
-    FormatMap(AV_PIX_FMT_GRAY8, AMF_SURFACE_GRAY8),
-    FormatMap(AV_PIX_FMT_YUV420P, AMF_SURFACE_YUV420P),
-    FormatMap(AV_PIX_FMT_BGR0, AMF_SURFACE_BGRA),
+    FormatMap(AV_PIX_FMT_NONE,    AMF_SURFACE_UNKNOWN),
+    FormatMap(AV_PIX_FMT_NV12,    AMF_SURFACE_NV12),
+    FormatMap(AV_PIX_FMT_YUV420P, AMF_SURFACE_NV12),
+    FormatMap(AV_PIX_FMT_BGRA,    AMF_SURFACE_BGRA),
+    FormatMap(AV_PIX_FMT_ARGB,    AMF_SURFACE_ARGB),
+    FormatMap(AV_PIX_FMT_RGBA,    AMF_SURFACE_RGBA),
+    FormatMap(AV_PIX_FMT_GRAY8,   AMF_SURFACE_GRAY8),
+    FormatMap(AV_PIX_FMT_YUV420P, AMF_SURFACE_NV12),
+    FormatMap(AV_PIX_FMT_BGR0,    AMF_SURFACE_BGRA),
     FormatMap(AV_PIX_FMT_YUV420P, AMF_SURFACE_YV12),
 
-    FormatMap(AV_PIX_FMT_YUYV422, AMF_SURFACE_YUY2),
-    FormatMap(AV_PIX_FMT_P010, AMF_SURFACE_P010),
-    FormatMap(AV_PIX_FMT_YUV420P10, AMF_SURFACE_P010), //hack:: FFmpeg prefer  YUV420P10 but AMF decodes to P010
+    FormatMap(AV_PIX_FMT_YUYV422,     AMF_SURFACE_YUY2),
+    FormatMap(AV_PIX_FMT_P010,        AMF_SURFACE_P010),
+    FormatMap(AV_PIX_FMT_YUV420P10,   AMF_SURFACE_P010),
+    FormatMap(AV_PIX_FMT_YUV422P10LE, AMF_SURFACE_Y210),
+    FormatMap(AV_PIX_FMT_YUV444P10LE, AMF_SURFACE_Y416),
+    FormatMap(AV_PIX_FMT_RGBA64LE,    AMF_SURFACE_RGBA_F16), //EXR
+    FormatMap(AV_PIX_FMT_RGB48LE,     AMF_SURFACE_RGBA_F16), //EXR
+    FormatMap(AV_PIX_FMT_RGB48BE,     AMF_SURFACE_RGBA_F16), //PNG
 
     //FormatMap(PIX_FMT_YUV422P, AMF_SURFACE_YUV422P),
     //FormatMap(PIX_FMT_YUVJ422P, AMF_SURFACE_YUV422P)
@@ -149,7 +159,7 @@ void  ClearPacket(AVPacket* pPacket)
 //-------------------------------------------------------------------------------------------------
 AMFFileDemuxerFFMPEGImpl::AMFOutputDemuxerImpl::AMFOutputDemuxerImpl(AMFFileDemuxerFFMPEGImpl* pHost, amf_int32 index) 
     : m_pHost(pHost),
-      m_iIndex(index),
+      m_iIndexFFmpeg(index),
       m_bEnabled(false),
       m_iPacketCount(0)
 {
@@ -157,7 +167,7 @@ AMFFileDemuxerFFMPEGImpl::AMFOutputDemuxerImpl::AMFOutputDemuxerImpl(AMFFileDemu
 //-------------------------------------------------------------------------------------------------
 AMFFileDemuxerFFMPEGImpl::AMFOutputDemuxerImpl::~AMFOutputDemuxerImpl()
 {
-    AMFTraceInfo(AMF_FACILITY,L"Stream# %d, packets read %d", m_iIndex, (int)m_iPacketCount);
+    AMFTraceInfo(AMF_FACILITY,L"Stream# %d, packets read %d", m_iIndexFFmpeg, (int)m_iPacketCount);
     ClearPacketCache();
 }
 //-------------------------------------------------------------------------------------------------
@@ -185,7 +195,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::AMFOutputDemuxerImpl::QueryOu
     else
     {
         // if we don't have any packets cached, look to find the next one
-        err = m_pHost->FindNextPacket(m_iIndex, &packet, true);
+        err = m_pHost->FindNextPacket(m_iIndexFFmpeg, &packet, true);
         if (err != AMF_OK)
         {
             if(err == AMF_EOF)
@@ -225,7 +235,7 @@ AMF_RESULT  AMFFileDemuxerFFMPEGImpl::AMFOutputDemuxerImpl::CachePacket(AVPacket
     // check the packet exists - no point caching a null pointer
     AMF_RETURN_IF_FALSE(pPacket != NULL, AMF_INVALID_ARG, L"CachePacket() - packet not passed in");
     // check the packet has the same index as the stream
-    AMF_RETURN_IF_FALSE(pPacket->stream_index == m_iIndex, AMF_INVALID_ARG, L"CachePacket() - invalid packet for stream passed in");
+    AMF_RETURN_IF_FALSE(pPacket->stream_index == m_iIndexFFmpeg, AMF_INVALID_ARG, L"CachePacket() - invalid packet for stream passed in");
 
     if(!m_bEnabled)
     { 
@@ -291,10 +301,6 @@ AMFFileDemuxerFFMPEGImpl::AMFVideoOutputDemuxerImpl::AMFVideoOutputDemuxerImpl(A
 
         default:
             codecID = AV_CODEC_ID_NONE;
-        }
-    if (pHost->m_eVideoCodecID != AV_CODEC_ID_NONE)
-    {
-        codecID = pHost->m_eVideoCodecID;
     }
 
 
@@ -319,11 +325,15 @@ AMFFileDemuxerFFMPEGImpl::AMFVideoOutputDemuxerImpl::AMFVideoOutputDemuxerImpl(A
             memcpy(spBuffer->GetNative(), ist->codec->extradata, ist->codec->extradata_size);
         }
     }
+
+    //handle h264, NV12
+    AVPixelFormat pix_fmt = (ist->codec->pix_fmt == AV_PIX_FMT_NONE) ? AV_PIX_FMT_NV12 : ist->codec->pix_fmt;
+
     // figure out the surface format conversion
     AMF_SURFACE_FORMAT  surfaceFormat = AMF_SURFACE_UNKNOWN;
     for (amf_size i = 0; i < amf_countof(sFormatMap); i += 1)
     {
-        if (sFormatMap[i].ffmpegFormat == ist->codec->pix_fmt)
+        if (sFormatMap[i].ffmpegFormat == pix_fmt)
         {
             surfaceFormat = sFormatMap[i].amfFormat;
             break;
@@ -340,14 +350,15 @@ AMFFileDemuxerFFMPEGImpl::AMFVideoOutputDemuxerImpl::AMFVideoOutputDemuxerImpl(A
     AMFPrimitivePropertyInfoMapBegin
         AMFPropertyInfoEnum(AMF_STREAM_TYPE, L"Stream Type", AMF_STREAM_VIDEO, AMF_STREAM_TYPE_ENUM_DESCRIPTION, false),
         AMFPropertyInfoBool(AMF_STREAM_ENABLED, L"Enabled", false, true),
-        AMFPropertyInfoEnum(AMF_STREAM_CODEC_ID, L"Codec ID", codecID, VIDEO_CODEC_IDS_ENUM, false),
+        AMFPropertyInfoEnum(AMF_STREAM_CODEC_ID, L"Codec ID", (amf_int64)GetAMFVideoFormat((AVCodecID)codecID), VIDEO_CODEC_IDS_ENUM, false),
         AMFPropertyInfoInt64(AMF_STREAM_BIT_RATE, L"Bit Rate", 0, 0, INT_MAX, false),
         AMFPropertyInfoInterface(AMF_STREAM_EXTRA_DATA, L"Extra Data", NULL, false),
         AMFPropertyInfoRate(AMF_STREAM_VIDEO_FRAME_RATE, L"Frame Rate", ist->r_frame_rate.num, ist->r_frame_rate.den, false),
         AMFPropertyInfoSize(AMF_STREAM_VIDEO_FRAME_SIZE, L"Frame Size", frame, AMFConstructSize(0, 0), AMFConstructSize(INT_MAX, INT_MAX), false),
         AMFPropertyInfoEnum(AMF_STREAM_VIDEO_FORMAT, L"Surface Format", surfaceFormat, AMF_OUTPUT_FORMATS_ENUM, false),
         AMFPropertyInfoDouble(FFMPEG_DEMUXER_VIDEO_PIXEL_ASPECT_RATIO, L"Pixel Aspect Ratio", pixelAspectRatio, 0, DBL_MAX, false),
-    AMFPrimitivePropertyInfoMapEnd
+        AMFPropertyInfoInt64(FFMPEG_DEMUXER_VIDEO_CODEC,    L"FFMPEG codec", ist->codec->codec_id, AV_CODEC_ID_NONE, AV_CODEC_ID_WRAPPED_AVFRAME, false),
+        AMFPrimitivePropertyInfoMapEnd
 
     SetProperty(AMF_STREAM_CODEC_ID, GetAMFVideoFormat(AVCodecID(codecID)));
     SetProperty(AMF_STREAM_BIT_RATE, ist->codec->bit_rate);
@@ -355,6 +366,7 @@ AMFFileDemuxerFFMPEGImpl::AMFVideoOutputDemuxerImpl::AMFVideoOutputDemuxerImpl(A
     SetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, frame);
     SetProperty(AMF_STREAM_VIDEO_FORMAT, surfaceFormat);
     SetProperty(FFMPEG_DEMUXER_VIDEO_PIXEL_ASPECT_RATIO, pixelAspectRatio);
+    SetProperty(FFMPEG_DEMUXER_VIDEO_CODEC, ist->codec->codec_id);
     AMFPropertyStorage::SetProperty(AMF_STREAM_EXTRA_DATA, spBuffer);
 }
 
@@ -439,9 +451,8 @@ AMFFileDemuxerFFMPEGImpl::AMFFileDemuxerFFMPEGImpl(AMFContext* pContext)
     m_iPacketCount(0),
     m_bForceEof(false),
     m_bStreamingMode(true),
-    m_iVideoStreamIndex(-1),
-    m_iAudioStreamIndex(-1),
-    m_eVideoCodecID(AV_CODEC_ID_NONE),
+    m_iVideoStreamIndexFFmpeg(-1),
+    m_iAudioStreamIndexFFmpeg(-1),
     m_bTerminated(true)
 //    m_bSyncAV(false)
 {
@@ -672,7 +683,7 @@ void AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::SetMinPosition(amf_pts pts)
 {
     AMFLock lock(&m_sync);
 
-    if (m_iVideoStreamIndex != -1)
+    if (m_iVideoStreamIndexFFmpeg != -1)
     {
         pts = CheckPtsRange(pts);
 
@@ -694,7 +705,7 @@ amf_pts AMF_STD_CALL AMFFileDemuxerFFMPEGImpl::GetMinPosition()
 {
     AMFLock lock(&m_sync);
 
-    if (m_iVideoStreamIndex != -1)
+    if (m_iVideoStreamIndexFFmpeg != -1)
     {
         amf_uint64 startFrame = GetPropertyStartFrame();
         return GetPtsFromFrame(startFrame);
@@ -707,7 +718,7 @@ void AMF_STD_CALL AMFFileDemuxerFFMPEGImpl::SetMaxPosition(amf_pts pts)
 {
     AMFLock lock(&m_sync);
 
-    if (m_iVideoStreamIndex != -1)
+    if (m_iVideoStreamIndexFFmpeg != -1)
     {
         pts = CheckPtsRange(pts);
 
@@ -745,9 +756,9 @@ amf_uint64 AMF_STD_CALL AMFFileDemuxerFFMPEGImpl::GetFrameFromPts(amf_pts pts)
     AMFLock lock(&m_sync);
     if (m_pInputContext)
     {
-        if (m_iVideoStreamIndex != -1)
+        if (m_iVideoStreamIndexFFmpeg != -1)
         {
-            const AVStream *ist = m_pInputContext->streams[m_iVideoStreamIndex];
+            const AVStream *ist = m_pInputContext->streams[m_iVideoStreamIndexFFmpeg];
             amf_uint64 uFrame = static_cast<amf_uint64>((pts + 0.5) / GetPtsPerFrame(ist));
             return uFrame;
         }
@@ -760,9 +771,9 @@ amf_pts AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::GetPtsFromFrame(amf_uint64 iFram
     AMFLock lock(&m_sync);
     if (m_pInputContext)
     {
-        if (m_iVideoStreamIndex != -1)
+        if (m_iVideoStreamIndexFFmpeg != -1)
         {
-            const AVStream *ist = m_pInputContext->streams[m_iVideoStreamIndex];
+            const AVStream *ist = m_pInputContext->streams[m_iVideoStreamIndexFFmpeg];
             amf_pts framePts = static_cast<amf_pts>((iFrame * GetPtsPerFrame(ist)) + 0.5);
             return framePts;
         }
@@ -773,7 +784,7 @@ amf_pts AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::GetPtsFromFrame(amf_uint64 iFram
 //-------------------------------------------------------------------------------------------------
 bool AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::SupportFramesAccess()
 {
-    return (m_iVideoStreamIndex != -1);
+    return (m_iVideoStreamIndexFFmpeg != -1);
 }
 //-------------------------------------------------------------------------------------------------
 void AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::OnPropertyChanged(const wchar_t* pName)
@@ -869,86 +880,36 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
 
     // try open the file, if it fails, return error code
     AVInputFormat* fmt               = NULL;
-    int            ret               = avformat_open_input(&m_pInputContext, convertedfilename.c_str(), fmt, &options);
+    amf_bool bImageFormat = false;
+    int ret = OpenFile(convertedfilename, fmt, options, bImageFormat);
     AMF_RETURN_IF_FALSE(ret>=0 && m_pInputContext!=NULL, AMF_INVALID_ARG, L"Open() failed to open file %s", Url.c_str());
  
     if(file_iformat!= NULL)
     { 
         m_pInputContext->iformat = file_iformat;
     }
-    // disable raw video support. toos should use raw reader
-    ret = avformat_find_stream_info(m_pInputContext, NULL);
-    if (ret < 0)
+
+    if (bImageFormat)
     {
-        return AMF_NOT_SUPPORTED;
+        ret = OpenAsImageSequence(convertedfilename, fmt, options);
     }
 
-    // performs some checks on the video and audio streams
-    if(m_pInputContext->duration != AV_NOPTS_VALUE)
-    { 
-        m_ptsDuration = av_rescale_q(m_pInputContext->duration, FFMPEG_TIME_BASE_Q, AMF_TIME_BASE_Q);
-    }
-    else
-    {
-        m_ptsDuration = 0;
-    }
-    for (amf_uint32 i = 0; i < m_pInputContext->nb_streams; i++)
-    {
-        const AVStream* ist = m_pInputContext->streams[i];
-
-        if (ist->codec->codec_type == AVMEDIA_TYPE_VIDEO)
-        {
-            if (ist->codec->pix_fmt == AV_PIX_FMT_BGR24)
-            {
-                AMFTraceError(AMF_FACILITY, L"Picture format PIX_FMT_BGR24 is not supported.");
-                return AMF_INVALID_FORMAT;
-            }
-
-            if (m_iVideoStreamIndex<0)
-            {
-                m_iVideoStreamIndex = i;
-            }
-            else
-            { // find biggest
-                const AVStream *ist_prev = m_pInputContext->streams[m_iVideoStreamIndex];
-                if (ist->codec->width>ist_prev->codec->width && ist->codec->height>ist_prev->codec->height)
-                {
-                    m_iVideoStreamIndex = i;
-                }
-            }
-        }
-
-        if (ist->codec->codec_type == AVMEDIA_TYPE_AUDIO)
-        {
-            if (m_iAudioStreamIndex<0)
-            {
-                m_iAudioStreamIndex = i;
-            }
-            else
-            { // find biggest
-                const AVStream *ist_prev = m_pInputContext->streams[m_iAudioStreamIndex];
-                if (ist->codec->sample_rate >ist_prev->codec->sample_rate)
-                {
-                    m_iAudioStreamIndex = i;
-                }
-            }
-        }
-    }
-
+    int videoIndex = -1;
     amf_vector<AMFOutputDemuxerImplPtr>  outputStreams;
     for (amf_int32 i = 0; i < static_cast<amf_int32>(m_pInputContext->nb_streams); i++)
     {
         const AVStream* ist = m_pInputContext->streams[i];
         AMFOutputDemuxerImplPtr newOutput;
-        if (ist->codec->codec_type == AVMEDIA_TYPE_VIDEO && m_iVideoStreamIndex == i)
+        if (ist->codec->codec_type == AVMEDIA_TYPE_VIDEO && m_iVideoStreamIndexFFmpeg == i)
         {
             if (ist->codec->pix_fmt == AV_PIX_FMT_BGR24)
                 continue;
 
             newOutput = new AMFVideoOutputDemuxerImpl(this, i);
+            videoIndex = i;
         }
         
-        if (ist->codec->codec_type == AVMEDIA_TYPE_AUDIO && m_iAudioStreamIndex == i)
+        if (ist->codec->codec_type == AVMEDIA_TYPE_AUDIO && m_iAudioStreamIndexFFmpeg == i)
         {
             newOutput = new AMFAudioOutputDemuxerImpl(this, i);
         }
@@ -956,7 +917,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
         { 
             for(amf_vector<AMFOutputDemuxerImplPtr>::iterator it = m_OutputStreams.begin(); it != m_OutputStreams.end(); it++)
             {
-                if((*it)->m_iIndex == i)
+                if((*it)->m_iIndexFFmpeg == i)
                 {
                     newOutput->SetProperty(AMF_STREAM_ENABLED, (*it)->m_bEnabled);
                     break;
@@ -967,18 +928,23 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
     }
     m_OutputStreams = outputStreams;
 
-    if (m_iVideoStreamIndex >= 0 && m_pInputContext->streams[m_iVideoStreamIndex]->codec->codec_id == AV_CODEC_ID_H264)
+    
+    
+    if (m_pInputContext->streams[m_iVideoStreamIndexFFmpeg]->codec->codec_id == AV_CODEC_ID_H264)
     {
-        m_eVideoCodecID = AV_CODEC_ID_H264;
-
         bool checkMVC = true;
         GetProperty(FFMPEG_DEMUXER_CHECK_MVC, &checkMVC);
 
+        bool bEnabled = false;
+        m_OutputStreams[videoIndex]->GetProperty(AMF_STREAM_ENABLED, &bEnabled);
+        m_OutputStreams[videoIndex]->SetProperty(AMF_STREAM_ENABLED, true);
         if (checkMVC && CheckH264MVC())
         {
-            m_eVideoCodecID = AV_CODEC_H264MVC;
+            m_OutputStreams[videoIndex]->SetProperty(AMF_STREAM_CODEC_ID, GetAMFVideoFormat(AVCodecID(AV_CODEC_H264MVC)));
         }
+        m_OutputStreams[videoIndex]->SetProperty(AMF_STREAM_ENABLED, bEnabled);
     }
+
 
     if (m_ptsDuration == 0)
     {
@@ -1019,11 +985,10 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Close()
 
     ClearCachedPackets();
 
-    m_iVideoStreamIndex = -1;
-    m_iAudioStreamIndex = -1;
+    m_iVideoStreamIndexFFmpeg = -1;
+    m_iAudioStreamIndexFFmpeg = -1;
     m_bForceEof = false;
     m_iPacketCount = 0;
-    m_eVideoCodecID = AV_CODEC_ID_NONE;
     m_ptsPosition = GetMinPosition();
     m_ptsDuration = 0;
     m_bTerminated = false;
@@ -1051,10 +1016,10 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::ReadPacket(AVPacket **packet)
     int64_t wrap = 1LL << ist->pts_wrap_bits;
 
 //    AMFTraceWarning(AMF_FACILITY, L"ReadPacket() %s pts=%" LPRId64 L", dts=% " LPRId64 L" first_dts=%" LPRId64, 
-//        pkt.stream_index == m_iVideoStreamIndex ? L"video" : L"audio",
+//        pkt.stream_index == m_iVideoStreamIndexFFmpeg ? L"video" : L"audio",
 //        pkt.pts, pkt.dts, ist->first_dts);
 
-    if (pkt.stream_index == m_iVideoStreamIndex)
+    if (pkt.stream_index == m_iVideoStreamIndexFFmpeg)
     {
 //        AMFTraceWarning(AMF_FACILITY, L"ReadPacket() video pts=%" LPRId64 L", dts=% " LPRId64 L" first_dts=%" LPRId64 L" readduration=%5.2f", pkt.pts, pkt.dts, ist->first_dts, float(readDuration) /10000.);
         if (pkt.dts == AV_NOPTS_VALUE)
@@ -1093,7 +1058,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::ReadPacket(AVPacket **packet)
     //
     // PTS to standard time
     const amf_int64  pts = av_rescale_q(pkt.dts, ist->time_base, AMF_TIME_BASE_Q);
-    if (m_iVideoStreamIndex == -1 || pkt.stream_index == m_iVideoStreamIndex)
+    if (m_iVideoStreamIndexFFmpeg == -1 || pkt.stream_index == m_iVideoStreamIndexFFmpeg)
     {
         m_ptsPosition = pts;
     }
@@ -1142,8 +1107,10 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::FindNextPacket(amf_int32 stre
         // NOTE: for now we skip all streams 
         //       except 1 video and 1 audio 
         const amf_int32  packetStreamIndex = pTempPacket->stream_index;
-        if ( ((m_iVideoStreamIndex != -1) && (packetStreamIndex == m_iVideoStreamIndex)) ||
-             ((m_iAudioStreamIndex != -1) && (packetStreamIndex == m_iAudioStreamIndex)) )
+        if ( ((m_iVideoStreamIndexFFmpeg != -1) && (packetStreamIndex == m_iVideoStreamIndexFFmpeg)) 
+            ||
+             ((m_iAudioStreamIndexFFmpeg != -1) && (packetStreamIndex == m_iAudioStreamIndexFFmpeg)) 
+            )
         {
             // nothing to do - code to handle correct packets 
             // right after this "if"
@@ -1170,7 +1137,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::FindNextPacket(amf_int32 stre
             bool bFound = false;
             for(size_t idx = 0; idx < m_OutputStreams.size(); idx++)
             {
-                if(m_OutputStreams[idx]->m_iIndex == packetStreamIndex)\
+                if(m_OutputStreams[idx]->m_iIndexFFmpeg == packetStreamIndex)
                 {
                     m_OutputStreams[idx]->CachePacket(pTempPacket);
                     bFound = true;
@@ -1221,7 +1188,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::BufferFromPacket(const AVPack
     //    data = av_malloc(pkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
     // ...
     //MM this causes problems because there is no way to set real buffer size. Allocation has 32 byte alignment - should be enough.
-    AMF_RESULT err = m_pContext->AllocBuffer(AMF_MEMORY_HOST, pPacket->size + FF_INPUT_BUFFER_PADDING_SIZE, ppBuffer);
+    AMF_RESULT err = m_pContext->AllocBuffer(AMF_MEMORY_HOST, pPacket->size + AV_INPUT_BUFFER_PADDING_SIZE, ppBuffer);
     AMF_RETURN_IF_FAILED(err, L"BufferFromPacket() - AllocBuffer failed");
 
     AMFBuffer* pBuffer = *ppBuffer;
@@ -1235,7 +1202,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::BufferFromPacket(const AVPack
     // copy the packet memory and don't forget to 
     // clear data padding like it is done by FFMPEG
     memcpy(pMem, pPacket->data, pPacket->size);
-    memset(reinterpret_cast<amf_int8*>(pMem)+pPacket->size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset(reinterpret_cast<amf_int8*>(pMem)+pPacket->size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     // now that we created the buffer, it's time to update 
     // it's properties from the packet information...
@@ -1274,7 +1241,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::UpdateBufferProperties(AMFBuf
     pBuffer->SetProperty(L"FFMPEG:time_base_num", AMFVariant(ist->time_base.num));
 
 
-    if ((m_iVideoStreamIndex == -1 || pPacket->stream_index == m_iVideoStreamIndex) && m_ptsSeekPos != -1)
+    if ((m_iVideoStreamIndexFFmpeg == -1 || pPacket->stream_index == m_iVideoStreamIndexFFmpeg) && m_ptsSeekPos != -1)
     {
         if (pts < m_ptsSeekPos)
         {
@@ -1315,8 +1282,11 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::UpdateBufferProperties(AMFBuf
         UpdateBufferAudioDuration(pBuffer, pPacket, ist);
 //        AMFTraceWarning(AMF_FACILITY, L"Audio PTS=%5.2f", (double)pBuffer->GetPts() / 10000);
     }
-    pBuffer->SetProperty(FFMPEG_DEMUXER_BUFFER_STREAM_INDEX, pPacket->stream_index);
-    
+    amf_int32 outputIndex = FromFFmpegToOutputIndex(pPacket->stream_index);
+    if (outputIndex >= 0)
+    {
+        pBuffer->SetProperty(FFMPEG_DEMUXER_BUFFER_STREAM_INDEX, outputIndex);
+    }
 
     return AMF_OK;
 }
@@ -1448,16 +1418,16 @@ bool AMF_STD_CALL AMFFileDemuxerFFMPEGImpl::CheckH264MVC()
 #ifdef __USE_H264Mp4ToAnnexB
     AMF_RESULT err = AMF_OK;
     // first check extradata
-    if(m_iVideoStreamIndex == -1)
+    if(m_iVideoStreamIndexFFmpeg == -1)
     {
         return false;
     }
-    AVStream *ist = m_pInputContext->streams[m_iVideoStreamIndex];
+    AVStream *ist = m_pInputContext->streams[m_iVideoStreamIndexFFmpeg];
 
-    if(!m_OutputStreams[m_iVideoStreamIndex]->m_bEnabled)
-    {
-        return false;
-    }
+//    if(!m_OutputStreams[m_iVideoStreamIndexFFmpeg]->m_bEnabled)
+//    {
+//        return false;
+//    }
 
 
     if (ist->codec->extradata != NULL)
@@ -1483,12 +1453,22 @@ bool AMF_STD_CALL AMFFileDemuxerFFMPEGImpl::CheckH264MVC()
 
         // if it's the video or audio streams we handle
         // cache the packet, otherwise remove it...
-        if ( ((m_iVideoStreamIndex != -1) && (packet->stream_index == m_iVideoStreamIndex)) ||
-             ((m_iAudioStreamIndex != -1) && (packet->stream_index == m_iAudioStreamIndex)))
+        if ( ((m_iVideoStreamIndexFFmpeg != -1) && (packet->stream_index == m_iVideoStreamIndexFFmpeg)) ||
+             ((m_iAudioStreamIndexFFmpeg != -1) && (packet->stream_index == m_iAudioStreamIndexFFmpeg)))
         {
-            err = m_OutputStreams[packet->stream_index]->CachePacket(packet);
-            if(err != AMF_OK)
+
+            amf_int32 outputIndex = FromFFmpegToOutputIndex(packet->stream_index);
+            if (outputIndex >= 0)
             {
+                err = m_OutputStreams[outputIndex]->CachePacket(packet);
+                if (err != AMF_OK)
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                ClearPacket(packet);
                 continue;
             }
         }
@@ -1498,7 +1478,7 @@ bool AMF_STD_CALL AMFFileDemuxerFFMPEGImpl::CheckH264MVC()
             continue;
         }
 
-        if (packet->stream_index != m_iVideoStreamIndex)
+        if (packet->stream_index != m_iVideoStreamIndexFFmpeg)
         {
             continue;
         }
@@ -1587,3 +1567,157 @@ amf_int32   AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::GetOutputCount()
     return (amf_int32)m_OutputStreams.size();  
 };
 //-------------------------------------------------------------------------------------------------
+amf_int32 AMFFileDemuxerFFMPEGImpl::OpenAsImageSequence(
+    amf_string filename,
+    AVInputFormat* pFmt,
+    AVDictionary* pOptions)
+{
+    avformat_close_input(&m_pInputContext);
+    size_t posEnd = filename.rfind(".");
+    size_t posStart = filename.find_last_of("\\/");
+    amf_string ext = filename.c_str() + posEnd;
+    amf_string fmt = "%00d";
+    std::string startNum = "";
+    amf_int32 index = 0;
+    for (size_t idx = posEnd - 1; idx > posStart; idx--)
+    {
+        const char* pBuf = (filename.c_str() + idx);
+        if ((*pBuf < '0') || (*pBuf > '9')) break;
+        fmt[2] += 1;
+        startNum.insert(0, pBuf, 1);
+        filename.erase(idx);
+    }
+
+    filename += fmt + ext;
+    amf_int32 iStartNum = std::stoi(startNum);
+    av_dict_set_int(&pOptions, "start_number", iStartNum, 0);
+    amf_bool bIsImage(false);
+    return OpenFile(filename, pFmt, pOptions, bIsImage);
+}
+//-------------------------------------------------------------------------------------------------
+amf_int32 AMFFileDemuxerFFMPEGImpl::OpenFile(
+    amf_string filename,
+    AVInputFormat* pFmt,
+    AVDictionary* pOptions,
+    amf_bool& bIsImage)
+{
+    bIsImage = false;
+    int ret = avformat_open_input(&m_pInputContext, filename.c_str(), pFmt, &pOptions);
+
+    // disable raw video support. toos should use raw reader
+    ret = avformat_find_stream_info(m_pInputContext, NULL);
+    if (ret < 0)
+    {
+        return AMF_NOT_SUPPORTED;
+    }
+
+    if (m_pInputContext->metadata != nullptr)
+    {
+        AVDictionaryEntry *entry = nullptr;
+        while (true)
+        {
+            entry = av_dict_get(m_pInputContext->metadata, "", entry, AV_DICT_IGNORE_SUFFIX);
+            if (entry == nullptr)
+            {
+                break;
+            }
+            //            AMFTraceWarning(AMF_FACILITY, L"Metadata:%S:%S", entry->key, entry->value);
+        }
+    }
+
+
+    // performs some checks on the video and audio streams
+    if (m_pInputContext->duration != AV_NOPTS_VALUE)
+    {
+        m_ptsDuration = av_rescale_q(m_pInputContext->duration, FFMPEG_TIME_BASE_Q, AMF_TIME_BASE_Q);
+    }
+    else
+    {
+        m_ptsDuration = 0;
+    }
+    for (amf_uint32 i = 0; i < m_pInputContext->nb_streams; i++)
+    {
+        const AVStream* ist = m_pInputContext->streams[i];
+
+        if (ist->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+        {
+            if (ist->metadata != nullptr)
+            {
+                AVDictionaryEntry *entry = nullptr;
+                while (true)
+                {
+                    entry = av_dict_get(ist->metadata, "", entry, AV_DICT_IGNORE_SUFFIX);
+                    if (entry == nullptr)
+                    {
+                        break;
+                    }
+                    //                    AMFTraceWarning(AMF_FACILITY, L"Metadata:%S:%S", entry->key, entry->value);
+                }
+            }
+
+            if ((ist->codec->codec_id == AV_CODEC_ID_EXR) ||
+                (ist->codec->codec_id == AV_CODEC_ID_PNG))
+            {
+                bIsImage = true;
+            }
+
+            if (ist->codec->pix_fmt == AV_PIX_FMT_BGR24)
+            {
+                AMFTraceError(AMF_FACILITY, L"Picture format PIX_FMT_BGR24 is not supported.");
+                return AMF_INVALID_FORMAT;
+            }
+
+            if (m_iVideoStreamIndexFFmpeg < 0)
+            {
+                m_iVideoStreamIndexFFmpeg = i;
+            }
+            else
+            { // find biggest
+                const AVStream *ist_prev = m_pInputContext->streams[m_iVideoStreamIndexFFmpeg];
+                if (ist->codec->width > ist_prev->codec->width && ist->codec->height > ist_prev->codec->height)
+                {
+                    m_iVideoStreamIndexFFmpeg = i;
+                }
+            }
+        }
+        if (ist->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+        {
+            if (m_iAudioStreamIndexFFmpeg<0)
+            {
+                m_iAudioStreamIndexFFmpeg = i;
+            }
+            else
+            { // find biggest
+                const AVStream *ist_prev = m_pInputContext->streams[m_iAudioStreamIndexFFmpeg];
+                if (ist->codec->sample_rate >ist_prev->codec->sample_rate)
+                {
+                    m_iAudioStreamIndexFFmpeg = i;
+                }
+            }
+        }
+    }
+    return ret;
+}
+//-------------------------------------------------------------------------------------------------
+amf_int32               AMFFileDemuxerFFMPEGImpl::FromFFmpegToOutputIndex(amf_int32 indexFFmpeg)
+{
+    for (size_t idx = 0; idx < m_OutputStreams.size(); idx++)
+    {
+        if (m_OutputStreams[idx]->m_iIndexFFmpeg == indexFFmpeg)
+        {
+            return (amf_int32)idx;
+        }
+    }
+    return -1;
+}
+//-------------------------------------------------------------------------------------------------
+amf_int32               AMFFileDemuxerFFMPEGImpl::FromOutputToFFmpegIndex(amf_int32 indexOutput)
+{
+    if (indexOutput < amf_int32(m_OutputStreams.size()))
+    {
+        return m_OutputStreams[indexOutput]->m_iIndexFFmpeg;
+    }
+    return -1;
+}
+//-------------------------------------------------------------------------------------------------
+

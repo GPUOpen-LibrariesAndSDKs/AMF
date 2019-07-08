@@ -367,9 +367,8 @@ AMF_RESULT AMFWASAPISourceImpl::CreateDeviceList()
 		hr = pStore->GetValue(PKEY_Device_FriendlyName, &deviceName);
 		AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"GetValue() failed");
 
-		std::wstring nameW = deviceName.pwszVal;
-		std::string name(nameW.begin(), nameW.end());
-		m_deviceList.push_back(name);
+		amf_wstring nameW = deviceName.pwszVal;
+		m_deviceList.push_back(amf_from_unicode_to_utf8(nameW));
 	}
 
 	return AMF_OK;

@@ -44,6 +44,7 @@
 #include <strsafe.h>
 #include <commctrl.h>
 #include <vector>
+#include <string>
 #include <mmdeviceapi.h>
 #include <Mfreadwrite.h>
 

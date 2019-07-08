@@ -39,6 +39,7 @@
 #pragma once
 
 #include "Component.h"
+#include "ColorSpace.h"
 
 #define AMFVideoEncoderVCE_AVC L"AMFVideoEncoderVCE_AVC"
 #define AMFVideoEncoderVCE_SVC L"AMFVideoEncoderVCE_SVC"
@@ -143,6 +144,13 @@ enum AMF_VIDEO_ENCODER_CODING_ENUM
     // Quality preset property
 #define AMF_VIDEO_ENCODER_QUALITY_PRESET                        L"QualityPreset"            // amf_int64(AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM); default = depends on USAGE; Quality Preset 
 
+    // color conversion
+#define AMF_VIDEO_ENCODER_COLOR_BIT_DEPTH                       L"ColorBitDepth"            // amf_int64(AMF_COLOR_BIT_DEPTH_ENUM); default = AMF_COLOR_BIT_DEPTH_8
+#define AMF_VIDEO_ENCODER_INPUT_COLOR_PROFILE                   L"InColorProfile"             // amf_int64(AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM); default = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN - mean AUTO by size
+#define AMF_VIDEO_ENCODER_OUTPUT_COLOR_PROFILE                  L"OutColorProfile"             // amf_int64(AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM); default = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN - mean AUTO by size
+#define AMF_VIDEO_ENCODER_INPUT_TRANSFER_CHARACTERISTIC         L"InColorTransferChar"      // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 § 7.2 See VideoDecoderUVD.h for enum 
+#define AMF_VIDEO_ENCODER_OUTPUT_TRANSFER_CHARACTERISTIC        L"OutColorTransferChar"     // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 § 7.2 See VideoDecoderUVD.h for enum 
+
 
 // Dynamic properties - can be set at any time
 
@@ -153,6 +161,7 @@ enum AMF_VIDEO_ENCODER_CODING_ENUM
 #define AMF_VIDEO_ENCODER_ENFORCE_HRD                           L"EnforceHRD"               // bool; default = depends on USAGE; Enforce HRD
 #define AMF_VIDEO_ENCODER_FILLER_DATA_ENABLE                    L"FillerDataEnable"         // bool; default = false; Filler Data Enable
 #define AMF_VIDEO_ENCODER_ENABLE_VBAQ                           L"EnableVBAQ"               // bool; default = depends on USAGE; Enable VBAQ
+#define AMF_VIDEO_ENCODER_HIGH_MOTION_QUALITY_BOOST_ENABLE      L"HighMotionQualityBoostEnable"// bool; default = depends on USAGE; Enable High motion quality boost mode
 
 
 #define AMF_VIDEO_ENCODER_VBV_BUFFER_SIZE                       L"VBVBufferSize"            // amf_int64; default = depends on USAGE; VBV Buffer Size in bits
@@ -186,6 +195,10 @@ enum AMF_VIDEO_ENCODER_CODING_ENUM
 
     // SVC
 #define AMF_VIDEO_ENCODER_NUM_TEMPORAL_ENHANCMENT_LAYERS        L"NumOfTemporalEnhancmentLayers" // amf_int64; default = 0; range = 0, min(2, caps->GetMaxNumOfTemporalLayers()) number of temporal enhancment Layers (SVC)
+
+    // color conversion
+#define AMF_VIDEO_ENCODER_INPUT_HDR_METADATA                    L"InHDRMetadata"            // AMFBuffer containing AMFHDRMetadata; default NULL
+#define AMF_VIDEO_ENCODER_OUTPUT_HDR_METADATA                   L"OutHDRMetadata"           // AMFBuffer containing AMFHDRMetadata; default NULL
 
 // Per-submittion properties - can be set on input surface interface
 #define AMF_VIDEO_ENCODER_END_OF_SEQUENCE                       L"EndOfSequence"            // bool; default = false; generate end of sequence
@@ -222,5 +235,9 @@ enum AMF_VIDEO_ENCODER_CODING_ENUM
 #define AMF_VIDEO_ENCODER_CAP_MAX_TEMPORAL_LAYERS               L"MaxTemporalLayers"        // amf_int64 maximum number of temporal layers
 #define AMF_VIDEO_ENCODER_CAP_FIXED_SLICE_MODE                  L"FixedSliceMode"           // bool  is fixed slice mode supported
 #define AMF_VIDEO_ENCODER_CAP_NUM_OF_HW_INSTANCES               L"NumOfHwInstances"         // amf_int64 number of HW encoder instances
+#define AMF_VIDEO_ENCODER_CAP_COLOR_CONVERSION                  L"ColorConversion"          // amf_int64(AMF_ACCELERATION_TYPE) - type of supported color conversion. default AMF_ACCEL_GPU
+
+// properties set on AMFComponent to control component creation
+#define AMF_VIDEO_ENCODER_MEMORY_TYPE                           L"EncoderMemoryType"        // amf_int64(AMF_MEMORY_TYPE) , default is AMF_MEMORY_UNKNOWN, Values : AMF_MEMORY_DX11, AMF_MEMORY_DX9, AMF_MEMORY_VULKAN or AMF_MEMORY_UNKNOWN (auto)
 
 #endif //#ifndef AMF_VideoEncoderVCE_h

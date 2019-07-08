@@ -2,11 +2,11 @@
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
 // AVC/H.264; HEVC/H.265; AAC decode/FFMPEG; AAC encode/FFMPEG; VC-1; and MP3
-// (collectively, the "Media Technologies"ù). For clarity, you will pay any
+// (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
 //
-// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2019 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,14 @@
 //
 
 New features are available in 
-Driver: Radeon Software Edition Crimson; 18.8.1 Software: 18.30 and later 
+Driver: Radeon Software Adrenalin 2019 Edition; 19.7.1 Software: 19.30 and later 
+
+1.4.14.0 (08.07.2019) version
+--------------------------
+    - Support for RX5700 (Navi) GPUs
+	- FFmpeg updated to version 4.1.3
+	- Added sample projects for Visual Studio 2019
+	- Dropped support for Visual Studio 2013 and 1015
 
 1.4.9.0 (23.08.2018) version
 --------------------------

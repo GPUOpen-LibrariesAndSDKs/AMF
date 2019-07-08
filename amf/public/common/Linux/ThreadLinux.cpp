@@ -353,12 +353,22 @@ bool AMF_STD_CALL amf_wait_for_mutex(amf_handle hmutex, unsigned long timeout)
     {
         return pthread_mutex_lock(mutex) == 0;
     }
+
     // ulTimeout is in milliseconds
+    long timeout_sec = timeout / 1000;      /* Seconds */;
+    long timeout_nsec = (timeout - (timeout / 1000) * 1000) * 1000000;
+
     timespec wait_time; //absolute time
     clock_gettime(CLOCK_REALTIME, &wait_time);
 
-    wait_time.tv_sec += timeout / 1000;      /* Seconds */
-    wait_time.tv_nsec += (timeout - (timeout / 1000) * 1000) * 1000;     /* Nanoseconds [0 .. 999999999] */
+    wait_time.tv_sec += timeout_sec;
+    wait_time.tv_nsec += timeout_nsec;
+
+    if (wait_time.tv_nsec >= 1000000000)
+    {
+        wait_time.tv_sec++;
+        wait_time.tv_nsec -= 1000000000;
+    }
 
 #ifdef __APPLE__
     int* tmpptr = NULL;
@@ -417,12 +427,22 @@ bool AMF_STD_CALL amf_wait_for_semaphore(amf_handle hsemaphore, amf_ulong timeou
     {
         return true;
     }
+
     // ulTimeout is in milliseconds
+    long timeout_sec = timeout / 1000;      /* Seconds */;
+    long timeout_nsec = (timeout - (timeout / 1000) * 1000) * 1000000;
+
     timespec wait_time; //absolute time
     clock_gettime(CLOCK_REALTIME, &wait_time);
 
-    wait_time.tv_sec += timeout / 1000;      /* Seconds */
-    wait_time.tv_nsec += (timeout - (timeout / 1000) * 1000) * 1000;     /* Nanoseconds [0 .. 999999999] */
+    wait_time.tv_sec += timeout_sec;
+    wait_time.tv_nsec += timeout_nsec;
+
+    if (wait_time.tv_nsec >= 1000000000)
+    {
+        wait_time.tv_sec++;
+        wait_time.tv_nsec -= 1000000000;
+    }
 
     sem_t* semaphore = (sem_t*)hsemaphore;
     if(timeout != AMF_INFINITE)

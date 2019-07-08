@@ -36,7 +36,7 @@
 #include <mmdeviceapi.h>
 #include <Audioclient.h>
 #include "public/common/InterfaceImpl.h"
-
+#include "public/common/AMFSTL.h"
 
 namespace amf
 {
@@ -60,7 +60,7 @@ namespace amf
 		UINT			GetFrameSize(){ return m_frameSize; };
 		UINT			GetSampleCount(){ return m_sampleCount; };
 		REFERENCE_TIME	GetFrameDuration(){ return m_duration; };
-		std::vector<std::string> 
+		amf_vector<amf_string> 
 						GetDeviceList() { return m_deviceList; };
 
 		// Call to end thread loop
@@ -77,7 +77,7 @@ namespace amf
 		ATL::CComPtr<IMMDevice>					m_device;
 		ATL::CComPtr<IAudioClient>				m_client;
 		ATL::CComPtr<IAudioCaptureClient>		m_capture;
-		std::vector<std::string>				m_deviceList;
+		amf_vector<amf_string>				m_deviceList;
 		
 		WAVEFORMATEX							m_waveFormat;
 		amf_uint32								m_frameSize;

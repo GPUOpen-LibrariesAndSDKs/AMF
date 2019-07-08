@@ -39,6 +39,7 @@
 #include "public/include/components/FFMPEGAudioDecoder.h"
 #include "public/include/components/FFMPEGAudioConverter.h"
 #include "public/include/components/FFMPEGFileDemuxer.h"
+#include "public/include/components/FFMPEGVideoDecoder.h"
 #include "BitStreamParser.h"
 #include "VideoPresenter.h"
 #include "AudioPresenter.h"
@@ -97,7 +98,7 @@ protected:
 
     virtual void        OnParamChanged(const wchar_t* name);
     virtual AMF_RESULT  InitVideoProcessor();
-    virtual AMF_RESULT  InitVideoDecoder(const wchar_t *pDecoderID, amf::AMFBuffer* pExtraData);
+    virtual AMF_RESULT  InitVideoDecoder(const wchar_t *pDecoderID, amf_int64 codecID, amf_int64 bitrate, AMFRate frameRate, amf::AMFBuffer* pExtraData);
     virtual AMF_RESULT  InitAudio(amf::AMFOutput* pOutput);
     virtual AMF_RESULT  InitVideo(amf::AMFOutput* pOutput, amf::AMF_MEMORY_TYPE presenterEngine);
 	virtual AMF_RESULT  InitVideoPipeline(amf_uint32 iVideoStreamIndex, PipelineElementPtr pVideoSourceStream);
@@ -128,5 +129,6 @@ protected:
     AVSyncObject            m_AVSync;
     bool                    m_bURL;
     amf::AMF_SURFACE_FORMAT m_eDecoderFormat;
+    bool                    m_bCPUDecoder;
 
 };

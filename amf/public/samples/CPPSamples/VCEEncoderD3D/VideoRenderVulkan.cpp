@@ -668,7 +668,7 @@ AMF_RESULT VideoRenderVulkan::Render(amf::AMFData** ppData)
     resAMF = pSwapChainSurface->Duplicate(pSwapChainSurface->GetMemoryType(), ppData);
     CHECK_AMF_ERROR_RETURN(resAMF, L"Duplicate() failed");
 
-    resAMF = Present(imageIndex);
+    resAMF = Present(imageIndex, true);
     CHECK_AMF_ERROR_RETURN(resAMF, L"Present() failed");
 
     return AMF_OK;

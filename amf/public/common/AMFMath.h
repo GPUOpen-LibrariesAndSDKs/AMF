@@ -37,6 +37,11 @@
 
 namespace amf
 {
+    // right-handed system
+    // +y is up
+    // +x is to the right
+    // -z is forward
+
     const float AMF_PI         = 3.141592654f;
     const float AMF_1DIV2PI    = 0.159154943f;
     const float AMF_2PI        = 6.283185307f;
@@ -150,18 +155,31 @@ namespace amf
             return x == other.x && y == other.y && z == other.z && w == other.w;
         }
         inline bool operator!=(const VectorPOD& other) const { return !operator==(other); }
-        inline VectorPOD Dot3(const VectorPOD& V2) const
+        inline VectorPOD Dot3(const VectorPOD& vec) const
         {
-            float fValue = x * V2.x + y * V2.y + z * V2.z;
+            float fValue = x * vec.x + y * vec.y + z * vec.z;
             VectorPOD Result;
             Result.Assign(fValue, fValue, fValue, fValue);
             return Result;
-        }	
+        }
+        inline VectorPOD Dot4(const VectorPOD& vec) const
+        {
+            float fValue = x * vec.x + y * vec.y + z * vec.z + w * vec.w;
+            VectorPOD Result;
+            Result.Assign(fValue, fValue, fValue, fValue);
+            return Result;
+        }
+
         inline VectorPOD LengthSq3()  const
         {
             return Dot3(*this);
         }
-        
+
+        inline VectorPOD LengthSq4()  const
+        {
+            return Dot4(*this);
+        }
+
         inline VectorPOD Sqrt()  const
         {
             VectorPOD Result;
@@ -178,6 +196,13 @@ namespace amf
             Result = Result.Sqrt();
             return Result;
         }	
+        inline VectorPOD Length4()  const
+        {
+            VectorPOD Result;
+            Result = LengthSq4();
+            Result = Result.Sqrt();
+            return Result;
+        }
         inline VectorPOD Normalize3()  const
         {
             float fLength;
@@ -219,6 +244,11 @@ namespace amf
             return Result;
         }
 
+		inline VectorPOD operator-() const
+		{
+			return Negate();
+		}
+
         inline VectorPOD MergeXY(const VectorPOD& vec) const
         {
             VectorPOD Result;
@@ -236,7 +266,43 @@ namespace amf
             Result.z = w;
             Result.w = vec.w;
             return Result;
-        }	
+        }
+        inline VectorPOD VectorPermute(const VectorPOD& vec, uint32_t PermuteX, uint32_t PermuteY, uint32_t PermuteZ, uint32_t PermuteW ) const
+        {
+            const uint32_t *aPtr[2];
+            aPtr[0] = (const uint32_t* )(this);
+            aPtr[1] = (const uint32_t* )(&vec);
+
+            VectorPOD Result;
+            uint32_t *pWork = (uint32_t*)(&Result);
+
+            const uint32_t i0 = PermuteX & 3;
+            const uint32_t vi0 = PermuteX >> 2;
+            pWork[0] = aPtr[vi0][i0];
+
+            const uint32_t i1 = PermuteY & 3;
+            const uint32_t vi1 = PermuteY >> 2;
+            pWork[1] = aPtr[vi1][i1];
+
+            const uint32_t i2 = PermuteZ & 3;
+            const uint32_t vi2 = PermuteZ >> 2;
+            pWork[2] = aPtr[vi2][i2];
+
+            const uint32_t i3 = PermuteW & 3;
+            const uint32_t vi3 = PermuteW >> 2;
+            pWork[3] = aPtr[vi3][i3];
+
+            return Result;
+        }
+        inline VectorPOD Reciprocal()
+        {
+            VectorPOD Result;
+            Result.x = 1.f / x;
+            Result.y = 1.f / y;
+            Result.z = 1.f / z;
+            Result.w = 1.f / w;
+            return Result;
+        }
     };
 
     class Vector : public VectorPOD
@@ -269,33 +335,7 @@ namespace amf
             return *this;
         }
         //---------------------------------------------------------------------------------------------
-        inline Vector VectorPermute(const Vector& vec, uint32_t PermuteX, uint32_t PermuteY, uint32_t PermuteZ, uint32_t PermuteW ) const
-        {
-            const uint32_t *aPtr[2];
-            aPtr[0] = (const uint32_t* )(this);
-            aPtr[1] = (const uint32_t* )(&vec);
 
-            Vector Result;
-            uint32_t *pWork = (uint32_t*)(&Result);
-
-            const uint32_t i0 = PermuteX & 3;
-            const uint32_t vi0 = PermuteX >> 2;
-            pWork[0] = aPtr[vi0][i0];
-
-            const uint32_t i1 = PermuteY & 3;
-            const uint32_t vi1 = PermuteY >> 2;
-            pWork[1] = aPtr[vi1][i1];
-
-            const uint32_t i2 = PermuteZ & 3;
-            const uint32_t vi2 = PermuteZ >> 2;
-            pWork[2] = aPtr[vi2][i2];
-
-            const uint32_t i3 = PermuteW & 3;
-            const uint32_t vi3 = PermuteW >> 2;
-            pWork[3] = aPtr[vi3][i3];
-
-            return Result;
-        }
     };
 
 
@@ -305,10 +345,10 @@ namespace amf
     public:
         Quaternion(){}
         Quaternion(const Quaternion& other){Assign(other.x, other.y, other.z, other.w);}
-        Quaternion(float roll, float pitch, float yaw) {FromEuler(roll, pitch, yaw);}
+        Quaternion(float pitch, float yaw, float roll) {FromEuler(pitch, yaw, roll);}
         Quaternion(float _x, float _y, float _z, float _w) {Assign(_x, _y, _z, _w);}
 
-        inline void FromEuler(float roll, float pitch, float yaw)
+        inline void FromEuler(float pitch, float yaw, float roll)
         {
             float cy = cosf(yaw * 0.5f);
             float sy = sinf(yaw * 0.5f);
@@ -317,10 +357,11 @@ namespace amf
             float cp = cosf(pitch * 0.5f);
             float sp = sinf(pitch * 0.5f);
 
-            w = cy * cr * cp + sy * sr * sp;
-            x = cy * sr * cp - sy * cr * sp;
-            y = cy * cr * sp + sy * sr * cp;
-            z = sy * cr * cp - cy * sr * sp;
+            w = cp * cr * cy + sp * sr * sy;
+            x = cp * sr * cy - sp * cr * sy;
+            y = cp * cr * sy + sp * sr * cy;
+            z = sp * cr * cy - cp * sr * sy;
+
         }
 
 
@@ -348,10 +389,16 @@ namespace amf
             );
         }
 
+        inline const Quaternion& RotateBy(const Quaternion& rotator)
+        {
+            *this = rotator * (*this);
+            return *this;
+        }
+
         inline Vector ToEulerAngles() const
         {
             float yaw, pitch, roll;
-
+#if 0
         // roll (x-axis rotation)
             float sinr = 2.0f * (w * x + y * z);
             float cosr = 1.0f - 2.0f * (x * x + y * y);
@@ -369,8 +416,83 @@ namespace amf
             float cosy = 1.0f - 2.0f * (y * y + z * z);
             yaw = atan2f(siny, cosy);
 
-            return Vector(roll, pitch, yaw, 0);
+#else
+            float sqw = w*w;
+            float sqx = x*x;
+            float sqy = y*y;
+            float sqz = z*z;
+            float unit = sqx + sqy + sqz + sqw; // if normalised is one, otherwise is correction factor
+            float test = x*y + z*w;
+            if (test > 0.499f * unit) { // singularity at north pole
+                yaw = 2.0f * atan2(x, w);
+                pitch = AMF_PIDIV2;
+                roll = 0;
+            }else if (test < -0.499f*unit) { // singularity at south pole
+                yaw = -2.0f * atan2(x, w);
+                pitch = -AMF_PIDIV2;
+                roll = 0;
+            }
+            else
+            {
+                yaw = atan2(2.0f * (y*w - x*z), sqx - sqy - sqz + sqw);
+                pitch = asin(2.0f * test / unit);
+                roll = atan2(2.0f * (x*w - y * z), -sqx + sqy - sqz + sqw);
+            }
+#endif
+            return Vector(pitch, yaw, roll, 0);
+        }
+        inline Quaternion& operator-=(const Quaternion& other)
+        {
+            x -= other.x; y -= other.y; z -= other.z; w -= other.w;
+            return *this;
+        }
+        inline Quaternion operator-(const Quaternion& other) const
+        {
+            Quaternion vector;
+            vector.x = x - other.x;
+            vector.y = y - other.y;
+            vector.z = z - other.z;
+            vector.w = w - other.w;
+            return vector;
+        }
+        inline Quaternion& operator+=(const Quaternion& other)
+        {
+            x += other.x;
+            y += other.y;
+            z += other.z;
+            w += other.w;
+            return *this;
+        }
+        inline Quaternion operator+(const Quaternion& other)  const
+        {
+            Quaternion vector;
+            vector.x = x + other.x;
+            vector.y = y + other.y;
+            vector.z = z + other.z;
+            vector.w = w + other.w;
+            return vector;
+        }
+        inline Quaternion Conjugate()  const
+        {
+            Quaternion result(-x, -y, -z, w);
+            return result;
+        }
+        inline Vector DistanceAngles(const Quaternion& newValue) const
+        {
+            Vector diff;
+            amf::Quaternion diffQ = newValue * Conjugate();
+            float len = diffQ.Length4().x;
 
+            if (len <= 0.0005f)
+            {
+                diff = amf::Vector(2.0f * diffQ.x, 2.0f * diffQ.y, 2.0f * diffQ.z, 0);
+            }
+            else
+            {
+                float angle = 2.0f * atan2(len, diffQ.w);
+                diff = amf::Vector(diffQ.x * angle / len, diffQ.y * angle / len, diffQ.z * angle / len, 0);
+            }
+            return diff;
         }
     };
     inline void ScalarSinCos(float* pSin, float* pCos, float  Value)
@@ -616,9 +738,574 @@ namespace amf
         inline void RotationRollPitchYaw(float Pitch, float Yaw, float Roll)
         {
             Quaternion Q;
-            Q.FromEuler(Roll, Pitch, Yaw);
+            Q.FromEuler( Pitch, Yaw, Roll);
             MatrixAffineTransformation(Vector(1.f, 1.f, 1.f, 0.f), Vector(), Q, Vector());
         }
+        inline Vector Determinant()
+        {
+            static const Vector Sign (1.0f, -1.0f, 1.0f, -1.0f);
+
+            Vector V0(r[2].y, r[2].x, r[2].x, r[2].x);
+            Vector V1(r[3].z, r[3].z, r[3].y, r[3].y);
+            Vector V2(r[2].y, r[2].x, r[2].x, r[2].x);
+            Vector V3(r[3].w, r[3].w, r[3].w, r[3].z);
+            Vector V4(r[2].z, r[2].z, r[2].y, r[2].y);
+            Vector V5(r[3].w, r[3].w, r[3].w, r[3].z);
+
+            Vector P0 = V0 * V1;
+            Vector P1 = V2 * V3;
+            Vector P2 = V4 * V5;
+
+            V0 = Vector(r[2].z, r[2].z, r[2].y, r[2].y);
+            V1 = Vector(r[3].y, r[3].x, r[3].x, r[3].x);
+            V2 = Vector(r[2].w, r[2].w, r[2].w, r[2].z);
+            V3 = Vector(r[3].y, r[3].x, r[3].x, r[3].x);
+            V4 = Vector(r[2].w, r[2].w, r[2].w, r[2].z);
+            V5 = Vector(r[3].z, r[3].z, r[3].y, r[3].y);
+
+            P0 -= V0 * V1;
+            P1 -= V2 * V3;
+            P2 -= V4 * V5;
+
+            V0 = Vector(r[1].w, r[1].w, r[1].w, r[1].z);
+            V1 = Vector(r[1].z, r[1].z, r[1].y, r[1].y);
+            V2 = Vector(r[1].y, r[1].x, r[1].x, r[1].x);
+
+
+            Vector S = r[0] * Sign;
+            Vector R = V0 * P0;
+            R -= V1 * P1;
+            R += V2 * P2;
+
+            return S.Dot4(R);
+        }
+#define XM3RANKDECOMPOSE(a, b, c, x, y, z)      \
+    if((x) < (y))                   \
+    {                               \
+        if((y) < (z))               \
+        {                           \
+            (a) = 2;                \
+            (b) = 1;                \
+            (c) = 0;                \
+        }                           \
+        else                        \
+        {                           \
+            (a) = 1;                \
+                                    \
+            if((x) < (z))           \
+            {                       \
+                (b) = 2;            \
+                (c) = 0;            \
+            }                       \
+            else                    \
+            {                       \
+                (b) = 0;            \
+                (c) = 2;            \
+            }                       \
+        }                           \
+    }                               \
+    else                            \
+    {                               \
+        if((x) < (z))               \
+        {                           \
+            (a) = 2;                \
+            (b) = 0;                \
+            (c) = 1;                \
+        }                           \
+        else                        \
+        {                           \
+            (a) = 0;                \
+                                    \
+            if((y) < (z))           \
+            {                       \
+                (b) = 2;            \
+                (c) = 1;            \
+            }                       \
+            else                    \
+            {                       \
+                (b) = 1;            \
+                (c) = 2;            \
+            }                       \
+        }                           \
+    }
+
+#define XM3_DECOMP_EPSILON 0.0001f
+
+        inline amf::Quaternion ConvertMatrixToQuat()
+        {
+            amf::Quaternion q;
+            float r22 = m[2][2];
+            if (r22 <= 0.f)  // x^2 + y^2 >= z^2 + w^2
+            {
+                float dif10 = m[1][1] - m[0][0];
+                float omr22 = 1.f - r22;
+                if (dif10 <= 0.f)  // x^2 >= y^2
+                {
+                    float fourXSqr = omr22 - dif10;
+                    float inv4x = 0.5f / sqrtf(fourXSqr);
+                    q.x = fourXSqr*inv4x;
+                    q.y = (m[0][1] + m[1][0])*inv4x;
+                    q.z = (m[0][2] + m[2][0])*inv4x;
+                    q.w = (m[1][2] - m[2][1])*inv4x;
+                }
+                else  // y^2 >= x^2
+                {
+                    float fourYSqr = omr22 + dif10;
+                    float inv4y = 0.5f / sqrtf(fourYSqr);
+                    q.x = (m[0][1] + m[1][0])*inv4y;
+                    q.y = fourYSqr*inv4y;
+                    q.z = (m[1][2] + m[2][1])*inv4y;
+                    q.w = (m[2][0] - m[0][2])*inv4y;
+                }
+            }
+            else  // z^2 + w^2 >= x^2 + y^2
+            {
+                float sum10 = m[1][1] + m[0][0];
+                float opr22 = 1.f + r22;
+                if (sum10 <= 0.f)  // z^2 >= w^2
+                {
+                    float fourZSqr = opr22 - sum10;
+                    float inv4z = 0.5f / sqrtf(fourZSqr);
+                    q.x = (m[0][2] + m[2][0])*inv4z;
+                    q.y = (m[1][2] + m[2][1])*inv4z;
+                    q.z = fourZSqr*inv4z;
+                    q.w = (m[0][1] - m[1][0])*inv4z;
+                }
+                else  // w^2 >= z^2
+                {
+                    float fourWSqr = opr22 + sum10;
+                    float inv4w = 0.5f / sqrtf(fourWSqr);
+                    q.x = (m[1][2] - m[2][1])*inv4w;
+                    q.y = (m[2][0] - m[0][2])*inv4w;
+                    q.z = (m[0][1] - m[1][0])*inv4w;
+                    q.w = fourWSqr*inv4w;
+                }
+            }
+            return q;
+        }
+        inline bool DecomposeMatrix(amf::Quaternion &q, amf::Vector &p, amf::Vector &s)
+        {
+            static amf::Vector g_XMIdentityR0( 1.0f, 0.0f, 0.0f, 0.0f );
+            static amf::Vector g_XMIdentityR1( 0.0f, 1.0f, 0.0f, 0.0f );
+            static amf::Vector g_XMIdentityR2( 0.0f, 0.0f, 1.0f, 0.0f );
+            static const amf::VectorPOD *pvCanonicalBasis[3] = {
+                    &g_XMIdentityR0,
+                    &g_XMIdentityR1,
+                    &g_XMIdentityR2
+            };
+
+//    p.Assign(-m.m[0][3], -m.m[1][3], -m.m[2][3], 0);
+            p = r[3];
+
+            amf::VectorPOD *ppvBasis[3];
+            amf::Matrix matTemp;
+            ppvBasis[0] = &matTemp.r[0];
+            ppvBasis[1] = &matTemp.r[1];
+            ppvBasis[2] = &matTemp.r[2];
+
+            matTemp.r[0] = r[0];
+            matTemp.r[1] = r[1];
+            matTemp.r[2] = r[2];
+            matTemp.r[3] = amf::Vector(0.0f, 0.0f, 0.0f, 1.0f );
+
+
+            float *pfScales = (float*)&s;
+
+            size_t a, b, c;
+            pfScales[0] = ppvBasis[0][0].Length3().x;
+            pfScales[1] = ppvBasis[1][0].Length3().x;
+            pfScales[2] = ppvBasis[2][0].Length3().x;
+            pfScales[3] = 0.f;
+
+            XM3RANKDECOMPOSE(a, b, c, pfScales[0], pfScales[1], pfScales[2])
+
+            if(pfScales[a] < XM3_DECOMP_EPSILON)
+            {
+                ppvBasis[a][0] = pvCanonicalBasis[a][0];
+            }
+            ppvBasis[a][0] = ppvBasis[a][0].Normalize3();
+
+            if(pfScales[b] < XM3_DECOMP_EPSILON)
+            {
+                size_t aa, bb, cc;
+                float fAbsX, fAbsY, fAbsZ;
+
+                fAbsX = fabsf(ppvBasis[a][0].x);
+                fAbsY = fabsf(ppvBasis[a][0].y);
+                fAbsZ = fabsf(ppvBasis[a][0].z);
+
+                XM3RANKDECOMPOSE(aa, bb, cc, fAbsX, fAbsY, fAbsZ)
+
+                ppvBasis[b][0] = ppvBasis[a][0].Cross3(pvCanonicalBasis[cc][0]);
+            }
+
+            ppvBasis[b][0] = ppvBasis[b][0].Normalize3();
+
+            if(pfScales[c] < XM3_DECOMP_EPSILON)
+            {
+                ppvBasis[c][0] = ppvBasis[a][0].Cross3(ppvBasis[b][0]);
+            }
+
+            ppvBasis[c][0] = ppvBasis[c][0].Normalize3();
+
+
+            float fDet = matTemp.Determinant().x;
+
+            // use Kramer's rule to check for handedness of coordinate system
+            if(fDet < 0.0f)
+            {
+                // switch coordinate system by negating the scale and inverting the basis vector on the x-axis
+                pfScales[a] = -pfScales[a];
+                ppvBasis[a][0] = ppvBasis[a][0].Negate();
+
+                fDet = -fDet;
+            }
+
+            fDet -= 1.0f;
+            fDet *= fDet;
+
+            if(XM3_DECOMP_EPSILON < fDet)
+            {
+                // Non-SRT matrix encountered
+                return false;
+            }
+
+            q = matTemp.ConvertMatrixToQuat();
+            return true;
+        }
+        inline Matrix Inverse(Vector *pDeterminant)
+        {
+
+            Matrix MT = Transpose();
+
+            Vector V0[4], V1[4];
+            V0[0] = Vector(MT.r[2].x, MT.r[2].x, MT.r[2].y, MT.r[2].y);
+            V1[0] = Vector(MT.r[3].z, MT.r[3].w, MT.r[3].z, MT.r[3].w);
+            V0[1] = Vector(MT.r[0].x, MT.r[0].x, MT.r[0].y, MT.r[0].y);
+            V1[1] = Vector(MT.r[1].z, MT.r[1].w, MT.r[1].z, MT.r[1].w);
+            V0[2] = MT.r[2].VectorPermute(MT.r[0], AMF_PERMUTE_0X, AMF_PERMUTE_0Z, AMF_PERMUTE_1X, AMF_PERMUTE_1Z);
+            V1[2] = MT.r[3].VectorPermute(MT.r[1], AMF_PERMUTE_0Y, AMF_PERMUTE_0W, AMF_PERMUTE_1Y, AMF_PERMUTE_1W);
+
+            Vector D0 = V0[0] *V1[0];
+            Vector D1 = V0[1] *V1[1];
+            Vector D2 = V0[2] *V1[2];
+
+            V0[0] = Vector(MT.r[2].z, MT.r[2].w, MT.r[2].z, MT.r[2].w);
+            V1[0] = Vector(MT.r[3].x, MT.r[3].x, MT.r[3].y, MT.r[3].y);
+            V0[1] = Vector(MT.r[0].z, MT.r[0].w, MT.r[0].z, MT.r[0].w);
+            V1[1] = Vector(MT.r[1].x, MT.r[1].x, MT.r[1].y, MT.r[1].y);
+            V0[2] = MT.r[2].VectorPermute(MT.r[0], AMF_PERMUTE_0Y, AMF_PERMUTE_0W, AMF_PERMUTE_1Y, AMF_PERMUTE_1W);
+            V1[2] = MT.r[3].VectorPermute(MT.r[1], AMF_PERMUTE_0X, AMF_PERMUTE_0Z, AMF_PERMUTE_1X, AMF_PERMUTE_1Z);
+
+            D0 -= V0[0] * V1[0];
+            D1 -= V0[1] * V1[1];
+            D2 -= V0[2] * V1[2];
+
+            V0[0] = Vector(MT.r[1].y, MT.r[1].z, MT.r[1].x, MT.r[1].y);
+            V1[0] = D0.VectorPermute(D2, AMF_PERMUTE_1Y, AMF_PERMUTE_0Y, AMF_PERMUTE_0W, AMF_PERMUTE_0X);
+            V0[1] = Vector(MT.r[0].z, MT.r[0].z, MT.r[0].y, MT.r[0].x);
+            V1[1] = D0.VectorPermute(D2, AMF_PERMUTE_0W, AMF_PERMUTE_1Y, AMF_PERMUTE_0Y, AMF_PERMUTE_0Z);
+            V0[2] = Vector(MT.r[3].y, MT.r[3].z, MT.r[3].x, MT.r[3].y);
+            V1[2] = D1.VectorPermute(D2, AMF_PERMUTE_1W, AMF_PERMUTE_0Y, AMF_PERMUTE_0W, AMF_PERMUTE_0X);
+            V0[3] = Vector(MT.r[2].z, MT.r[2].x, MT.r[2].y, MT.r[2].x);
+            V1[3] = D1.VectorPermute(D2, AMF_PERMUTE_0W, AMF_PERMUTE_1W, AMF_PERMUTE_0Y, AMF_PERMUTE_0Z);
+
+            Vector C0 = V0[0] * V1[0];
+            Vector C2 = V0[1] * V1[1];
+            Vector C4 = V0[2] * V1[2];
+            Vector C6 = V0[3] * V1[3];
+
+            V0[0] = Vector(MT.r[1].z, MT.r[1].w, MT.r[1].y, MT.r[1].z);
+            V1[0] = D0.VectorPermute(D2, AMF_PERMUTE_0W, AMF_PERMUTE_0X, AMF_PERMUTE_0Y, AMF_PERMUTE_1X);
+            V0[1] = Vector(MT.r[0].w, MT.r[0].z, MT.r[0].w, MT.r[0].y);
+            V1[1] = D0.VectorPermute(D2, AMF_PERMUTE_0Z, AMF_PERMUTE_0Y, AMF_PERMUTE_1X, AMF_PERMUTE_0X);
+            V0[2] = Vector(MT.r[3].z, MT.r[3].w, MT.r[3].y, MT.r[3].z);
+            V1[2] = D1.VectorPermute(D2, AMF_PERMUTE_0W, AMF_PERMUTE_0X, AMF_PERMUTE_0Y, AMF_PERMUTE_1Z);
+            V0[3] = Vector(MT.r[2].w, MT.r[2].z, MT.r[2].w, MT.r[2].y);
+            V1[3] = D1.VectorPermute(D2, AMF_PERMUTE_0Z, AMF_PERMUTE_0Y, AMF_PERMUTE_1Z, AMF_PERMUTE_0X);
+
+            C0 -= V0[0] * V1[0];
+            C2 -= V0[1] * V1[1];
+            C4 -= V0[2] * V1[2];
+            C6 -= V0[3] * V1[3];
+
+            V0[0] = Vector(MT.r[1].w, MT.r[1].x, MT.r[1].w, MT.r[1].x);
+            V1[0] = D0.VectorPermute(D2, AMF_PERMUTE_0Z, AMF_PERMUTE_1Y, AMF_PERMUTE_1X, AMF_PERMUTE_0Z);
+            V0[1] = Vector(MT.r[0].y, MT.r[0].w, MT.r[0].x, MT.r[0].z);
+            V1[1] = D0.VectorPermute(D2, AMF_PERMUTE_1Y, AMF_PERMUTE_0X, AMF_PERMUTE_0W, AMF_PERMUTE_1X);
+            V0[2] = Vector(MT.r[3].w, MT.r[3].x, MT.r[3].w, MT.r[3].x);
+            V1[2] = D1.VectorPermute(D2, AMF_PERMUTE_0Z, AMF_PERMUTE_1W, AMF_PERMUTE_1Z, AMF_PERMUTE_0Z);
+            V0[3] = Vector(MT.r[2].y, MT.r[2].w, MT.r[2].x, MT.r[2].z);
+            V1[3] = D1.VectorPermute(D2, AMF_PERMUTE_1W, AMF_PERMUTE_0X, AMF_PERMUTE_0W, AMF_PERMUTE_1Z);
+
+            Vector C1 = C0 - V0[0] * V1[0];
+            C0 += V0[0] * V1[0];
+            Vector C3 = C2 + V0[1] * V1[1];
+            C2 -= V0[1] * V1[1];
+            Vector C5 = C4 - V0[2] * V1[2];
+            C4 += V0[2] * V1[2];
+            Vector C7 = C6 + V0[3] * V1[3];
+            C6 -= V0[3] * V1[3];
+
+            Matrix R;
+            R.r[0] = Vector(C0.x, C1.y, C0.z, C1.w);
+            R.r[1] = Vector(C2.x, C3.y, C2.z, C3.w);
+            R.r[2] = Vector(C4.x, C5.y, C4.z, C5.w);
+            R.r[3] = Vector(C6.x, C7.y, C6.z, C7.w);
+
+            Vector Determinant = R.r[0].Dot4(MT.r[0]);
+
+            if (pDeterminant != nullptr)
+                *pDeterminant = Determinant;
+
+            Vector Reciprocal = Determinant.Reciprocal();
+
+            Matrix Result;
+            Result.r[0] = R.r[0] * Reciprocal;
+            Result.r[1] = R.r[1] * Reciprocal;
+            Result.r[2] = R.r[2] * Reciprocal;
+            Result.r[3] = R.r[3] * Reciprocal;
+            return Result;
+
+        }
     };
+
+    class Pose
+    {
+    public:
+        typedef enum ValidityFlagBits
+        {
+            // validity flags
+            PF_NONE                     = 0x0000,
+            PF_ORIENTATION              = 0x0001,
+            PF_POSITION                 = 0x0002,
+            PF_ORIENTATION_VELOCITY     = 0x0004,
+            PF_POSITION_VELOCITY        = 0x0008,
+            PF_ORIENTATION_ACCELERATION = 0x0010,
+            PF_POSITION_ACCELERATION    = 0x0020,
+            PF_COORDINATES              = PF_ORIENTATION | PF_POSITION,
+            PF_VELOCITY                 = PF_ORIENTATION_VELOCITY | PF_POSITION_VELOCITY,
+            PF_ACCELERATION             = PF_ORIENTATION_ACCELERATION | PF_POSITION_ACCELERATION,
+        } ValidityFlagBits;
+        typedef uint32_t ValidityFlags;
+
+        Pose() : m_ValidityFlags(PF_NONE){}
+        Pose(const Pose &other) { *this = other; }
+
+        Pose(const amf::Quaternion& orientation, const amf::Vector& position)
+        {
+            Set(orientation, position);
+        }
+        Pose(const amf::Quaternion& orientation, const amf::Vector& position,
+            const amf::Vector& orientationVelocity, const amf::Vector& positionVelocity) 
+        {
+            Set(orientation, position, orientationVelocity, positionVelocity);
+        }
+        Pose(const amf::Quaternion& orientation, const amf::Vector& position,
+            const amf::Vector& orientationVelocity, const amf::Vector& positionVelocity,
+            const amf::Vector& orientationAcceleration, const amf::Vector& positionAcceleration)
+        {
+            Set(orientation, position, orientationVelocity, positionVelocity, orientationAcceleration, positionAcceleration);
+        }
+        void Set(const amf::Quaternion& orientation, const amf::Vector& position)
+        {
+            m_Orientation = orientation;
+            m_Position = position;
+            m_ValidityFlags = PF_COORDINATES;
+        }
+        void Set(const amf::Quaternion& orientation, const amf::Vector& position,
+            const amf::Vector& orientationVelocity, const amf::Vector& positionVelocity)
+        {
+            m_Orientation = orientation;
+            m_Position = position;
+            m_OrientationVelocity = orientationVelocity;
+            m_PositionVelocity = positionVelocity;
+            m_ValidityFlags = PF_COORDINATES | PF_VELOCITY;
+        }
+
+        void Set(const amf::Quaternion& orientation, const amf::Vector& position,
+            const amf::Vector& orientationVelocity, const amf::Vector& positionVelocity,
+            const amf::Vector& orientationAcceleration, const amf::Vector& positionAcceleration)
+        {
+            m_Orientation = orientation;
+            m_Position = position;
+            m_OrientationVelocity = orientationVelocity;
+            m_PositionVelocity = positionVelocity;
+            m_OrientationAcceleration = orientationAcceleration;
+            m_PositionAcceleration = positionAcceleration;
+            m_ValidityFlags = PF_COORDINATES | PF_VELOCITY | PF_ACCELERATION;
+        }
+
+
+        inline const amf::Quaternion&   GetOrientation() const { return m_Orientation; }
+        inline const amf::Vector&   GetPosition() const { return m_Position; }
+        inline const amf::Vector&   GetOrientationVelocity() const { return m_OrientationVelocity; }
+        inline const amf::Vector&   GetPositionVelocity() const { return m_PositionVelocity; }
+        inline const amf::Vector&   GetOrientationAcceleration() const { return m_OrientationAcceleration; }
+        inline const amf::Vector&   GetPositionAcceleration() const { return m_PositionAcceleration; }
+        inline ValidityFlags        GetValidityFlags() const { return m_ValidityFlags; }
+
+        inline void   SetOrientation(const amf::Quaternion& orienation)
+        {
+            m_Orientation = orienation; 
+            m_ValidityFlags |= PF_ORIENTATION;
+        }
+        inline void       SetPosition(const amf::Vector& position)
+        { 
+            m_Position = position; 
+            m_ValidityFlags |= PF_POSITION;
+        }
+        inline void       SetOrientationVelocity(const amf::Vector& orientationVelocity)
+        { 
+            m_OrientationVelocity = orientationVelocity;
+            m_ValidityFlags |= PF_ORIENTATION_VELOCITY;
+        }
+        inline void       SetPositionVelocity(const amf::Vector& positionVelocity)
+        { 
+            m_PositionVelocity = positionVelocity; 
+            m_ValidityFlags |= PF_POSITION_VELOCITY;
+        }
+        inline void       SetOrientationAcceleration(const amf::Vector& orientationAcceleration)
+        { 
+            m_OrientationAcceleration = orientationAcceleration; 
+            m_ValidityFlags |= PF_ORIENTATION_ACCELERATION;
+        }
+        inline void       SetPositionAcceleration(const amf::Vector& positionAcceleration)
+        { 
+            m_PositionAcceleration = positionAcceleration; 
+            m_ValidityFlags |= PF_POSITION_ACCELERATION;
+        }
+
+    protected:
+        amf::Quaternion                 m_Orientation;
+        amf::Vector                     m_Position;
+        amf::Vector                     m_OrientationVelocity;
+        amf::Vector                     m_PositionVelocity;
+        amf::Vector                     m_OrientationAcceleration;
+        amf::Vector                     m_PositionAcceleration;
+        ValidityFlags                   m_ValidityFlags;
+    };
+    
+	//-------------------------------------------------------------------------------------------------
+	template <typename T>
+	class AlphaFilter
+	{
+	public:
+		AlphaFilter(T alpha) :
+			m_Alpha(alpha),
+			m_FilteredValue(0)
+		{
+		}
+
+		T Apply(T value) 
+		{
+			m_FilteredValue = m_FilteredValue + m_Alpha * (value - m_FilteredValue);
+			return m_FilteredValue;
+		}
+
+	private:
+		T m_Alpha;
+		T m_FilteredValue;
+	};
+	
+	//-------------------------------------------------------------------------------------------------
+	template <typename T>
+	class AlphaBetaFilter
+	{
+	public:
+		AlphaBetaFilter(T alpha, T beta) :
+			m_Alpha(alpha),
+			m_Beta(beta),
+			m_Value(0),
+			m_PrevValue(0),
+			m_Velocity(0)
+		{
+		}
+
+		T Apply(T value, T dt)
+		{
+			m_PrevValue = m_Value;
+
+			m_Value += m_Velocity * dt;
+			T rk = value - m_Value;
+			m_Value += m_Alpha * rk;
+			m_Velocity += (m_Beta * rk) / dt;
+
+			return m_Value;
+		}
+
+		inline T GetVelocity() const { return m_Velocity; }
+
+	private:
+		T	m_Alpha, 
+			m_Beta;
+		T	m_Value,
+			m_PrevValue,
+			m_Velocity;
+	};
+	
+	//-------------------------------------------------------------------------------------------------
+	template <typename T>
+	class ThresholdFilter
+	{
+	public:
+		ThresholdFilter(T threshold) :
+			m_Threshold(threshold)
+		{
+		}
+
+		T Apply(T value) const
+		{
+			T result = value;
+			if (std::abs(value) < m_Threshold)
+			{
+				result = T(0);
+			}
+			return result;
+		}
+
+	private:
+		T	m_Threshold;
+	};
+
+	//-------------------------------------------------------------------------------------------------
+	class Derivative
+	{
+	public:
+		Derivative() {}
+
+		inline static float Calculate(float newVal, float oldVal, float dt)
+		{
+			return (newVal - oldVal) / dt;
+		}
+
+		inline static float Calculate(float dx, float dt)
+		{
+			return dx / dt;
+		}
+
+		static amf::Vector Calculate(const amf::Vector& newVal, const amf::Vector& oldVal, float dt)
+		{
+			amf::Vector result;
+			result.w = Calculate(newVal.w, oldVal.w, dt);
+			result.x = Calculate(newVal.x, oldVal.x, dt);
+			result.y = Calculate(newVal.y, oldVal.y, dt);
+			result.z = Calculate(newVal.z, oldVal.z, dt);
+			return result;
+		}
+
+		static amf::Vector Calculate(const amf::Vector& dx, float dt)
+		{
+			amf::Vector result;
+			result.w = Calculate(dx.w, dt);
+			result.x = Calculate(dx.x, dt);
+			result.y = Calculate(dx.y, dt);
+			result.z = Calculate(dx.z, dt);
+			return result;
+		}
+	};
+
+
+
     //---------------------------------------------------------------------------------------------
 } // namespace amf

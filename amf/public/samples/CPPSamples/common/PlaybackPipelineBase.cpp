@@ -51,7 +51,8 @@ PlaybackPipelineBase::PlaybackPipelineBase() :
     m_bVideoPresenterDirectConnect(false),
     m_nFfmpegRefCount(0),
     m_bURL(false),
-    m_eDecoderFormat(amf::AMF_SURFACE_NV12)
+    m_eDecoderFormat(amf::AMF_SURFACE_NV12),
+    m_bCPUDecoder(false)
 {
     g_AMFFactory.Init();
     SetParamDescription(PARAM_NAME_INPUT, ParamCommon,  L"Input file name", NULL);
@@ -86,7 +87,11 @@ PlaybackPipelineBase::~PlaybackPipelineBase()
 void PlaybackPipelineBase::Terminate()
 {
     Stop();
-    m_pContext = NULL;
+    if (m_pContext != nullptr)
+    {
+        m_pContext->Terminate();
+        m_pContext = NULL;
+    }
 }
 
 AMF_RESULT PlaybackPipelineBase::GetDuration(amf_pts& duration) const
@@ -296,9 +301,9 @@ AMF_RESULT PlaybackPipelineBase::Init()
             m_pDemuxerVideo->SetProperty(FFMPEG_DEMUXER_LISTEN, bListen);
         }
         res = m_pDemuxerVideo->SetProperty(m_bURL ? FFMPEG_DEMUXER_URL : FFMPEG_DEMUXER_PATH, inputPath.c_str());
-        CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxerVideo->Init(" << inputPath << ") failed");
+        CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxerVideo->SetProperty() failed" );
         res = m_pDemuxerVideo->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
-        CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxerVideo->Init() failed");
+        CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxerVideo->Init(" << inputPath << ") failed");
 
         amf_int32 outputs = m_pDemuxerVideo->GetOutputCount();
         for(amf_int32 output = 0; output < outputs; output++)
@@ -378,7 +383,6 @@ AMF_RESULT PlaybackPipelineBase::Init()
 
     //---------------------------------------------------------------------------------------------
     // Connect pipeline
-
 	//-------------------------- Connect parser/ Demuxer
 	PipelineElementPtr pPipelineElementDemuxerVideo = nullptr;
 	PipelineElementPtr pPipelineElementDemuxerAudio = nullptr;
@@ -446,7 +450,7 @@ AMF_RESULT PlaybackPipelineBase::InitVideoPipeline(amf_uint32 iVideoStreamIndex,
 {
     if (m_pVideoProcessor != NULL)
 	{
-        Connect(PipelineElementPtr(new AMFComponentElement(m_pVideoProcessor)), 1, CT_ThreadQueue);
+        Connect(PipelineElementPtr(new AMFComponentElement(m_pVideoProcessor)), m_bCPUDecoder ? 4 : 1, CT_ThreadQueue);
     }
     if(m_bVideoPresenterDirectConnect)
     {
@@ -472,7 +476,16 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoProcessor()
         m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_FILL, true);
         m_pVideoPresenter->SetProcessor(m_pVideoProcessor);
     }
-    m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_COLOR_PROFILE, AMF_VIDEO_CONVERTER_COLOR_PROFILE_709);
+
+    if (m_eDecoderFormat == amf::AMF_SURFACE_P010) //HDR support
+    {
+        m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_COLOR_PROFILE, AMF_VIDEO_CONVERTER_COLOR_PROFILE_2020);
+        m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_LINEAR_RGB, true);
+    }
+    else
+    {
+        m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_COLOR_PROFILE, AMF_VIDEO_CONVERTER_COLOR_PROFILE_709);
+    }
     m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_MEMORY_TYPE, m_pVideoPresenter->GetMemoryType());
     m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, m_pVideoPresenter->GetInputFormat());
 
@@ -480,24 +493,87 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoProcessor()
     return AMF_OK;
 }
 
-AMF_RESULT  PlaybackPipelineBase::InitVideoDecoder(const wchar_t *pDecoderID, amf::AMFBuffer* pExtraData)
+AMF_RESULT  PlaybackPipelineBase::InitVideoDecoder(const wchar_t *pDecoderID, amf_int64 codecID, amf_int64 bitrate, AMFRate frameRate, amf::AMFBuffer* pExtraData)
 {
     AMF_VIDEO_DECODER_MODE_ENUM   decoderMode = AMF_VIDEO_DECODER_MODE_COMPLIANT; // AMF_VIDEO_DECODER_MODE_REGULAR , AMF_VIDEO_DECODER_MODE_LOW_LATENCY;
 
     AMF_RESULT res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, pDecoderID, &m_pVideoDecoder);
     CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << pDecoderID << L") failed");
 
-    m_pVideoDecoder->SetProperty(AMF_VIDEO_DECODER_REORDER_MODE, amf_int64(decoderMode));
-    m_pVideoDecoder->SetProperty(AMF_VIDEO_DECODER_EXTRADATA, amf::AMFVariant(pExtraData));
+    // check resolution
 
-    m_pVideoDecoder->SetProperty(AMF_TIMESTAMP_MODE, amf_int64(AMF_TS_DECODE)); // our sample H264 parser provides decode order timestamps- change depend on demuxer
-    m_eDecoderFormat = amf::AMF_SURFACE_NV12;
-    if(std::wstring(pDecoderID) == AMFVideoDecoderHW_H265_MAIN10)
+    amf::AMFCapsPtr pCaps;
+    m_pVideoDecoder->GetCaps(&pCaps);
+    if (pCaps != nullptr)
     {
-        m_eDecoderFormat = amf::AMF_SURFACE_P010;
+        amf::AMFIOCapsPtr pInputCaps;
+        pCaps->GetInputCaps(&pInputCaps);
+        if (pInputCaps != nullptr)
+        {
+            amf_int32 minWidth = 0;
+            amf_int32 maxWidth = 0;
+            amf_int32 minHeight = 0;
+            amf_int32 maxHeight = 0;
+            pInputCaps->GetWidthRange(&minWidth, &maxWidth);
+            pInputCaps->GetHeightRange(&minHeight, &maxHeight);
+            if (minWidth <= m_iVideoWidth  && m_iVideoWidth <= maxWidth && minHeight <= m_iVideoHeight && m_iVideoHeight <= maxHeight)
+            {
+                m_pVideoDecoder->SetProperty(AMF_VIDEO_DECODER_REORDER_MODE, amf_int64(decoderMode));
+                m_pVideoDecoder->SetProperty(AMF_VIDEO_DECODER_EXTRADATA, amf::AMFVariant(pExtraData));
+
+                m_pVideoDecoder->SetProperty(AMF_TIMESTAMP_MODE, amf_int64(AMF_TS_DECODE)); // our sample H264 parser provides decode order timestamps- change depend on demuxer
+                m_eDecoderFormat = amf::AMF_SURFACE_NV12;
+                if (std::wstring(pDecoderID) == AMFVideoDecoderHW_H265_MAIN10)
+                {
+                    m_eDecoderFormat = amf::AMF_SURFACE_P010;
+                }
+                res = m_pVideoDecoder->Init(m_eDecoderFormat, m_iVideoWidth, m_iVideoHeight);
+                CHECK_AMF_ERROR_RETURN(res, L"m_pVideoDecoder->Init(" << m_iVideoWidth << m_iVideoHeight << L") failed " << pDecoderID);
+                m_bCPUDecoder = false;
+            }
+            else
+            {
+                m_pVideoDecoder = nullptr;
+            }
+        }
     }
-    res = m_pVideoDecoder->Init(m_eDecoderFormat, m_iVideoWidth, m_iVideoHeight);
-    CHECK_AMF_ERROR_RETURN(res, L"m_pVideoDecoder->Init("<< m_iVideoWidth << m_iVideoHeight << L") failed " << pDecoderID );
+    if (m_pVideoDecoder == nullptr)
+    {
+        res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_VIDEO_DECODER, &m_pVideoDecoder);
+        CHECK_AMF_ERROR_RETURN(res, L"LoadExternalComponent(" << FFMPEG_VIDEO_DECODER << L") failed");
+        ++m_nFfmpegRefCount;
+
+        if (codecID == 0)
+        {
+            if (std::wstring(pDecoderID) == AMFVideoDecoderUVD_H264_AVC)
+            {
+                codecID = AMF_STREAM_CODEC_ID_H264_AVC;
+            }
+            else if (std::wstring(pDecoderID) == AMFVideoDecoderHW_H265_MAIN10)
+            {
+                codecID = AMF_STREAM_CODEC_ID_H265_MAIN10;
+            }
+            else if (std::wstring(pDecoderID) == AMFVideoDecoderHW_H265_HEVC)
+            {
+                codecID = AMF_STREAM_CODEC_ID_H265_HEVC;
+            }
+        }
+        m_pVideoDecoder->SetProperty(VIDEO_DECODER_CODEC_ID, codecID);
+        m_pVideoDecoder->SetProperty(VIDEO_DECODER_BITRATE, bitrate);
+        m_pVideoDecoder->SetProperty(VIDEO_DECODER_FRAMERATE, frameRate);
+
+//      m_pVideoDecoder->SetProperty(AMF_VIDEO_DECODER_REORDER_MODE, amf_int64(decoderMode));
+        m_pVideoDecoder->SetProperty(VIDEO_DECODER_EXTRA_DATA, amf::AMFVariant(pExtraData));
+
+        m_eDecoderFormat = amf::AMF_SURFACE_NV12;
+        if(std::wstring(pDecoderID) == AMFVideoDecoderHW_H265_MAIN10)
+        {
+            m_eDecoderFormat = amf::AMF_SURFACE_P010;
+        }
+        res = m_pVideoDecoder->Init(m_eDecoderFormat, m_iVideoWidth, m_iVideoHeight);
+        CHECK_AMF_ERROR_RETURN(res, L"m_pVideoDecoder->Init("<< m_iVideoWidth << m_iVideoHeight << L") failed " << pDecoderID );
+        m_bCPUDecoder = true;
+    }
 
     return AMF_OK;
 }
@@ -548,6 +624,10 @@ AMF_RESULT PlaybackPipelineBase::Pause()
 
 bool  PlaybackPipelineBase::IsPaused() const
 {
+    if (m_pVideoPresenter == nullptr)
+    {
+        return false;
+    }
     return GetState() == PipelineStateRunning && m_pVideoPresenter->GetMode() == VideoPresenter::ModePaused;
 }
 
@@ -807,6 +887,10 @@ AMF_RESULT  PlaybackPipelineBase::InitVideo(amf::AMFOutput* pOutput, amf::AMF_ME
 	amf_int64 bitRate = 0;
 	double dFps = 0.0;
 
+    amf_int64 codecID = 0;
+
+    AMFRate frameRate = {};
+
     if(m_pVideoStreamParser != NULL)
     {
         if(!decodeAsAnnexBStream) // need to provide SPS/PPS if input stream will be AVCC ( not Annex B)
@@ -826,6 +910,8 @@ AMF_RESULT  PlaybackPipelineBase::InitVideo(amf::AMFOutput* pOutput, amf::AMF_ME
         pVideoDecoderID = m_pVideoStreamParser->GetCodecComponent();
 
 		dFps = m_pVideoStreamParser->GetFrameRate();
+        frameRate.num = amf_int32(dFps * 1000);
+        frameRate.den = 1000;
     }
     else if(pOutput != NULL)
     { 
@@ -838,7 +924,6 @@ AMF_RESULT  PlaybackPipelineBase::InitVideo(amf::AMFOutput* pOutput, amf::AMF_ME
         m_iVideoWidth = frameSize.width;
         m_iVideoHeight = frameSize.height;
         
-        amf_int64 codecID;
         res= pOutput->GetProperty(AMF_STREAM_CODEC_ID, &codecID);
         pVideoDecoderID = StreamCodecIDtoDecoderID(AMF_STREAM_CODEC_ID_ENUM(codecID));
         
@@ -846,14 +931,13 @@ AMF_RESULT  PlaybackPipelineBase::InitVideo(amf::AMFOutput* pOutput, amf::AMF_ME
 
 		pOutput->GetProperty(AMF_STREAM_BIT_RATE, &bitRate);
 
-		AMFRate frameRate = {};
 		pOutput->GetProperty(AMF_STREAM_VIDEO_FRAME_RATE, &frameRate);
 
 		dFps = frameRate.den == 0 ? 0.0 : (static_cast<double>(frameRate.num) / static_cast<double>(frameRate.den));
     }
     //---------------------------------------------------------------------------------------------
     // Init Video Decoder
-    res = InitVideoDecoder(pVideoDecoderID.c_str(), pExtraData);
+    res = InitVideoDecoder(pVideoDecoderID.c_str(), codecID, bitRate, frameRate,pExtraData);
     CHECK_AMF_ERROR_RETURN(res, L"InitVideoDecoder() failed");
 
     if(m_pVideoDecoder != NULL)
@@ -868,6 +952,8 @@ AMF_RESULT  PlaybackPipelineBase::InitVideo(amf::AMFOutput* pOutput, amf::AMF_ME
     if(m_eDecoderFormat == amf::AMF_SURFACE_P010) //HDR support
     {
         m_pVideoPresenter->SetInputFormat(amf::AMF_SURFACE_RGBA_F16);
+// can be used if needed
+//        m_pVideoPresenter->SetInputFormat(amf::AMF_SURFACE_R10G10B10A2);
     }
 
     res = m_pVideoPresenter->Init(m_iVideoWidth, m_iVideoHeight);

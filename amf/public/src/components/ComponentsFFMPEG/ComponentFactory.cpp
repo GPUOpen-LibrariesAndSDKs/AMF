@@ -33,6 +33,7 @@
 
 #include "AudioConverterFFMPEGImpl.h"
 #include "AudioDecoderFFMPEGImpl.h"
+#include "VideoDecoderFFMPEGImpl.h"
 #include "AudioEncoderFFMPEGImpl.h"
 #include "FileDemuxerFFMPEGImpl.h"
 #include "FileMuxerFFMPEGImpl.h"
@@ -87,6 +88,11 @@ extern "C"
         {
             *ppComponent = new amf::AMFInterfaceMultiImpl< amf::AMFAudioConverterFFMPEGImpl, amf::AMFComponent, amf::AMFContext* >(pContext);
         }
+        else if (name == FFMPEG_VIDEO_DECODER)
+        {
+            *ppComponent = new amf::AMFInterfaceMultiImpl< amf::AMFVideoDecoderFFMPEGImpl, amf::AMFComponent, amf::AMFContext* >(pContext);
+        }
+        
 
         if (*ppComponent)
         {

@@ -474,7 +474,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
         ist->sample_aspect_ratio.num=0;
         // fake codec - not opened - some params will come from real Encoder later
         ist->codec= avcodec_alloc_context3(NULL);
-        ist->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
+        ist->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
         ist->codecpar = avcodec_parameters_alloc();
 
               
