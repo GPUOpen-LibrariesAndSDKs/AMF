@@ -117,6 +117,8 @@ namespace amf
         bool                            m_bFlush;
         amf_pts							m_CurrentPts;
 
+		bool							m_FirstSample;
+
 		AMFAudioCaptureImpl(const AMFAudioCaptureImpl&);
 		AMFAudioCaptureImpl& operator=(const AMFAudioCaptureImpl&);
 	};

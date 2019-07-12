@@ -64,20 +64,21 @@ extern "C"
 // AMFAudioCaptureImpl
 //-------------------------------------------------------------------------------------------------
 AMFAudioCaptureImpl::AMFAudioCaptureImpl(AMFContext* pContext) :
-m_pContext(pContext),
-m_audioPollingThread(this),
-m_pAMFDataStreamAudio(),
-m_bForceEof(false),
-m_bTerminated(false),
-m_frameCount(0),
-m_deviceCount(0),
-m_deviceActive(0),
-m_pCurrentTime(),
-m_captureDevice(false),
-m_iQueueSize(10),
-m_prevPts(0),
-m_CurrentPts(0),
-m_bFlush(false)
+	m_pContext(pContext),
+	m_audioPollingThread(this),
+	m_pAMFDataStreamAudio(),
+	m_bForceEof(false),
+	m_bTerminated(false),
+	m_frameCount(0),
+	m_deviceCount(0),
+	m_deviceActive(0),
+	m_pCurrentTime(),
+	m_captureDevice(false),
+	m_iQueueSize(10),
+	m_prevPts(0),
+	m_CurrentPts(0),
+	m_bFlush(false),
+	m_FirstSample(true)
 {
 	AMFPrimitivePropertyInfoMapBegin
 		AMFPropertyInfoInt64(AUDIOCAPTURE_DEVICE_COUNT, AUDIOCAPTURE_DEVICE_COUNT, m_deviceCount, 0, 8, false),
@@ -192,7 +193,8 @@ AMF_RESULT AMF_STD_CALL  AMFAudioCaptureImpl::Init(AMF_SURFACE_FORMAT /*format*/
 	}
 	else
 	{
-        m_CurrentPts = GetCurrentPts();
+		m_CurrentPts = GetCurrentPts();
+		m_FirstSample = true;
 		m_audioPollingThread.Start();
 	}
 
@@ -330,10 +332,8 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
     amf_pts duration = 0;
     {
         AMFLock lock(&m_sync);
-     
 
-
-	    char* pData(NULL);
+	    char* pData = nullptr;
 	    UINT numSamples=0;
 
 	    // Get some of the audio format properties
@@ -346,22 +346,10 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
 	    int err = m_pAMFDataStreamAudio->CaptureOnePacketTry(&pData, numSamples);
 
 	    if (numSamples == 0)
-	    {
-	        // Handle silence when there are no samples
-
-	        // Dummy interval found by testing
-	        amf_pts pts = GetCurrentPts();
-	        const unsigned AUDIO_DUMMY_INTERVAL = 3000000;
-
-
-	        if (m_prevPts == 0)
-	        {
-		        duration = AUDIO_DUMMY_INTERVAL;
-	        }
-	        else
-	        {
-		        duration = pts - m_prevPts;
-	        }
+	    {	// Handle silence when there are no samples
+			m_prevPts = m_CurrentPts;
+			m_CurrentPts = GetCurrentPts();
+	        duration = m_CurrentPts - m_prevPts;
 
 	        amf_pts samples = (amf_pts)sampleRate * duration / AMF_SECOND;
 
@@ -371,13 +359,13 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
 			        sampleRate, channels, &pAudioBuffer);
 		        if (AMF_OK == err && pAudioBuffer)
 		        {
-			        pAudioBuffer->SetPts(pts);
+			        pAudioBuffer->SetPts(m_CurrentPts);
 			        pAudioBuffer->SetDuration(AMF_SECOND * samples / pWaveFormat->nSamplesPerSec);
 			        //
 			        amf_size lenData = pAudioBuffer->GetSize();
 			        void* pDst = pAudioBuffer->GetNative();
-			        memset(pDst, NULL, lenData);
-//                    AMFTraceInfo(AMF_FACILITY, L"Captured silence pts=%5.2f duration=%5.2f", m_CurrentPts/10000., duration/10000.);
+			        memset(pDst, 0, lenData);
+//                    AMFTraceDebug(AMF_FACILITY, L"Captured silence pts=%5.2f duration=%5.2f", m_CurrentPts / 10000., duration / 10000.);
 		        }
 	        }
 	    }
@@ -402,12 +390,16 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
 		        else   // pData==NULL means silent audio
 		        {
 			        void* pDst = pAudioBuffer->GetNative();
-			        memset(pDst, NULL, lenData);
+			        memset(pDst, 0, lenData);
+//					AMFTraceDebug(AMF_FACILITY, L"Captured silence (2) pts=%5.2f duration=%5.2f", m_CurrentPts / 10000., duration / 10000.);
 		        }
 //                AMFTraceInfo(AMF_FACILITY, L"Captured data pts=%5.2f duration=%5.2f", m_CurrentPts/10000., duration/10000.);
 
+				pAudioBuffer->SetPts(m_CurrentPts);
+				pAudioBuffer->SetDuration(duration);
+				m_prevPts = m_CurrentPts;
+				m_CurrentPts += duration;
 	        }
-	        //
 		    err = m_pAMFDataStreamAudio->CaptureOnePacketDone(numSamples);
 	    }
         if(m_bFlush)
@@ -415,16 +407,13 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
             m_bFlush = false;
             return res;
         }
-
     }
 	    // Submit the audio
 	if (pAudioBuffer)
 	{
-        pAudioBuffer->SetPts(m_CurrentPts);
-        pAudioBuffer->SetDuration(duration);
-        m_prevPts = m_CurrentPts;
-        m_CurrentPts += duration;
         
+//        AMFTraceDebug(AMF_FACILITY, L"Processing in_pts=%5.2f duration =%5.2f", pAudioBuffer->GetPts() / 10000., pAudioBuffer->GetDuration() / 10000.);
+
 
 	    AMF_RESULT err = AMF_INPUT_FULL;
 	    while (!m_audioPollingThread.StopRequested())
@@ -440,10 +429,12 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
             }
 		    if (AMF_INPUT_FULL != err)
 		    {
-			    break;
+                amf_sleep(1); // milliseconds
+                break;
 		    }
 		    amf_sleep(1); // milliseconds
 	    }
+
 	    m_frameCount++;
 	}
 

@@ -43,7 +43,7 @@
 
 extern "C"
 {
-#include "libavutil\imgutils.h"
+#include "libavutil/imgutils.h"
 }
 
 using namespace amf;
