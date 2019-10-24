@@ -174,6 +174,8 @@ int main(int argc, char* argv[])
     bool bNeedNewInput = true;
     //amf_int32 submitted = 0;
 
+    amf_pts processStartTime = amf_high_precision_clock();
+
     while(submitted < frameCount || frameCount < 0)
     {
         if(bNeedNewInput)
@@ -207,6 +209,14 @@ int main(int argc, char* argv[])
     // drain decoder queue 
     res = decoder->Drain();
     thread.WaitForStop();
+
+    amf_pts processEndTime = amf_high_precision_clock();
+
+    auto duration = processEndTime - processStartTime;
+    double totalSecs = (double(duration) / MILLISEC_TIME) / 1000.0;
+    printf("total time        = %g secs\n", totalSecs);
+    printf("frames submitted  = %d\n", submitted);
+    printf("FPS               = %g\n", double(submitted) / totalSecs);
 
     // cleanup in this order
     data = NULL;
