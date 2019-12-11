@@ -542,10 +542,10 @@ AMF_RESULT InputSlot::SubmitInput(amf::AMFData* pData, amf_ulong ulTimeout, bool
                         break;
                     }
                 }
-                else
-                {
-                    m_waiter.Wait(1); // wait till Poll thread clears input
-                }
+
+                // if input is full, also need to wait a bit 
+                // for input to be processed...
+                m_waiter.Wait(1); // wait till Poll thread clears input
             }
             else if(res == AMF_REPEAT)
             {

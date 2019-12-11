@@ -56,10 +56,11 @@ namespace
 }
 
 //-------------------------------------------------------------------------------------------------
-int AMFWASAPISourceImpl::CaptureOnePacket(char** ppData, UINT& numSamples)
+int AMFWASAPISourceImpl::CaptureOnePacket(char** ppData, UINT& numSamples, amf_uint64 &posStream, bool &bDiscontinuity)
 {
 	numSamples = 0;
 	*ppData = NULL;
+    bDiscontinuity = false;
 
 	int result = 0;
 
@@ -77,14 +78,24 @@ int AMFWASAPISourceImpl::CaptureOnePacket(char** ppData, UINT& numSamples)
 			HRESULT hr = m_capture->GetNextPacketSize(&packetLength);
 			if (packetLength)
 			{
-				DWORD   flags;
-				UINT64  pos, ts;
+				DWORD   flags = 0;
+                UINT64  pos = 0;
+                UINT64  ts = 0;
 				hr = m_capture->GetBuffer((LPBYTE*)ppData, &numSamples, &flags, &pos, &ts);
 
 				if (flags & AUDCLNT_BUFFERFLAGS_SILENT)
 				{
 					*ppData = NULL;	// Silence
 				}
+                if (flags & AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY)
+                {
+                    bDiscontinuity = true;
+                }
+                if (flags & AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR)
+                {
+                    pos = 0xFFFFFFFFFFFFFFFFLL;
+                }
+                posStream = pos;
 
 				break;
 			}
@@ -97,10 +108,11 @@ int AMFWASAPISourceImpl::CaptureOnePacket(char** ppData, UINT& numSamples)
 }
 
 //-------------------------------------------------------------------------------------------------
-int AMFWASAPISourceImpl::CaptureOnePacketTry(char** ppData, UINT& numSamples)
+int AMFWASAPISourceImpl::CaptureOnePacketTry(char** ppData, UINT& numSamples, amf_uint64 &posStream, bool &bDiscontinuity)
 {
 	numSamples = 0;
 	*ppData = NULL;
+    bDiscontinuity = false;
 
 	int result = 0;
 
@@ -118,15 +130,24 @@ int AMFWASAPISourceImpl::CaptureOnePacketTry(char** ppData, UINT& numSamples)
 			HRESULT hr = m_capture->GetNextPacketSize(&packetLength);
 			if (packetLength)
 			{
-				DWORD   flags;
-				UINT64  pos, ts;
+				DWORD   flags = 0;
+                UINT64  pos = 0;
+                UINT64  ts = 0;
 				hr = m_capture->GetBuffer((LPBYTE*)ppData, &numSamples, &flags, &pos, &ts);
-
 				if (flags & AUDCLNT_BUFFERFLAGS_SILENT)
 				{
 					*ppData = NULL;	// Silence
 				}
-				break;
+                if (flags & AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY)
+                {
+                    bDiscontinuity = true;
+                }
+                if (flags & AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR)
+                {
+                    pos = 0xFFFFFFFFFFFFFFFFLL;
+                }
+                posStream = pos;
+                break;
 			}
 			// Wait long enough so we can make sure that we true silence
 			amf_sleep(20);

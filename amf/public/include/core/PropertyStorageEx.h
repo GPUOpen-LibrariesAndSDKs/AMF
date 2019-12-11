@@ -47,7 +47,10 @@ namespace amf
         AMF_PROPERTY_CONTENT_XML,               // m_eType is AMF_VARIANT_STRING
 
         AMF_PROPERTY_CONTENT_FILE_OPEN_PATH,    // m_eType AMF_VARIANT_WSTRING
-        AMF_PROPERTY_CONTENT_FILE_SAVE_PATH     // m_eType AMF_VARIANT_WSTRING
+        AMF_PROPERTY_CONTENT_FILE_SAVE_PATH,    // m_eType AMF_VARIANT_WSTRING
+
+        AMF_PROPERTY_CONTENT_INTEGER_ARRAY,     // m_eType AMF_VARIANT_INTERFACE
+        AMF_PROPERTY_CONTENT_FLOAT_ARRAY        // m_eType AMF_VARIANT_INTERFACE
     } AMF_PROPERTY_CONTENT_ENUM;
     //----------------------------------------------------------------------------------------------
     typedef enum AMF_PROPERTY_ACCESS_TYPE

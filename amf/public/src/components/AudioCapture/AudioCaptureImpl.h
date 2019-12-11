@@ -116,8 +116,13 @@ namespace amf
 		amf_pts							m_prevPts;
         bool                            m_bFlush;
         amf_pts							m_CurrentPts;
+        amf_uint64                      m_iSamplesFromStream;
+
 
 		bool							m_FirstSample;
+
+        amf_pts                         m_DiffsAcc;
+        amf_int64                       m_StatCount;
 
 		AMFAudioCaptureImpl(const AMFAudioCaptureImpl&);
 		AMFAudioCaptureImpl& operator=(const AMFAudioCaptureImpl&);

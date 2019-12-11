@@ -106,7 +106,7 @@ namespace amf
             AMF_RESULT  CachePacket(AVPacket* pPacket);
             void        ClearPacketCache();
             bool        IsCached();
-
+            amf_int64   GetPacketCount() { return m_iPacketCount; }
         };
         typedef AMFInterfacePtr_T<AMFOutputDemuxerImpl>    AMFOutputDemuxerImplPtr;
     //-------------------------------------------------------------------------------------------------
@@ -244,6 +244,7 @@ namespace amf
         amf::H264Mp4ToAnnexB    m_H264Mp4ToAnnexB;
 #endif
 
+        bool                    m_bStreaming;
 
         AMFFileDemuxerFFMPEGImpl(const AMFFileDemuxerFFMPEGImpl&);
         AMFFileDemuxerFFMPEGImpl& operator=(const AMFFileDemuxerFFMPEGImpl&);

@@ -74,6 +74,27 @@ bool AMF_CDECL_CALL amf_enter_critical_section(amf_handle cs)
     return true; // in Win32 - no errors
 }
 //----------------------------------------------------------------------------------------
+bool AMF_CDECL_CALL amf_wait_critical_section(amf_handle cs, amf_ulong ulTimeout)
+{
+    while (true)
+    {
+        const BOOL success = ::TryEnterCriticalSection((CRITICAL_SECTION*)cs);
+        if (success == TRUE)
+        {
+            return true; // in Win32 - no errors
+        }
+        if (ulTimeout == 0)
+        {
+            return false;
+        }
+
+        amf_sleep(1);
+        ulTimeout--;
+    }
+
+    return false;
+}
+//----------------------------------------------------------------------------------------
 bool AMF_CDECL_CALL amf_leave_critical_section(amf_handle cs)
 {
     ::LeaveCriticalSection((CRITICAL_SECTION*)cs);
@@ -312,7 +333,10 @@ amf_handle AMF_CDECL_CALL amf_load_library(const wchar_t* filename)
 #if defined(METRO_APP)
     return LoadPackagedLibrary(filename, 0);
 #else
-    return ::LoadLibraryW(filename);
+	return ::LoadLibraryExW(filename, NULL, LOAD_LIBRARY_SEARCH_USER_DIRS |
+		LOAD_LIBRARY_SEARCH_APPLICATION_DIR |
+		LOAD_LIBRARY_SEARCH_DEFAULT_DIRS |
+		LOAD_LIBRARY_SEARCH_SYSTEM32);
 #endif
 }
 //----------------------------------------------------------------------------------------

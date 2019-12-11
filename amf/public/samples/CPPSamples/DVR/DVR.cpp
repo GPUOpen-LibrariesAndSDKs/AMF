@@ -311,9 +311,6 @@ void UpdateMenuItems()
 			iSelectedCaptureIdx = i;
 		}
 	}
-
-	s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_VIDEO_WIDTH, s_vCaptures[iSelectedCaptureIdx].ResolutionX);
-	s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_VIDEO_HEIGHT, s_vCaptures[iSelectedCaptureIdx].ResolutionY);
 	s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_OPENCL_CONVERTER, s_bOCLConverter);
 }
 

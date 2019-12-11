@@ -132,9 +132,8 @@ namespace amf
             return AMF_OK;
         }
         //-------------------------------------------------------------------------------------------------
-        virtual AMF_RESULT  AMF_STD_CALL AddTo(AMFPropertyStorage* pDest, bool overwrite, bool deep) const
+        virtual AMF_RESULT  AMF_STD_CALL AddTo(AMFPropertyStorage* pDest, bool overwrite, bool /*deep*/) const
         {
-            deep;
             AMF_RETURN_IF_INVALID_POINTER(pDest);
             AMF_RESULT err = AMF_OK;
             amf_map<amf_wstring, AMFVariant>::const_iterator it = m_PropertyValues.begin();
@@ -179,10 +178,7 @@ namespace amf
             }
         }
         //-------------------------------------------------------------------------------------------------
-        virtual void        AMF_STD_CALL OnPropertyChanged(const wchar_t* name)
-        {
-            name;
-        }
+        virtual void        AMF_STD_CALL OnPropertyChanged(const wchar_t* /*name*/) { }
         //-------------------------------------------------------------------------------------------------
         virtual void        AMF_STD_CALL AddObserver(AMFPropertyStorageObserver* pObserver) { AMFObservableImpl<AMFPropertyStorageObserver>::AddObserver(pObserver); }
         //-------------------------------------------------------------------------------------------------

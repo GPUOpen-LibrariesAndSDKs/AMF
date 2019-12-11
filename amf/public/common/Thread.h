@@ -57,6 +57,7 @@ extern "C"
     amf_handle  AMF_CDECL_CALL amf_create_critical_section();
     bool        AMF_CDECL_CALL amf_delete_critical_section(amf_handle cs);
     bool        AMF_CDECL_CALL amf_enter_critical_section(amf_handle cs);
+    bool        AMF_CDECL_CALL amf_wait_critical_section(amf_handle cs, amf_ulong ulTimeout);
     bool        AMF_CDECL_CALL amf_leave_critical_section(amf_handle cs);
     // threads: event
     amf_handle  AMF_CDECL_CALL amf_create_event(bool bInitiallyOwned, bool bManualReset, const wchar_t* pName);

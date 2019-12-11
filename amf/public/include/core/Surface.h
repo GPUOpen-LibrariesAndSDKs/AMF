@@ -67,9 +67,10 @@ namespace amf
         AMF_SURFACE_AYUV,               ///< 15 - packed 4:4:4 - 8 bit per component YUVA
         AMF_SURFACE_Y410,               ///< 16 - packed 4:4:4 - 10 bit per YUV component, 2 bits per A, AVYU 
         AMF_SURFACE_Y416,               ///< 16 - packed 4:4:4 - 16 bit per component 4 bytes, AVYU
+        AMF_SURFACE_GRAY32,             ///< 17 - single component - 32 bit
 
         AMF_SURFACE_FIRST = AMF_SURFACE_NV12,
-        AMF_SURFACE_LAST = AMF_SURFACE_Y416
+        AMF_SURFACE_LAST = AMF_SURFACE_GRAY32
     } AMF_SURFACE_FORMAT;
     //----------------------------------------------------------------------------------------------
     // AMF_SURFACE_USAGE translates to D3D11_BIND_FLAG or VkImageUsageFlags

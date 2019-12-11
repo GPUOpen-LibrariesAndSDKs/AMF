@@ -35,6 +35,7 @@ SUBDIRS = \
 	$(AMF_SAMPLES)/SimpleEncoder \
 	$(AMF_SAMPLES)/SimpleDecoder \
 	$(AMF_SAMPLES)/SimpleConverter \
+	$(AMF_SAMPLES)/SimpleROI \
 	$(AMF_SAMPLES)/TranscodeHW \
 	$(AMF_SAMPLES)/VCEEncoderD3D
 

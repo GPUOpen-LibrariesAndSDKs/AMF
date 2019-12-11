@@ -183,7 +183,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AMFInputMuxerImpl::SubmitInput(
     {
         m_iPacketCount++;
 //        bool bVideo = m_pHost->m_pOutputContext->streams[m_iIndex]->codec->codec_type == AVMEDIA_TYPE_VIDEO;
-//        AMFTraceW(L"",0, AMF_TRACE_INFO, AMF_FACILITY, 2, L"Stream# %s, packet # %d, time = %.2f ms", bVideo ? L"Video" : L"Audio", (int)m_iPacketCount, pData->GetPts() / 10000.);
+//        AMFTraceW(L"",0, AMF_TRACE_INFO, AMF_FACILITY, 2, L"Stream# %s, packet # %d, size=%d time= %.2f ms", bVideo ? L"Video" : L"Audio", (int)m_iPacketCount, (int)(AMFBufferPtr(pData)->GetSize()) , pData->GetPts() / 10000.);
         if(pData != NULL)
         {
             m_ptsLast = pData->GetPts() + m_ptsShift;

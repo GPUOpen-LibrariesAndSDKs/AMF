@@ -51,8 +51,8 @@ namespace amf
 		AMF_RESULT Terminate();
 
 		// Capture start and done
-		int CaptureOnePacket(char** ppData, UINT& numSamples);
-		int CaptureOnePacketTry(char** ppData, UINT& numSamples);
+		int CaptureOnePacket(char** ppData, UINT& numSamples, amf_uint64 &posStream, bool &bDiscontinuity);
+		int CaptureOnePacketTry(char** ppData, UINT& numSamples, amf_uint64 &posStream, bool &bDiscontinuity);
 		int CaptureOnePacketDone(UINT numSamples);
 
 		// Getters

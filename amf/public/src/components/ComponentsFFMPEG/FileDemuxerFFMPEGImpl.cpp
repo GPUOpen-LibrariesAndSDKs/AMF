@@ -453,7 +453,8 @@ AMFFileDemuxerFFMPEGImpl::AMFFileDemuxerFFMPEGImpl(AMFContext* pContext)
     m_bStreamingMode(true),
     m_iVideoStreamIndexFFmpeg(-1),
     m_iAudioStreamIndexFFmpeg(-1),
-    m_bTerminated(true)
+    m_bTerminated(true),
+    m_bStreaming(false)
 //    m_bSyncAV(false)
 {
     g_AMFFactory.Init();
@@ -828,6 +829,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
     amf_string convertedfilename;
     bool bListen = false;
     AVInputFormat* file_iformat = NULL;
+    bool bStreaming = false;
     if(Url.length() >0)
     { 
         if (m_Url == Url)
@@ -852,6 +854,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
             }
         }
         GetProperty(FFMPEG_DEMUXER_LISTEN, &bListen);
+        bStreaming = true;
     }
     else
     {
@@ -865,6 +868,8 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
     }
 
     Close();
+
+    m_bStreaming = bStreaming;
 
     m_ptsDuration = 0;
     m_ptsPosition = 0;
@@ -930,7 +935,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
 
     
     
-    if (m_pInputContext->streams[m_iVideoStreamIndexFFmpeg]->codec->codec_id == AV_CODEC_ID_H264)
+    if (m_iVideoStreamIndexFFmpeg >= 0 && m_pInputContext->streams[m_iVideoStreamIndexFFmpeg]->codec->codec_id == AV_CODEC_ID_H264)
     {
         bool checkMVC = true;
         GetProperty(FFMPEG_DEMUXER_CHECK_MVC, &checkMVC);
@@ -992,6 +997,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Close()
     m_ptsPosition = GetMinPosition();
     m_ptsDuration = 0;
     m_bTerminated = false;
+    m_bStreaming = false;
 
     m_Url.clear();
     return AMF_OK;
@@ -1021,7 +1027,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::ReadPacket(AVPacket **packet)
 
     if (pkt.stream_index == m_iVideoStreamIndexFFmpeg)
     {
-//        AMFTraceWarning(AMF_FACILITY, L"ReadPacket() video pts=%" LPRId64 L", dts=% " LPRId64 L" first_dts=%" LPRId64 L" readduration=%5.2f", pkt.pts, pkt.dts, ist->first_dts, float(readDuration) /10000.);
+//        AMFTraceWarning(AMF_FACILITY, L"ReadPacket() video pts=%" LPRId64 L", dts=% " LPRId64 L" first_dts=%" LPRId64 , pkt.pts, pkt.dts, ist->first_dts);
         if (pkt.dts == AV_NOPTS_VALUE)
         {
             pkt.dts = av_rescale(m_iPacketCount, ist->time_base.den, (int64_t)ist->time_base.num);
@@ -1042,7 +1048,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::ReadPacket(AVPacket **packet)
     }
     else
     {
-//        AMFTraceWarning(AMF_FACILITY, L"ReadPacket() audio pts=%" LPRId64 L", dts=% " LPRId64 L" first_dts=%" LPRId64 L" readduration=%5.2f", pkt.pts, pkt.dts, ist->first_dts, float(readDuration) /10000.);
+//        AMFTraceWarning(AMF_FACILITY, L"ReadPacket() audio pts=%" LPRId64 L", dts=% " LPRId64 L" first_dts=%" LPRId64 , pkt.pts, pkt.dts, ist->first_dts);
         if (pkt.pts != AV_NOPTS_VALUE && pkt.dts != AV_NOPTS_VALUE && pkt.dts<0)
         {
             pkt.dts += wrap;
@@ -1123,8 +1129,9 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::FindNextPacket(amf_int32 stre
             // if we're requesting packets from streams we don't 
             // handle at this point, return EOF...
             if (packetStreamIndex == streamIndex)
+            {
                 return AMF_EOF;
-
+            }
             continue;
         }
 
@@ -1147,6 +1154,11 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::FindNextPacket(amf_int32 stre
             if(!bFound)
             {
                 ClearPacket(pTempPacket);
+            }
+            if (m_bStreaming)
+            {
+                *packet = NULL;
+                return AMF_REPEAT;
             }
         }
         else
@@ -1217,6 +1229,11 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::UpdateBufferProperties(AMFBuf
     const AVStream*  ist = m_pInputContext->streams[pPacket->stream_index];
     AMF_RETURN_IF_FALSE(ist != NULL, AMF_UNEXPECTED, L"UpdateBufferProperties() - stream not available");
 
+    if (ist->first_dts != AV_NOPTS_VALUE)
+    {
+        ((AVPacket*)pPacket)->dts += ist->first_dts;
+    }
+
     const amf_int64  pts = av_rescale_q(pPacket->dts, ist->time_base, AMF_TIME_BASE_Q);
     pBuffer->SetPts(pts - GetMinPosition());
 
@@ -1268,21 +1285,21 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::UpdateBufferProperties(AMFBuf
         }
     }
 
+    amf_int32 outputIndex = FromFFmpegToOutputIndex(pPacket->stream_index);
     // update buffer duration, based on the type if info stored
     if (ist->codec->codec_type == AVMEDIA_TYPE_VIDEO)
     {
         pBuffer->SetProperty(FFMPEG_DEMUXER_BUFFER_TYPE, AMFVariant(AMF_STREAM_VIDEO));
         UpdateBufferVideoDuration(pBuffer, pPacket, ist);
-//        AMFTraceWarning(AMF_FACILITY, L"Video PTS=%5.2f", (double)pBuffer->GetPts() / 10000);
+//        AMFTraceWarning(AMF_FACILITY, L"Video count=%lld size=%d PTS=%5.2f", m_OutputStreams[outputIndex]->GetPacketCount(), (int)pBuffer->GetSize(), pBuffer->GetPts() / 10000.);
 
     }
     else if (ist->codec->codec_type == AVMEDIA_TYPE_AUDIO)
     {
         pBuffer->SetProperty(FFMPEG_DEMUXER_BUFFER_TYPE, AMFVariant(AMF_STREAM_AUDIO));
         UpdateBufferAudioDuration(pBuffer, pPacket, ist);
-//        AMFTraceWarning(AMF_FACILITY, L"Audio PTS=%5.2f", (double)pBuffer->GetPts() / 10000);
+//        AMFTraceWarning(AMF_FACILITY, L"Audio count=%lld size=%d PTS=%5.2f", m_OutputStreams[outputIndex]->GetPacketCount(), (int)pBuffer->GetSize(),  pBuffer->GetPts() / 10000.);
     }
-    amf_int32 outputIndex = FromFFmpegToOutputIndex(pPacket->stream_index);
     if (outputIndex >= 0)
     {
         pBuffer->SetProperty(FFMPEG_DEMUXER_BUFFER_STREAM_INDEX, outputIndex);
@@ -1603,7 +1620,10 @@ amf_int32 AMFFileDemuxerFFMPEGImpl::OpenFile(
 {
     bIsImage = false;
     int ret = avformat_open_input(&m_pInputContext, filename.c_str(), pFmt, &pOptions);
-
+	if (ret < 0)
+	{
+		return AMF_NOT_FOUND;
+	}
     // disable raw video support. toos should use raw reader
     ret = avformat_find_stream_info(m_pInputContext, NULL);
     if (ret < 0)

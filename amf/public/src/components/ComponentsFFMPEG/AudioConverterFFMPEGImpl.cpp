@@ -342,7 +342,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::QueryOutput(AMFData** ppDa
         m_uiTempBufferSize = ((((amf_size)new_size) + (64 - 1)) & ~(64 - 1));
         m_pTempBuffer = (short *) realloc(m_pTempBuffer, m_uiTempBufferSize);
     }
-    AMF_RETURN_IF_FALSE(m_pTempBuffer != NULL, AMF_OUT_OF_MEMORY, L"QueryOutput() - No memory");
+    AMF_RETURN_IF_FALSE(m_pTempBuffer != NULL, AMF_OUT_OF_MEMORY, L"QueryOutput() - No memory m_uiTempBufferSize = %" LPRId64 L"", (amf_int64)m_uiTempBufferSize);
 
     uint8_t *ibuf[12] = { pMemIn };
     uint8_t *obuf[12] = { (uint8_t*) m_pTempBuffer };

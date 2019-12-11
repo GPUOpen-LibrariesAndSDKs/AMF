@@ -109,9 +109,8 @@ namespace amf
             return AMF_OK;
         }
         //-------------------------------------------------------------------------------------------------
-        virtual AMF_RESULT  AMF_STD_CALL AddTo(AMFPropertyStorage* pDest, bool overwrite, bool deep) const
+        virtual AMF_RESULT  AMF_STD_CALL AddTo(AMFPropertyStorage* pDest, bool overwrite, bool /*deep*/) const
         {
-            deep;
             AMF_RETURN_IF_INVALID_POINTER(pDest);
 
             AMF_RESULT err = AMF_OK;
@@ -309,6 +308,27 @@ namespace amf
                     err = AMF_OUT_OF_RANGE;
                 }
                 break;
+            case AMF_VARIANT_RATE:
+                {
+                    // NOTE: denominator can't be 0
+                    const AMFRate& validatedSize = AMFVariantGetRate(pOutValidated);
+                          AMFRate  minSize       = AMFConstructRate(0, 1);
+                          AMFRate  maxSize       = AMFConstructRate(INT_MAX, INT_MAX);
+                    if (pParamInfo->minValue.type != AMF_VARIANT_EMPTY)
+                    {
+                        minSize = AMFVariantGetRate(&pParamInfo->minValue);
+                    }
+                    if (pParamInfo->maxValue.type != AMF_VARIANT_EMPTY)
+                    {
+                        maxSize = AMFVariantGetRate(&pParamInfo->maxValue);
+                    }
+                    if (validatedSize.num < minSize.num || validatedSize.num > maxSize.num ||
+                        validatedSize.den < minSize.den || validatedSize.den > maxSize.den)
+                    {
+                        err = AMF_OUT_OF_RANGE;
+                    }
+                }
+                break;
             case AMF_VARIANT_SIZE:
                 {
                     AMFSize validatedSize = AMFVariantGetSize(pOutValidated);
@@ -348,6 +368,9 @@ namespace amf
                         err = AMF_OUT_OF_RANGE;
                     }
                 }
+                break;
+            default:    //  GK: Clang issues a warning when not every value of an enum is handled in a switch-case
+                break;
             }
             return err;
         }
@@ -361,7 +384,7 @@ namespace amf
             return AMF_OK;
         }
         //-------------------------------------------------------------------------------------------------
-        virtual void        AMF_STD_CALL OnPropertyChanged(const wchar_t* name){ name; }
+        virtual void        AMF_STD_CALL OnPropertyChanged(const wchar_t* /*name*/){ }
         //-------------------------------------------------------------------------------------------------
         virtual void        AMF_STD_CALL AddObserver(AMFPropertyStorageObserver* pObserver) { AMFObservableImpl<AMFPropertyStorageObserver>::AddObserver(pObserver); }
         //-------------------------------------------------------------------------------------------------

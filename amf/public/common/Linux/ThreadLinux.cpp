@@ -134,6 +134,11 @@ bool AMF_STD_CALL amf_enter_critical_section(amf_handle cs)
     return pthread_mutex_lock(mutex) == 0;
 }
 //----------------------------------------------------------------------------------------
+bool AMF_CDECL_CALL amf_wait_critical_section(amf_handle cs, amf_ulong ulTimeout)
+{
+    return amf_wait_for_mutex(cs, ulTimeout);
+}
+//----------------------------------------------------------------------------------------
 bool AMF_STD_CALL amf_leave_critical_section(amf_handle cs)
 {
     pthread_mutex_t* mutex = (pthread_mutex_t*)cs;

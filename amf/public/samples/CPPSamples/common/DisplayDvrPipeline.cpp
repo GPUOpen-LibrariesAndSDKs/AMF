@@ -47,6 +47,7 @@
 
 const wchar_t* DisplayDvrPipeline::PARAM_NAME_CODEC          = L"CODEC";
 const wchar_t* DisplayDvrPipeline::PARAM_NAME_OUTPUT         = L"OUTPUT";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_URL            = L"URL";
 
 const wchar_t* DisplayDvrPipeline::PARAM_NAME_ADAPTERID			= L"ADAPTERID";
 const wchar_t* DisplayDvrPipeline::PARAM_NAME_MONITORID			= L"MONITORID";
@@ -63,6 +64,10 @@ const unsigned kFFMPEG_AUDIO_LAYOUT_STEREO = 0x00000003;
 
 const unsigned kFrameRate = 60;
 
+bool bLowLatency = true;
+
+// streaming command line:
+//-URL rtmp://192.168.50.240 -VIDEOHEIGHT 2160 -VIDEOWIDTH 3840 -TargetBitrate 48000000 -PeakBitrate 50000000 -VBVBufferSize 1000000 -QualityPreset 1 -FrameRate 60,1
 namespace
 {
 	// Helper for changing the surface format on the display capture connection
@@ -264,10 +269,11 @@ DisplayDvrPipeline::DisplayDvrPipeline()
 {
 	SetParamDescription(PARAM_NAME_CODEC, ParamCommon, L"Codec name (AVC or H264, HEVC or H265)", ParamConverterCodec);
 	SetParamDescription(PARAM_NAME_OUTPUT, ParamCommon, L"Output file name", NULL);
+    SetParamDescription(PARAM_NAME_URL, ParamCommon, L"Output URL name", NULL);
 	SetParamDescription(PARAM_NAME_ADAPTERID, ParamCommon, L"Index of GPU adapter (number, default = 0)", NULL);
 	SetParamDescription(PARAM_NAME_MONITORID, ParamCommon, L"Index of monitor on GPU (number, default = 0)", NULL);
-	SetParamDescription(PARAM_NAME_VIDEO_HEIGHT, ParamCommon, L"Video height (number, default = 0)", NULL);
-	SetParamDescription(PARAM_NAME_VIDEO_WIDTH, ParamCommon, L"Video width (number, default = 0)", NULL);
+	SetParamDescription(PARAM_NAME_VIDEO_HEIGHT, ParamCommon, L"Video height (number, default = 1080)", NULL);
+	SetParamDescription(PARAM_NAME_VIDEO_WIDTH, ParamCommon, L"Video width (number, default = 1920)", NULL);
 	SetParamDescription(PARAM_NAME_OPENCL_CONVERTER, ParamCommon, L"Use OpenCL Converter (bool, default = false)", NULL);
 	
 	// to demo frame-specific properties - will be applied to each N-th frame (force IDR)
@@ -396,6 +402,12 @@ AMF_RESULT DisplayDvrPipeline::InitVideo(amf::AMF_MEMORY_TYPE engineMemoryType, 
 	// override some usage parameters
 	PushParamsToPropertyStorage(this, ParamEncoderStatic, m_pEncoder);
 
+
+    if (bLowLatency)
+    {
+            m_pEncoder->SetProperty(m_szEncoderID == AMFVideoEncoderVCE_AVC ? AMF_VIDEO_ENCODER_LOWLATENCY_MODE : AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE, true);
+    }
+
 	res = m_pEncoder->Init(amf::AMF_SURFACE_NV12, videoWidth, videoHeight);
 	CHECK_AMF_ERROR_RETURN(res, L"m_pEncoder->Init() failed");
 
@@ -493,10 +505,21 @@ AMF_RESULT DisplayDvrPipeline::InitMuxer(
 	CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << FFMPEG_DEMUXER << L") failed");
 	m_pMuxer = amf::AMFComponentExPtr(pMuxer);
 
-	std::wstring outputPath = L"";
-	res = GetParamWString(PARAM_NAME_OUTPUT, outputPath);
-	CHECK_AMF_ERROR_RETURN(res, L"Output Path");
-	m_pMuxer->SetProperty(FFMPEG_MUXER_PATH, outputPath.c_str());
+    std::wstring outputURL = L"";
+    res = GetParamWString(PARAM_NAME_URL, outputURL);
+    if (outputURL.length() > 0)
+    {
+        m_pMuxer->SetProperty(FFMPEG_MUXER_URL, outputURL.c_str());
+    }
+    else
+    {
+        std::wstring outputPath = L"";
+        res = GetParamWString(PARAM_NAME_OUTPUT, outputPath);
+        CHECK_AMF_ERROR_RETURN(res, L"Output Path");
+
+
+        m_pMuxer->SetProperty(FFMPEG_MUXER_PATH, outputPath.c_str());
+    }
 	if (hasDDVideoStream)
 	{
 		m_pMuxer->SetProperty(FFMPEG_MUXER_ENABLE_VIDEO, true);
@@ -616,15 +639,8 @@ AMF_RESULT DisplayDvrPipeline::Init()
 
 	amf_int32 videoWidth = 1920;
 	amf_int32 videoHeight = 1080;
-	// We are forcing into a texture width and height that most
-	// GPUs can handle efficiently
-#ifdef NO_OPTIMIZE
 	GetParam(PARAM_NAME_VIDEO_WIDTH, videoWidth);
 	GetParam(PARAM_NAME_VIDEO_HEIGHT, videoHeight);
-#else
-	SetParam(PARAM_NAME_VIDEO_WIDTH, videoWidth);
-	SetParam(PARAM_NAME_VIDEO_HEIGHT, videoHeight);
-#endif
 
 	amf_int scaleWidth = 0;    // if 0 - no scaling
 	amf_int scaleHeight = 0;   // if 0 - no scaling
@@ -697,8 +713,6 @@ AMF_RESULT DisplayDvrPipeline::ConnectPipeline()
 	Connect(PipelineElementPtr(new AMFComponentElementDisplayCaptureInterceptor(this, m_pDisplayCapture)), 1, CT_Direct);
 	AMFComponentElementConverterInterceptor* interceptor = new AMFComponentElementConverterInterceptor(this, m_pConverter);
 	m_converterInterceptor = interceptor;
-
-    bool bLowLatency = true;
 
     if(bLowLatency)
     {
@@ -836,11 +850,10 @@ AMF_RESULT DisplayDvrPipeline::SwitchConverterFormat(amf::AMF_SURFACE_FORMAT for
 		// Terminate first
 		((AMFComponentElementConverterInterceptor*)m_converterInterceptor)->SetBlock(true);
 		m_pConverter->Terminate();
-		// Get texture width and height
 		amf_int32 videoWidth = 1920;
 		amf_int32 videoHeight = 1080;
-		SetParam(PARAM_NAME_VIDEO_WIDTH, videoWidth);
-		SetParam(PARAM_NAME_VIDEO_HEIGHT, videoHeight);
+		GetParam(PARAM_NAME_VIDEO_WIDTH, videoWidth);
+		GetParam(PARAM_NAME_VIDEO_HEIGHT, videoHeight);
 		// Init the converter
 		m_pConverter->Init(m_converterSurfaceFormat, videoWidth, videoHeight);
 		((AMFComponentElementConverterInterceptor*)m_converterInterceptor)->SetBlock(false);

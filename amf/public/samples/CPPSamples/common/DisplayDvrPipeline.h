@@ -78,6 +78,7 @@ public:
 	static const wchar_t* PARAM_NAME_CODEC;
 	// File to write media information to
 	static const wchar_t* PARAM_NAME_OUTPUT;
+    static const wchar_t* PARAM_NAME_URL;
 
 	// GPU adapter ID
 	static const wchar_t* PARAM_NAME_ADAPTERID;

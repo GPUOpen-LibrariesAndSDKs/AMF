@@ -153,8 +153,8 @@ namespace amf
     //----------------------------------------------------------------------------
     bool AMFCriticalSection::Lock(amf_ulong ulTimeout)
     {
-        (void)ulTimeout;
-        return amf_enter_critical_section(m_Sect);
+        return (ulTimeout != AMF_INFINITE) ? amf_wait_critical_section(m_Sect, ulTimeout)
+                                           : amf_enter_critical_section(m_Sect);
     }
     //----------------------------------------------------------------------------
     bool AMFCriticalSection::Unlock()
@@ -210,7 +210,10 @@ namespace amf
     //----------------------------------------------------------------------------
     AMFLock::~AMFLock()
     {
-        Unlock();
+        if (IsLocked() == true)
+        {
+            Unlock();
+        }
     }
     //----------------------------------------------------------------------------
     bool AMFLock::Lock(amf_ulong ulTimeout)
@@ -229,8 +232,9 @@ namespace amf
         {
             return false;
         }
-        m_bLocked = m_pBase->Unlock();
-        return m_bLocked;
+        const bool  unlockSucceeded = m_pBase->Unlock();
+        m_bLocked = m_bLocked && (unlockSucceeded == false);
+        return unlockSucceeded;
     }
     //----------------------------------------------------------------------------
     bool AMFLock::IsLocked()

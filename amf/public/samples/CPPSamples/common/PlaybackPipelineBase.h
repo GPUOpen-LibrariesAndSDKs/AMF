@@ -66,6 +66,7 @@ public:
     static const wchar_t* PARAM_NAME_FRAMERATE;
     static const wchar_t* PARAM_NAME_LOOP;
     static const wchar_t* PARAM_NAME_DOTIMING;
+    static const wchar_t* PARAM_NAME_LOWLATENCY;
 
     virtual AMF_RESULT Play();
     virtual AMF_RESULT Pause();

@@ -44,6 +44,7 @@ const wchar_t* PlaybackPipelineBase::PARAM_NAME_FRAMERATE = L"FRAMERATE";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_LOOP = L"LOOP";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_LISTEN_FOR_CONNECTION = L"LISTEN";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_DOTIMING = L"DOTIMING";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_LOWLATENCY = L"LOWLATENCY";
 
 PlaybackPipelineBase::PlaybackPipelineBase() :
     m_iVideoWidth(0),
@@ -63,7 +64,8 @@ PlaybackPipelineBase::PlaybackPipelineBase() :
     SetParamDescription(PARAM_NAME_LOOP, ParamCommon,  L"Loop Video, boolean, default = true", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_LISTEN_FOR_CONNECTION, ParamCommon,  L"LIsten for connection, boolean, default = true", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_DOTIMING, ParamCommon,  L"Play Video and Audio using timestamps, boolean, default = true", ParamConverterBoolean);
-    
+    SetParamDescription(PARAM_NAME_LOWLATENCY, ParamCommon, L"Low latency mode, boolean, default = false", ParamConverterBoolean);
+
     SetParam(PARAM_NAME_LISTEN_FOR_CONNECTION, false);
 
 #if defined(_WIN32)
@@ -258,6 +260,10 @@ AMF_RESULT PlaybackPipelineBase::Init()
     {
         streamType = GetStreamType(inputPath.c_str());
     }
+
+    bool bLowlatency = false;
+    GetParam(PARAM_NAME_LOWLATENCY, bLowlatency);
+
     amf_int32 iVideoStreamIndex = -1;
     amf_int32 iAudioStreamIndex = -1;
 
@@ -405,7 +411,7 @@ AMF_RESULT PlaybackPipelineBase::Init()
     {
         pPipelineElementDemuxerAudio = pPipelineElementDemuxerVideo;
     }
-	Connect(PipelineElementPtr(new AMFComponentElement(m_pVideoDecoder)), 0, pPipelineElementDemuxerVideo, iVideoStreamIndex, m_bURL ? 100 : 4, CT_ThreadQueue);
+	Connect(PipelineElementPtr(new AMFComponentElement(m_pVideoDecoder)), 0, pPipelineElementDemuxerVideo, iVideoStreamIndex, m_bURL && bLowlatency == false ? 100 : 4, CT_ThreadQueue);
 	// Initialize pipeline for both video and audio
 	InitVideoPipeline(iVideoStreamIndex, pPipelineElementDemuxerVideo);
 	InitAudioPipeline(iAudioStreamIndex, pPipelineElementDemuxerAudio);
@@ -419,6 +425,10 @@ AMF_RESULT PlaybackPipelineBase::Init()
 
     bool bTiming = true;
     GetParam(PARAM_NAME_DOTIMING,  bTiming);
+    if (bLowlatency)
+    {
+        bTiming = false;
+    }
     if(m_pVideoPresenter != NULL)
     {
         m_pVideoPresenter->DoActualWait(bTiming);
@@ -448,9 +458,19 @@ AMF_RESULT PlaybackPipelineBase::InitAudioPipeline(amf_uint32 iAudioStreamIndex,
 
 AMF_RESULT PlaybackPipelineBase::InitVideoPipeline(amf_uint32 iVideoStreamIndex, PipelineElementPtr pVideoSourceStream)
 {
+    bool bLowlatency = false;
+    GetParam(PARAM_NAME_LOWLATENCY, bLowlatency);
+
     if (m_pVideoProcessor != NULL)
 	{
-        Connect(PipelineElementPtr(new AMFComponentElement(m_pVideoProcessor)), m_bCPUDecoder ? 4 : 1, CT_ThreadQueue);
+        if (bLowlatency)
+        {
+            Connect(PipelineElementPtr(new AMFComponentElement(m_pVideoProcessor)), 1, CT_Direct);
+        }
+        else
+        {
+            Connect(PipelineElementPtr(new AMFComponentElement(m_pVideoProcessor)), m_bCPUDecoder ? 4 : 1, CT_ThreadQueue);
+        }
     }
     if(m_bVideoPresenterDirectConnect)
     {
@@ -495,7 +515,10 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoProcessor()
 
 AMF_RESULT  PlaybackPipelineBase::InitVideoDecoder(const wchar_t *pDecoderID, amf_int64 codecID, amf_int64 bitrate, AMFRate frameRate, amf::AMFBuffer* pExtraData)
 {
-    AMF_VIDEO_DECODER_MODE_ENUM   decoderMode = AMF_VIDEO_DECODER_MODE_COMPLIANT; // AMF_VIDEO_DECODER_MODE_REGULAR , AMF_VIDEO_DECODER_MODE_LOW_LATENCY;
+    bool bLowlatency = false;
+    GetParam(PARAM_NAME_LOWLATENCY, bLowlatency);
+
+    AMF_VIDEO_DECODER_MODE_ENUM   decoderMode = bLowlatency ? AMF_VIDEO_DECODER_MODE_LOW_LATENCY : AMF_VIDEO_DECODER_MODE_COMPLIANT; // AMF_VIDEO_DECODER_MODE_REGULAR , AMF_VIDEO_DECODER_MODE_LOW_LATENCY;
 
     AMF_RESULT res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, pDecoderID, &m_pVideoDecoder);
     CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << pDecoderID << L") failed");
