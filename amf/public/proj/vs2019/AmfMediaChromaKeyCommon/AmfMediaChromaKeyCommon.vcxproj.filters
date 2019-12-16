@@ -1,0 +1,159 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="components">
+      <UniqueIdentifier>{ed11dc79-0ce5-4c95-8110-53c8c05f9482}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="components\VideoCapture">
+      <UniqueIdentifier>{f5c48ef6-7028-400c-9653-3279a8bdb08d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="components\ChromaKey">
+      <UniqueIdentifier>{f685446e-e955-405e-a524-6438617515d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="components\ChromaKey\programs">
+      <UniqueIdentifier>{53b144c7-d21f-44c8-bc41-2acf2adbf3fc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common">
+      <UniqueIdentifier>{6e0814fe-9bd9-41b9-b038-89a263999d1f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="components\Capture">
+      <UniqueIdentifier>{c5c144cf-7a8a-4862-a1fd-a032696bede4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="components\Capture\DeckLinkMedia">
+      <UniqueIdentifier>{3f00399d-5109-4ff6-ae1c-90fdf538018a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="components\Capture\MediaFoundation">
+      <UniqueIdentifier>{522428bd-e492-4b13-b318-750b6c059d3d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="components\ChromaKey\programDX11">
+      <UniqueIdentifier>{0a730f97-fffa-4834-8236-29ee07cedc92}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\protected\src\components\ChromaKey\ChromaKeyCapsImpl.cpp">
+      <Filter>components\ChromaKey</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\protected\src\components\ChromaKey\ChromaKeyImpl.cpp">
+      <Filter>components\ChromaKey</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\protected\samples\CPPSamples\common\CaptureVideoPipelineBase.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\protected\src\components\Capture\CaptureManagerImpl.cpp">
+      <Filter>components\Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\protected\src\components\Capture\VideoTransfer.cpp">
+      <Filter>components\Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\protected\src\components\Capture\DeckLinkMedia\DeckLinkAPI_i.c">
+      <Filter>components\Capture\DeckLinkMedia</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\protected\src\components\Capture\DeckLinkMedia\DeckLinkMediaImpl.cpp">
+      <Filter>components\Capture\DeckLinkMedia</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\protected\src\components\Capture\MediaFoundation\MFCaptureImpl.cpp">
+      <Filter>components\Capture\MediaFoundation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\src\components\VideoCapture\MFSource.cpp">
+      <Filter>components\VideoCapture</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\src\components\VideoCapture\VideoCaptureImpl.cpp">
+      <Filter>components\VideoCapture</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\protected\src\components\ChromaKey\ChromaKeyCapsImpl.h">
+      <Filter>components\ChromaKey</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\protected\src\components\ChromaKey\ChromaKeyImpl.h">
+      <Filter>components\ChromaKey</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\protected\samples\CPPSamples\common\CaptureVideoPipelineBase.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\protected\src\components\Capture\CaptureManagerImpl.h">
+      <Filter>components\Capture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\protected\src\components\Capture\VideoTransfer.h">
+      <Filter>components\Capture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\protected\src\components\Capture\DeckLinkMedia\DeckLinkAPI_h.h">
+      <Filter>components\Capture\DeckLinkMedia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\protected\src\components\Capture\DeckLinkMedia\DeckLinkMediaImpl.h">
+      <Filter>components\Capture\DeckLinkMedia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\protected\src\components\Capture\MediaFoundation\MFCaptureImpl.h">
+      <Filter>components\Capture\MediaFoundation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\src\components\VideoCapture\MFSource.h">
+      <Filter>components\VideoCapture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\src\components\VideoCapture\VideoCaptureImpl.h">
+      <Filter>components\VideoCapture</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\..\..\src\components\ChromaKey\programsDX11\ChromaKeyBlur.hlsl">
+      <Filter>components\ChromaKey\programDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\ChromaKey\programsDX11\ChromaKeyErode.hlsl">
+      <Filter>components\ChromaKey\programDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\ChromaKey\programsDX11\ChromaKeyHistSort.hlsl">
+      <Filter>components\ChromaKey\programDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\ChromaKey\programsDX11\ChromaKeyHistUV.hlsl">
+      <Filter>components\ChromaKey\programDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\ChromaKey\programsDX11\ChromaKeyProcess.hlsl">
+      <Filter>components\ChromaKey\programDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\ChromaKey\programsDX11\ChromaKeyHistUV422.hlsl">
+      <Filter>components\ChromaKey\programDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\ChromaKey\programsDX11\ChromaKeyProcess422.hlsl">
+      <Filter>components\ChromaKey\programDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\ChromaKey\programsDX11\ChromaKeyBlendBKRGB.hlsl">
+      <Filter>components\ChromaKey\programDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\ChromaKey\programsDX11\ChromaKeyBlendBKYUV.hlsl">
+      <Filter>components\ChromaKey\programDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\ChromaKey\programsDX11\ChromaKeyBlendBKYUV422.hlsl">
+      <Filter>components\ChromaKey\programDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\ChromaKey\programsDX11\ChromaKeyBlendBKYUV444.hlsl">
+      <Filter>components\ChromaKey\programDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\ChromaKey\programsDX11\ChromaKeyBlendRGB.hlsl">
+      <Filter>components\ChromaKey\programDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\ChromaKey\programsDX11\ChromaKeyBlendYUV.hlsl">
+      <Filter>components\ChromaKey\programDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\ChromaKey\programsDX11\ChromaKeyBlendYUV422.hlsl">
+      <Filter>components\ChromaKey\programDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\ChromaKey\programsDX11\ChromaKeyBlendYUV444.hlsl">
+      <Filter>components\ChromaKey\programDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\ChromaKey\programsDX11\ChromaKeyProcess444.hlsl">
+      <Filter>components\ChromaKey\programDX11</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\..\src\components\ChromaKey\programsDX11\ChromaKeyRGBtoYUV.hlsl">
+      <Filter>components\ChromaKey\programDX11</Filter>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\..\..\protected\src\components\ChromaKey\Programs\ChromaKeyProcess.cl">
+      <Filter>components\ChromaKey\programs</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Midl Include="..\..\..\..\..\Thirdparty\BlackmagicDeckLinkSDK\10.9.10\Win\include\DeckLinkAPI.idl">
+      <Filter>components\Capture\DeckLinkMedia</Filter>
+    </Midl>
+  </ItemGroup>
+</Project>

@@ -41,6 +41,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Stitch", "CPPSamples\Stitch
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleROI", "CPPSamples\SimpleROI\SimpleROI_VS2019.vcxproj", "{1DB62CE9-B8D9-4BA0-95A5-D38C0C13181A}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CaptureVideo", "CPPSamples\CaptureVideo\CaptureVideo_VS2019.vcxproj", "{35BBD358-FEC3-4388-9F42-B5498ECBE2EF}"
+	ProjectSection(ProjectDependencies) = postProject
+		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD} = {16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -161,6 +166,14 @@ Global
 		{1DB62CE9-B8D9-4BA0-95A5-D38C0C13181A}.Release|Win32.Build.0 = Release|Win32
 		{1DB62CE9-B8D9-4BA0-95A5-D38C0C13181A}.Release|x64.ActiveCfg = Release|x64
 		{1DB62CE9-B8D9-4BA0-95A5-D38C0C13181A}.Release|x64.Build.0 = Release|x64
+		{35BBD358-FEC3-4388-9F42-B5498ECBE2EF}.Debug|Win32.ActiveCfg = Debug|Win32
+		{35BBD358-FEC3-4388-9F42-B5498ECBE2EF}.Debug|Win32.Build.0 = Debug|Win32
+		{35BBD358-FEC3-4388-9F42-B5498ECBE2EF}.Debug|x64.ActiveCfg = Debug|x64
+		{35BBD358-FEC3-4388-9F42-B5498ECBE2EF}.Debug|x64.Build.0 = Debug|x64
+		{35BBD358-FEC3-4388-9F42-B5498ECBE2EF}.Release|Win32.ActiveCfg = Release|Win32
+		{35BBD358-FEC3-4388-9F42-B5498ECBE2EF}.Release|Win32.Build.0 = Release|Win32
+		{35BBD358-FEC3-4388-9F42-B5498ECBE2EF}.Release|x64.ActiveCfg = Release|x64
+		{35BBD358-FEC3-4388-9F42-B5498ECBE2EF}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

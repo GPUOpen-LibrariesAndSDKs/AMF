@@ -41,6 +41,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Stitch", "CPPSamples\Stitch
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleROI", "CPPSamples\SimpleROI\SimpleROI_VS2017.vcxproj", "{22D4479D-AD79-4C28-9306-3BD415CCDCAD}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CaptureVideo", "CPPSamples\CaptureVideo\CaptureVideo_VS2017.vcxproj", "{BCE39F95-360A-4D89-8938-3B2B5A103DA7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -165,6 +167,14 @@ Global
 		{22D4479D-AD79-4C28-9306-3BD415CCDCAD}.Release|x64.ActiveCfg = Release|x64
 		{22D4479D-AD79-4C28-9306-3BD415CCDCAD}.Release|x64.Build.0 = Release|x64
 		{22D4479D-AD79-4C28-9306-3BD415CCDCAD}.Release|x64.Deploy.0 = Release|x64
+		{BCE39F95-360A-4D89-8938-3B2B5A103DA7}.Debug|Win32.ActiveCfg = Debug|Win32
+		{BCE39F95-360A-4D89-8938-3B2B5A103DA7}.Debug|Win32.Build.0 = Debug|Win32
+		{BCE39F95-360A-4D89-8938-3B2B5A103DA7}.Debug|x64.ActiveCfg = Debug|x64
+		{BCE39F95-360A-4D89-8938-3B2B5A103DA7}.Debug|x64.Build.0 = Debug|x64
+		{BCE39F95-360A-4D89-8938-3B2B5A103DA7}.Release|Win32.ActiveCfg = Release|Win32
+		{BCE39F95-360A-4D89-8938-3B2B5A103DA7}.Release|Win32.Build.0 = Release|Win32
+		{BCE39F95-360A-4D89-8938-3B2B5A103DA7}.Release|x64.ActiveCfg = Release|x64
+		{BCE39F95-360A-4D89-8938-3B2B5A103DA7}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
