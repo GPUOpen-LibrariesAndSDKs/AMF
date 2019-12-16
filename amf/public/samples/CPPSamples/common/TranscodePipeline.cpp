@@ -928,37 +928,6 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, amf::AMFOut
     // Usage is preset that will set many parameters
     PushParamsToPropertyStorage(pParams, ParamEncoderUsage, m_pEncoder); 
 
-    // if we enable PA, we need to make sure RateCotrolMode gets set first
-    // otherwise setting the PA properties might not work...
-    if (m_EncoderID == AMFVideoEncoderVCE_AVC)
-    {
-        amf::AMFVariant  enablePA;
-        if (pParams->GetParam(AMF_VIDEO_ENCODER_PRE_ANALYSIS_ENABLE, enablePA) == AMF_OK)
-        {
-            amf::AMFVariant  rateControlMode;
-            if (pParams->GetParam(AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD, rateControlMode) == AMF_OK)
-            {
-                m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD, rateControlMode);
-            }
-
-            m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PRE_ANALYSIS_ENABLE, enablePA);
-        }
-    }
-    else if (m_EncoderID == AMFVideoEncoder_HEVC)
-    {
-        amf::AMFVariant  enablePA;
-        if (pParams->GetParam(AMF_VIDEO_ENCODER_HEVC_PRE_ANALYSIS_ENABLE, enablePA) == AMF_OK)
-        {
-            amf::AMFVariant  rateControlMode;
-            if (pParams->GetParam(AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD, rateControlMode) == AMF_OK)
-            {
-                m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD, rateControlMode);
-            }
-
-            m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_PRE_ANALYSIS_ENABLE, enablePA);
-        }
-    }
-
 	// override some usage parameters
 	if (frameRate.den != 0 && frameRate.num != 0)
 	{
