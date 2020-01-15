@@ -267,8 +267,26 @@ AMF_RESULT AMF_STD_CALL  AMFMFCaptureImpl::AMFOutputBase::Init()
     CComPtr<IMFAttributes> pIMFAttributes;
     GetInitAttributes(&pIMFAttributes);
 
+	ATLVERIFY(SUCCEEDED(pIMFAttributes->SetUINT32(MF_SOURCE_READER_ENABLE_ADVANCED_VIDEO_PROCESSING, 1)));
+
     hr = MFCreateSourceReaderFromMediaSource(m_pMediaSource, pIMFAttributes, &m_pReader);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_FAIL, L"SelectSource() failed");
+
+	CComPtr<IMFMediaType> pMediaType;
+	ATLVERIFY(SUCCEEDED(m_pReader->GetNativeMediaType(0, 326, &pMediaType))); // 1920x1080@20 MJPG
+	struct __declspec(uuid("{687CBC51-25DA-4FFC-A678-1E64943285A7}")) DecoderTransform;
+	CComPtr<IMFTransform> pDecoderTransform;
+	ATLVERIFY(SUCCEEDED(CoCreateInstance(__uuidof(DecoderTransform), nullptr, CLSCTX_ALL, IID_PPV_ARGS(&pDecoderTransform))));
+	CComPtr<IMFAttributes> Attributes;
+	ATLVERIFY(SUCCEEDED(pDecoderTransform->GetAttributes(&Attributes)));
+	ATLVERIFY(SUCCEEDED(Attributes->SetUINT32(MF_TRANSFORM_ASYNC_UNLOCK, 1)));
+	CComPtr<IMFDXGIDeviceManager> pDeviceManager;
+	ATLVERIFY(SUCCEEDED(pIMFAttributes->GetUnknown(MF_SOURCE_READER_D3D_MANAGER, IID_PPV_ARGS(&pDeviceManager))));
+	ATLVERIFY(SUCCEEDED(pDecoderTransform->ProcessMessage(MFT_MESSAGE_SET_D3D_MANAGER, reinterpret_cast<ULONG_PTR>((IMFDXGIDeviceManager*) pDeviceManager))));
+	ATLVERIFY(SUCCEEDED(pDecoderTransform->SetInputType(0, pMediaType, 0)));
+	CComPtr<IMFMediaType> pAvailableMediaType;
+	ATLVERIFY(SUCCEEDED(pDecoderTransform->GetOutputAvailableType(0, 0, &pAvailableMediaType)));
+	ATLVERIFY(SUCCEEDED(m_pReader->SetCurrentMediaType(0, NULL, pAvailableMediaType)));
 
     return AMF_OK;
 }
