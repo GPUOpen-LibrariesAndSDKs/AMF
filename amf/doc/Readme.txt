@@ -27,8 +27,11 @@
 // THE SOFTWARE.
 //
 
-New features are available in 
-Driver: Radeon Software Adrenalin 2019 Edition; 19.7.1 Software: 19.30 and later 
+New features are available in Driver: Radeon Software Adrenalin 2019 Edition; 20.2.1 Software: 19.50 and later 
+
+1.4.16.0 (04.02.2020) version
+--------------------------
+	- Added encode pre-analysis component to improve perceived quality of encoded video
 
 1.4.14.0 (08.07.2019) version
 --------------------------

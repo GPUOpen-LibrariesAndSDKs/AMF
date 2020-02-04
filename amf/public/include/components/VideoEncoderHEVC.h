@@ -30,6 +30,7 @@
 
 #include "Component.h"
 #include "ColorSpace.h"
+#include "PreAnalysis.h"
 
 #define AMFVideoEncoder_HEVC L"AMFVideoEncoderHW_HEVC"
 
@@ -123,6 +124,7 @@ enum AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE_ENUM
 #define AMF_VIDEO_ENCODER_HEVC_EXTRADATA                            L"HevcExtraData"                // AMFInterface* - > AMFBuffer*; SPS/PPS buffer - read-only
 #define AMF_VIDEO_ENCODER_HEVC_ASPECT_RATIO                         L"HevcAspectRatio"              // AMFRatio; default = 1, 1
 #define AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE					    L"LowLatencyInternal"           // bool; default = false, enables low latency mode
+#define AMF_VIDEO_ENCODER_HEVC_PRE_ANALYSIS_ENABLE                  L"HevcEnablePreAnalysis"        // bool; default = false; enables the pre-analysis module. Currently only works in AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR mode. Refer to AMF Video PreAnalysis API reference for more details.
 
 // Picture control properties
 #define AMF_VIDEO_ENCODER_HEVC_NUM_GOPS_PER_IDR                     L"HevcGOPSPerIDR"               // amf_int64; default = 1; The frequency to insert IDR as start of a GOP. 0 means no IDR will be inserted.
@@ -140,7 +142,7 @@ enum AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE_ENUM
 #define AMF_VIDEO_ENCODER_HEVC_HIGH_MOTION_QUALITY_BOOST_ENABLE     L"HevcHighMotionQualityBoostEnable"// bool; default = depends on USAGE; Enable High motion quality boost mode
 
 #define AMF_VIDEO_ENCODER_HEVC_PREENCODE_ENABLE                     L"HevcRateControlPreAnalysisEnable"  // bool; default =  depends on USAGE; enables pre-encode assisted rate control 
-#define AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_PREANALYSIS_ENABLE      L"HevcRateControlPreAnalysisEnable"  // bool; default =  depends on USAGE; enables pre-encode assisted rate control 
+#define AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_PREANALYSIS_ENABLE      L"HevcRateControlPreAnalysisEnable"  // bool; default =  depends on USAGE; enables pre-encode assisted rate control. Deprecated, please use AMF_VIDEO_ENCODER_PREENCODE_ENABLE instead. 
 #ifdef _MSC_VER
     #pragma deprecated("AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_PREANALYSIS_ENABLE")
 #endif
@@ -188,7 +190,7 @@ enum AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE_ENUM
 
 #define AMF_VIDEO_ENCODER_HEVC_MARK_CURRENT_WITH_LTR_INDEX          L"HevcMarkCurrentWithLTRIndex"  // amf_int64; default = N/A; Mark current frame with LTR index
 #define AMF_VIDEO_ENCODER_HEVC_FORCE_LTR_REFERENCE_BITFIELD         L"HevcForceLTRReferenceBitfield"// amf_int64; default = 0; force LTR bit-field 
-
+#define AMF_VIDEO_ENCODER_HEVC_ROI_DATA                             L"HevcROIData"					// 2D AMFSurface, surface format: AMF_SURFACE_GRAY32
 
 // Properties set by encoder on output buffer interface
 #define AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE                     L"HevcOutputDataType"           // amf_int64(AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE_ENUM); default = N/A
@@ -205,7 +207,7 @@ enum AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE_ENUM
 #define AMF_VIDEO_ENCODER_HEVC_CAP_MAX_REFERENCE_FRAMES             L"HevcMaxReferenceFrames"       // amf_int64 maximum number of reference frames
 #define AMF_VIDEO_ENCODER_HEVC_CAP_COLOR_CONVERSION                 L"HevcColorConversion"          // amf_int64(AMF_ACCELERATION_TYPE) - type of supported color conversion. default AMF_ACCEL_GPU
 #define AMF_VIDEO_ENCODER_HEVC_CAP_PRE_ANALYSIS                     L"HevcPreAnalysis"              // amf_bool - pre analysis module is available for HEVC UVE encoder, n/a for the other encoders
-
+#define AMF_VIDEO_ENCODER_HEVC_CAP_ROI                              L"HevcROIMap"                   // amf_bool - ROI map support is available for HEVC UVE encoder, n/a for the other encoders
 
 // properties set on AMFComponent to control component creation
 #define AMF_VIDEO_ENCODER_HEVC_MEMORY_TYPE                          L"HevcEncoderMemoryType"        // amf_int64(AMF_MEMORY_TYPE) , default is AMF_MEMORY_UNKNOWN, Values : AMF_MEMORY_DX11, AMF_MEMORY_DX9, AMF_MEMORY_UNKNOWN (auto)
