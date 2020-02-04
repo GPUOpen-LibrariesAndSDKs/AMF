@@ -23,28 +23,26 @@
 # THE SOFTWARE.
 #
 
-AMF_ROOT = ../..
+amf_root = ../../../..
 
-AMF_SAMPLES = $(AMF_ROOT)/public/samples/CPPSamples
-AMF_SAMPLE_COMPONENTS = $(AMF_ROOT)/public/src/components
+include $(amf_root)/public/make/common_defs.mak
 
-SUBDIRS = \
-	$(AMF_SAMPLE_COMPONENTS)/ComponentsFFMPEG \
-	$(AMF_SAMPLES)/CapabilityManager \
-	$(AMF_SAMPLES)/PlaybackHW \
-	$(AMF_SAMPLES)/SimpleEncoder \
-	$(AMF_SAMPLES)/SimpleDecoder \
-	$(AMF_SAMPLES)/SimpleConverter \
-	$(AMF_SAMPLES)/SimpleROI \
-	$(AMF_SAMPLES)/TranscodeHW \
-	$(AMF_SAMPLES)/VCEEncoderD3D
+target_name = SimpleROI
 
+pp_include_dirs = $(amf_root)
 
-.PHONY: all clean $(SUBDIRS)
-all: $(SUBDIRS)
+src_files = \
+    public/samples/CPPSamples/SimpleROI/SimpleROI.cpp \
+    $(samples_common_dir)/BitStreamParser.cpp \
+    $(samples_common_dir)/BitStreamParserH264.cpp \
+    $(samples_common_dir)/BitStreamParserH265.cpp \
+    $(public_common_dir)/AMFFactory.cpp \
+    $(public_common_dir)/AMFSTL.cpp \
+    $(public_common_dir)/DataStreamFactory.cpp \
+    $(public_common_dir)/DataStreamFile.cpp \
+    $(public_common_dir)/DataStreamMemory.cpp \
+    $(public_common_dir)/Thread.cpp \
+    $(public_common_dir)/TraceAdapter.cpp \
+    $(public_common_dir)/Linux/ThreadLinux.cpp
 
-clean:
-	$(MAKE) TARGET_NAME=clean
-
-$(SUBDIRS):
-	$(MAKE) -C $@ $(TARGET_NAME)
+include $(amf_root)/public/make/common_rules.mak

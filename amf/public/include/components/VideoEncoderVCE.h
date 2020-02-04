@@ -40,6 +40,7 @@
 
 #include "Component.h"
 #include "ColorSpace.h"
+#include "PreAnalysis.h"
 
 #define AMFVideoEncoderVCE_AVC L"AMFVideoEncoderVCE_AVC"
 #define AMFVideoEncoderVCE_SVC L"AMFVideoEncoderVCE_SVC"
@@ -140,8 +141,9 @@ enum AMF_VIDEO_ENCODER_CODING_ENUM
 #define AMF_VIDEO_ENCODER_ASPECT_RATIO                          L"AspectRatio"              // AMFRatio; default = 1, 1
 #define AMF_VIDEO_ENCODER_FULL_RANGE_COLOR                      L"FullRangeColor"           // bool; default = false; inidicates that YUV input is (0,255) 
 #define AMF_VIDEO_ENCODER_LOWLATENCY_MODE                       L"LowLatencyInternal"       // bool; default = false, enables low latency mode and POC mode 2 in the encoder
+#define AMF_VIDEO_ENCODER_PRE_ANALYSIS_ENABLE                   L"EnablePreAnalysis"        // bool; default = false; enables the pre-analysis module. Currently only works in AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR mode. Refer to AMF Video PreAnalysis API reference for more details.
 #define AMF_VIDEO_ENCODER_PREENCODE_ENABLE                      L"RateControlPreanalysisEnable"     // amf_int64(AMF_VIDEO_ENCODER_PREENCODE_MODE_ENUM); default =  AMF_VIDEO_ENCODER_PREENCODE_DISABLED; enables pre-encode assisted rate control 
-#define AMF_VIDEO_ENCODER_RATE_CONTROL_PREANALYSIS_ENABLE       L"RateControlPreanalysisEnable"     // amf_int64(AMF_VIDEO_ENCODER_PREENCODE_MODE_ENUM); default =  AMF_VIDEO_ENCODER_PREENCODE_DISABLED; enables pre-encode assisted rate control 
+#define AMF_VIDEO_ENCODER_RATE_CONTROL_PREANALYSIS_ENABLE       L"RateControlPreanalysisEnable"     // amf_int64(AMF_VIDEO_ENCODER_PREENCODE_MODE_ENUM); default =  AMF_VIDEO_ENCODER_PREENCODE_DISABLED; enables pre-encode assisted rate control. Deprecated, please use AMF_VIDEO_ENCODER_PREENCODE_ENABLE instead.
 #ifdef _MSC_VER
     #pragma deprecated("AMF_VIDEO_ENCODER_RATE_CONTROL_PREANALYSIS_ENABLE")
 #endif
@@ -216,7 +218,7 @@ enum AMF_VIDEO_ENCODER_CODING_ENUM
 #define AMF_VIDEO_ENCODER_PICTURE_STRUCTURE                     L"PictureStructure"         // amf_int64(AMF_VIDEO_ENCODER_PICTURE_STRUCTURE_ENUM); default = AMF_VIDEO_ENCODER_PICTURE_STRUCTURE_FRAME; indicate picture type
 #define AMF_VIDEO_ENCODER_MARK_CURRENT_WITH_LTR_INDEX           L"MarkCurrentWithLTRIndex"  // //amf_int64; default = N/A; Mark current frame with LTR index
 #define AMF_VIDEO_ENCODER_FORCE_LTR_REFERENCE_BITFIELD          L"ForceLTRReferenceBitfield"// amf_int64; default = 0; force LTR bit-field 
-
+#define AMF_VIDEO_ENCODER_ROI_DATA                              L"ROIData"                  // 2D AMFSurface, surface format: AMF_SURFACE_GRAY32
 
 // properties set by encoder on output buffer interface
 #define AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE                      L"OutputDataType"           // amf_int64(AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_ENUM); default = N/A
@@ -245,7 +247,7 @@ enum AMF_VIDEO_ENCODER_CODING_ENUM
 #define AMF_VIDEO_ENCODER_CAP_NUM_OF_HW_INSTANCES               L"NumOfHwInstances"         // amf_int64 number of HW encoder instances
 #define AMF_VIDEO_ENCODER_CAP_COLOR_CONVERSION                  L"ColorConversion"          // amf_int64(AMF_ACCELERATION_TYPE) - type of supported color conversion. default AMF_ACCEL_GPU
 #define AMF_VIDEO_ENCODER_CAP_PRE_ANALYSIS                      L"PreAnalysis"              // amf_bool - pre analysis module is available for H264 UVE encoder, n/a for the other encoders
-
+#define AMF_VIDEO_ENCODER_CAP_ROI                               L"ROIMap"                   // amf_bool - ROI map support is available for H264 UVE encoder, n/a for the other encoders
 
 // properties set on AMFComponent to control component creation
 #define AMF_VIDEO_ENCODER_MEMORY_TYPE                           L"EncoderMemoryType"        // amf_int64(AMF_MEMORY_TYPE) , default is AMF_MEMORY_UNKNOWN, Values : AMF_MEMORY_DX11, AMF_MEMORY_DX9, AMF_MEMORY_VULKAN or AMF_MEMORY_UNKNOWN (auto)
