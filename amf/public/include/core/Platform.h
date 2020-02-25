@@ -131,7 +131,7 @@
 #endif // WIN32
 
 
-#if defined(_MSC_VER)
+#if defined(_WIN32)
 #define AMF_WEAK __declspec( selectany ) 
 #elif defined (__GNUC__) || defined (__GCC__) || defined(__clang__)//GCC or CLANG
 #define AMF_WEAK __attribute__((weak))
