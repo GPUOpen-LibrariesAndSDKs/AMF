@@ -17,6 +17,7 @@
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -53,6 +54,7 @@ END
 // remains consistent on all systems.
 IDI_DVR                 ICON                    "DVR.ico"
 
+
 /////////////////////////////////////////////////////////////////////////////
 //
 // Menu
@@ -70,28 +72,14 @@ BEGIN
     BEGIN
         MENUITEM SEPARATOR
     END
-    POPUP "&Capture Source"
+    POPUP "Capture &Source"
     BEGIN
         MENUITEM SEPARATOR
     END
-    MENUITEM "&Record",                     ID_RECORD
-    MENUITEM "&Stop",                       ID_STOP, GRAYED
     POPUP "&Help"
     BEGIN
         MENUITEM "&About ...",                  IDM_ABOUT
     END
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Accelerator
-//
-
-IDC_DVR ACCELERATORS
-BEGIN
-    "/",            IDM_ABOUT,              ASCII,  ALT, NOINVERT
-    "?",            IDM_ABOUT,              ASCII,  ALT, NOINVERT
 END
 
 
@@ -160,6 +148,65 @@ BEGIN
 END
 
 #endif    // English (United States) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (Canada) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENC)
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_CAN
+#pragma code_page(1252)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_MAIN_DIALOG DIALOGEX 0, 0, 255, 150
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "AMF DVR Sample"
+MENU IDC_DVR
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    PUSHBUTTON      "Record",IDB_RECORD,62,20,50,27
+    PUSHBUTTON      "Stop",IDB_STOP,142,20,50,27
+    LTEXT           "Messages",IDC_STATIC,9,61,32,8
+    EDITTEXT        IDE_MESSAGES,7,71,241,60,ES_MULTILINE | ES_AUTOHSCROLL | ES_READONLY | WS_VSCROLL
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO
+BEGIN
+    IDD_MAIN_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 248
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 143
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// AFX_DIALOG_LAYOUT
+//
+
+IDD_MAIN_DIALOG AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+#endif    // English (Canada) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

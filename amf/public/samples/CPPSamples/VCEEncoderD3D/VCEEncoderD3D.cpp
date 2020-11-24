@@ -92,11 +92,13 @@ static AMF_RESULT RegisterParams(ParametersStorage* pParams)
 	pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_QUERY_INST_COUNT, ParamCommon, L"If the flag is set, the number of independent VCE instances will be quried and printed.", ParamConverterBoolean);
 	pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_SELECT_INSTANCE, ParamCommon, L"If there are more than one VCE Instances, you can force which instance to use. Valid range is [0.. (number of instances - 1)] (integer, default = depends on usage).", ParamConverterInt64);
 
+	pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_FRAMERATE, ParamCommon, L"Render frame rate (integer, default = 0)", ParamConverterInt64);
 
     // to demo frame-specific properties - will be applied to each N-th frame (force IDR)
     // pParams->SetParam(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, amf_int64(AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR) );
 
     pParams->SetParamDescription(PARAM_NAME_THREADCOUNT, ParamCommon, L"Number of session run ip parallel (number, default = 1)", ParamConverterInt64);
+
     return AMF_OK;
 }
 
@@ -117,7 +119,7 @@ int main(int argc, char* argv[])
     AMFCustomTraceWriter writer(AMF_TRACE_WARNING);
     g_AMFFactory.GetDebug()->AssertsEnable(false);
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
     g_AMFFactory.GetTrace()->TraceEnableAsync(false);
     g_AMFFactory.GetTrace()->SetGlobalLevel(AMF_TRACE_INFO);
     g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_DEBUG_OUTPUT, AMF_TRACE_INFO);
@@ -125,7 +127,7 @@ int main(int argc, char* argv[])
     g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_FILE, AMF_TRACE_INFO);
     g_AMFFactory.GetTrace()->EnableWriter(AMF_TRACE_WRITER_FILE, true);
 
-#endif
+//#endif
 
     amf_increase_timer_precision();
 

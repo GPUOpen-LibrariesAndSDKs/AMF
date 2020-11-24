@@ -37,7 +37,7 @@
 #include "public/common/PropertyStorageExImpl.h"
 #include "public/include/components/AudioCapture.h"
 #include "public/src/components/AudioCapture/WASAPISource.h"
-#include "public/common/CurrentTime.h"
+#include "public/include/core/CurrentTime.h"
 
 namespace amf
 {

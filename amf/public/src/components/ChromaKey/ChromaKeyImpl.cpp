@@ -36,6 +36,7 @@
 #include "public/common/TraceAdapter.h"
 #include "public/common/AMFFactory.h"
 #include "ChromaKeyCapsImpl.h"
+#include "Programs/ChromakeyProcess.cl.h"
 #include "public/include/Components/ColorSpace.h"
 #include "public/include/Components/VideoConverter.h"
 
@@ -222,6 +223,7 @@ AMFChromaKeyImpl::AMFChromaKeyImpl(AMFContext* pContext)
     m_sizeIn = { 0 };
     m_sizeOut = { 0 };
     AMFPrimitivePropertyInfoMapBegin
+//        AMFPropertyInfoInt64(AMF_CHROMAKEY_COLOR,           AMF_CHROMAKEY_COLOR, 0x00C25D56, 0, INT_MAX, true), //YUV, 194, 135, 86
         AMFPropertyInfoInt64(AMF_CHROMAKEY_COLOR,           AMF_CHROMAKEY_COLOR, AMFChromaKeyInputImpl::KEYCOLORDEF, 0, INT_MAX, true), //YUV, 153, 42, 30, -->10bit
         AMFPropertyInfoInt64(AMF_CHROMAKEY_COLOR_EX,        AMF_CHROMAKEY_COLOR, AMFChromaKeyInputImpl::KEYCOLORDEF, 0, INT_MAX, true), //YUV, 153, 42, 30, -->10bit
         AMFPropertyInfoInt64(AMF_CHROMAKEY_RANGE_MIN,       AMF_CHROMAKEY_RANGE_MIN, 8, 0, INT_MAX, true),
@@ -267,7 +269,8 @@ AMF_RESULT AMF_STD_CALL AMFChromaKeyImpl::Init(AMF_SURFACE_FORMAT format, amf_in
 
     if ((m_deviceMemoryType == AMF_MEMORY_OPENCL) && (m_pContext->GetOpenCLContext() == NULL))
     {
-        AMF_RETURN_IF_FAILED(res, L"Not supported!");
+        res = m_pContext->InitOpenCL(NULL);
+        AMF_RETURN_IF_FAILED(res, L"InitOpenCL() failed!");
     }
 
     if (!m_Compute)
@@ -602,6 +605,13 @@ AMF_RESULT AMF_STD_CALL AMFChromaKeyImpl::QueryOutput(AMFData** ppData)
 
         ret = HistoUVSort(m_pBufferHistoUV, m_pBufferHistoSort);
         AMF_RETURN_IF_FAILED(ret);
+#if 0   //not used yet
+        if (m_deviceMemoryType != AMF_MEMORY_DX11)//todo DX11 version
+        {
+            ret = HistoLocateLuma(firstInSurface, m_pBufferLuma, m_iKeyColor[0]);
+            AMF_RETURN_IF_FAILED(ret);
+        }
+#endif
     }
 
     AMFSurfacePtr   pSurfaceMask;
@@ -650,8 +660,17 @@ AMF_RESULT AMF_STD_CALL AMFChromaKeyImpl::QueryOutput(AMFData** ppData)
             //create the bluring mask for spill
             AMF_RETURN_IF_FAILED(Erode(m_pSurfaceMask, m_pSurfaceMaskSpill, m_iSpillRange / 2, false));
             AMF_RETURN_IF_FAILED(Blur(m_pSurfaceMaskSpill, m_pSurfaceMaskBlur, m_iSpillRange));  //smooth the mask
+#if 0
+            SaveSurface(m_pSurfaceMask, L"0Mask.bmp");
+            SaveSurface(m_pSurfaceMaskSpill, L"1Spill.bmp");
+            SaveSurface(m_pSurfaceMaskBlur, L"2Blur.bmp");
+#endif
             //spill mask
             AMF_RETURN_IF_FAILED(Erode(m_pSurfaceMask, m_pSurfaceMaskSpill, m_iSpillRange, true));
+#if 0
+            SaveSurface(m_pSurfaceMaskSpill, L"3Spill2.bmp");
+#endif
+            //    Dilate(m_pSurfaceMask, m_pSurfaceMaskSpill);
         }
         else
         {
@@ -686,6 +705,8 @@ AMF_RESULT AMF_STD_CALL AMFChromaKeyImpl::QueryOutput(AMFData** ppData)
     else if (m_iInputCount == 2)
     {
         amf_int32 enableBokeh = 0;
+        //two path process
+//        GetProperty(AMF_CHROMAKEY_BOKEH, &enableBokeh);
         if (enableBokeh)
         {
             AMFSurfacePtr   pSurfaceBK = m_Inputs[1]->m_pSurface;
@@ -706,6 +727,7 @@ AMF_RESULT AMF_STD_CALL AMFChromaKeyImpl::QueryOutput(AMFData** ppData)
     }
 
     firstInSurface = m_Inputs[0]->m_pSurface;
+    ///todo, optimize 
     //copy openCL surface data to UE4 DX11 surface 
     if (m_pDataAllocatorCB && (m_outputMemoryType == AMF_MEMORY_DX11) && (m_deviceMemoryType == AMF_MEMORY_OPENCL))
     {
@@ -1118,6 +1140,7 @@ AMF_RESULT AMFChromaKeyImpl::Blend(AMFSurfacePtr pSurfaceIn, AMFSurfacePtr pSurf
 
     AMF_RETURN_IF_FAILED(pKernelChromaKeyBlend->Enqueue(2, offset, size, localSize));
     m_Compute->FlushQueue();
+//    DumpSurface(pSurfaceOut);
     return AMF_OK;
 }
 
@@ -1287,6 +1310,7 @@ AMF_RESULT AMFChromaKeyImpl::HistoUVSort(AMFBufferPtr pBufferHistoIn, AMFBufferP
     amf_uint32  posU = histoData[0] % 128;
     amf_uint32  posV = histoData[0] / 128;
     amf_uint32  iHistoMax = histoData[1];
+//    AMFTraceInfo(AMF_FACILITY, L"HistoUVSort %06x, posU=%02x, , posU=%02x, max=%d, max_new=%d", m_iKeyColor[0], posU, posV, m_iHistoMax, iHistoMax);
     if (m_iHistoMax < iHistoMax)
     {
         m_iKeyColor[0] = (m_iKeyColor[0] & 0x3FF00000) | ((posU << 12) & 0x000FF000) | ((posV << 2) & 0x000003FC);
@@ -1441,6 +1465,7 @@ AMF_RESULT AMFChromaKeyImpl::UpdateKeyColor(AMFSurfacePtr pSurfaceIn)
         iKeyColor = ((keyColor[0] << 22) & 0x3FC00000) | ((keyColor[1] << 12) & 0x000FF000) | ((keyColor[2] << 2) & 0x000003FC);
     }
     else if (pSurface->GetFormat() == AMF_SURFACE_Y210)
+//    else if (pSurface->GetFormat() == AMF_SURFACE_RGBA_F16)
     {
         amf_uint16*  pDataUYVY = (amf_uint16*)pSurface->GetPlane(AMF_PLANE_Y)->GetNative();
         keyColor[0] = pDataUYVY[1];//Y
@@ -1514,6 +1539,7 @@ AMF_RESULT AMFChromaKeyImpl::ReadData(AMFBufferPtr pBufferIn, amf_uint32 length,
         pDeviceContext->CopySubresourceRegion((ID3D11Resource *)pBuffer->GetNative(), 0, 0, 0, 0, (ID3D11Resource *)pBufferIn->GetNative(), 0, &rect);
         AMF_RETURN_IF_FAILED(res, L"AMFChromaKeyImpl::ReadData, CopySubresourceRegion failed!");
 
+#if 1
         ATL::CComPtr<ID3D11DeviceContext> pContext;
         pDevice->GetImmediateContext(&pContext);
         D3D11_MAPPED_SUBRESOURCE mapped;
@@ -1522,6 +1548,12 @@ AMF_RESULT AMFChromaKeyImpl::ReadData(AMFBufferPtr pBufferIn, amf_uint32 length,
         amf_int8* pDataSrc = (amf_int8*)mapped.pData;
         memcpy(pData, pDataSrc, length);
         pContext->Unmap((ID3D11Resource *)pBuffer->GetNative(), 0);
+#else
+        res = pBuffer->Convert(AMF_MEMORY_HOST);
+        AMF_RETURN_IF_FAILED(res, L"AMFChromaKeyImpl::ReadData, Convert failed!");
+        amf_uint8* pDataIn = (amf_uint8*)pBuffer->GetNative();
+        memcpy(pData, pDataIn, length);
+#endif
         pBuffer.Release();
     }
     else
@@ -1543,8 +1575,7 @@ AMF_RESULT AMFChromaKeyImpl::InitKernels()
     {
         return InitKernelsCL();
     }
-
-    AMF_RESULT res = AMF_OK;
+        AMF_RESULT res = AMF_OK;
     AMFPrograms *pPrograms = NULL;
     amf::AMF_KERNEL_ID kernelID;
     AMF_RETURN_IF_FAILED(g_AMFFactory.GetFactory()->GetPrograms(&pPrograms));
@@ -1567,8 +1598,17 @@ AMF_RESULT AMFChromaKeyImpl::InitKernels()
         AMF_RETURN_IF_FAILED(m_Compute->GetKernel(kernelID, &m_pKernelChromaKeyErode));
     }
 
+#if 0
+    if (!m_pKernelChromaKeyDilate)
+    {
+        AMF_RETURN_IF_FAILED(pPrograms->RegisterKernelSource(&kernelID, L"Dilate", "Dilate", ChromaKeyProcessCount, ChromaKeyProcess, 0));
+        AMF_RETURN_IF_FAILED(m_Compute->GetKernel(kernelID, &m_pKernelChromaKeyDilate));
+    }
+#endif
+
     if (!m_pKernelChromaKeyBlend)
     {
+        //todo NV12
         const wchar_t* kernelIDName = (m_formatOut == amf::AMF_SURFACE_NV12) ? L"CSBlend" : L"CSBlendRGB";
         const  char*   kernelName = (m_formatOut == amf::AMF_SURFACE_NV12) ? "CSBlend" : "CSBlendRGB";
         AMF_RETURN_IF_FAILED(pPrograms->RegisterKernelBinary1(AMF_MEMORY_DX11, &kernelID, kernelIDName, kernelName, sizeof(ChromaKeyBlendYUV_CS), ChromaKeyBlendYUV_CS, NULL));
@@ -1577,6 +1617,7 @@ AMF_RESULT AMFChromaKeyImpl::InitKernels()
 
     if (!m_pKernelChromaKeyBlendBK)
     {
+        //todo NV12
         const wchar_t* kernelIDName = (m_formatOut == amf::AMF_SURFACE_NV12) ? L"BlendBK" : L"CSBlendBKRGB";
         const  char*   kernelName = (m_formatOut == amf::AMF_SURFACE_NV12) ? "BlendBK" : "CSBlendBKRGB";
         AMF_RETURN_IF_FAILED(pPrograms->RegisterKernelBinary1(AMF_MEMORY_DX11, &kernelID, kernelIDName, kernelName, sizeof(ChromaKeyBlendBKYUV_CS), ChromaKeyBlendBKYUV_CS, NULL));
@@ -1666,13 +1707,246 @@ AMF_RESULT AMFChromaKeyImpl::InitKernels()
         AMF_RETURN_IF_FAILED(m_Compute->GetKernel(kernelID, &m_pKernelChromaKeyV210toY210));
     }
 
+#if 0
+    if (!m_pKernelChromaKeyHistoLocateLuma)
+    {
+        AMF_RETURN_IF_FAILED(pPrograms->RegisterKernelSource(&kernelID, L"HistoLocateLuma", "HistoLocateLuma", ChromaKeyProcessCount, ChromaKeyProcess, 0));
+        AMF_RETURN_IF_FAILED(m_Compute->GetKernel(kernelID, &m_pKernelChromaKeyHistoLocateLuma));
+    }
+#endif
+
+#if 0   //not implemented yet
+    if (!m_pKernelChromaKeyBokeh)
+    {
+        AMF_RETURN_IF_FAILED(pPrograms->RegisterKernelBinary1(AMF_MEMORY_DX11, &kernelID, L"CSBokeh", "CSBokeh", sizeof(ChromaKeyBokeh_CS), ChromaKeyBokeh_CS, NULL));
+        AMF_RETURN_IF_FAILED(m_Compute->GetKernel(kernelID, &m_pKernelChromaKeyBokeh));
+    }
+#endif
     return res;
 }
 
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMFChromaKeyImpl::InitKernelsCL()
 {
-    return AMF_NOT_IMPLEMENTED;
+    AMF_RESULT res = AMF_OK;
+    AMFPrograms *pPrograms = NULL;
+    amf::AMF_KERNEL_ID kernelID;
+    AMF_RETURN_IF_FAILED(g_AMFFactory.GetFactory()->GetPrograms(&pPrograms));
+
+    if (!m_pKernelChromaKeyProcess)
+    {
+        AMF_RETURN_IF_FAILED(pPrograms->RegisterKernelSource(&kernelID, L"Process", "Process", ChromaKeyProcessCount, ChromaKeyProcess, 0));
+        AMF_RETURN_IF_FAILED(m_Compute->GetKernel(kernelID, &m_pKernelChromaKeyProcess));
+    }
+
+    if (!m_pKernelChromaKeyBlur)
+    {
+        AMF_RETURN_IF_FAILED(pPrograms->RegisterKernelSource(&kernelID, L"Blur", "Blur", ChromaKeyProcessCount, ChromaKeyProcess, 0));
+        AMF_RETURN_IF_FAILED(m_Compute->GetKernel(kernelID, &m_pKernelChromaKeyBlur));
+    }
+
+    if (!m_pKernelChromaKeyErode)
+    {
+        AMF_RETURN_IF_FAILED(pPrograms->RegisterKernelSource(&kernelID, L"Erode", "Erode", ChromaKeyProcessCount, ChromaKeyProcess, 0));
+        AMF_RETURN_IF_FAILED(m_Compute->GetKernel(kernelID, &m_pKernelChromaKeyErode));
+    }
+
+    if (!m_pKernelChromaKeyDilate)
+    {
+        AMF_RETURN_IF_FAILED(pPrograms->RegisterKernelSource(&kernelID, L"Dilate", "Dilate", ChromaKeyProcessCount, ChromaKeyProcess, 0));
+        AMF_RETURN_IF_FAILED(m_Compute->GetKernel(kernelID, &m_pKernelChromaKeyDilate));
+    }
+
+    if (!m_pKernelChromaKeyBlend)
+    {
+        const wchar_t* kernelIDName = (m_formatOut == amf::AMF_SURFACE_NV12) ? L"Blend" : L"BlendRGB";
+        const  char*   kernelName = (m_formatOut == amf::AMF_SURFACE_NV12) ? "Blend" : "BlendRGB";
+        AMF_RETURN_IF_FAILED(pPrograms->RegisterKernelSource(&kernelID, kernelIDName, kernelName, ChromaKeyProcessCount, ChromaKeyProcess, 0));
+        AMF_RETURN_IF_FAILED(m_Compute->GetKernel(kernelID, &m_pKernelChromaKeyBlend));
+    }
+
+    if (!m_pKernelChromaKeyBlendBK)
+    {
+        const wchar_t* kernelIDName = (m_formatOut == amf::AMF_SURFACE_NV12) ? L"BlendBK" : L"BlendBKRGB";
+        const  char*   kernelName = (m_formatOut == amf::AMF_SURFACE_NV12) ? "BlendBK" : "BlendBKRGB";
+        AMF_RETURN_IF_FAILED(pPrograms->RegisterKernelSource(&kernelID, kernelIDName, kernelName, ChromaKeyProcessCount, ChromaKeyProcess, 0));
+        AMF_RETURN_IF_FAILED(m_Compute->GetKernel(kernelID, &m_pKernelChromaKeyBlendBK));
+    }
+
+
+    if (!m_pKernelChromaKeyHisto)
+    {
+        AMF_RETURN_IF_FAILED(pPrograms->RegisterKernelSource(&kernelID, L"HistoUV", "HistoUV", ChromaKeyProcessCount, ChromaKeyProcess, 0));
+        AMF_RETURN_IF_FAILED(m_Compute->GetKernel(kernelID, &m_pKernelChromaKeyHisto));
+    }
+
+    if (!m_pKernelChromaKeyHistoSort)
+    {
+        AMF_RETURN_IF_FAILED(pPrograms->RegisterKernelSource(&kernelID, L"HistoSort", "HistoSort", ChromaKeyProcessCount, ChromaKeyProcess, 0));
+        AMF_RETURN_IF_FAILED(m_Compute->GetKernel(kernelID, &m_pKernelChromaKeyHistoSort));
+    }
+
+
+    if (!m_pKernelChromaKeyHistoLocateLuma)
+    {
+        AMF_RETURN_IF_FAILED(pPrograms->RegisterKernelSource(&kernelID, L"HistoLocateLuma", "HistoLocateLuma", ChromaKeyProcessCount, ChromaKeyProcess, 0));
+        AMF_RETURN_IF_FAILED(m_Compute->GetKernel(kernelID, &m_pKernelChromaKeyHistoLocateLuma));
+    }
+    if (!m_pKernelChromaKeyBokeh)
+    {
+        AMF_RETURN_IF_FAILED(pPrograms->RegisterKernelSource(&kernelID, L"Bokeh", "Bokeh", ChromaKeyProcessCount, ChromaKeyProcess, 0));
+        AMF_RETURN_IF_FAILED(m_Compute->GetKernel(kernelID, &m_pKernelChromaKeyBokeh));
+    }
+    return res;
+}
+
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT AMFChromaKeyImpl::SaveSurface(AMFSurfacePtr pSurfaceIn, std::wstring fileName)
+{
+    //-------------------------------------------------------------------------------------------------
+        AMF_RESULT res = AMF_OK;
+        //copy a portion of the area and lock the small surface to read 
+        amf_int32 widthIn = pSurfaceIn->GetPlane(AMF_PLANE_Y)->GetWidth();
+        amf_int32 heightIn = pSurfaceIn->GetPlane(AMF_PLANE_Y)->GetHeight();
+        if (m_deviceMemoryType == AMF_MEMORY_DX11)
+        {
+            AMFSurfacePtr pSurface;
+            amf_int32 width = widthIn;
+            amf_int32 height = heightIn;// / 4;
+            res = m_pContext->AllocSurface(pSurfaceIn->GetMemoryType(), pSurfaceIn->GetFormat(), width, height, &pSurface);
+            AMF_RETURN_IF_FAILED(res, L"AMFChromaKeyImpl::DumpSurface, allocate surface failed!");
+            res = pSurfaceIn->CopySurfaceRegion(pSurface, 0, 0, 0, 0, width, height);
+            AMF_RETURN_IF_FAILED(res, L"AMFChromaKeyImpl::DumpSurface, CopySurfaceRegion failed!");
+
+            res = pSurface->Convert(AMF_MEMORY_HOST);
+            AMF_RETURN_IF_FAILED(res, L"AMFChromaKeyImpl::DumpSurface, Convert failed!");
+            amf_uint8*  pDataY = (amf_uint8*)pSurface->GetPlane(AMF_PLANE_Y)->GetNative();
+            amf_int32 pitch = pSurface->GetPlane(AMF_PLANE_Y)->GetHPitch();
+            //    SaveToBmp(pDataY, L"Spill.bmp", widthIn, heightIn, 1, pitch);
+            SaveToBmp(pDataY, fileName, widthIn, heightIn, 1, pitch);
+
+            pSurface.Release();
+        }
+        else
+        {
+            AMF_MEMORY_TYPE memType = pSurfaceIn->GetMemoryType();
+            res = pSurfaceIn->Convert(AMF_MEMORY_HOST);
+            AMF_RETURN_IF_FAILED(res, L"AMFChromaKeyImpl::DumpSurface, Convert failed!");
+            amf_uint8*  pDataY = (amf_uint8*)pSurfaceIn->GetPlane(AMF_PLANE_Y)->GetNative();
+            amf_int32 pitch = pSurfaceIn->GetPlane(AMF_PLANE_Y)->GetHPitch();
+            SaveToBmp(pDataY, fileName, widthIn, heightIn, 1, pitch);
+            res = pSurfaceIn->Convert(memType);
+        }
+        return AMF_OK;
+}
+
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT AMFChromaKeyImpl::SaveToBmp(amf_uint8* pData, std::wstring fileName, amf_int32 width, amf_int32 height, amf_int32 channels, amf_int32 pitch)
+{
+    AMF_RESULT res = AMF_OK;
+    if (m_iFrameCount % 10) return res;
+    if (!pData)  return AMF_FAIL;
+    WCHAR pFileNameExt[_MAX_PATH];
+    wsprintf(pFileNameExt, L"%03d_", m_iFrameCount);
+
+    std::wstring fileNameFull = std::wstring(L"d://temp//Dump//") + std::wstring(pFileNameExt) + fileName;
+
+    FILE*  fp = _wfopen(fileNameFull.c_str(), L"wb");
+
+    if (fp)
+    {
+        amf_uint32 sizeImage = channels * width * height;
+
+        BITMAPFILEHEADER bmHeader = { 0 };
+        BITMAPINFOHEADER bmInfo = { 0 };
+        bmHeader.bfType = MAKEWORD('B', 'M');
+        bmHeader.bfSize = sizeImage + sizeof(bmHeader) + sizeof(bmInfo);
+        bmHeader.bfOffBits = sizeof(bmHeader) + sizeof(bmInfo);
+
+        bmInfo.biSize = sizeof(bmInfo);
+        bmInfo.biWidth = width;
+        bmInfo.biHeight = -height;
+        bmInfo.biBitCount = (channels == 4) ? 32 : 24;
+        bmInfo.biSizeImage = sizeImage;
+        bmInfo.biPlanes = 1;
+
+        fwrite(&bmHeader, 1, sizeof(bmHeader), fp);
+        fwrite(&bmInfo, 1, sizeof(bmInfo), fp);
+
+        if (channels == 1)
+        {
+            amf_uint32 lenLine = channels * width;
+            for (amf_int32 y = 0; y < height; y++, pData += pitch)
+            {
+                amf_uint8* pDataLine = pData;
+                for (amf_int32 x = 0; x < width; x++, pDataLine++)
+                {
+                    fwrite(pDataLine, 1, 1, fp);
+                    fwrite(pDataLine, 1, 1, fp);
+                    fwrite(pDataLine, 1, 1, fp);
+                }
+            }
+        }
+        else
+        {
+            amf_uint32 lenLine = channels * width;
+            for (amf_int32 y = 0; y < height; y++, pData += pitch)
+            {
+                fwrite(pData, 1, lenLine, fp);
+            }
+        }
+
+        fclose(fp);
+    }
+
+    return AMF_OK;
+}
+
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT AMFChromaKeyImpl::DumpSurface(AMFSurfacePtr pSurfaceIn)
+{
+    AMF_RESULT res = AMF_OK;
+    //copy a portion of the area and lock the small surface to read 
+    amf_int32 widthIn = pSurfaceIn->GetPlane(AMF_PLANE_Y)->GetWidth();
+    amf_int32 heightIn = pSurfaceIn->GetPlane(AMF_PLANE_Y)->GetHeight();
+    AMFSurfacePtr pSurface;
+    amf_int32 width = widthIn;
+    amf_int32 height = heightIn / 4;
+    res = m_pContext->AllocSurface(pSurfaceIn->GetMemoryType(), pSurfaceIn->GetFormat(), width, height, &pSurface);
+    AMF_RETURN_IF_FAILED(res, L"AMFChromaKeyImpl::DumpSurface, allocate surface failed!");
+    res = pSurfaceIn->CopySurfaceRegion(pSurface, 0, 0, 0, 0, width, height);
+    AMF_RETURN_IF_FAILED(res, L"AMFChromaKeyImpl::DumpSurface, CopySurfaceRegion failed!");
+
+    res = pSurface->Convert(AMF_MEMORY_HOST);
+    AMF_RETURN_IF_FAILED(res, L"AMFChromaKeyImpl::DumpSurface, Convert failed!");
+    amf_uint8*  pDataY = (amf_uint8*)pSurface->GetPlane(AMF_PLANE_Y)->GetNative();
+    amf_int32 pitch = pSurfaceIn->GetPlane(AMF_PLANE_Y)->GetHPitch();
+
+    pSurface.Release();
+    return AMF_OK;
+}
+
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT AMFChromaKeyImpl::DumpBuffer(AMFBufferPtr pBufferIn)
+{
+    AMF_RESULT res = AMF_OK;
+    amf_size sizeIn = pBufferIn->GetSize();
+
+    AMFBufferPtr pBuffer;
+    res = m_pContext->AllocBuffer(pBufferIn->GetMemoryType(), sizeIn, &pBuffer);
+    AMF_RETURN_IF_FAILED(res, L"AMFChromaKeyImpl::DumpBuffer, AllocBuffer failed!");
+
+    ATL::CComPtr<ID3D11Device> pDevice = (ID3D11Device*)m_pContext->GetDX11Device();
+    ATL::CComPtr<ID3D11DeviceContext> pDeviceContext;
+    pDevice->GetImmediateContext(&pDeviceContext);
+    pDeviceContext->CopyResource((ID3D11Resource*)pBuffer->GetNative(), (ID3D11Resource*)pBufferIn->GetNative());
+    AMF_RETURN_IF_FAILED(res, L"AMFChromaKeyImpl::DumpBuffer, CopyResource failed!");
+
+    res = pBuffer->Convert(AMF_MEMORY_HOST);
+    AMF_RETURN_IF_FAILED(res, L"AMFChromaKeyImpl::DumpBuffer, Convert failed!");
+    amf_uint8*  pDataY = (amf_uint8*)pBuffer->GetNative();
+    pBuffer.Release();
+    return AMF_OK;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1805,7 +2079,7 @@ amf_uint32 AMFChromaKeyImpl::GetColorTransferMode(AMFSurfacePtr pSurfaceIn)
     amf_uint32 iColorTransfer = 0;
 
     amf_int64 iTransferFunction = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED;
-    AMF_RESULT ret = pSurfaceIn->GetProperty(AMF_VIDEO_CONVERTER_TRANSFER_CHARACTERISTIC, &iTransferFunction);
+    AMF_RESULT ret = pSurfaceIn->GetProperty(AMF_VIDEO_COLOR_TRANSFER_CHARACTERISTIC, &iTransferFunction);
 
     if (ret == AMF_OK)
     {

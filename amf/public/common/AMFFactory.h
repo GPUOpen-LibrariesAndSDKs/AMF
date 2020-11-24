@@ -56,6 +56,8 @@ public:
     amf::AMFTrace* GetTrace();
 
     amf_uint64 AMFQueryVersion();
+
+    amf_handle    GetAMFDLLHandle() { return m_hDLLHandle; }
 protected:
     struct ComponentHolder
     {

@@ -70,6 +70,7 @@ namespace amf
 // based on the last element in their enumeration
 #define AMF_CODEC_H265MAIN10      1005
 #define AV_CODEC_H264MVC          1006
+#define AMF_CODEC_VP9_10BIT       1007
 
 extern AVRational AMF_TIME_BASE_Q;
 extern AVRational FFMPEG_TIME_BASE_Q;

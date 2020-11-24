@@ -51,15 +51,13 @@
 
 #define AMF_FACILITY L"SimpleROI"
 
-amf::AMFContextPtr      context;
-amf::AMFComponentPtr    encoder;
 
 #if defined (_WIN32)
-static amf::AMF_MEMORY_TYPE memoryTypeOut = amf::AMF_MEMORY_DX11;
+static amf::AMF_MEMORY_TYPE memoryType = amf::AMF_MEMORY_DX11;
 #elif defined (__linux)
-static amf::AMF_MEMORY_TYPE memoryTypeOut = amf::AMF_MEMORY_VULKAN;
+static amf::AMF_MEMORY_TYPE memoryType = amf::AMF_MEMORY_VULKAN;
 #endif
-static amf::AMF_SURFACE_FORMAT formatOut = amf::AMF_SURFACE_NV12;
+static amf::AMF_SURFACE_FORMAT pixelFormat = amf::AMF_SURFACE_NV12;
 
 static amf_int32 frameCount                 = 100; // -1 means entire file
 static amf_int32 widthIn					= 0;
@@ -67,13 +65,11 @@ static amf_int32 heightIn					= 0;
 static amf_int32 frameRateIn				= 0;
 static amf_int32 submitted					= 0;
 
-static const wchar_t *pOutputCodec			= AMFVideoEncoderVCE_AVC;
-//static const wchar_t *pOutputCodec			= AMFVideoEncoder_HEVC;
+static wchar_t *pOutputCodec;
 static amf_int64 bitRateOut					= 5000000L; // in bits, 5MBit
 static bool bMaximumSpeed					= true;
 
 
-static const wchar_t *fileNameIn            = NULL;
 static const wchar_t *fileNameDecOut        = L"./output_%dx%d.nv12";
 static const wchar_t *fileNameEncOut        = L"./output_%dx%d.%d";
 
@@ -89,10 +85,11 @@ class DecPollingThread : public amf::AMFThread
 {
 protected:
     amf::AMFContextPtr      m_pContext;
+    amf::AMFComponentPtr    m_pEncoder;
     amf::AMFComponentPtr    m_pDecoder;
     std::ofstream           m_pFile;
 public:
-	DecPollingThread(amf::AMFContext *context, amf::AMFComponent *decoder, const wchar_t *pFileName);
+	DecPollingThread(amf::AMFContext *context, amf::AMFComponent *encoder, amf::AMFComponent *decoder, const wchar_t *pFileName);
     ~DecPollingThread();
     virtual void Run();
 };
@@ -122,20 +119,38 @@ int _tmain(int argc, _TCHAR* argv[])
 int main(int argc, char* argv[])
 #endif
 {
-    std::wstring fileNameInW{};
+    std::wstring  fileNameIn;
 
-    if(argc <= 1 && fileNameIn == NULL)
+	switch (argc) 
     {
-        wprintf(L"input file name is missing in command line");
-        return 1;
-    }
-    if(argc > 1)
-    { 
-        fileNameInW = convert2WString(argv[1]);
-        fileNameIn = fileNameInW.c_str();
-    }
-    AMF_RESULT              res = AMF_OK; // error checking can be added later
-    res = g_AMFFactory.Init();
+		case 2: {
+			fileNameIn = convert2WString(argv[1]);
+			pOutputCodec = AMFVideoEncoderVCE_AVC; // default to output AVC
+			break; }
+		case 3: {
+			fileNameIn = convert2WString(argv[1]);
+	
+            std::wstring  param = convert2WString(argv[2]);
+            if ((param.compare(L"h264") != 0) && (param.compare(L"avc") == 0))
+			{
+				pOutputCodec = AMFVideoEncoderVCE_AVC;
+			}
+            else if ((param.compare(L"h265") != 0) && (param.compare(L"hevc") == 0))
+            {
+				pOutputCodec = AMFVideoEncoder_HEVC;
+			}
+			else
+			{
+				wprintf(L"unsupported output format!");
+				return 1;
+			}
+			break; }
+		default:
+			wprintf(L"Usage: %s inputFileName [outputCodecType]\n", argv[0]);
+			return 1;
+	}
+
+    AMF_RESULT res = g_AMFFactory.Init();
     if(res != AMF_OK)
     {
         wprintf(L"AMF Failed to initialize");
@@ -144,21 +159,23 @@ int main(int argc, char* argv[])
     g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_DEBUG_OUTPUT, AMF_TRACE_TRACE); 
     ::amf_increase_timer_precision();
 
-    amf::AMFComponentPtr    decoder;	
+    amf::AMFContextPtr      context;
+    amf::AMFComponentPtr    encoder;
+    amf::AMFComponentPtr    decoder;
     amf::AMFDataStreamPtr   datastream;
     BitStreamParserPtr      parser;
 
     // initialize AMF
-    res = amf::AMFDataStream::OpenDataStream(fileNameIn, amf::AMFSO_READ, amf::AMFFS_SHARE_READ, &datastream);
+    res = amf::AMFDataStream::OpenDataStream(fileNameIn.c_str(), amf::AMFSO_READ, amf::AMFFS_SHARE_READ, &datastream);
 
     if(datastream == NULL)
     {
-        wprintf(L"file %s is missing", fileNameIn);
+        wprintf(L"file %s is missing", fileNameIn.c_str());
         return 1;
     }
     // context
     res = g_AMFFactory.GetFactory()->CreateContext(&context);
-    switch(memoryTypeOut)
+    switch(memoryType)
     {
     case amf::AMF_MEMORY_DX9:
         res = context->InitDX9(NULL); // can be DX9 or DX9Ex device
@@ -171,8 +188,8 @@ int main(int argc, char* argv[])
         break;
     }
 
-	BitStreamType bsType = GetStreamType(fileNameIn);
-	// H264/H265 elemntary stream parser from samples common 
+	BitStreamType bsType = GetStreamType(fileNameIn.c_str());
+	// H264/H265 elementary stream parser from samples common 
 	parser = BitStreamParser::Create(datastream, bsType, context);
 
     // open output file with frame size in file name
@@ -195,7 +212,7 @@ int main(int argc, char* argv[])
         memcpy(buffer->GetNative(), parser->GetExtraData(), parser->GetExtraDataSize());
         decoder->SetProperty(AMF_VIDEO_DECODER_EXTRADATA, amf::AMFVariant(buffer));
     }
-    res = decoder->Init(formatOut, parser->GetPictureWidth(), parser->GetPictureHeight());
+    res = decoder->Init(pixelFormat, parser->GetPictureWidth(), parser->GetPictureHeight());
 
 
 	// component: encoder
@@ -266,10 +283,10 @@ int main(int argc, char* argv[])
 			AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_PROFILE_LEVEL, AMF_LEVEL_5_1) failed");
 		}
 	}
-	res = encoder->Init(formatOut, widthIn, heightIn);
+	res = encoder->Init(pixelFormat, widthIn, heightIn);
 	AMF_RETURN_IF_FAILED(res, L"encoder->Init() failed");
 
-	DecPollingThread threadDec(context, decoder, fileNameDecOutWithSize);
+	DecPollingThread threadDec(context, encoder, decoder, fileNameDecOutWithSize);
 	threadDec.Start();
 
 	EncPollingThread threadEnc(context, encoder, fileNameEncOutWithSize);
@@ -410,7 +427,7 @@ static void WaitDecoder(amf::AMFContext *context, amf::AMFSurface *surface)
     }
 }
 
-DecPollingThread::DecPollingThread(amf::AMFContext *context, amf::AMFComponent *decoder, const wchar_t *pFileName) : m_pContext(context), m_pDecoder(decoder)
+DecPollingThread::DecPollingThread(amf::AMFContext *context, amf::AMFComponent *encoder, amf::AMFComponent *decoder, const wchar_t *pFileName) : m_pContext(context), m_pEncoder(encoder), m_pDecoder(decoder)
 {
     if(bWriteDecOutToFile)
     {
@@ -449,28 +466,28 @@ void DecPollingThread::Run()
         {
             WaitDecoder(m_pContext, amf::AMFSurfacePtr(data)); // Waits till decoder finishes decode the surface. Need for accurate profiling only. Do not use in the product!!!
 
-			amf::AMFSurfacePtr surface(data); // query for surface interface
 
 			//ROI map size calculations
-			AMF_RESULT res = AMF_OK;
-			amf::AMFSurfacePtr pROIMapSurface;
 			amf::AMF_SURFACE_FORMAT ROIMapformat = amf::AMF_SURFACE_GRAY32;
 			amf_int32 num_blocks_x;
 			amf_int32 num_blocks_y;
 
 			if (amf_wstring(pOutputCodec) == amf_wstring(AMFVideoEncoderVCE_AVC))
 			{
-				num_blocks_x = (widthIn + 15) >> 4;
-				num_blocks_y = (heightIn + 15) >> 4;
+				num_blocks_x = (widthIn + 15) / 16;
+				num_blocks_y = (heightIn + 15) / 16;
 			}
 			else
 			{
-				num_blocks_x = (widthIn + 63) >> 6;
-				num_blocks_y = (heightIn + 63) >> 6;
+				num_blocks_x = (widthIn + 63) / 64;
+				num_blocks_y = (heightIn + 63) / 64;
 			}
 
 			//Allocate ROI map surface
-			res = context->AllocSurface(amf::AMF_MEMORY_HOST, ROIMapformat, num_blocks_x, num_blocks_y, &pROIMapSurface);
+            amf::AMFSurfacePtr pROIMapSurface;
+			amf::AMFContext1Ptr  spContext1(m_pContext);
+            AMF_RESULT res = spContext1->AllocSurfaceEx(amf::AMF_MEMORY_HOST, ROIMapformat, num_blocks_x, num_blocks_y,
+				amf::AMF_SURFACE_USAGE_DEFAULT | amf::AMF_SURFACE_USAGE_LINEAR, amf::AMF_MEMORY_CPU_DEFAULT, &pROIMapSurface);
 			if (res != AMF_OK)
 			{
 				printf("AMFContext::AllocSurface(amf::AMF_MEMORY_HOST) for ROI map failed!\n");
@@ -487,7 +504,9 @@ void DecPollingThread::Run()
 					buf[x + y * pitch / 4] = 10;
 				}
 			}
-			if (amf_wstring(pOutputCodec) == amf_wstring(AMFVideoEncoderVCE_AVC))
+
+            amf::AMFSurfacePtr surface(data); // query for surface interface
+            if (amf_wstring(pOutputCodec) == amf_wstring(AMFVideoEncoderVCE_AVC))
 			{
 				surface->SetProperty(AMF_VIDEO_ENCODER_ROI_DATA, pROIMapSurface.Detach());
 			}
@@ -496,7 +515,7 @@ void DecPollingThread::Run()
 				surface->SetProperty(AMF_VIDEO_ENCODER_HEVC_ROI_DATA, pROIMapSurface.Detach());
 			}
 
-			encoder->SubmitInput(surface);
+            m_pEncoder->SubmitInput(surface);
 
             if(bWriteDecOutToFile)
             {
@@ -515,6 +534,7 @@ void DecPollingThread::Run()
     }
 
     m_pDecoder = NULL;
+    m_pEncoder = NULL;
     m_pContext = NULL;
 }
 

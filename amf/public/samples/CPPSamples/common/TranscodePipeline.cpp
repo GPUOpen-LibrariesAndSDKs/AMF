@@ -29,6 +29,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+#include "PipelineDefines.h"
 #include "TranscodePipeline.h"
 #include "public/include/components/VideoDecoderUVD.h"
 #include "public/include/components/VideoConverter.h"
@@ -43,17 +44,15 @@
 #pragma warning(disable:4355)
 
 
-const wchar_t* TranscodePipeline::PARAM_NAME_CODEC          = L"CODEC";
-const wchar_t* TranscodePipeline::PARAM_NAME_OUTPUT         = L"OUTPUT";
-const wchar_t* TranscodePipeline::PARAM_NAME_INPUT          = L"INPUT";
 
-const wchar_t* TranscodePipeline::PARAM_NAME_SCALE_WIDTH    = L"WIDTH";
-const wchar_t* TranscodePipeline::PARAM_NAME_SCALE_HEIGHT   = L"HEIGHT";
-const wchar_t* TranscodePipeline::PARAM_NAME_ADAPTERID      = L"ADAPTERID";
+const wchar_t* TranscodePipeline::PARAM_NAME_SCALE_WIDTH  = L"WIDTH";
+const wchar_t* TranscodePipeline::PARAM_NAME_SCALE_HEIGHT = L"HEIGHT";
+const wchar_t* TranscodePipeline::PARAM_NAME_FRAMES       = L"FRAMES";
 
-const wchar_t* TranscodePipeline::PARAM_NAME_ENGINE            = L"ENGINE";
-const wchar_t* TranscodePipeline::PARAM_NAME_FRAMES            = L"FRAMES";
 
+// NOTE: AAC codec ID for ffmpeg 4.1.3 - id can change with different ffmpeg versions
+#pragma message("NOTE: AAC codec ID for ffmpeg 4.1.3 - id might change on other versions of ffmpeg")
+#define CODEC_ID_AAC  0x15002
 
 
 
@@ -152,6 +151,11 @@ void TranscodePipeline::Terminate()
         m_pConverter->Terminate();
         m_pConverter = NULL;
     }
+    if(m_pPreProcFilter != NULL)
+    {
+        m_pPreProcFilter->Terminate();
+        m_pPreProcFilter = NULL;
+    }
     if(m_pEncoder != NULL)
     {
         m_pEncoder->Terminate();
@@ -176,6 +180,11 @@ void TranscodePipeline::Terminate()
     {
         m_pDemuxer->Terminate();
         m_pDemuxer = NULL;
+    }
+    if(m_pRawStreamReader != NULL)
+    {
+//      m_pRawStreamReader->Terminate();
+        m_pRawStreamReader = NULL;
     }
     if(m_pContext != NULL)
     {
@@ -258,6 +267,10 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     {
         engineMemoryType = amf::AMF_MEMORY_VULKAN;
     }
+	else if (engineStr == L"DX12")
+	{
+		engineMemoryType = amf::AMF_MEMORY_DX12;
+	}
     else
     {
         CHECK_RETURN(false, AMF_INVALID_ARG, L"Wrong parameter " << engineStr);
@@ -303,6 +316,10 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
         res = m_pContext->InitDX11(m_deviceDX11.GetDevice());
         CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX11() failed");
         break;
+	case amf::AMF_MEMORY_DX12:
+		res = amf::AMFContext2Ptr(m_pContext)->InitDX12(NULL);
+		CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX12() failed");
+		break;
 #endif        
     case amf::AMF_MEMORY_VULKAN:
 //        res = m_deviceVulkan.Init(adapterID, m_pContext);
@@ -344,53 +361,82 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
         {
             pParser->SetMaxFramesNumber((amf_size)frames);
         }
-        
     }
     else
     {
-        amf::AMFComponentPtr  pDemuxer;
-        res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_DEMUXER, &pDemuxer);
-        CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << FFMPEG_DEMUXER << L") failed");
-        m_pDemuxer = amf::AMFComponentExPtr(pDemuxer);
-
-        m_pDemuxer->SetProperty(FFMPEG_DEMUXER_PATH, inputPath.c_str());
-        res = m_pDemuxer->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
-        CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxer->Init() failed");
-
-        if(frames != 0)
+        amf_int32               width  = 0;
+        amf_int32               height = 0;
+        amf::AMF_SURFACE_FORMAT format = amf::AMF_SURFACE_UNKNOWN;
+        RawStreamReader::ParseRawFileFormat(inputPath, width, height, format);
+        if ((format != amf::AMF_SURFACE_UNKNOWN) && (width > 0) && (height > 0))
         {
-            m_pDemuxer->SetProperty(FFMPEG_DEMUXER_FRAME_COUNT, frames);
+            m_pRawStreamReader = RawStreamReaderPtr(new RawStreamReader());
+
+            // make a copy of the properties and then update width/height
+            amf::AMFVariantStruct  origWidth;
+            amf::AMFVariantStruct  origHeight;
+            pParams->GetParam(L"WIDTH", &origWidth);
+            pParams->GetParam(L"HEIGHT", &origHeight);
+            pParams->SetParam(L"WIDTH", width);
+            pParams->SetParam(L"HEIGHT", height);
+
+            // initialize raw stream reader with the correct 
+            // width/height obtained from the string name 
+            res = m_pRawStreamReader->Init(pParams, m_pContext);
+            CHECK_AMF_ERROR_RETURN(res, L"m_pRawStreamReader->Init() failed");
+
+            pParams->SetParam(L"WIDTH", origWidth);
+            pParams->SetParam(L"HEIGHT", origHeight);
+
+            iVideoStreamIndex = 0;
         }
-
-        amf_int32 outputs = m_pDemuxer->GetOutputCount();
-        for(amf_int32 output = 0; output < outputs; output++)
+        else
         {
-            amf::AMFOutputPtr pOutput;
-            res = m_pDemuxer->GetOutput(output, &pOutput);
-            CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxer->GetOutput() failed");
+            amf::AMFComponentPtr  pDemuxer;
+            res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_DEMUXER, &pDemuxer);
+            CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << FFMPEG_DEMUXER << L") failed");
+            m_pDemuxer = amf::AMFComponentExPtr(pDemuxer);
 
-            amf_int64 eStreamType = AMF_STREAM_UNKNOWN;
-            pOutput->GetProperty(AMF_STREAM_TYPE, &eStreamType);
+            m_pDemuxer->SetProperty(FFMPEG_DEMUXER_PATH, inputPath.c_str());
+            res = m_pDemuxer->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
+            CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxer->Init() failed");
 
-
-            if(iVideoStreamIndex < 0 && eStreamType == AMF_STREAM_VIDEO)
+            if(frames != 0)
             {
-                iVideoStreamIndex = output;
-                pVideoOutput = pOutput;
+                m_pDemuxer->SetProperty(FFMPEG_DEMUXER_FRAME_COUNT, frames);
             }
 
-            if(iAudioStreamIndex < 0 && eStreamType == AMF_STREAM_AUDIO)
+            amf_int32 outputs = m_pDemuxer->GetOutputCount();
+            for(amf_int32 output = 0; output < outputs; output++)
             {
-                iAudioStreamIndex = output;
-                pAudioOutput = pOutput;
+                amf::AMFOutputPtr pOutput;
+                res = m_pDemuxer->GetOutput(output, &pOutput);
+                CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxer->GetOutput() failed");
+
+                amf_int64 eStreamType = AMF_STREAM_UNKNOWN;
+                pOutput->GetProperty(AMF_STREAM_TYPE, &eStreamType);
+
+
+                if(iVideoStreamIndex < 0 && eStreamType == AMF_STREAM_VIDEO)
+                {
+                    iVideoStreamIndex = output;
+                    pVideoOutput = pOutput;
+                }
+
+                if(iAudioStreamIndex < 0 && eStreamType == AMF_STREAM_AUDIO)
+                {
+                    iAudioStreamIndex = output;
+                    pAudioOutput = pOutput;
+                }
             }
         }
     }
+
     //---------------------------------------------------------------------------------------------
     // init streams
     if(iVideoStreamIndex >= 0)
     {
-        InitVideo(pParser, pVideoOutput, engineMemoryType,  previewTarget, display, pParams);
+        InitVideo(pParser, m_pRawStreamReader, pVideoOutput, engineMemoryType,  previewTarget, display, pParams);
     }
     if(iAudioStreamIndex >= 0 && outStreamType == BitStreamUnknown) // do not process audio if we write elmentary stream
     {
@@ -551,6 +597,10 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     { 
         pPipelineElementDemuxer = pParser;
     }
+    else if (m_pRawStreamReader != NULL)
+    {
+        pPipelineElementDemuxer = PipelineElementPtr(m_pRawStreamReader);
+    }
     else
     {
         pPipelineElementDemuxer = PipelineElementPtr(new AMFComponentExElement(m_pDemuxer));
@@ -561,12 +611,19 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     if(iVideoStreamIndex >= 0)
     {
         SetStatSlot( pPipelineElementDemuxer, iVideoStreamIndex);
-        Connect(PipelineElementPtr(new AMFComponentElement(m_pDecoder)), 0, pPipelineElementDemuxer, iVideoStreamIndex, 4, CT_Direct);
+        if (m_pRawStreamReader == NULL)
+        {
+            Connect(PipelineElementPtr(new AMFComponentElement(m_pDecoder)), 0, pPipelineElementDemuxer, iVideoStreamIndex, 4, CT_Direct);
+        }
         if(m_pSplitter != 0)
         {
             Connect(m_pSplitter, 4, CT_Direct);
         }
         Connect(PipelineElementPtr(new AMFComponentElement(m_pConverter)), 4, CT_Direct);
+        if (m_pPreProcFilter != NULL)
+        {
+            Connect(PipelineElementPtr(new AMFComponentElement(m_pPreProcFilter)), 4, CT_Direct);
+        }
 
         pPipelineElementEncoder = PipelineElementPtr(new PipelineElementEncoder(m_pEncoder, pParams, frameParameterFreq, dynamicParameterFreq));
         Connect(pPipelineElementEncoder, 10, CT_Direct);
@@ -666,7 +723,7 @@ AMF_RESULT  TranscodePipeline::InitAudio(amf::AMFOutput* pOutput)
     m_pAudioDecoder->SetProperty(AUDIO_DECODER_IN_AUDIO_FRAME_SIZE, streamFrameSize);
 
     res = m_pAudioDecoder->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
-   CHECK_AMF_ERROR_RETURN(res, L"m_pAudioDecoder->Init() failed");
+    CHECK_AMF_ERROR_RETURN(res, L"m_pAudioDecoder->Init() failed");
 
     res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_AUDIO_CONVERTER, &m_pAudioConverter);
     CHECK_AMF_ERROR_RETURN(res, L"LoadExternalComponent(" << FFMPEG_AUDIO_CONVERTER << L") failed");
@@ -691,7 +748,7 @@ AMF_RESULT  TranscodePipeline::InitAudio(amf::AMFOutput* pOutput)
     res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_AUDIO_ENCODER, &m_pAudioEncoder);
     CHECK_AMF_ERROR_RETURN(res, L"LoadExternalComponent(" << FFMPEG_AUDIO_ENCODER << L") failed");
 
-    m_pAudioEncoder->SetProperty(AUDIO_ENCODER_AUDIO_CODEC_ID, codecID); // currently the same codec as input
+    m_pAudioEncoder->SetProperty(AUDIO_ENCODER_AUDIO_CODEC_ID, CODEC_ID_AAC); // switch to AAC for output
     res = m_pAudioEncoder->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
     CHECK_AMF_ERROR_RETURN(res, L"m_pAudioEncoder->Init() failed");
 
@@ -751,6 +808,18 @@ AMF_RESULT  TranscodePipeline::InitVideoDecoder(const wchar_t *pDecoderID, amf_i
                 }
                 res = m_pDecoder->Init(m_eDecoderFormat, videoWidth, videoHeight);
                 CHECK_AMF_ERROR_RETURN(res, L"m_pDecoder->Init(" << videoWidth << videoHeight << L") failed " << pDecoderID);
+				if (std::wstring(pDecoderID) == AMFVideoDecoderHW_AV1)
+				{
+					//Only up to above m_pVideoDecoder->Init(), got/updated actual eDecoderFormat, then also update m_eDecoderFormat here.
+					amf_int64 format = 0;
+					if (m_pDecoder->GetProperty(L"AV1 Stream Format", &format) == AMF_OK)
+					{
+						if (m_pDecoder->GetProperty(L"AV1 Stream Format", &format) == AMF_OK)
+						{
+							m_eDecoderFormat = (amf::AMF_SURFACE_FORMAT)format;
+						}
+					}
+				}
                 //m_bCPUDecoder = false;
             }
             else
@@ -779,6 +848,10 @@ AMF_RESULT  TranscodePipeline::InitVideoDecoder(const wchar_t *pDecoderID, amf_i
             {
                 codecID = AMF_STREAM_CODEC_ID_H265_HEVC;
             }
+			else if (std::wstring(pDecoderID) == AMFVideoDecoderHW_AV1)
+			{
+				codecID = AMF_STREAM_CODEC_ID_AV1;
+			}
         }
         m_pDecoder->SetProperty(VIDEO_DECODER_CODEC_ID, codecID);
         m_pDecoder->SetProperty(VIDEO_DECODER_BITRATE, 0);
@@ -814,8 +887,39 @@ AMF_RESULT  TranscodePipeline::InitVideoProcessor(amf::AMF_MEMORY_TYPE presenter
     return AMF_OK;
 }
 
+AMF_RESULT  TranscodePipeline::InitPreProcessFilter(ParametersStorage* pParams)
+{
+    amf::AMFComponentPtr  spPreProcFilter;
+    AMF_RESULT res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFPreProcessing, &spPreProcFilter);
+    CHECK_AMF_ERROR_RETURN(res, L"AMFPreProcessing creation failed");
+    m_pPreProcFilter = spPreProcFilter;
 
-AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, amf::AMFOutput* pOutput, amf::AMF_MEMORY_TYPE presenterEngine, amf_handle hwnd, amf_handle display, ParametersStorage* pParams)
+    // get memory type for the edge filter
+    amf::AMF_MEMORY_TYPE  engineType = amf::AMF_MEMORY_HOST;
+    if (pParams->GetParam(AMF_PP_ENGINE_TYPE, (int&)engineType) == AMF_OK)
+    {
+        res = m_pPreProcFilter->SetProperty(AMF_PP_ENGINE_TYPE, (int)engineType);
+        CHECK_AMF_ERROR_RETURN(res, L"AMFPreProcessing failed to set engine type");
+    }
+
+    // get tor and sigma values
+    double sigma = 0;
+    if (pParams->GetParam(AMF_PP_ADAPTIVE_FILTER_STRENGTH, sigma) == AMF_OK)
+    {
+        res = m_pPreProcFilter->SetProperty(AMF_PP_ADAPTIVE_FILTER_STRENGTH, sigma);
+        CHECK_AMF_ERROR_RETURN(res, L"AMFPreProcessing failed to set sigma");
+    }
+    double tor = 0;
+    if (pParams->GetParam(AMF_PP_ADAPTIVE_FILTER_SENSITIVITY, tor) == AMF_OK)
+    {
+        m_pPreProcFilter->SetProperty(AMF_PP_ADAPTIVE_FILTER_SENSITIVITY, tor);
+        CHECK_AMF_ERROR_RETURN(res, L"AMFPreProcessing failed to set tor");
+    }
+
+    return AMF_OK;
+}
+
+AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamReaderPtr pRawReader, amf::AMFOutput* pOutput, amf::AMF_MEMORY_TYPE presenterEngine, amf_handle hwnd, amf_handle display, ParametersStorage* pParams)
 {
     bool decodeAsAnnexBStream = false; // switches between Annex B and AVCC types of decode input.
 
@@ -862,13 +966,23 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, amf::AMFOut
         pVideoDecoderID = StreamCodecIDtoDecoderID(AMF_STREAM_CODEC_ID_ENUM(codecID));
 
         pOutput->SetProperty(AMF_STREAM_ENABLED, true);
-         pOutput->GetProperty(AMF_STREAM_VIDEO_FRAME_RATE, &frameRate);
-
+        pOutput->GetProperty(AMF_STREAM_VIDEO_FRAME_RATE, &frameRate);
+    }
+    else if (pRawReader != NULL)
+    {
+        videoWidth = pRawReader->GetWidth();
+        videoHeight = pRawReader->GetHeight();
+        frameRate.num = 30;
+        frameRate.den = 1;
+        m_eDecoderFormat = pRawReader->GetFormat();
     }
     //---------------------------------------------------------------------------------------------
-    // Init Video Decoder
-    res = InitVideoDecoder(pVideoDecoderID.c_str(), codecID, videoWidth, videoHeight, frameRate, pExtraData);
-    CHECK_AMF_ERROR_RETURN(res, L"InitVideoDecoder() failed");
+    if ((pParser != NULL) || (pOutput != NULL))
+    {
+        // Init Video Decoder
+        res = InitVideoDecoder(pVideoDecoderID.c_str(), codecID, videoWidth, videoHeight, frameRate, pExtraData);
+        CHECK_AMF_ERROR_RETURN(res, L"InitVideoDecoder() failed");
+    }
 
     //---------------------------------------------------------------------------------------------
 
@@ -903,12 +1017,24 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, amf::AMFOut
         m_pPresenter->Init(scaleWidth, scaleHeight);
     }
 
-     //---------------------------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------
+    // init pre processing filter
+    amf_bool  preProcfilterEnable = false;
+    pParams->GetParam(AMF_VIDEO_PRE_ENCODE_FILTER_ENABLE, preProcfilterEnable);
+    if (preProcfilterEnable)
+    {
+        InitPreProcessFilter(pParams);
+
+        res = m_pPreProcFilter->Init(amf::AMF_SURFACE_NV12, scaleWidth, scaleHeight);
+        CHECK_AMF_ERROR_RETURN(res, L"m_pPreProcFilter->Init() failed");
+    }
+
+    //---------------------------------------------------------------------------------------------
     // Init Video Encoder
 
 
     m_EncoderID = AMFVideoEncoderVCE_AVC;
-    pParams->GetParamWString(TranscodePipeline::PARAM_NAME_CODEC, m_EncoderID);
+    pParams->GetParamWString(PARAM_NAME_CODEC, m_EncoderID);
 
     if(m_EncoderID == AMFVideoEncoderVCE_AVC)
     { 
@@ -977,10 +1103,12 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, amf::AMFOut
 //    m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(scaleWidth, scaleHeight));
 
 
+    PushParamsToPropertyStorage(pParams, ParamEncoderDynamic, m_pEncoder);
+
     res = m_pEncoder->Init(amf::AMF_SURFACE_NV12, scaleWidth, scaleHeight);
     CHECK_AMF_ERROR_RETURN(res, L"m_pEncoder->Init() failed");
 
-    PushParamsToPropertyStorage(pParams, ParamEncoderDynamic, m_pEncoder);
+//    PushParamsToPropertyStorage(pParams, ParamEncoderDynamic, m_pEncoder);
 //    m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_EXTRADATA, NULL); //samll way - around  forces to regenerate extradata
 
     return AMF_OK;

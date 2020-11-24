@@ -47,6 +47,7 @@
 #define FFMPEG_MUXER_LISTEN                   L"Listen"                   // bool (default = false)
 #define FFMPEG_MUXER_ENABLE_VIDEO             L"EnableVideo"              // bool (default = true)
 #define FFMPEG_MUXER_ENABLE_AUDIO             L"EnableAudio"              // bool (default = false)
-
+#define FFMPEG_MUXER_CURRENT_TIME_INTERFACE   L"CurrentTimeInterface"
+#define FFMPEG_MUXER_VIDEO_ROTATION           L"VideoRotation"            // amf_int64 (0, 90, 180, 270, default = 0)
 
 #endif //#ifndef AMF_FileMuxerFFMPEG_h

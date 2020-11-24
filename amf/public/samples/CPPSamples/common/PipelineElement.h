@@ -47,8 +47,11 @@ public:
     virtual amf_int32 GetInputSlotCount() const = 0;
     virtual amf_int32 GetOutputSlotCount() const = 0;
     virtual AMF_RESULT SubmitInput(amf::AMFData* pData, amf_int32 slot) { return SubmitInput(pData); }
+    virtual AMF_RESULT ReSubmitInput(amf_int32 slot) { return ReSubmitInput(); }
+
     virtual AMF_RESULT QueryOutput(amf::AMFData** ppData, amf_int32 slot) { return QueryOutput(ppData); }
     virtual AMF_RESULT SubmitInput(amf::AMFData* pData) { return AMF_NOT_SUPPORTED; }
+    virtual AMF_RESULT ReSubmitInput() { return AMF_NOT_SUPPORTED; }
     virtual AMF_RESULT QueryOutput(amf::AMFData** ppData) { return AMF_NOT_SUPPORTED; }
 
     virtual AMF_RESULT Freeze() {amf::AMFLock lock(&m_cs); m_bFrozen = true; return AMF_OK;}
@@ -175,7 +178,7 @@ public:
             for(amf_size i = 0; i < pSurface->GetPlanesCount(); i++)
             {
                 amf::AMFPlanePtr pPlane = pSurface->GetPlaneAt(i);
-                amf_size towrite = (pPlane->GetOffsetY() + pPlane->GetHeight()) * pPlane->GetHPitch();
+                amf_size towrite = ((amf_size)pPlane->GetOffsetY() + (amf_size)pPlane->GetHeight()) * (amf_size)pPlane->GetHPitch();
                 amf_size written = 0;
                m_pDataStream->Write(pPlane->GetNative(), towrite, &written);
             }
@@ -384,6 +387,21 @@ public:
         }
         return res; 
     }
+    virtual AMF_RESULT ReSubmitInput()
+    {
+        if (m_bFrozen)
+        {
+            return AMF_INPUT_FULL;
+        }
+
+        AMF_RESULT res = AMF_OK;
+        res = m_pComponent->SubmitInput(NULL);
+        if (res == AMF_DECODER_NO_FREE_SURFACES)
+        {
+            return AMF_INPUT_FULL;
+        }
+        return res;
+    }
 
     virtual AMF_RESULT QueryOutput(amf::AMFData** ppData)
     {
@@ -483,6 +501,37 @@ public:
 
         }
         return res; 
+    }
+    virtual AMF_RESULT ReSubmitInput(amf_int32 slot)
+    {
+        if (m_bFrozen)
+        {
+            return AMF_INPUT_FULL;
+        }
+
+        amf::AMFInputPtr pInput;
+        if (m_pComponent->GetInputCount() > 0)
+        {
+            m_pComponent->GetInput(slot, &pInput);
+            if (pInput == NULL)
+            {
+                return AMF_INVALID_ARG;
+            }
+        }
+        AMF_RESULT res = AMF_OK;
+        if (pInput != NULL)
+        {
+            res = pInput->SubmitInput(NULL);
+        }
+        else
+        {
+            res = m_pComponent->SubmitInput(NULL);
+        }
+        if (res == AMF_DECODER_NO_FREE_SURFACES)
+        {
+            return AMF_INPUT_FULL;
+        }
+        return res;
     }
 
     virtual AMF_RESULT QueryOutput(amf::AMFData** ppData, amf_int32 slot) 

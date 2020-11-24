@@ -37,6 +37,7 @@
 
 //#define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
 #include <windows.h>
+#include <commctrl.h>
 
 // C RunTime Header Files
 #include <atlbase.h>
@@ -49,21 +50,32 @@
 
 #include "public/common/AMFFactory.h"
 #include "public/include/components/VideoEncoderVCE.h"
+#include "public/include/core/Debug.h"
 
 #include "public/samples/CPPSamples/common/CmdLineParser.h"
 #include "public/samples/CPPSamples/common/CmdLogger.h"
-#include "public/common/AMFFactory.h"
 #include "public/samples/CPPSamples/common/ParametersStorage.h"
 #include "public/samples/CPPSamples/common/DisplayDvrPipeline.h"
 #include "public/samples/CPPSamples/common/CmdLineParser.h"
-#include "public/include/core/Debug.h"
 
-#define MAX_LOADSTRING 100
+
+
+#pragma comment(linker, \
+  "\"/manifestdependency:type='Win32' "\
+  "name='Microsoft.Windows.Common-Controls' "\
+  "version='6.0.0.0' "\
+  "processorArchitecture='*' "\
+  "publicKeyToken='6595b64144ccf1df' "\
+  "language='*'\"")
+
+#pragma comment(lib, "ComCtl32.lib")
+
+
+
 
 // Global Variables:
-HINSTANCE hInst;                                // current instance
-TCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
-TCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
+HINSTANCE hInst  = NULL;                                // current instance
+HWND      g_hDlg = NULL;
 
 // Resolution of the desktops that could be captured
 struct CaptureSource 
@@ -74,38 +86,87 @@ struct CaptureSource
 	unsigned	adapterIdx;
 };
 
-static std::vector<CaptureSource> s_vCaptures;
-static int s_iNumDevices = 0, s_iNumCaptures = 0;
+static std::vector<std::wstring>  s_vAdapters;
+static std::vector<CaptureSource> s_vDisplays;
 
-static bool s_bCurrentlyRecording = false;
-static UINT_PTR s_uiFpsTimerId = 0;
+const unsigned __int64 ID_STATUS_BAR    = 100;
+const unsigned         TIMER_ID         = 10000;
+
+static bool     s_bOCLConverter         = false;
+static UINT_PTR s_uiFpsTimerId          = 0;
+static unsigned kDefaultGPUIdx          = 0;
 
 static DisplayDvrPipeline* s_pPipeline = NULL;
 
-static std::wstring s_PipelineMsg;
 
-static unsigned kDefaultGPUIdx = 0;
-
-static bool s_bOCLConverter = false;
 
 // Forward declarations of functions included in this code module:
-ATOM                MyRegisterClass(HINSTANCE hInstance);
-BOOL                InitInstance(HINSTANCE, HWND*, int);
-LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+void                CreateStatusBar(HWND hwndParent, HINSTANCE hinst);
+INT_PTR CALLBACK    DialogProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    Dialog(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    AboutDialog(HWND, UINT, WPARAM, LPARAM);
+
 void                UpdateMenuItems();
 void                PopulateMenus(HMENU hMenu);
+void                PopulateAdaptersMenu(HMENU hMenu);
+void                PopulateDisplaysMenu(HMENU hMenu);
+
 void                ChangeFileLocation(HWND hWnd);
 void                GetDirectoryFileLocation(TCHAR* szDirectory, TCHAR* szFile, bool generic = false);
 void                GetDefaultFileLocation(TCHAR* szFile, bool generic = false);
+void                GetCurrentFileLocation(TCHAR* szFile);
+void                GetRecordFileLocation(TCHAR* szFile);
+
 void                StartRecording(HWND hWnd);
 void                StopRecording(HWND hWnd);
+void                FailedRecording(HWND hWnd, bool init);
+
+void                UpdateButtons(HWND hWnd, bool isRecording);
 void                UpdateFps(HWND hWnd);
 void                UpdateMessage(const wchar_t *msg);
 
-HWND                hClientWindow = NULL;
-HMENU               hDevices, hCaptureSources;
+
+
+//-------------------------------------------------------------------------------------------------
+// define some wrapper classes to guarantee 
+// initialization and proper cleanup
+class CComInit
+{
+public:
+    CComInit()  {  CoInitializeEx(NULL, COINIT_MULTITHREADED);  };
+    ~CComInit() {  CoUninitialize();  };
+};
+//-------------------------------------------------------------------------------------------------
+class CAmfInit
+{
+public:
+    CAmfInit()  {};
+    ~CAmfInit() {  g_AMFFactory.Terminate();  };
+
+    AMF_RESULT Init()
+    {
+        AMF_RESULT res = g_AMFFactory.Init();
+        if (res != AMF_OK)
+            return res;
+
+#ifdef _DEBUG
+        g_AMFFactory.GetDebug()->AssertsEnable(true);
+#else
+        g_AMFFactory.GetDebug()->AssertsEnable(false);
+//		g_AMFFactory.GetTrace()->SetGlobalLevel(AMF_TRACE_WARNING);
+#endif
+
+        g_AMFFactory.GetTrace()->SetGlobalLevel(AMF_TRACE_INFO);
+        g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_DEBUG_OUTPUT, AMF_TRACE_INFO);
+        g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_CONSOLE, AMF_TRACE_INFO);
+
+        return AMF_OK;
+    }
+};
+//-------------------------------------------------------------------------------------------------
+
+
+
 
 //-------------------------------------------------------------------------------------------------
 int APIENTRY _tWinMain(HINSTANCE hInstance,
@@ -115,203 +176,117 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 {
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
+    hInst = hInstance; // Store instance handle in our global variable
 
-	// Parse parameters
+
 	s_bOCLConverter = false;
-	LPWSTR *szArgList;
-	int argCount = 0;
-	szArgList = CommandLineToArgvW(GetCommandLine(), &argCount);
-	for (int i = 0; i < argCount; i++)
-	{
-		if (wcscmp(L"-oclConverter", szArgList[i]) == 0)
-		{
-			// Enable an optimization to push converter work onto
-			// the OCL queue
-			s_bOCLConverter = true;
-		}
-	}
+    //-------------------------------------------------------------------------------------------------
+    // Main
+    // initialize required objects
+    CComInit  comInit;
+    CAmfInit  amfInit;
+    AMF_RESULT res = amfInit.Init();
+    if (res != AMF_OK)
+    {
+        LOG_ERROR(L"AMF failed to initialize");
+        return 1;
+    }
 
-	// Main
-	MSG msg = {};
-	{
-		CoInitializeEx(NULL, COINIT_MULTITHREADED);
-		//-------------------------------------------------------------------------------------------------
-		// AMF Initialization
-		AMF_RESULT res = AMF_OK;
-		res = g_AMFFactory.Init();
-		if (res != AMF_OK)
-		{
-			wprintf(L"AMF failed to initialize");
-			g_AMFFactory.Terminate();
-			return 1;
-		}
+	AMFCustomTraceWriter writer(AMF_TRACE_WARNING);
+	amf_increase_timer_precision();
 
-		AMFCustomTraceWriter writer(AMF_TRACE_WARNING);
-#ifdef _DEBUG
-		g_AMFFactory.GetDebug()->AssertsEnable(true);
-		g_AMFFactory.GetTrace()->SetGlobalLevel(AMF_TRACE_INFO);
-		g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_DEBUG_OUTPUT, AMF_TRACE_INFO);
-		g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_CONSOLE, AMF_TRACE_INFO);
+
+	//-------------------------------------------------------------------------------------------------
+	// DisplayDvrPipeline Initialization
+	DisplayDvrPipeline pipeline;
+	s_pPipeline = &pipeline;
+
+	std::wstring codec = L"AMFVideoEncoderVCE_AVC";
+	s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_CODEC, AMFVideoEncoderVCE_AVC);
+	RegisterEncoderParamsAVC(s_pPipeline);
+
+
+    s_pPipeline->SetParam(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED);
+    s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_ADAPTERID, kDefaultGPUIdx);
+    s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_MONITORID, 0);
+
+#if defined(_WIN32)
+    if (parseCmdLineParameters(s_pPipeline))
 #else
-		g_AMFFactory.GetDebug()->AssertsEnable(false);
-//		g_AMFFactory.GetTrace()->SetGlobalLevel(AMF_TRACE_WARNING);
-		g_AMFFactory.GetTrace()->SetGlobalLevel(AMF_TRACE_INFO);
-		g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_DEBUG_OUTPUT, AMF_TRACE_INFO);
-		g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_CONSOLE, AMF_TRACE_INFO);
-#endif
-		amf_increase_timer_precision();
+    if (parseCmdLineParameters(s_pPipeline, argc, argv))
+#endif        
 
-		//-------------------------------------------------------------------------------------------------
-		// DisplayDvrPipeline Initialization
-		DisplayDvrPipeline pipeline;
-		s_pPipeline = &pipeline;
 
-		std::wstring codec = L"AMFVideoEncoderVCE_AVC";
-		s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_CODEC, AMFVideoEncoderVCE_AVC);
-		RegisterEncoderParamsAVC(s_pPipeline);
+    //-------------------------------------------------------------------------------------------------
+    // initialize dialog UI
+    InitCommonControls();
 
-        s_pPipeline->SetParam(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED);
+    g_hDlg = CreateDialogParam(hInstance, MAKEINTRESOURCE(IDD_MAIN_DIALOG), 0, DialogProc, 0);
+    ShowWindow(g_hDlg, nCmdShow);
+    UpdateWindow(g_hDlg);
+    CreateStatusBar(g_hDlg, hInstance);
+    PopulateMenus(GetMenu(g_hDlg));
+    UpdateButtons(g_hDlg, false);
 
-		s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_ADAPTERID, kDefaultGPUIdx);
-		s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_MONITORID, 0);
-
-		//-------------------------------------------------------------------------------------------------
-		// Initialize global strings
-		LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-		LoadString(hInstance, IDC_DVR, szWindowClass, MAX_LOADSTRING);
-		MyRegisterClass(hInstance);
-		HWND hWnd = NULL;
-
-		// Perform application initialization:
-		if (!InitInstance(hInstance, &hWnd, nCmdShow))
-		{
-			CoUninitialize();
-			g_AMFFactory.Terminate();
-			return FALSE;
-		}
 		
-		HACCEL hAccelTable;
-		hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_DVR));
+    //-------------------------------------------------------------------------------------------------
+	// Main message loop:
+    MSG  msg = {};
+    BOOL ret;
+    while (ret = GetMessage(&msg, NULL, 0, 0))
+	{
+        if (ret == -1)
+            return -1;
 
-		// Main message loop:
-		while (GetMessage(&msg, NULL, 0, 0))
-		{
-			if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
-			{
-				TranslateMessage(&msg);
-				DispatchMessage(&msg);
-			}
-		}
-		CoUninitialize();
-		//-------------------------------------------------------------------------------------------------
+        if (!IsDialogMessage(g_hDlg, &msg)) {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
 	}
-	g_AMFFactory.Terminate();
 
 	return (int)msg.wParam;
 }
 
-//-------------------------------------------------------------------------------------------------
+// Description: 
+//   Creates a status bar and divides it into 2 parts.
+// Parameters:
+//   hwndParent - parent window for the status bar.
+//   hinst      - handle to the application instance.
 //
-//  FUNCTION: MyRegisterClass()
-//
-//  PURPOSE: Registers the window class.
-//
-//  COMMENTS:
-//
-//    This function and its usage are only necessary if you want this code
-//    to be compatible with Win32 systems prior to the 'RegisterClassEx'
-//    function that was added to Windows 95. It is important to call this function
-//    so that the application will get 'well formed' small icons associated
-//    with it.
-//
-ATOM MyRegisterClass(HINSTANCE hInstance)
+void CreateStatusBar(HWND hwndParent, HINSTANCE hinst)
 {
-	WNDCLASSEX wcex;
+    // Create the status bar.
+    HWND hwndStatus = CreateWindowEx(
+        0,                       // no extended styles
+        STATUSCLASSNAME,         // name of status bar class
+        (PCTSTR)NULL,            // no text when first created
+        SBARS_SIZEGRIP |         // includes a sizing grip
+        WS_CHILD | WS_VISIBLE,   // creates a visible child window
+        0, 0, 0, 0,              // ignores size and position
+        hwndParent,              // handle to parent window
+        (HMENU)ID_STATUS_BAR,    // child window identifier
+        hinst,                   // handle to application instance
+        NULL);                   // no window creation data
 
-	wcex.cbSize = sizeof(WNDCLASSEX);
+    // Get the coordinates of the parent window's client area.
+    RECT rcClient;
+    ::GetClientRect(hwndParent, &rcClient);
 
-	wcex.style = CS_HREDRAW | CS_VREDRAW;
-	wcex.lpfnWndProc = WndProc;
-	wcex.cbClsExtra = 0;
-	wcex.cbWndExtra = 0;
-	wcex.hInstance = hInstance;
-	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_DVR));
-	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	wcex.lpszMenuName = MAKEINTRESOURCE(IDC_DVR);
-	wcex.lpszClassName = szWindowClass;
-	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_DVR));
+    // Allocate an array for holding the right edge coordinates.
+    HLOCAL hloc    = LocalAlloc(LHND, sizeof(int) * 2);
+    PINT   paParts = (PINT) LocalLock(hloc);
 
-	return RegisterClassEx(&wcex);
-}
+    // Calculate the right edge coordinate for each part, and
+    // copy the coordinates to the array.
+    paParts[0] = rcClient.right * 75 / 100;
+    paParts[1] = rcClient.right;
 
-//-------------------------------------------------------------------------------------------------
-//
-//   FUNCTION: InitInstance(HINSTANCE, int)
-//
-//   PURPOSE: Saves instance handle and creates main window
-//
-//   COMMENTS:
-//
-//        In this function, we save the instance handle in a global variable and
-//        create and display the main program window.
-//
-BOOL InitInstance(HINSTANCE hInstance, HWND* phWnd, int nCmdShow)
-{
-	hInst = hInstance; // Store instance handle in our global variable
+    // Tell the status bar to create the window parts.
+    ::SendMessage(hwndStatus, SB_SETPARTS, 2, (LPARAM) paParts);
 
-	HWND hWnd = NULL;
-
-	const HWND hDesktop = ::GetDesktopWindow();
-	RECT desktopRect;
-	::GetWindowRect(hDesktop, &desktopRect);
-
-	hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, 0, desktopRect.right / 2, desktopRect.bottom / 2, NULL, NULL, hInstance, NULL);
-
-	if (!hWnd)
-	{
-		return FALSE;
-	}
-	hClientWindow = hWnd;
-
-	s_uiFpsTimerId = SetTimer(hWnd, 10000, 1000, NULL);
-
-	ShowWindow(hWnd, nCmdShow);
-	UpdateWindow(hWnd);
-	PopulateMenus(GetMenu(hWnd));
-
-	*phWnd = hWnd;
-
-	return TRUE;
-}
-
-//-------------------------------------------------------------------------------------------------
-void UpdateMenuItems()
-{
-	int iSelectedDevice = 0, iSelectedCapture = 0;
-	s_pPipeline->GetParam(DisplayDvrPipeline::PARAM_NAME_ADAPTERID, iSelectedDevice);
-	s_pPipeline->GetParam(DisplayDvrPipeline::PARAM_NAME_MONITORID, iSelectedCapture);
-
-	for (int i = 0; i < s_iNumDevices; ++i)
-	{
-		CheckMenuItem(hDevices, ID_DEVICE_START + i, MF_BYCOMMAND | (i == iSelectedDevice ? MF_CHECKED : MF_UNCHECKED));
-	}
-
-	unsigned iSelectedCaptureIdx = 0;
-	for (int i = 0; i < s_iNumCaptures; ++i)
-	{
-		bool enableItem = s_vCaptures[i].deviceIdx == iSelectedDevice;
-		bool checkItem = enableItem && (s_vCaptures[i].adapterIdx == iSelectedCapture);
-		CheckMenuItem(hCaptureSources, ID_CAPTURE_SOURCE_START + i, MF_BYCOMMAND | (checkItem ? MF_CHECKED : MF_UNCHECKED));
-		EnableMenuItem(hCaptureSources, ID_CAPTURE_SOURCE_START + i, enableItem ? MF_ENABLED : MF_DISABLED);
-		//
-		if (checkItem)
-		{
-			iSelectedCaptureIdx = i;
-		}
-	}
-	s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_OPENCL_CONVERTER, s_bOCLConverter);
+    // Free the array, and return.
+    LocalUnlock(hloc);
+    LocalFree(hloc);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -319,23 +294,19 @@ void UpdateMenuItems()
 //-------------------------------------------------------------------------------------------------
 void PopulateMenus(HMENU hMenu)
 {
-	HRESULT hr = S_OK;
 	ATL::CComPtr<IDXGIFactory> pFactory;
-	hr = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&pFactory);
+    HRESULT hr = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&pFactory);
 	if (FAILED(hr))
 	{
-		wprintf(L"CreateDXGIFactory failed. Error: %d", hr);
+		LOG_ERROR(L"CreateDXGIFactory failed.");
 		return;
 	}
 
-	hDevices = GetSubMenu(hMenu, 1);
-	hCaptureSources = GetSubMenu(hMenu, 2);
 
-	std::wstring adapterMsg;
-	UINT device = 0, output = 0;
-	// Enumerate display devices
-	while (true)
+    // Enumerate display devices
+	for (UINT device = 0; ; ++device)
 	{
+        // get device - if no devices found anymore, exit the loop
 		ATL::CComPtr<IDXGIAdapter> pDevice;
 		if (pFactory->EnumAdapters(device, &pDevice) == DXGI_ERROR_NOT_FOUND)
 		{
@@ -344,40 +315,28 @@ void PopulateMenus(HMENU hMenu)
 
 		DXGI_ADAPTER_DESC descAdapter;
 		hr = pDevice->GetDesc(&descAdapter);
-		//
-#ifdef _DEBUG
-		adapterMsg += L"Found adapter: ";
-		adapterMsg += descAdapter.Description;
-#endif
-		//
-		if (descAdapter.VendorId != 0x1002) // Ensure only AMD GPUs are listed
-		{
-#ifdef _DEBUG
-			adapterMsg += L": Non AMD";
-			adapterMsg += L"\n";
-#endif
-			//
-			++device;
-			continue;
-		}
-#ifdef _DEBUG
-		adapterMsg += L": AMD";
-		adapterMsg += L"\n";
-#endif
-
 		if (SUCCEEDED(hr))
 		{
-			// Add to the Devices menu
-			static int deviceId = ID_DEVICE_START;
-			if (AppendMenu(hDevices, MF_BYPOSITION, deviceId++, descAdapter.Description) == false)
-			{
-				wprintf(L"Could not insert device menu item.");
-				break;
-			}
-			++s_iNumDevices;
-			// Enumerate monitors
-			unsigned adapterIdx = 0;
-			while (true)
+#ifdef _DEBUG
+            std::wstring adapterMsg;
+            adapterMsg += L"Found adapter: ";
+            adapterMsg += descAdapter.Description;
+            adapterMsg += ((descAdapter.VendorId != 0x1002) ? L": Non AMD" : L": AMD");
+            UpdateMessage(adapterMsg.c_str());
+#endif
+            // Ensure only AMD GPUs are listed
+            if (descAdapter.VendorId != 0x1002) 
+            {
+                continue;
+            }
+
+			// Add to the Devices list
+            s_vAdapters.push_back(descAdapter.Description);
+
+
+			// Enumerate monitors for the current adapter
+            UINT  adapterIdx = 0;
+            for (UINT output = 0; ; ++output)
 			{
 				ATL::CComPtr<IDXGIOutput> pOutput;
 				if (pDevice->EnumOutputs(output, &pOutput) == DXGI_ERROR_NOT_FOUND)
@@ -390,78 +349,140 @@ void PopulateMenus(HMENU hMenu)
 				if (SUCCEEDED(hr))
 				{
 					// Get this output's screen resolution
-					HMONITOR hMonitor = descOutput.Monitor;
 					MONITORINFOEX monitorInfo;
 					monitorInfo.cbSize = sizeof(MONITORINFOEX);
-					GetMonitorInfo(hMonitor, &monitorInfo);
+					GetMonitorInfo(descOutput.Monitor, &monitorInfo);
+
 					DEVMODE devMode;
 					devMode.dmSize = sizeof(DEVMODE);
 					devMode.dmDriverExtra = 0;
 					EnumDisplaySettings(monitorInfo.szDevice, ENUM_CURRENT_SETTINGS, &devMode);
+
 					// Add to the Capture Sources list
 					CaptureSource cs;
 					cs.ResolutionX = devMode.dmPelsWidth;
 					cs.ResolutionY = devMode.dmPelsHeight;
 					cs.deviceIdx = device;		// GPU
 					cs.adapterIdx = adapterIdx;	// ADAPTER on GPU
-					s_vCaptures.push_back(cs);
-					// Add to the Capture Sources menu
-					static int outputId = ID_CAPTURE_SOURCE_START;
-					TCHAR outputName[128];
-					swprintf_s(outputName, 128, L"Monitor %d (%d x %d)", outputId - ID_CAPTURE_SOURCE_START, cs.ResolutionX, cs.ResolutionY);
-					if (AppendMenu(hCaptureSources, MF_BYPOSITION, outputId++, outputName) == false)
-					{
-						wprintf(L"Could not insert capture source menu item.");
-						break;
-					}
-					if (EnableMenuItem(hCaptureSources, (outputId - 1), (device == kDefaultGPUIdx) ? MF_ENABLED : MF_DISABLED))
-					{
-						wprintf(L"Could not enable/disable capture source menu item.");
-						break;
-					}
-					++adapterIdx;
-					++s_iNumCaptures;
+					s_vDisplays.push_back(cs);
+
+                    ++adapterIdx;
 				}
-				++output;
 			}
 		}
-		output = 0;
-		++device;
 	}
+
 	//
-	UpdateMessage(adapterMsg.c_str());
-	//
-	if (s_iNumDevices == 0 || s_iNumCaptures == 0)
+	if (s_vAdapters.empty() || s_vDisplays.empty())
 	{
 		// No devices detected, close application
 		PostMessage(GetActiveWindow(), WM_USER + 1000, 0, 0);
 	}
 	else
 	{
+        PopulateAdaptersMenu(hMenu);
+        PopulateDisplaysMenu(hMenu);
+
 		// Remove placeholder separators (needed because GetSubMenu returns NULL if menu is initially empty)
-		RemoveMenu(hDevices, 0, MF_BYPOSITION);
-		RemoveMenu(hCaptureSources, 0, MF_BYPOSITION);
+        HMENU  hDevices        = GetSubMenu(hMenu, 1);
+        HMENU  hCaptureSources = GetSubMenu(hMenu, 2);
+        RemoveMenu(hDevices, 0, MF_BYPOSITION);
+        RemoveMenu(hCaptureSources, 0, MF_BYPOSITION);
+
 		// Place default checkmarks at first item in each menu
 		UpdateMenuItems();
 	}
 }
 
 //-------------------------------------------------------------------------------------------------
+// Populate adapters menu
+//-------------------------------------------------------------------------------------------------
+void  PopulateAdaptersMenu(HMENU hMenu)
+{
+    HMENU  hDevices = GetSubMenu(hMenu, 1);
+
+    // update adapters
+    int deviceId = ID_DEVICE_START;
+    for (std::vector<std::wstring>::const_iterator it = s_vAdapters.begin(); it != s_vAdapters.end(); ++it)
+    {
+        if (AppendMenu(hDevices, MF_BYPOSITION, deviceId++, it->c_str()) == false)
+        {
+            LOG_ERROR(L"Could not insert device menu item.");
+            break;
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
+// Populate displays menu
+//-------------------------------------------------------------------------------------------------
+void  PopulateDisplaysMenu(HMENU hMenu)
+{
+    HMENU  hCaptureSources = GetSubMenu(hMenu, 2);
+
+    // update capture sources
+    int outputId = ID_CAPTURE_SOURCE_START;
+    for (std::vector<CaptureSource>::const_iterator it = s_vDisplays.begin(); it != s_vDisplays.end(); ++it, outputId++)
+    {
+        // Add to the Capture Sources menu
+        TCHAR outputName[128];
+        swprintf_s(outputName, 128, L"Monitor %d (%d x %d)", outputId - ID_CAPTURE_SOURCE_START, it->ResolutionX, it->ResolutionY);
+
+        if (AppendMenu(hCaptureSources, MF_BYPOSITION, outputId, outputName) == false)
+        {
+            LOG_ERROR(L"Could not insert capture source menu item.");
+            break;
+        }
+        if (EnableMenuItem(hCaptureSources, outputId, (it->deviceIdx == kDefaultGPUIdx) ? MF_ENABLED : MF_DISABLED))
+        {
+            LOG_ERROR(L"Could not enable/disable capture source menu item.");
+            break;
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
+// Update the menu for adapters/displays entries
+//-------------------------------------------------------------------------------------------------
+void UpdateMenuItems()
+{
+    int iSelectedDevice = 0, iSelectedCapture = 0;
+    s_pPipeline->GetParam(DisplayDvrPipeline::PARAM_NAME_ADAPTERID, iSelectedDevice);
+    s_pPipeline->GetParam(DisplayDvrPipeline::PARAM_NAME_MONITORID, iSelectedCapture);
+
+    HMENU  hMenu = GetMenu(g_hDlg);
+    HMENU  hDevices = GetSubMenu(hMenu, 1);
+    for (int i = 0; i < (int)s_vAdapters.size(); ++i)
+    {
+        CheckMenuItem(hDevices, ID_DEVICE_START + i, MF_BYCOMMAND | (i == iSelectedDevice ? MF_CHECKED : MF_UNCHECKED));
+    }
+
+    HMENU  hCaptureSources = GetSubMenu(hMenu, 2);
+    for (int i = 0; i < (int)s_vDisplays.size(); ++i)
+    {
+        const bool  enableItem = s_vDisplays[i].deviceIdx == iSelectedDevice;
+        const bool  checkItem = enableItem && (s_vDisplays[i].adapterIdx == iSelectedCapture);
+        CheckMenuItem(hCaptureSources, ID_CAPTURE_SOURCE_START + i, MF_BYCOMMAND | (checkItem ? MF_CHECKED : MF_UNCHECKED));
+        EnableMenuItem(hCaptureSources, ID_CAPTURE_SOURCE_START + i, enableItem ? MF_ENABLED : MF_DISABLED);
+    }
+
+    s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_OPENCL_CONVERTER, s_bOCLConverter);
+}
+
+
+//-------------------------------------------------------------------------------------------------
 //
-//  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
+//  FUNCTION: DialogProc(HWND, UINT, WPARAM, LPARAM)
 //
-//  PURPOSE:  Processes messages for the main window.
+//  PURPOSE:  Processes messages for the main dialog.
 //
 //  WM_COMMAND    - process the application menu
-//  WM_PAINT    - Paint the main window
 //  WM_DESTROY    - post a quit message and return
 //
 //
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK DialogProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	int wmId, wmEvent;
-	PAINTSTRUCT ps;
-	HDC hdc;
 
 	switch (message)
 	{
@@ -480,82 +501,49 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, AboutDialog);
 		}
-		else if (wmId == IDM_EXIT)
+        else if ((wmId == IDCANCEL) || (wmId == IDM_EXIT))
 		{
 			DestroyWindow(hWnd);
-		}
-		else if (wmId == ID_RECORD)
+        }
+		else if (wmId == IDB_RECORD)
 		{
 			StartRecording(hWnd);
-		}
-		else if (wmId == ID_STOP)
+        }
+		else if (wmId == IDB_STOP)
 		{
 			StopRecording(hWnd);
-		}
+        }
 		else if (wmId == IDM_SAVEFILE)
 		{
 			ChangeFileLocation(hWnd);
 		}
 		// Checking/unchecking dynamically added gpu devices
-		else if ((wmId >= ID_DEVICE_START) && (wmId <= ID_DEVICE_START + s_iNumDevices))
+		else if ((wmId >= ID_DEVICE_START) && (wmId <= ID_DEVICE_START + (int)s_vAdapters.size()))
 		{
-			int id = wmId - ID_DEVICE_START;
+			const int id = wmId - ID_DEVICE_START;
 			s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_ADAPTERID, id);
 			UpdateMenuItems();
 		}
 		// Checking/unchecking dynamically added capture source monitors
-		else if (wmId >= ID_CAPTURE_SOURCE_START && wmId <= ID_CAPTURE_SOURCE_START + s_iNumCaptures)
+		else if (wmId >= ID_CAPTURE_SOURCE_START && wmId <= ID_CAPTURE_SOURCE_START + (int)s_vDisplays.size())
 		{
 			// Find the id of the selected adapter in the menu
-			int id = wmId - ID_CAPTURE_SOURCE_START;
+			const int id = wmId - ID_CAPTURE_SOURCE_START;
 			// Find the adapter in the vector list
-			unsigned adapterIdx = s_vCaptures[id].adapterIdx;
+			unsigned adapterIdx = s_vDisplays[id].adapterIdx;
 			// Set on the pipeline
 			s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_MONITORID, adapterIdx);
 			UpdateMenuItems();
 		}
-		else
-		{
-			return DefWindowProc(hWnd, message, wParam, lParam);
-		}
-		break;
-	case WM_PAINT:
-		hdc = BeginPaint(hWnd, &ps);
-		if (!s_PipelineMsg.empty())
-		{
-			std::wstring line;
-			unsigned lineCount = 0;
-			size_t len = s_PipelineMsg.length();
-			for (unsigned i = 0; i < len; i++)
-			{
-				if (s_PipelineMsg[i] == L'\n' || ((i+1)==len))
-				{
-					TextOut(hdc, 5, 5 + i, line.c_str(), (int)line.length());
-					//
-					lineCount = 0;
-					line.clear();
-				}
-				else
-				{
-					line += s_PipelineMsg[i];
-				}
-			}
-		}
-		EndPaint(hWnd, &ps);
-		break;
-	case WM_CREATE:
-		break;
-	case WM_SIZE:
 		break;
 	case WM_TIMER:
-		// UpdateFps(hWnd);
+		UpdateFps(hWnd);
 		break;
-	case WM_DESTROY:
+    case WM_CLOSE:
+    case WM_DESTROY:
 		s_pPipeline->Terminate();
 		PostQuitMessage(0);
 		break;
-	default:
-		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 	return 0;
 }
@@ -564,39 +552,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 // Handle save file dialog
 void ChangeFileLocation(HWND hWnd)
 {
+    // Even though we're changing it, get it here to show default in dialog
 	TCHAR szDefaultFile[1024];
-	GetDefaultFileLocation(szDefaultFile, true /* generic */); // Even though we're changing it, get it here to show default in dialog
-
-	std::wstring szFileOld = L"";
-	s_pPipeline->GetParamWString(DisplayDvrPipeline::PARAM_NAME_OUTPUT, szFileOld);
-	// If the file location is not set, or is default, then we use the default directory
-	std::wstring::size_type foundAtIndex = szFileOld.find(szDefaultFile);
-	if (0 == szFileOld.size() || 0 == foundAtIndex)
-	{
-		// Use the default we have
-	}
-	else if (std::wstring::npos == foundAtIndex)
-	{
-		// The user has changed the default path so find the last forward or
-		// backwards slash
-		std::wstring::size_type slashFoundAtIndex = szFileOld.rfind(L"/");
-		if (std::wstring::npos == slashFoundAtIndex)
-		{
-			slashFoundAtIndex = szFileOld.rfind(L"\\");
-		}
-		if (std::wstring::npos != slashFoundAtIndex)
-		{
-			std::wstring dpath = szFileOld.substr(0, slashFoundAtIndex);
-			GetDirectoryFileLocation((TCHAR*)dpath.c_str(), szDefaultFile, true /* generic */);
-		}
-	}
+    GetCurrentFileLocation(szDefaultFile);
 
 	OPENFILENAME ofn = {};
 	ZeroMemory(&ofn, sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = hWnd;
 	ofn.lpstrFile = szDefaultFile;
-	ofn.nMaxFile = _countof(szDefaultFile);
+	ofn.nMaxFile = sizeof(szDefaultFile) / sizeof(TCHAR);
 	ofn.lpstrFilter = L"Videos\0*.WMV;*.WMA;*.AVI;*.ASF;*.FLV;*.BFI;*.CAF;*.GXF;*.IFF;*.RL2;*.MP4;*.3GP;*.QTFF;*.MKV;*.MK3D;*.MKA;*.MKS;*.MPG;*.MPEG;*.PS;*.TS;*.MXF;*.OGV;*.OGA;*.OGX;*.OGG;*.SPX;*.FLV;*.F4V;*.F4P;*.F4A;*.F4B;*.JSV;*.h264;*.264;*.vc1;*.mov;*.mvc;*.m1v;*.m2v;*.m2ts;*.vpk;*.yuv;*.rgb;*.nv12;*.h265;*.265\0All\0*.*\0";
 	ofn.nFilterIndex = 1;
 	ofn.lpstrInitialDir = L"%USERPROFILE%\\Videos";
@@ -610,7 +575,7 @@ void ChangeFileLocation(HWND hWnd)
 
 //-------------------------------------------------------------------------------------------------
 // Get file name based on system time (e.g. DVRRecording-2017-09-26-12-30-00.mp4)
-void GetDirectoryFileLocation(TCHAR* szDirectory, TCHAR* szFile, bool generic )
+void GetDirectoryFileLocation(TCHAR* szDirectory, TCHAR* szFile, bool generic)
 {
 	assert(szDirectory);
 	assert(szFile);
@@ -627,7 +592,7 @@ void GetDirectoryFileLocation(TCHAR* szDirectory, TCHAR* szFile, bool generic )
 
 //-------------------------------------------------------------------------------------------------
 // Get file name based on system time (e.g. DVRRecording-2017-09-26-12-30-00.mp4)
-void GetDefaultFileLocation(TCHAR* szFile, bool generic )
+void GetDefaultFileLocation(TCHAR* szFile, bool generic)
 {
 	TCHAR szDirectory[1024];
 	swprintf_s(szDirectory, 1024, L"%s\\Videos", _wgetenv(L"USERPROFILE"));
@@ -635,73 +600,103 @@ void GetDefaultFileLocation(TCHAR* szFile, bool generic )
 }
 
 //-------------------------------------------------------------------------------------------------
+// Get current file name for OpenFile dialog
+void GetCurrentFileLocation(TCHAR* szFile)
+{
+    GetDefaultFileLocation(szFile, true);
+
+    std::wstring szFileOld = L"";
+    s_pPipeline->GetParamWString(DisplayDvrPipeline::PARAM_NAME_OUTPUT, szFileOld);
+
+    // If the file location is not set, or is default, then we use the default directory
+    std::wstring::size_type foundAtIndex = szFileOld.find(szFile);
+    if (0 == szFileOld.size() || 0 == foundAtIndex)
+    {
+        // Use the default we have
+    }
+    else if (std::wstring::npos == foundAtIndex)
+    {
+        // The user has changed the default path so find the last forward or
+        // backwards slash
+        std::wstring::size_type slashFoundAtIndex = szFileOld.rfind(L"/");
+        if (std::wstring::npos == slashFoundAtIndex)
+        {
+            slashFoundAtIndex = szFileOld.rfind(L"\\");
+        }
+        if (std::wstring::npos != slashFoundAtIndex)
+        {
+            std::wstring dpath = szFileOld.substr(0, slashFoundAtIndex);
+            GetDirectoryFileLocation((TCHAR*)dpath.c_str(), szFile, true /* generic */);
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
+// Get record file name 
+void GetRecordFileLocation(TCHAR* szFile)
+{
+    // Set record file location
+    TCHAR szFileDefaultStart[1024];
+    swprintf_s(szFileDefaultStart, 1024, L"%s\\Videos\\DVRRecording", _wgetenv(L"USERPROFILE"));
+
+    std::wstring szFileOld = L"";
+    s_pPipeline->GetParamWString(DisplayDvrPipeline::PARAM_NAME_OUTPUT, szFileOld);
+    swprintf_s(szFile, 1024, L"%s", szFileOld.c_str());
+
+    // If the file location is not set, or is default, overwrite it with an updated default location based on date
+    std::wstring::size_type foundAtIndex = szFileOld.find(szFileDefaultStart);
+    if (0 == szFileOld.size() || 0 == foundAtIndex)
+    {
+        GetDefaultFileLocation(szFile);
+    }
+    else if (std::wstring::npos == foundAtIndex)
+    {
+        // The user has changed the default path so find the last forward or
+        // backwards slash
+        std::wstring::size_type slashFoundAtIndex = szFileOld.rfind(L"/");
+        if (std::wstring::npos == slashFoundAtIndex)
+        {
+            slashFoundAtIndex = szFileOld.rfind(L"\\");
+        }
+        if (std::wstring::npos != slashFoundAtIndex)
+        {
+            std::wstring dpath = szFileOld.substr(0, slashFoundAtIndex);
+            GetDirectoryFileLocation((TCHAR*)dpath.c_str(), szFile);
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
 // Handle Record button press
 void StartRecording(HWND hWnd)
 {
-	// Enable stop button and disable record button to prevent repeated commands
-	HMENU hMenu = GetMenu(hWnd);
-	EnableMenuItem(hMenu, ID_RECORD, MF_BYCOMMAND | MF_GRAYED);
-	EnableMenuItem(hMenu, ID_STOP, MF_BYCOMMAND | MF_ENABLED);
-	DrawMenuBar(hWnd);
 
-	// Initialize the pipeline and create the record file
+
 	// Set record file location
 	TCHAR szFileDefaultStart[1024];
-	swprintf_s(szFileDefaultStart, 1024, L"%s\\Videos\\DVRRecording", _wgetenv(L"USERPROFILE"));
-	std::wstring szFileOld = L"";
-	s_pPipeline->GetParamWString(DisplayDvrPipeline::PARAM_NAME_OUTPUT, szFileOld);
-	// If the file location is not set, or is default, overwrite it with an updated default location based on date
-	std::wstring::size_type foundAtIndex = szFileOld.find(szFileDefaultStart);
-	if (0 == szFileOld.size() || 0 == foundAtIndex)
-	{
-		TCHAR szFileNew[1024];
-		GetDefaultFileLocation(szFileNew);
-		s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_OUTPUT, szFileNew);
-	}
-	else if (std::wstring::npos == foundAtIndex)
-	{
-		// The user has changed the default path so find the last forward or
-		// backwards slash
-		std::wstring::size_type slashFoundAtIndex = szFileOld.rfind(L"/");
-		if (std::wstring::npos == slashFoundAtIndex)
-		{
-			slashFoundAtIndex = szFileOld.rfind(L"\\");
-		}
-		if (std::wstring::npos != slashFoundAtIndex)
-		{
-			TCHAR szFileNew[1024];
-			std::wstring dpath = szFileOld.substr(0, slashFoundAtIndex);
-			GetDirectoryFileLocation((TCHAR*) dpath.c_str(), szFileNew);
-			s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_OUTPUT, szFileNew);
-		}
-	}
-
-    parseCmdLineParameters(s_pPipeline);
+    GetRecordFileLocation(szFileDefaultStart);
+    s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_OUTPUT, szFileDefaultStart);
 
 	AMF_RESULT res = s_pPipeline->Init();
 	if (res != AMF_OK)
 	{
-		wprintf(L"DisplayDvrPipeline failed to initialize");
-		// Get the pipeline message if there is one
-		std::wstring initMsg = s_pPipeline->GetErrorMsg();
-		if (initMsg.empty())
-		{
-			initMsg = L"Failed to initialize pipeline";
-		}
-		UpdateMessage(initMsg.c_str());
-		// Grey out the Record and Stop buttons
-		EnableMenuItem(hMenu, ID_STOP, MF_BYCOMMAND | MF_GRAYED);
-		EnableMenuItem(hMenu, ID_RECORD, MF_BYCOMMAND | MF_GRAYED);
-		DrawMenuBar(hWnd);
-		// 
-		g_AMFFactory.Terminate();
+        FailedRecording(hWnd, false);
 		return;
 	}
-	
-	// Start recording through pipeline
-	s_pPipeline->Start();
-	// Start drawing "Recording..." in window
-	s_bCurrentlyRecording = true;
+    res = s_pPipeline->Start();
+    if (res != AMF_OK)
+    {
+        FailedRecording(hWnd, false);
+        return;
+    }
+    // Enable stop button and disable record button to prevent repeated commands
+    UpdateButtons(hWnd, true);
+
+
+    // initialize the timer to update FPS
+    s_uiFpsTimerId = SetTimer(g_hDlg, TIMER_ID, 1000, NULL);
+
+
 	// Update message
 	std::wstring str = L"Recording";
 #ifdef _DEBUG
@@ -712,6 +707,12 @@ void StartRecording(HWND hWnd)
 #endif
 	str += L"...";
 	UpdateMessage(str.c_str());
+
+    // also add the file name being used for recording
+    std::wstring szWriteFile = L"";
+    s_pPipeline->GetParamWString(DisplayDvrPipeline::PARAM_NAME_OUTPUT, szWriteFile);
+    szWriteFile = L"   " + szWriteFile;
+    UpdateMessage(szWriteFile.c_str());
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -719,35 +720,95 @@ void StartRecording(HWND hWnd)
 void StopRecording(HWND hWnd)
 {
 	// Enable record button and disable stop button to prevent repeated commands
-	HMENU hMenu = GetMenu(hWnd);
-	EnableMenuItem(hMenu, ID_STOP, MF_BYCOMMAND | MF_GRAYED);
-	EnableMenuItem(hMenu, ID_RECORD, MF_BYCOMMAND | MF_ENABLED);
-	DrawMenuBar(hWnd);
+    UpdateButtons(hWnd, false);
 
 	// Stop recording
 	s_pPipeline->Stop();
-	// Stop drawing "Recording..." in window
-	s_bCurrentlyRecording = false;
-	UpdateMessage(NULL);
+
+    // stop the timer
+    KillTimer(g_hDlg, s_uiFpsTimerId);
+
+	UpdateMessage(L"Recording stopped.");
+    UpdateFps(hWnd);
 }
 
 //-------------------------------------------------------------------------------------------------
+// If recording failed to init or to start
+void FailedRecording(HWND hWnd, bool init)
+{
+    LOG_ERROR(((init) ? L"DisplayDvrPipeline failed to initialize"
+                      : L"DisplayDvrPipeline failed to start"));
+
+    // Get the pipeline message if there is one
+    const wchar_t* pErrMsg = s_pPipeline->GetErrorMsg();
+    std::wstring   initMsg = (!pErrMsg) ? L"" : pErrMsg;
+    if (initMsg.empty())
+    {
+        initMsg = (init) ? L"Failed to initialize pipeline"
+                         : L"Failed to start pipeline";
+    }
+    UpdateMessage(initMsg.c_str());
+
+    // Grey out the Record and Stop buttons
+    UpdateButtons(hWnd, false);
+
+    // 
+    g_AMFFactory.Terminate();
+}
+
+//-------------------------------------------------------------------------------------------------
+// Update the buttons accordingly
+void UpdateButtons(HWND hWnd, bool recording)
+{
+    // Enable stop button and disable record button to prevent repeated commands
+    ::EnableWindow(::GetDlgItem(hWnd, IDB_RECORD), recording ? 0 : 1);
+    ::EnableWindow(::GetDlgItem(hWnd, IDB_STOP), recording ? 1 : 0);
+
+}
+
+//-------------------------------------------------------------------------------------------------
+// disply the recording FPS in the status bar...
 void UpdateFps(HWND hWnd)
 {
-	if (s_bCurrentlyRecording)
+	if (s_pPipeline->GetState() == PipelineStateRunning)
 	{
 		TCHAR windowText[1000];
 		double fps = s_pPipeline->GetFPS();
-		swprintf_s(windowText, 1000, L"%s | FPS: %.1f", szTitle, fps);
-		SetWindowText(hWnd, windowText);
-	}
+		swprintf_s(windowText, 1000, L"FPS: %.1f", fps);
+
+        // display the FPS into the second portion of the status bar
+        ::SendDlgItemMessage(g_hDlg, ID_STATUS_BAR, SB_SETTEXT, 1, (LPARAM) windowText);
+    }
+    else
+    {
+        // clear the FPS
+        ::SendDlgItemMessage(g_hDlg, ID_STATUS_BAR, SB_SETTEXT, 1, (LPARAM) L"");
+    }
 }
 
 //-------------------------------------------------------------------------------------------------
 void UpdateMessage(const wchar_t *msg)
 {
-	s_PipelineMsg = (msg) ? msg : L"";
-	InvalidateRect(hClientWindow, NULL, TRUE); // redraw window
+    if (msg)
+    {
+        HWND hEdit = ::GetDlgItem(g_hDlg, IDE_MESSAGES);
+        int  count = ::GetWindowTextLength(hEdit);
+
+        if (count > 0)
+        {
+            // append end of line
+            ::SendMessage(hEdit, EM_SETSEL, (WPARAM) count, (LPARAM) count);
+            ::SendMessage(hEdit, EM_REPLACESEL, 0, (LPARAM) L"\r\n");
+            count += 2;
+        }
+
+        // append new text
+        ::SendMessage(hEdit, EM_SETSEL, (WPARAM) count, (LPARAM) count);
+        ::SendMessage(hEdit, EM_REPLACESEL, 0, (LPARAM) msg);
+
+        // scroll to the end of the control to have the last line visible
+        ::SendDlgItemMessage(g_hDlg, IDE_MESSAGES, EM_LINESCROLL, 0, 10000);
+    }
 }
 
 //-------------------------------------------------------------------------------------------------

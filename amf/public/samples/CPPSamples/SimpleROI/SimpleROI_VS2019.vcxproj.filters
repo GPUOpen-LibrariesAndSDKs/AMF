@@ -35,6 +35,9 @@
       <Filter>public\common</Filter>
     </ClCompile>
     <ClCompile Include="SimpleROI.cpp" />
+    <ClCompile Include="..\common\BitStreamParserIVF.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\common\BitStreamParser.h">
@@ -66,6 +69,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\common\TraceAdapter.h">
       <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\BitStreamParserIVF.h">
+      <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -49,10 +49,10 @@ public:
     {
         return format == amf::AMF_SURFACE_BGRA ? AMF_OK : AMF_FAIL;
     }
-//    virtual bool                SupportAllocator() const { return false; } //MM to test only
+    virtual bool                SupportAllocator() const { return false; }
     virtual AMF_RESULT              Flush();
 
-    virtual AMF_RESULT Init(amf_int32 width, amf_int32 height);
+    virtual AMF_RESULT Init(amf_int32 width, amf_int32 height, amf::AMFSurface* pSurface);
     virtual AMF_RESULT Terminate();
 
     // amf::AMFDataAllocatorCB interface

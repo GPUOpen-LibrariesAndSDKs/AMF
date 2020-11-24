@@ -65,6 +65,34 @@ cbuffer Params : register(b0)
 //Pixel.g - alpha * PixelBack.g < Pixel.r - alpha * PixelBack.r
 //Pixel.g - alpha * PixelBack.g < Pixel.b - alpha * PixelBack.b
 
+float4 GreenReducingExt2(float4 dataIn, uint keycolor)
+{
+    //	return dataIn;
+    //not green dominate
+    if ((dataIn.y < dataIn.x) && (dataIn.y < dataIn.z))
+    {
+        return dataIn;
+    }
+
+    float4 dataOut = dataIn;
+    float4 dataKey;
+    dataKey.z = (float)((keycolor >> 10) & 0x000003FF) / 1024.f;	//U
+    dataKey.y = (float)(keycolor & 0x000003FF) / 1024.f;			//V
+    dataKey.x = (float)((keycolor >> 20) & 0x000003FF) / 1024.f;	//Y
+    dataKey = NV12toRGB(dataKey);
+
+    float alphaMax = min((float)dataIn.x / (float)dataKey.x, (float)dataIn.y / (float)dataKey.y);
+    alphaMax = min(alphaMax, (float)dataIn.z / (float)dataKey.z);
+    float alphaMin1 = ((float)dataIn.y - (float)dataIn.z) / ((float)dataKey.y - (float)dataKey.z);	//(G-R)/Gkey-Rkey)
+    float alphaMin2 = ((float)dataIn.y - (float)dataIn.x) / ((float)dataKey.y - (float)dataKey.x);	//(G-B)/Gkey-Bkey)
+
+    float alphaMin = max(0.0f, min(alphaMin1, alphaMin2));
+    float alpha2 = min(1.0f, min(alphaMin, alphaMax));
+
+    dataOut.xyz -= dataKey.xyz * alpha2;
+    return dataOut;
+}
+
 [numthreads(8, 8, 1)]
 void CSBlendRGB(uint3 coord : SV_DispatchThreadID)
 {
@@ -109,6 +137,10 @@ void CSBlendRGB(uint3 coord : SV_DispatchThreadID)
     if (greenReducing == 1)
     {
         dataOut = GreenReducing(dataOut, threshold / 255.0f, threshold2 / 255.0f, debug);
+    }
+    else if (greenReducing == 2) //advanced
+    {
+        dataOut = GreenReducingExt2(dataOut, keycolor);
     }
 
     dataOut.w = alpha;

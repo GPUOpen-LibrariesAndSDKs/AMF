@@ -43,6 +43,7 @@ enum BitStreamType
     BitStreamMpeg4part2,
     BitStreamVC1,
     BitStream265AnnexB,
+	BitStreamIVF,
     BitStreamUnknown
 };
 

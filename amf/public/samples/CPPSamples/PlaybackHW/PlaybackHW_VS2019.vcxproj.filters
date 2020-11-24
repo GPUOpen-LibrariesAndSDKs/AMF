@@ -111,6 +111,15 @@
     <ClInclude Include="..\common\VideoPresenterVulkan.h">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\SwapChainDX12.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\VideoPresenterDX12.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\BitStreamParserIVF.h">
+      <Filter>common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PlaybackHW.cpp">
@@ -193,6 +202,15 @@
       <Filter>public\common</Filter>
     </ClCompile>
     <ClCompile Include="..\common\VideoPresenterVulkan.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\SwapChainDX12.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\VideoPresenterDX12.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\BitStreamParserIVF.cpp">
       <Filter>common</Filter>
     </ClCompile>
   </ItemGroup>

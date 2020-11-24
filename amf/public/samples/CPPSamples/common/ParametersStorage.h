@@ -91,6 +91,8 @@ public:
     AMF_RESULT  GetParam(const wchar_t* name, _T& value) const;
     template<typename _T>
     AMF_RESULT GetParamWString(const wchar_t* name, _T& value) const;
+    template<typename _T> inline
+    AMF_RESULT GetParamString(const wchar_t* name, _T& value) const;
 
     amf_size    GetParamCount() const;
     AMF_RESULT  GetParamAt(amf_size index, std::wstring& name, amf::AMFVariantStruct* value) const;
@@ -166,6 +168,18 @@ AMF_RESULT ParametersStorage::GetParamWString(const wchar_t* name, _T& value) co
     }
     return err;
 }
+template<typename _T> inline
+AMF_RESULT ParametersStorage::GetParamString(const wchar_t* name, _T& value) const
+{
+    amf::AMFVariant var;
+    AMF_RESULT err = GetParam(name, static_cast<amf::AMFVariantStruct*>(&var));
+    if (err == AMF_OK)
+    {
+        value = var.ToString().c_str();
+    }
+    return err;
+}
+
 
 AMF_RESULT PushParamsToPropertyStorage(ParametersStorage* pParams, ParamType ptype, amf::AMFPropertyStorage *storage);
 

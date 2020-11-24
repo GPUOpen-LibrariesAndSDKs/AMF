@@ -47,7 +47,9 @@ VideoRender::VideoRender(amf_int width, amf_int height, bool bInterlaced, amf_in
     m_height(height),
     m_frames(frames),
     m_framesRendered(0),
-    m_bInterlaced(bInterlaced)
+    m_bInterlaced(bInterlaced),
+	m_renderFps(0),
+	m_lastRenderTime(0)
 {
 
 }
@@ -92,6 +94,18 @@ AMF_RESULT VideoRender::QueryOutput(amf::AMFData** ppData)
 {
     if(m_framesRendered++ < m_frames)
     {
+		if (m_renderFps > 0) //render with the fps setting.
+		{
+			amf_int64 currentTime = amf_high_precision_clock();
+			amf::AMFPreciseWaiter waiter;
+			amf_int64 waittime = (AMF_SECOND / m_renderFps) - (currentTime - m_lastRenderTime);
+			if(waittime>0)
+			{
+				waiter.WaitEx(waittime);
+			}
+			m_lastRenderTime = amf_high_precision_clock();
+		}
+
         AMF_RESULT res = Render(ppData);
         if(res == AMF_OK && *ppData != NULL && m_bInterlaced)
         {

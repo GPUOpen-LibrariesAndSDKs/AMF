@@ -51,6 +51,7 @@ public:
 
     ATL::CComPtr<ID3D11Device>      GetDevice();
     std::wstring GetDisplayDeviceName() { return m_displayDeviceName; }
+    LUID        GetLuid() { return m_LUID; }
 private:
     void EnumerateAdapters(bool onlyWithOutputs);
 
@@ -60,4 +61,6 @@ private:
     amf_uint32                          m_adaptersCount;
     amf_uint32                          m_adaptersIndexes[MAXADAPTERS];
     std::wstring                        m_displayDeviceName;
+    LUID                                m_LUID;
+
 };

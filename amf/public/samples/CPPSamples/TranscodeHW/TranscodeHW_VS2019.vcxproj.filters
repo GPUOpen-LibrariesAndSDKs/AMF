@@ -89,6 +89,21 @@
     <ClCompile Include="..\..\..\common\VulkanImportTable.cpp">
       <Filter>public\common</Filter>
     </ClCompile>
+    <ClCompile Include="..\common\RawStreamReader.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\SwapChainDX12.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\VideoPresenterDX12.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\PreProcessingParams.cpp">
+	  <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\BitStreamParserIVF.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="common">
@@ -109,9 +124,6 @@
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\common\BitStreamParserH264.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\ByteArray.h">
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\common\TranscodePipeline.h">
@@ -191,6 +203,27 @@
     </ClInclude>
     <ClInclude Include="..\..\..\common\VulkanImportTable.h">
       <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\ByteArray.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\RawStreamReader.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\PipelineDefines.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\SwapChainDX12.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\VideoPresenterDX12.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\PreProcessingParams.h">
+	  <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\BitStreamParserIVF.h">
+      <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

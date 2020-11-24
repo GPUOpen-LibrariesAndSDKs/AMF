@@ -232,6 +232,11 @@ AMF_RESULT ParamConverterVideoPresenter(const std::wstring& value, amf::AMFVaria
     {
         paramValue = amf::AMF_MEMORY_DX11;
     }else
+    if (uppValue == L"DX12" || uppValue == L"11")
+    {
+        paramValue = amf::AMF_MEMORY_DX12;
+    }
+    else
     if(uppValue == L"OPENGL"  || uppValue == L"5")
     {
         paramValue = amf::AMF_MEMORY_OPENGL;
@@ -461,6 +466,9 @@ const wchar_t *StreamCodecIDtoDecoderID(AMF_STREAM_CODEC_ID_ENUM eCodec)
     case AMF_STREAM_CODEC_ID_MJPEG: return AMFVideoDecoderUVD_MJPEG;
     case AMF_STREAM_CODEC_ID_H265_HEVC: return AMFVideoDecoderHW_H265_HEVC;
     case AMF_STREAM_CODEC_ID_H265_MAIN10: return AMFVideoDecoderHW_H265_MAIN10;
+    case AMF_STREAM_CODEC_ID_VP9: return AMFVideoDecoderHW_VP9;
+    case AMF_STREAM_CODEC_ID_VP9_10BIT: return AMFVideoDecoderHW_VP9_10BIT;
+    case AMF_STREAM_CODEC_ID_AV1: return AMFVideoDecoderHW_AV1;
     }
     return L"";
 }

@@ -55,6 +55,7 @@ src_files = \
     $(samples_common_dir)/BitStreamParser.cpp \
     $(samples_common_dir)/BitStreamParserH264.cpp \
     $(samples_common_dir)/BitStreamParserH265.cpp \
+    $(samples_common_dir)/BitStreamParserIVF.cpp \
     $(samples_common_dir)/CmdLogger.cpp \
     $(samples_common_dir)/CmdLineParser.cpp \
     $(samples_common_dir)/ParametersStorage.cpp \

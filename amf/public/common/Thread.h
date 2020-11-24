@@ -93,7 +93,11 @@ extern "C"
     void*       AMF_CDECL_CALL amf_get_proc_address(amf_handle module, const char* procName);
     int         AMF_CDECL_CALL amf_free_library(amf_handle module);
 
+#if defined(__APPLE__)
+    amf_uint64 AMF_STD_CALL get_current_thread_id();
+#else
     amf_uint32 AMF_STD_CALL get_current_thread_id();
+#endif
 
 #if !defined(METRO_APP)
     // virtual memory
@@ -134,6 +138,7 @@ namespace amf
         virtual bool Unlock();
         bool SetEvent();
         bool ResetEvent();
+        amf_handle GetNative() { return m_hSyncObject; }
     };
     //----------------------------------------------------------------
     class AMFMutex : public AMFSyncBase

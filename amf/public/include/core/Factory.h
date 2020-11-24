@@ -113,6 +113,12 @@ extern "C"
         #define AMF_DLL_NAME    L"amfrt32.dll"
         #define AMF_DLL_NAMEA   "amfrt32.dll"
     #endif
+#elif defined(__ANDROID__)
+    #define AMF_DLL_NAME    L"libamf.so"
+    #define AMF_DLL_NAMEA    "libamf.so"
+#elif defined(__APPLE__)
+    #define AMF_DLL_NAME    L"libamfrt.framework/libamfrt"
+    #define AMF_DLL_NAMEA   "libamfrt.framework/libamfrt"
 #elif defined(__linux__)
     #if defined(__x86_64__)
         #define AMF_DLL_NAME    L"libamfrt64.so.1"

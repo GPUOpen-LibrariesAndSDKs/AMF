@@ -1634,12 +1634,12 @@ namespace amf
         errRet = AMFVariantClear(pDest);
         if(errRet == AMF_OK)
         {
-            size_t size = (strlen(pValue) + 1);
+            const size_t size = (strlen(pValue) + 1);
             pDest->type = AMF_VARIANT_STRING;
             AMFVariantString(pDest) = (char*)amf_variant_alloc(size * sizeof(char));
             if(AMFVariantString(pDest))
             {
-                strncpy(AMFVariantString(pDest), pValue, size);
+                memcpy(AMFVariantString(pDest), pValue, size * sizeof(char));
             }
             else
             {
@@ -1658,12 +1658,12 @@ namespace amf
         errRet = AMFVariantClear(pDest);
         if(errRet == AMF_OK)
         {
-            size_t size = (wcslen(pValue) + 1);
+            const size_t size = (wcslen(pValue) + 1);
             pDest->type = AMF_VARIANT_WSTRING;
             AMFVariantWString(pDest) = (wchar_t*)amf_variant_alloc(size * sizeof(wchar_t));
             if(AMFVariantWString(pDest))
             {
-                wcsncpy(AMFVariantWString(pDest), pValue, size);
+                memcpy(AMFVariantWString(pDest), pValue, size * sizeof(wchar_t));
             }
             else
             {
@@ -1691,7 +1691,6 @@ namespace amf
 #else
                 AMFVariantInterface(pDest)->pVtbl->Acquire(AMFVariantInterface(pDest));
 #endif
-
             }
         }
         return errRet;

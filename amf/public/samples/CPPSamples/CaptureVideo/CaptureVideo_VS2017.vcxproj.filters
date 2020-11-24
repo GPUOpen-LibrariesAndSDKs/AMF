@@ -147,6 +147,15 @@
     <ClCompile Include="..\..\..\..\public\common\VulkanImportTable.cpp">
       <Filter>public\common</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\SwapChainDX12.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\VideoPresenterDX12.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\BitStreamParserIVF.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\components\ChromaKey\ChromaKeyImpl.h">
@@ -260,6 +269,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\public\common\VulkanImportTable.h">
       <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\SwapChainDX12.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\VideoPresenterDX12.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\BitStreamParserIVF.h">
+      <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

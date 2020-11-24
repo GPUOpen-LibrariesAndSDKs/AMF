@@ -286,6 +286,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Terminate()
     m_audioFrameSubmitCount = 0;
     m_audioFrameQueryCount = 0;
 
+    m_pInputData = nullptr;
 
     return AMF_OK;
 }
@@ -307,7 +308,10 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Flush()
     m_pFrame.Release();
     m_iFrameOffset = 0;
     m_iFirstFramePts = -1;
+    m_iSamplesPacked = -1;
     m_bDrained = true;
+
+    m_pInputData = nullptr;
 
     return AMF_OK;
 }
@@ -358,6 +362,9 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::SubmitInput(AMFData* pData)
     }
     m_iFrameOffset = 0;
     m_audioFrameSubmitCount++;
+    
+    m_pInputData = AMFDataPtr(pData);
+
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
@@ -528,6 +535,11 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::QueryOutput(AMFData** ppData
             m_iSamplesPacked += m_iSamplesInPackaet;
 
             pBufferOut->SetDuration(duration);
+
+            if (m_pInputData)
+            {
+                m_pInputData->CopyTo(pBufferOut, false);
+            }
 
             // prepare output
             *ppData = pBufferOut;

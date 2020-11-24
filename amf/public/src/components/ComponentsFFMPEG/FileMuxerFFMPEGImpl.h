@@ -52,6 +52,7 @@ extern "C"
 #include "public/include/components/FFMPEGFileMuxer.h"
 #include "public/common/PropertyStorageExImpl.h"
 #include "public/include/core/Context.h"
+#include "public/include/core/CurrentTime.h"
 
 
 
@@ -190,6 +191,7 @@ namespace amf
 
         amf_int64               m_iViewFrameCount;
         amf_pts                 m_ptsStatTime;
+        AMFCurrentTimePtr		m_pCurrentTime;
     };
 
  //   typedef AMFInterfacePtr_T<AMFFileMuxerFFMPEGImpl>    AMFFileMuxerFFMPEGPtr;

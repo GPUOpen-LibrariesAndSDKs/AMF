@@ -501,7 +501,7 @@ AMF_RESULT SwapChainVulkan::AcquireBackBuffer(amf_uint32 *pIndex)
 
     uint32_t imageIndex = 0;
     res = GetVulkan()->vkAcquireNextImageKHR(pVulkanDev->hDevice, m_hSwapChain, UINT32_MAX, m_Semaphores.front(), VK_NULL_HANDLE, &imageIndex);
-    CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkAcquireNextImageKHR() failed with error=" << res);
+    CHECK_RETURN(res == VK_SUCCESS || res == VK_SUBOPTIMAL_KHR, AMF_FAIL, L"vkAcquireNextImageKHR() failed with error=" << res);
     BackBuffer &backBuffer = m_BackBuffers[imageIndex];
     backBuffer.m_Surface.Sync.hSemaphore = m_Semaphores.front();
     backBuffer.m_Surface.Sync.bSubmitted = true;

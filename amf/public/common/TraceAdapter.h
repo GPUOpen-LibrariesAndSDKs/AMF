@@ -297,7 +297,10 @@ static const wchar_t* AMF_FACILITY = NULL;
 #elif defined(__linux)
 //    #define AMFDebugBreak ((void)0)
 #define AMFDebugBreak  {if(amf::AMFAssertsEnabled()) {assert(0);} \
-}                                                                           //{  }
+}//{  }
+#elif defined(__APPLE__)
+#define AMFDebugBreak  {if(amf::AMFAssertsEnabled()) {assert(0);} \
+}
 #endif
 #else
 #define AMFDebugBreak 

@@ -76,7 +76,7 @@ public:
             {
                 pData->SetProperty(ENCODER_SUBMIT_TIME, currentTime);
             }
-
+			
             if(m_frameParameterFreq != 0 && m_framesSubmitted !=0 && (m_framesSubmitted % m_frameParameterFreq) == 0)
             { // apply frame-specific properties to the current frame
                 PushParamsToPropertyStorage(m_pParams, ParamEncoderFrame, pData);
@@ -175,6 +175,8 @@ const wchar_t* RenderEncodePipeline::PARAM_NAME_FULLSCREEN     = L"FULLSCREEN";
 
 const wchar_t* RenderEncodePipeline::PARAM_NAME_QUERY_INST_COUNT = L"QueryInstanceCount";
 const wchar_t* RenderEncodePipeline::PARAM_NAME_SELECT_INSTANCE  = L"UseInstance";
+const wchar_t* RenderEncodePipeline::PARAM_NAME_FRAMERATE        = L"FRAMERATE";
+
 
 RenderEncodePipeline::RenderEncodePipeline()
     :m_pContext()
@@ -465,6 +467,9 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
     m_pVideoRender = VideoRender::Create(width, height, bInterlaced, frames, renderMemoryType, encoderMemoryType, m_pContext);
 
     res = m_pVideoRender->Init(hWnd, hDisplay, bFullScreen);
+	amf_int fps = 0;
+	pParams->GetParam(RenderEncodePipeline::PARAM_NAME_FRAMERATE, fps);
+	m_pVideoRender->SetRenderFrameRate(fps);
     CHECK_AMF_ERROR_RETURN(res, L"m_pVideoRender->Init() failed");
 
     //---------------------------------------------------------------------------------------------

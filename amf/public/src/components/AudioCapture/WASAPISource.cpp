@@ -38,6 +38,7 @@
 #include <functiondiscoverykeys_devpkey.h>
 #include "public/common/TraceAdapter.h"
 #include "WASAPISource.h"
+#include <sstream>
 
 #pragma warning(disable: 4996)
 
@@ -56,120 +57,148 @@ namespace
 }
 
 //-------------------------------------------------------------------------------------------------
-int AMFWASAPISourceImpl::CaptureOnePacket(char** ppData, UINT& numSamples, amf_uint64 &posStream, bool &bDiscontinuity)
+AMF_RESULT AMFWASAPISourceImpl::CaptureOnePacket(char** ppData, UINT& numSamples, amf_uint64 &posStream, bool &bDiscontinuity)
 {
+    RenderSilence();
+
 	numSamples = 0;
 	*ppData = NULL;
     bDiscontinuity = false;
 
-	int result = 0;
-
-	UINT packetLength = 0;
-	while (true)
-	{
-		{
-			AMFLock lock(&m_sync);
-			// External request to exit capture loop
-			if (m_eof)
-			{
-				break;
-			}
-			//
-			HRESULT hr = m_capture->GetNextPacketSize(&packetLength);
-			if (packetLength)
-			{
-				DWORD   flags = 0;
-                UINT64  pos = 0;
-                UINT64  ts = 0;
-				hr = m_capture->GetBuffer((LPBYTE*)ppData, &numSamples, &flags, &pos, &ts);
-
-				if (flags & AUDCLNT_BUFFERFLAGS_SILENT)
-				{
-					*ppData = NULL;	// Silence
-				}
-                if (flags & AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY)
-                {
-                    bDiscontinuity = true;
-                }
-                if (flags & AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR)
-                {
-                    pos = 0xFFFFFFFFFFFFFFFFLL;
-                }
-                posStream = pos;
-
-				break;
-			}
-		}
-		//
-		amf_sleep(1); // milliseconds
-	}
-
-	return result;
-}
-
-//-------------------------------------------------------------------------------------------------
-int AMFWASAPISourceImpl::CaptureOnePacketTry(char** ppData, UINT& numSamples, amf_uint64 &posStream, bool &bDiscontinuity)
-{
-	numSamples = 0;
-	*ppData = NULL;
-    bDiscontinuity = false;
-
-	int result = 0;
+    AMF_RESULT result = AMF_OK;
 
 	UINT packetLength = 0;
 	for (unsigned i = 0; i < 2; i++)
 	{
-		{
-			AMFLock lock(&m_sync);
-			// External request to exit capture loop
-			if (m_eof)
-			{
-				break;
-			}
-			//
-			HRESULT hr = m_capture->GetNextPacketSize(&packetLength);
-			if (packetLength)
-			{
-				DWORD   flags = 0;
+        HRESULT hr = m_capture->GetNextPacketSize(&packetLength);
+        if (FAILED(hr))
+        {
+            AMFTraceError(AMF_FACILITY, L"GetNextPacketSize: hr=0x%X", hr);
+            result = AMF_FAIL;
+        }
+        else
+        {
+            if (packetLength == 0)
+            {
+                amf_sleep(20);
+            }
+            else
+            {
+                DWORD   flags = 0;
                 UINT64  pos = 0;
                 UINT64  ts = 0;
-				hr = m_capture->GetBuffer((LPBYTE*)ppData, &numSamples, &flags, &pos, &ts);
-				if (flags & AUDCLNT_BUFFERFLAGS_SILENT)
-				{
-					*ppData = NULL;	// Silence
-				}
-                if (flags & AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY)
+                hr = m_capture->GetBuffer((LPBYTE*)ppData, &numSamples, &flags, &pos, &ts);
+                if (FAILED(hr))
                 {
-                    bDiscontinuity = true;
+                    AMFTraceError(AMF_FACILITY, L"GetBuffer: hr=0x%X", hr);
+                    result = AMF_FAIL;
                 }
-                if (flags & AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR)
+                else
                 {
-                    pos = 0xFFFFFFFFFFFFFFFFLL;
+                    m_LastNumOfSamples = numSamples;
+
+                    if (flags & AUDCLNT_BUFFERFLAGS_SILENT)
+                    {
+                        *ppData = nullptr;	// Silence
+                        if (m_silenceStarted == false)
+                        {
+                            m_silenceStarted = true;
+                            AMFTraceInfo(AMF_FACILITY, L"GetBuffer: silence started at pos=%llu, timestamp=%llu, samples=%u, data=%llX", pos, ts, numSamples, (uint64_t)(*ppData));
+                        }
+                    }
+                    else
+                    {
+                        if (m_silenceStarted == true)
+                        {
+                            m_silenceStarted = false;
+                            AMFTraceInfo(AMF_FACILITY, L"GetBuffer: silence ended at pos=%llu, timestamp=%llu", pos, ts);
+                        }
+                    }
+                    if (flags & AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY)
+                    {
+                        bDiscontinuity = true;
+                        AMFTraceInfo(AMF_FACILITY, L"GetBuffer: Discontinuity at pos=%llu, timestamp=%llu", pos, ts);
+                    }
+                    if (flags & AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR)
+                    {
+                        AMFTraceError(AMF_FACILITY, L"GetBuffer: Timestamp error at pos=%llu, timestamp=%llu", pos, ts);
+                        pos = 0xFFFFFFFFFFFFFFFFLL;
+                    }
+                    posStream = pos;
+                    break;
                 }
-                posStream = pos;
-                break;
-			}
-			// Wait long enough so we can make sure that we true silence
-			amf_sleep(20);
-		}
-	}
+            }
+        }
+    }
 
 	return result;
 }
 
 //-------------------------------------------------------------------------------------------------
-int AMFWASAPISourceImpl::CaptureOnePacketDone(UINT numSamples)
+AMF_RESULT AMFWASAPISourceImpl::CaptureOnePacketDone()
 {
-	int hr = m_capture->ReleaseBuffer(numSamples);
-	return hr;
+    AMF_RESULT result = AMF_OK;
+	HRESULT hr = m_capture->ReleaseBuffer(m_LastNumOfSamples);
+    if (FAILED(hr))
+    {
+        AMFTraceError(AMF_FACILITY, L"CaptureOnePacketDone: hr=%d", hr);
+        result = AMF_FAIL;
+    }
+	return result;
 }
+//-------------------------------------------------------------------------------------------------
+int AMFWASAPISourceImpl::RenderSilence()
+{
+    if (m_render)
+    {
+        HRESULT hresult = S_OK;
 
+        // Need to get current padding and subtract or else GetBuffer returns AUDCLNT_E_BUFFER_TOO_LARGE
+        UINT32 numFramesPadding = 0;
+
+        hresult = m_renderClient->GetCurrentPadding(&numFramesPadding);
+        if (FAILED(hresult))
+        {
+            AMFTraceWarning(L"WASAPISource", L"RenderSilence: failed to get buffer padding");
+            return false;
+        }
+
+        UINT32 bufferSize = 0;
+        hresult = m_renderClient->GetBufferSize(&bufferSize);
+        UINT32 numFramesAvailable = bufferSize - numFramesPadding;
+
+        LPBYTE buffer = nullptr;
+        // get buffer
+        hresult = m_render->GetBuffer(numFramesAvailable, &buffer);
+        if (FAILED(hresult))
+        {
+            AMFTraceWarning(L"WASAPISource", L"RenderSilence: failed to get the buffer");
+            return false;
+        }
+
+        // set to zero
+        //memset(buffer, 0, numFramesAvailable*DefaultDeviceFormatSilence_->nBlockAlign);
+
+        // release buffer
+        hresult = m_render->ReleaseBuffer(numFramesAvailable, AUDCLNT_BUFFERFLAGS_SILENT);
+        if (FAILED(hresult))
+        {
+            AMFTraceWarning(L"WASAPISource", L"RenderSilence: failed to release buffer");
+            return false;
+        }
+    }
+    return 0;
+}
 //-------------------------------------------------------------------------------------------------
 AMFWASAPISourceImpl::AMFWASAPISourceImpl() :
-m_device(),
-m_client(),
-m_capture(),
-m_eof(false)
+    m_device(),
+    m_client(),
+    m_capture(),
+    m_renderClient(),
+    m_render(),
+    m_eof(false),
+    m_silenceStarted(false),
+    m_LastNumOfSamples(0)
 {
 }
 
@@ -191,6 +220,15 @@ AMF_RESULT AMFWASAPISourceImpl::Terminate()
 	}
 
 	m_capture.Release();
+
+    if (m_renderClient)
+    {
+        m_renderClient->Stop();
+        m_renderClient.Release();
+    }
+    m_render.Release();
+
+
 	m_device.Release();
 
 	return err;
@@ -289,6 +327,21 @@ AMF_RESULT AMFWASAPISourceImpl::InitCaptureMicrophone(amf_int32 activeDevice, am
 	return AMF_OK;
 }
 
+static amf_wstring WaveFormatToString(const WAVEFORMATEX* format)
+{
+	amf_wstring str;
+	std::wstringstream stream;
+	stream << L"Format tag: " << format->wFormatTag <<
+		L", channels: " << format->nChannels <<
+		L", bits per sample: " << format->wBitsPerSample <<
+		L", samples per sec: " << format->nSamplesPerSec <<
+		L", block align: " << format->nBlockAlign <<
+		L", avg bytes/sec: " << format->nAvgBytesPerSec;
+	
+	str = stream.str().c_str();
+	return str;
+}
+
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMFWASAPISourceImpl::InitCaptureDesktop(amf_pts bufferDuration)
 {
@@ -314,14 +367,16 @@ AMF_RESULT AMFWASAPISourceImpl::InitCaptureDesktop(amf_pts bufferDuration)
     {
     case S_OK:
         supportedFormat = formatWrapper.m_pFmt;
+		AMFTraceInfo(AMF_FACILITY, L"Requested audio format (%s) is supported", WaveFormatToString(supportedFormat).c_str());
         break;
     case S_FALSE:
         supportedFormat = pClosestMatch.m_pFmt;
+		AMFTraceInfo(AMF_FACILITY, L"Requested audio format (%s) is not supported, using closest match (%s)", WaveFormatToString(formatWrapper.m_pFmt).c_str(), WaveFormatToString(supportedFormat).c_str());
         break;
     default:
         break;
     }
-    AMF_RETURN_IF_FALSE(supportedFormat != NULL, AMF_FAIL, L"Unable to determine supported audio capture format");
+    AMF_RETURN_IF_FALSE(supportedFormat != NULL, AMF_FAIL, L"Unable to determine supported audio capture format=%d channels=%d", (int)formatWrapper.m_pFmt->wFormatTag, (int)formatWrapper.m_pFmt->nChannels);
 
     memcpy(&m_waveFormat, supportedFormat, sizeof(WAVEFORMATEX));
     if ((supportedFormat->cbSize > 0) && (supportedFormat->wFormatTag == WAVE_FORMAT_EXTENSIBLE))
@@ -339,7 +394,7 @@ AMF_RESULT AMFWASAPISourceImpl::InitCaptureDesktop(amf_pts bufferDuration)
 
 	REFERENCE_TIME hnsRequestedDuration = bufferDuration;
     hr = m_client->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_LOOPBACK, hnsRequestedDuration, 0, supportedFormat, NULL);
-	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"Initialize() failed, hr=0x%X", hr);
+	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"Initialize() failed, hr=0x%X, duration=%lld, format (%s)", hr, hnsRequestedDuration, WaveFormatToString(&m_waveFormat).c_str());
 
 	hr = m_client->GetService(__uuidof(IAudioCaptureClient), (void**)&m_capture);
     AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"GetService() failed, hr=0x%X", hr);
@@ -354,7 +409,40 @@ AMF_RESULT AMFWASAPISourceImpl::InitCaptureDesktop(amf_pts bufferDuration)
 	hr = m_client->Start();
     AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"Start() failed, hr=0x%X", hr);
 
+    //When capturing audio, if the system is not producing any sound, sometimes the audio stream will stop producing data.
+    //The current workaround in this situation is to have the audio capture app generate the silent packets.This has disadvantages like sound popping.Sometimes the audio capture fails completely after long periods of silence.
+    //A better workaround is to create a render client on the same device that's being captured, and continuously render a silent stream. This way the system will never stop producing data and the capture client gets a continous audio stream.
+    InitRenderClient();
+
 	return AMF_OK;
+}
+
+AMF_RESULT amf::AMFWASAPISourceImpl::InitRenderClient()
+{
+    if (!m_device)
+        return AMF_NO_DEVICE;
+
+    HRESULT hr = S_OK;
+
+    hr = m_device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&m_renderClient);
+    AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"Activate() failed, hr=0x%X", hr);
+
+    WAVEFORMATEX* supportedFormat = NULL;
+    hr = m_renderClient->GetMixFormat(&supportedFormat);
+    AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"GetMixFormat() failed, hr=0x%X", hr);
+
+
+    REFERENCE_TIME hnsRequestedDuration = 5000000; // 5 seconds
+    hr = m_renderClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, hnsRequestedDuration, 0, supportedFormat, NULL);
+    AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"Initialize() failed, hr=0x%X, duration=%lld, format (%s)", hr, hnsRequestedDuration, WaveFormatToString(&m_waveFormat).c_str());
+
+    hr = m_renderClient->GetService(__uuidof(IAudioRenderClient), (void**)&m_render);
+    AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"GetService() failed, hr=0x%X", hr);
+
+    hr = m_renderClient->Start();
+    AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"Start() failed, hr=0x%X", hr);
+
+    return AMF_RESULT();
 }
 
 //-------------------------------------------------------------------------------------------------

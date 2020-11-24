@@ -351,6 +351,10 @@ LRESULT CaptureVideo::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
             m_iChromaKeyColorAdj = m_iChromaKeyColorAdj ==1 ? 0 : 1;
             UpdateMenuItems(::GetMenu(hWnd));
             break;
+        case ID_OPTIONS_CHROMAKEY_ADVANCED:
+            m_iChromaKeyColorAdj = m_iChromaKeyColorAdj == 2 ? 0 : 2;
+            UpdateMenuItems(::GetMenu(hWnd));
+            break;
         case ID_FILE_RESETHISTORY:
              ResetOptions();
              break;
@@ -805,6 +809,14 @@ void CaptureVideo::HandleKeyboard(WPARAM wParam)
     case L'H':
         m_Pipeline.UpdateChromakeyProperty(AMF_CHROMAKEY_BOKEH_RADIUS, 1, true);  //BK bokeh radius, increase
         break;
+    case L'j':
+    case L'J':
+        m_Pipeline.UpdateChromakeyProperty(AMF_CHROMAKEY_LUMA_LOW, -1, true);  //Luma threashold
+        break;
+//	case L'k':
+    case L'K':
+        m_Pipeline.UpdateChromakeyProperty(AMF_CHROMAKEY_LUMA_LOW, 1, true);  //Luma threashold
+        break;
     case L'q':
     case L'Q':
         m_bChromaKeySpill = !m_bChromaKeySpill;
@@ -812,8 +824,13 @@ void CaptureVideo::HandleKeyboard(WPARAM wParam)
         break;
     case L'w':
     case L'W':
-        m_iChromaKeyColorAdj = m_iChromaKeyColorAdj == 1 ? 0 : 1;//off, on
+        m_iChromaKeyColorAdj = (m_iChromaKeyColorAdj + 1) % 2;
         m_Pipeline.UpdateChromakeyProperty(AMF_CHROMAKEY_COLOR_ADJ, m_iChromaKeyColorAdj); //off, on
+        break;
+    case L'e':
+    case L'E':
+        m_iChromaKeyColorAdj = m_iChromaKeyColorAdj == 2 ? 0 : 2;//off, ,advanced
+        m_Pipeline.UpdateChromakeyProperty(AMF_CHROMAKEY_COLOR_ADJ, m_iChromaKeyColorAdj); //off, ,advanced
         break;
     case L'r':
     case L'R':

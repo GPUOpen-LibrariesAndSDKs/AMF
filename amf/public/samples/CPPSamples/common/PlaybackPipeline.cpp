@@ -70,6 +70,14 @@ PlaybackPipeline::InitContext(amf::AMF_MEMORY_TYPE type)
             return AMF_OK;
         }
 
+	case amf::AMF_MEMORY_DX12:
+	{
+		const AMF_RESULT res = amf::AMFContext2Ptr(m_pContext)->InitDX12(NULL);
+		CHECK_AMF_ERROR_RETURN(res, "Init DX12");
+		m_bVideoPresenterDirectConnect = true;
+		return AMF_OK;
+	}
+
     case amf::AMF_MEMORY_OPENGL:
         {
             AMF_RESULT res = m_pContext->InitDX9(NULL);

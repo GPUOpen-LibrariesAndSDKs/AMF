@@ -100,6 +100,7 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -122,6 +123,7 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -203,6 +205,7 @@
     <ClCompile Include="..\common\BitStreamParser.cpp" />
     <ClCompile Include="..\common\BitStreamParserH264.cpp" />
     <ClCompile Include="..\common\BitStreamParserH265.cpp" />
+    <ClCompile Include="..\common\BitStreamParserIVF.cpp" />
     <ClCompile Include="SimpleROI.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -215,6 +218,7 @@
     <ClInclude Include="..\common\BitStreamParser.h" />
     <ClInclude Include="..\common\BitStreamParserH264.h" />
     <ClInclude Include="..\common\BitStreamParserH265.h" />
+    <ClInclude Include="..\common\BitStreamParserIVF.h" />
     <ClInclude Include="..\common\ByteArray.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

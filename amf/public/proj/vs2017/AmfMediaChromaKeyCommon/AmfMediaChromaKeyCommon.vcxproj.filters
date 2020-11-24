@@ -10,6 +10,9 @@
     <Filter Include="components\ChromaKey">
       <UniqueIdentifier>{f685446e-e955-405e-a524-6438617515d1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="components\ChromaKey\programs">
+      <UniqueIdentifier>{53b144c7-d21f-44c8-bc41-2acf2adbf3fc}</UniqueIdentifier>
+    </Filter>
     <Filter Include="common">
       <UniqueIdentifier>{6e0814fe-9bd9-41b9-b038-89a263999d1f}</UniqueIdentifier>
     </Filter>
@@ -148,6 +151,11 @@
     <FxCompile Include="..\..\..\src\components\ChromaKey\programsDX11\ChromaKeyV210toY210.hlsl">
       <Filter>components\ChromaKey\programDX11</Filter>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\..\..\public\src\components\ChromaKey\Programs\ChromaKeyProcess.cl">
+      <Filter>components\ChromaKey\programs</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <Midl Include="..\..\..\..\..\Thirdparty\BlackmagicDeckLinkSDK\10.9.10\Win\include\DeckLinkAPI.idl">

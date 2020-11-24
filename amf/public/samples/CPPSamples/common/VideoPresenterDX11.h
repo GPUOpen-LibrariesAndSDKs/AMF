@@ -36,30 +36,17 @@
 #include <atlbase.h>
 #include <d3d11.h>
 #include <DXGI1_2.h>
+#include <DXGI1_3.h>
+#include <dcomp.h>
 
 #include <DirectXMath.h>
 using namespace DirectX;
 
-struct SimpleVertex
-{
-    XMFLOAT3 position;
-    XMFLOAT2 texture;
-};
-struct CBNeverChanges
-{
-    XMMATRIX mView;
-};
-
-
-
 class VideoPresenterDX11 : public BackBufferPresenter
 {
 public:
-#if defined(METRO_APP)
-    VideoPresenterDX11(ISwapChainBackgroundPanelNative* pSwapChainPanel, AMFSize swapChainPanelSize, amf::AMFContext* pContext);
-#else
     VideoPresenterDX11(amf_handle hwnd, amf::AMFContext* pContext);
-#endif
+
     virtual ~VideoPresenterDX11();
 
     virtual AMF_RESULT Present(amf::AMFSurface* pSurface);
@@ -74,8 +61,10 @@ public:
     virtual AMF_RESULT              Flush();
 //    virtual bool                SupportAllocator() const { return false; } //MM to test only
 
-    virtual AMF_RESULT Init(amf_int32 width, amf_int32 height);
+    virtual AMF_RESULT Init(amf_int32 width, amf_int32 height, amf::AMFSurface* pSurface);
     virtual AMF_RESULT Terminate();
+    virtual AMFSize             GetSwapchainSize();
+	virtual	AMFRate				GetDisplayRefreshRate();
 
     // amf::AMFDataAllocatorCB interface
     virtual AMF_RESULT AMF_STD_CALL AllocSurface(amf::AMF_MEMORY_TYPE type, amf::AMF_SURFACE_FORMAT format,
@@ -98,7 +87,7 @@ private:
     AMF_RESULT DrawFrame(ID3D11Texture2D* pSrcSurface, bool bLeft);
     AMF_RESULT CopySurface(amf::AMF_FRAME_TYPE eFrameType, ID3D11Texture2D* pSrcSurface, AMFRect* pSrcRect);
 
-    AMF_RESULT CreatePresentationSwapChain();
+    AMF_RESULT CreatePresentationSwapChain(amf::AMFSurface* pSurface);
 
     AMF_RESULT ApplyCSC(amf::AMFSurface* pSurface);
 
@@ -107,6 +96,9 @@ private:
     CComPtr<ID3D11Device>               m_pDevice;
     CComQIPtr<IDXGISwapChain>           m_pSwapChain;
     CComPtr<IDXGISwapChain1>            m_pSwapChain1;
+    CComPtr<IDXGIDecodeSwapChain>       m_pSwapChainVideo;
+    CComPtr<IDXGIOutput>                m_pCurrentOutput;
+
     bool                                m_stereo;
     CComPtr<ID3D11Texture2D>            m_pCopyTexture_L;
     CComPtr<ID3D11Texture2D>            m_pCopyTexture_R;
@@ -125,11 +117,6 @@ private:
     CComPtr<ID3D11RenderTargetView>     m_pRenderTargetView_L;
     CComPtr<ID3D11RenderTargetView>     m_pRenderTargetView_R;
 
-#if defined(METRO_APP)
-    CComPtr<ISwapChainBackgroundPanelNative> m_pSwapChainPanel;
-    AMFSize                                     m_swapChainPanelSize;
-#endif
-
     float                               m_fScale;
     float                               m_fPixelAspectRatio;
     float                               m_fOffsetX;
@@ -141,7 +128,16 @@ private:
     UINT                        m_uiBackBufferCount;
     std::vector<amf::AMFSurface*>    m_TrackSurfaces; // raw pointer  doent want keep references to ensure object is destroying
 
-    bool                            m_bResizeSwapChain;
+    bool                                m_bResizeSwapChain;
 
-    bool                        m_bFirstFrame; 
+    bool                                m_bFirstFrame; 
+
+    amf_handle                          m_hDcompDll;
+    HANDLE                              m_hDCompositionSurfaceHandle;
+
+    CComPtr<IDCompositionDesktopDevice>        m_pDCompDevice;
+    CComPtr<IDCompositionTarget>        m_pDCompTarget;
+    CComPtr<IDCompositionVisual2>        m_pVisualSurface;
+    CComPtr <ID3D11Texture2D>           m_pDecodeTexture;
+
 };

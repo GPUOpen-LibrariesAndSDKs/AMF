@@ -49,21 +49,38 @@
 
 #define AMF_FACILITY L"SimpleEncoder"
 
+//#define ENABLE_4K
+//#define ENABLE_EFC // color conversion inside encoder component. Will use GFX or HW if available
+//#define ENABLE_10_BIT
+
+#if defined(ENABLE_10_BIT)
+static const wchar_t *pCodec = AMFVideoEncoder_HEVC;
+static AMF_COLOR_BIT_DEPTH_ENUM eDepth = AMF_COLOR_BIT_DEPTH_10;
+#else
 static const wchar_t *pCodec = AMFVideoEncoderVCE_AVC;
 //static const wchar_t *pCodec = AMFVideoEncoder_HEVC;
-
- //#define ENABLE_4K
+static AMF_COLOR_BIT_DEPTH_ENUM eDepth = AMF_COLOR_BIT_DEPTH_8;
+#endif
 
 #ifdef _WIN32
-static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX9;
+static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX11;
 #else
 static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_VULKAN;
 #endif
+
+#if defined ENABLE_EFC
+static amf::AMF_SURFACE_FORMAT formatIn = amf::AMF_SURFACE_RGBA;
+//static amf::AMF_SURFACE_FORMAT formatIn = amf::AMF_SURFACE_BGRA;
+//static amf::AMF_SURFACE_FORMAT formatIn = amf::AMF_SURFACE_R10G10B10A2;
+//static amf::AMF_SURFACE_FORMAT formatIn = amf::AMF_SURFACE_RGBA_F16;
+#else
 static amf::AMF_SURFACE_FORMAT formatIn   = amf::AMF_SURFACE_NV12;
+#endif
 
 #if defined(ENABLE_4K)
 static amf_int32 widthIn                  = 1920*2;
 static amf_int32 heightIn                 = 1080*2;
+
 #else
 static amf_int32 widthIn                  = 1920;
 static amf_int32 heightIn                 = 1080;
@@ -76,7 +93,8 @@ static bool bMaximumSpeed = true;
 
 #define START_TIME_PROPERTY L"StartTimeProperty" // custom property ID to store submission time in a frame - all custom properties are copied from input to output
 
-static const wchar_t *fileNameOut = L"./output.h264";
+static const wchar_t *fileNameOut_h264 = L"./output.h264";
+static const wchar_t *fileNameOut_h265 = L"./output.h265";
 
 static amf_int32 xPos = 0;
 static amf_int32 yPos = 0;
@@ -206,6 +224,10 @@ int main(int argc, char* argv[])
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, ::AMFConstructRate(frameRateIn, 1));
         AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, %dx%d) failed", frameRateIn, 1);
 
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_COLOR_BIT_DEPTH, eDepth);
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_COLOR_BIT_DEPTH, %d) failed", eDepth);
+        
+
 #if defined(ENABLE_4K)
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_TIER, AMF_VIDEO_ENCODER_HEVC_TIER_HIGH);
         AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_TIER, AMF_VIDEO_ENCODER_HEVC_TIER_HIGH) failed");
@@ -217,7 +239,7 @@ int main(int argc, char* argv[])
     AMF_RETURN_IF_FAILED(res, L"encoder->Init() failed");
 
 
-    PollingThread thread(context, encoder, fileNameOut);
+    PollingThread thread(context, encoder, amf_wstring(pCodec) == amf_wstring(AMFVideoEncoderVCE_AVC) ? fileNameOut_h264 : fileNameOut_h265);
     thread.Start();
 
     // encode some frames
@@ -386,7 +408,223 @@ static void FillNV12SurfaceWithColor(amf::AMFSurface* surface, amf_uint8 Y, amf_
             *pDataLine++ = V;
         }
     }
+}
+static void FillRGBASurfaceWithColor(amf::AMFSurface* surface, amf_uint8 R, amf_uint8 G, amf_uint8 B)
+{
+	amf::AMFPlane *pPlane = surface->GetPlaneAt(0);
 
+	amf_int32 width = pPlane->GetWidth();
+	amf_int32 height = pPlane->GetHeight();
+	amf_int32 line = pPlane->GetHPitch();
+
+	amf_uint8 *pData = (amf_uint8 *)pPlane->GetNative();
+
+	for (amf_int32 y = 0; y < height; y++)
+	{
+		amf_uint8 *pDataLine = pData + y * line;
+		for (amf_int32 x = 0; x < width; x++)
+		{
+			*pDataLine++ = R;
+			*pDataLine++ = G;
+			*pDataLine++ = B;
+			*pDataLine++ = 255; //A
+		}
+	}
+}
+static void FillBGRASurfaceWithColor(amf::AMFSurface* surface, amf_uint8 R, amf_uint8 G, amf_uint8 B)
+{
+    amf::AMFPlane *pPlane = surface->GetPlaneAt(0);
+
+    amf_int32 width = pPlane->GetWidth();
+    amf_int32 height = pPlane->GetHeight();
+    amf_int32 line = pPlane->GetHPitch();
+
+    amf_uint8 *pData = (amf_uint8 *)pPlane->GetNative();
+
+    for (amf_int32 y = 0; y < height; y++)
+    {
+        amf_uint8 *pDataLine = pData + y * line;
+        for (amf_int32 x = 0; x < width; x++)
+        {
+            *pDataLine++ = B;
+            *pDataLine++ = G;
+            *pDataLine++ = R;
+            *pDataLine++ = 255; //A
+        }
+    }
+}
+class AMFHalfFloat
+{
+public:
+    AMFHalfFloat();
+    AMF_FORCEINLINE static amf_uint16 ToHalfFloat(amf_float value)
+    {
+        union FloatBits
+        {
+            amf_float f;
+            amf_uint32 u;
+        };
+
+        FloatBits val;
+        val.f = value;
+
+        return amf_uint16(m_basetable[(val.u >> 23) & 0x1ff] + ((val.u & 0x007fffff) >> m_shifttable[(val.u >> 23) & 0x1ff]));
+    }
+
+    AMF_FORCEINLINE static float FromHalfFloat(amf_uint16 value)
+    {
+        uint32_t mantissa = (uint32_t)(value & 0x03FF);
+
+        uint32_t exponent = (value & 0x7C00);
+        if (exponent == 0x7C00) // INF/NAN
+        {
+            exponent = (uint32_t)0x8f;
+        }
+        else if (exponent != 0)  // The value is normalized
+        {
+            exponent = (uint32_t)((value >> 10) & 0x1F);
+        }
+        else if (mantissa != 0)     // The value is denormalized
+        {
+            // Normalize the value in the resulting float
+            exponent = 1;
+
+            do
+            {
+                exponent--;
+                mantissa <<= 1;
+            } while ((mantissa & 0x0400) == 0);
+
+            mantissa &= 0x03FF;
+        }
+        else                        // The value is zero
+        {
+            exponent = (uint32_t)-112;
+        }
+
+        uint32_t result = ((value & 0x8000) << 16) | // Sign
+            ((exponent + 112) << 23) | // exponent
+            (mantissa << 13);          // mantissa
+
+        return reinterpret_cast<float*>(&result)[0];
+    }
+private:
+
+    static amf_uint16 m_basetable[512];
+    static amf_uint8 m_shifttable[512];
+
+    static void GenerateHalfFloatConversionTables();
+
+};
+AMFHalfFloat::AMFHalfFloat()
+{
+    GenerateHalfFloatConversionTables();
+}
+
+static AMFHalfFloat s_InitHalfFLoat;
+void AMFHalfFloat::GenerateHalfFloatConversionTables()
+{
+    for (unsigned int i = 0; i < 256; i++)
+    {
+        int e = i - 127;
+
+        // map very small numbers to 0
+        if (e < -24)
+        {
+            m_basetable[i | 0x000] = 0x0000;
+            m_basetable[i | 0x100] = 0x8000;
+            m_shifttable[i | 0x000] = 24;
+            m_shifttable[i | 0x100] = 24;
+        }
+        // map small numbers to denorms
+        else if (e < -14)
+        {
+            m_basetable[i | 0x000] = (0x0400 >> (-e - 14));
+            m_basetable[i | 0x100] = (0x0400 >> (-e - 14)) | 0x8000;
+            m_shifttable[i | 0x000] = amf_uint8(-e - 1);
+            m_shifttable[i | 0x100] = amf_uint8(-e - 1);
+        }
+        // normal numbers lose precision
+        else if (e <= 15)
+        {
+            m_basetable[i | 0x000] = amf_uint16((e + 15) << 10);
+            m_basetable[i | 0x100] = amf_uint16(((e + 15) << 10) | 0x8000);
+            m_shifttable[i | 0x000] = 13;
+            m_shifttable[i | 0x100] = 13;
+        }
+        // large numbers map to infinity
+        else if (e < 128)
+        {
+            m_basetable[i | 0x000] = 0x7C00;
+            m_basetable[i | 0x100] = 0xFC00;
+            m_shifttable[i | 0x000] = 24;
+            m_shifttable[i | 0x100] = 24;
+        }
+        // infinity an NaN stay so
+        else
+        {
+            m_basetable[i | 0x000] = 0x7C00;
+            m_basetable[i | 0x100] = 0xFC00;
+            m_shifttable[i | 0x000] = 13;
+            m_shifttable[i | 0x100] = 13;
+        }
+    }
+}
+amf_uint16 AMFHalfFloat::m_basetable[512];
+amf_uint8 AMFHalfFloat::m_shifttable[512];
+
+static void FillRGBA_F16SurfaceWithColor(amf::AMFSurface* surface, amf_uint8 R, amf_uint8 G, amf_uint8 B)
+{
+    amf::AMFPlane *pPlane = surface->GetPlaneAt(0);
+
+    amf_int32 width = pPlane->GetWidth();
+    amf_int32 height = pPlane->GetHeight();
+    amf_int32 line = pPlane->GetHPitch();
+
+    amf_uint8 *pData = (amf_uint8 *)pPlane->GetNative();
+
+    amf_uint16 fR = AMFHalfFloat::ToHalfFloat((float)R / 255.f);
+    amf_uint16 fG = AMFHalfFloat::ToHalfFloat((float)G / 255.f);
+    amf_uint16 fB = AMFHalfFloat::ToHalfFloat((float)B / 255.f);
+    amf_uint16 fA = AMFHalfFloat::ToHalfFloat((float)255.f / 255.f);
+
+    for (amf_int32 y = 0; y < height; y++)
+    {
+        amf_uint16* pDataLine = (amf_uint16*)(pData + y * line);
+        for (amf_int32 x = 0; x < width; x++)
+        {
+            *pDataLine++ = fR;
+            *pDataLine++ = fG;
+            *pDataLine++ = fB;
+            *pDataLine++ = fA; //A
+        }
+    }
+}
+static void FillR10G10B10A2SurfaceWithColor(amf::AMFSurface* surface, amf_uint8 R, amf_uint8 G, amf_uint8 B)
+{
+    amf::AMFPlane *pPlane = surface->GetPlaneAt(0);
+
+    amf_int32 width = pPlane->GetWidth();
+    amf_int32 height = pPlane->GetHeight();
+    amf_int32 line = pPlane->GetHPitch();
+
+    amf_uint8 *pData = (amf_uint8 *)pPlane->GetNative();
+
+    amf_uint32 r10 = ((amf_uint32)R * 0x3FF / 0xFF) << 2;
+    amf_uint32 g10 = ((amf_uint32)G * 0x3FF / 0xFF) << 12;
+    amf_uint32 b10 = ((amf_uint32)B * 0x3FF / 0xFF) << 22;
+    amf_uint32 a2 = 0x3;
+
+    amf_uint32 color = r10 | g10 | b10 | a2;
+
+    for (amf_int32 y = 0; y < height; y++)
+    {
+        amf_uint32* pDataLine = (amf_uint32*)(pData + y * line);
+        for (amf_int32 x = 0; x < width; x++)
+        {
+            *pDataLine++ = color;
+        }
+    }
 }
 static void PrepareFillFromHost(amf::AMFContext *context)
 {
@@ -394,9 +632,29 @@ static void PrepareFillFromHost(amf::AMFContext *context)
     res = context->AllocSurface(amf::AMF_MEMORY_HOST, formatIn, widthIn, heightIn, &pColor1);
     res = context->AllocSurface(amf::AMF_MEMORY_HOST, formatIn, rectSize, rectSize, &pColor2);
 
-    FillNV12SurfaceWithColor(pColor2, 128, 0, 128);
-    FillNV12SurfaceWithColor(pColor1, 128, 255, 128);
-
+    switch (formatIn)
+    {
+    case amf::AMF_SURFACE_NV12:
+        FillNV12SurfaceWithColor(pColor2, 128, 0, 128);
+        FillNV12SurfaceWithColor(pColor1, 128, 255, 128);
+        break;
+    case amf::AMF_SURFACE_RGBA:
+        FillRGBASurfaceWithColor(pColor2, 255, 0, 0);
+        FillRGBASurfaceWithColor(pColor1, 0, 0, 255);
+        break;
+    case amf::AMF_SURFACE_BGRA:
+        FillBGRASurfaceWithColor(pColor2, 255, 0, 0);
+        FillBGRASurfaceWithColor(pColor1, 0, 0, 255);
+        break;
+    case amf::AMF_SURFACE_R10G10B10A2:
+        FillR10G10B10A2SurfaceWithColor(pColor2, 255, 0, 0);
+        FillR10G10B10A2SurfaceWithColor(pColor1, 0, 0, 255);
+        break;
+    case amf::AMF_SURFACE_RGBA_F16:
+        FillRGBA_F16SurfaceWithColor(pColor2, 255, 0, 0);
+        FillRGBA_F16SurfaceWithColor(pColor1, 0, 0, 255);
+        break;
+    }
     pColor1->Convert(memoryTypeIn);
     pColor2->Convert(memoryTypeIn);
 }

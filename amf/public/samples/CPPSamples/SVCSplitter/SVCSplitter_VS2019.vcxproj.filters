@@ -40,6 +40,9 @@
     <ClCompile Include="..\..\..\common\TraceAdapter.cpp">
       <Filter>public\common</Filter>
     </ClCompile>
+    <ClCompile Include="..\common\BitStreamParserIVF.cpp">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\common\BitStreamParser.h">
@@ -80,6 +83,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\common\TraceAdapter.h">
       <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\BitStreamParserIVF.h">
+      <Filter>public\samples\CPPSamples\common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

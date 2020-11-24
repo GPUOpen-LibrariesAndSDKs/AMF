@@ -112,6 +112,7 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -134,6 +135,7 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -226,7 +228,10 @@
     <ClCompile Include="..\..\..\src\components\Capture\VideoTransfer.cpp" />
     <ClCompile Include="..\..\..\src\components\ChromaKey\ChromaKeyCapsImpl.cpp" />
     <ClCompile Include="..\..\..\src\components\ChromaKey\ChromaKeyImpl.cpp" />
+    <ClCompile Include="..\common\BitStreamParserIVF.cpp" />
     <ClCompile Include="..\common\CaptureVideoPipelineBase.cpp" />
+    <ClCompile Include="..\common\SwapChainDX12.cpp" />
+    <ClCompile Include="..\common\VideoPresenterDX12.cpp" />
     <ClCompile Include="CaptureVideo.cpp" />
     <ClCompile Include="CaptureVideoPipeline.cpp" />
     <ClCompile Include="stdafx.cpp" />
@@ -267,7 +272,10 @@
     <ClInclude Include="..\..\..\src\components\Capture\VideoTransfer.h" />
     <ClInclude Include="..\..\..\src\components\ChromaKey\ChromaKeyCapsImpl.h" />
     <ClInclude Include="..\..\..\src\components\ChromaKey\ChromaKeyImpl.h" />
+    <ClInclude Include="..\common\BitStreamParserIVF.h" />
     <ClInclude Include="..\common\CaptureVideoPipelineBase.h" />
+    <ClInclude Include="..\common\SwapChainDX12.h" />
+    <ClInclude Include="..\common\VideoPresenterDX12.h" />
     <ClInclude Include="CaptureVideo.h" />
     <ClInclude Include="CaptureVideoPipeline.h" />
     <ClInclude Include="resource.h" />
@@ -279,6 +287,23 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CaptureVideo.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\..\src\components\ChromaKey\Programs\ChromaKeyProcess.cl">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"$(SolutionDir)../../../Thirdparty/file_to_header/file_to_header.exe" "%(FullPath)" %(Filename)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"$(SolutionDir)../../../Thirdparty/file_to_header/file_to_header.exe" "%(FullPath)" %(Filename)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(SolutionDir)../../../Thirdparty/file_to_header/file_to_header.exe" "%(FullPath)" %(Filename)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"$(SolutionDir)../../../Thirdparty/file_to_header/file_to_header.exe" "%(FullPath)" %(Filename)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Building binary resource header for %(Filename)%(Extension)...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Building binary resource header for %(Filename)%(Extension)...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building binary resource header for %(Filename)%(Extension)...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building binary resource header for %(Filename)%(Extension)...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(FullPath).h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(FullPath).h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(FullPath).h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(FullPath).h</Outputs>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <Midl Include="..\..\..\..\..\Thirdparty\BlackmagicDeckLinkSDK\10.9.10\Win\include\DeckLinkAPI.idl">

@@ -35,9 +35,9 @@
 #include "public/common/InterfaceImpl.h"
 #include "public/common/PropertyStorageImpl.h"
 
-//#define USE_DUPLICATEOUTPUT1
+#define USE_DUPLICATEOUTPUT1
 
-#include <d3d11.h>
+#include <d3d11_1.h>
 #ifdef USE_DUPLICATEOUTPUT1
 // Requires Windows SDK 10.0.10586
 #include <dxgi1_5.h>
@@ -57,49 +57,55 @@ namespace amf
 		AMFDDAPISourceImpl(AMFContext* pContext);
 		~AMFDDAPISourceImpl();
 
-		AMF_RESULT                      InitDisplayCapture(uint32_t displayMonitorIndex, amf_pts frameDuration);
+		AMF_RESULT                      InitDisplayCapture(uint32_t displayMonitorIndex, amf_pts frameDuration, bool bEnableDirtyRects);
 		AMF_RESULT                      TerminateDisplayCapture();
 
-		AMF_RESULT                      AcquireSurface(amf::AMFSurface **pSurface);
+		AMF_RESULT                      AcquireSurface(bool bCopyOutputSurface, amf::AMFSurface **pSurface);
 
-		// Only valid between Start() and Done() calls
-		void                            GetTextureDim(unsigned& width, unsigned& height);
+        AMFSize                         GetResolution();
+
+        AMFRect                         GetDesktopRect();
 
 		// AMFSurfaceObserver interface
 		virtual void        AMF_STD_CALL OnSurfaceDataRelease(AMFSurface* pSurface);
 
 	private:
 		// Utility methods
-		AMF_RESULT                              GetFreeTexture(D3D11_TEXTURE2D_DESC *desc, ID3D11Texture2D **ppTexture);
-
 		AMF_RESULT                              GetNewDuplicator();
 
 		// When we are done with a texture, we push it onto a free list
-		// for re-use
-		amf_list<ATL::CComPtr<ID3D11Texture2D>> m_freeCopyTextures;
 		// We must track the AMF surfaces in case Terminate() is called
 		// before the surface is released
 		amf_list< AMFSurface* >                 m_freeCopySurfaces;
 
 		AMFContextPtr                           m_pContext;
+        AMFComputePtr                           m_pCompute;
 
 		mutable AMFCriticalSection              m_sync;
 
 		ATL::CComPtr<IDXGIOutputDuplication>    m_displayDuplicator;
-		ATL::CComPtr < ID3D11Texture2D >        m_copyTexture;
-		ATL::CComPtr<ID3D11Device>              m_device;
-		ATL::CComPtr<ID3D11DeviceContext>       m_context;
-		DXGI_OUTPUT_DESC                        m_outputDescription;
+
+        ATL::CComQIPtr<ID3D11Device1>           m_deviceAMF;
+        ATL::CComPtr<ID3D11DeviceContext>       m_contextAMF;
+        ATL::CComPtr < ID3D11Texture2D >        m_acquiredTextureAMF;
+
+        volatile bool                           m_bAcquired;
+        DXGI_OUTPUT_DESC                        m_outputDescription;
 
 		amf_pts                                 m_frameDuration; // in 100 of nanosec
-		amf_pts                                 m_firstPts;
-		amf_int64                               m_frameCount;
+		amf_pts                                 m_lastPts;
+
+        amf_int64                               m_iFrameCount;
 
 #ifdef USE_DUPLICATEOUTPUT1
 		ATL::CComPtr<IDXGIOutput5>              m_dxgiOutput5;
 #else
 		ATL::CComPtr<IDXGIOutput1>              m_dxgiOutput1;
 #endif
-	};
+        amf_vector<RECT>                        m_DirtyRects;
+        amf_vector<DXGI_OUTDUPL_MOVE_RECT>      m_MoveRects;
+
+        bool                                    m_bEnableDirtyRects;
+    };
 	typedef AMFInterfacePtr_T<AMFDDAPISourceImpl>    AMFDDAPISourceImplPtr;
 } //namespace amf

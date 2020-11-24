@@ -336,9 +336,9 @@ double Pipeline::GetFPS()
     if(m_connectors.size())
     {
         PipelineConnectorPtr first = *m_connectors.begin();
-        amf_int64 frameCount = first->GetPollFramesProcessed();
-        amf_int64 startTime = m_startTime;
-        amf_int64 stopTime = m_stopTime;
+        const amf_int64 frameCount = first->GetPollFramesProcessed();
+        const amf_int64 startTime  = m_startTime;
+        const amf_int64 stopTime   = (GetState() == PipelineStateRunning) ? amf_high_precision_clock() : m_stopTime;
         return double(frameCount) / ( double(stopTime - startTime) / double(AMF_SECOND) );
     }
     return 0;
@@ -514,7 +514,14 @@ AMF_RESULT InputSlot::SubmitInput(amf::AMFData* pData, amf_ulong ulTimeout, bool
         //push input
         while(!StopRequested())
         {
-            res = m_pConnector->m_pElement->SubmitInput(pData, m_iThisSlot);
+            if (res == AMF_REPEAT && pData == NULL)
+            {
+                res = m_pConnector->m_pElement->ReSubmitInput(m_iThisSlot);
+            }
+            else
+            {
+                res = m_pConnector->m_pElement->SubmitInput(pData, m_iThisSlot);
+            }
             if(m_bFrozen)
             {
                 break;

@@ -43,7 +43,7 @@
 extern "C"
 {
 	// Function called from application code to create the component
-	AMF_RESULT AMF_CDECL_CALL AMFCreateComponentDisplayCapture(amf::AMFContext* pContext, amf::AMFComponent** ppComponent)
+	AMF_RESULT AMF_CDECL_CALL AMFCreateComponentDisplayCapture(amf::AMFContext* pContext, void* reserved, amf::AMFComponent** ppComponent)
 	{
 		*ppComponent = new amf::AMFInterfaceMultiImpl< amf::AMFDisplayCaptureImpl, amf::AMFComponent, amf::AMFContext* >(pContext);
 		(*ppComponent)->Acquire();
@@ -72,16 +72,23 @@ AMFDisplayCaptureImpl::AMFDisplayCaptureImpl(AMFContext* pContext)
   , m_pCurrentTime()
   , m_eof(false)
   , m_lastStartPts(-1)
-  , m_frameRate(60)
+  , m_frameRate(AMFConstructRate(60,1))
+  , m_bCopyOutputSurface(false)
+ , m_bDrawDirtyRects(false)
 {
 	// Add display dvr properties
-	AMFPrimitivePropertyInfoMapBegin
-		// Assume a max of 4 display adapters
-		AMFPropertyInfoInt64(AMF_DISPLAYCAPTURE_MONITOR_INDEX, L"Index of the display monitor", 0, 0, 4, false),
-		AMFPropertyInfoInt64(AMF_DISPLAYCAPTURE_FRAMERATE, L"Capture frame rate", 60, 24, 60, false),
-		AMFPropertyInfoInterface(AMF_DISPLAYCAPTURE_CURRENT_TIME_INTERFACE, L"Interface object for getting current time", NULL, false),
-		AMFPropertyInfoInt64(AMF_DISPLAYCAPTURE_FORMAT, L"Capture surface format", AMF_SURFACE_BGRA, AMF_SURFACE_FIRST, AMF_SURFACE_LAST, true),
-	AMFPrimitivePropertyInfoMapEnd
+    AMFPrimitivePropertyInfoMapBegin
+        // Assume a max of 4 display adapters
+        AMFPropertyInfoInt64(AMF_DISPLAYCAPTURE_MONITOR_INDEX, L"Index of the display monitor", 0, 0, 65535, true),
+        AMFPropertyInfoRateEx(AMF_DISPLAYCAPTURE_FRAMERATE, L"Capture frame rate", AMFConstructRate(0, 1), AMFConstructRate(0, 1), AMFConstructRate(200, 1), false),
+        AMFPropertyInfoInterface(AMF_DISPLAYCAPTURE_CURRENT_TIME_INTERFACE, L"Interface object for getting current time", NULL, false),
+        AMFPropertyInfoInt64(AMF_DISPLAYCAPTURE_FORMAT, L"Capture surface format", AMF_SURFACE_BGRA, AMF_SURFACE_FIRST, AMF_SURFACE_LAST, true),
+        AMFPropertyInfoSize(AMF_DISPLAYCAPTURE_RESOLUTION, L"Scrreen resolution", AMFConstructSize(1920,1080), AMFConstructSize(2, 2), AMFConstructSize(10000, 10000), true),
+        AMFPropertyInfoBool(AMF_DISPLAYCAPTURE_DUPLICATEOUTPUT, L"Copy output surface", false, true),
+        AMFPropertyInfoRect(AMF_DISPLAYCAPTURE_DESKTOP_RECT, L"Desktop rect", 0, 0, 0, 0, true),
+        AMFPropertyInfoBool(AMF_DISPLAYCAPTURE_DRAW_DIRTY_RECTS, L"Draw dirty rectangles", false, true),
+        AMFPropertyInfoBool(AMF_DISPLAYCAPTURE_ENABLE_DIRTY_RECTS, L"Enable dirty rectangles", false, true)
+        AMFPrimitivePropertyInfoMapEnd
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -96,7 +103,8 @@ AMFDisplayCaptureImpl::~AMFDisplayCaptureImpl()
 AMF_RESULT AMF_STD_CALL  AMFDisplayCaptureImpl::Init(AMF_SURFACE_FORMAT /*format*/, amf_int32 /*width*/, amf_int32 /*height*/)
 {
 	AMF_RESULT res = AMF_OK;
-	// clean up any information we might previously have
+    AMFLock lock(&m_sync);
+    // clean up any information we might previously have
 	res = Terminate();
 	AMF_RETURN_IF_FAILED(res, L"Terminate() failed");
 
@@ -108,18 +116,39 @@ AMF_RESULT AMF_STD_CALL  AMFDisplayCaptureImpl::Init(AMF_SURFACE_FORMAT /*format
 	GetProperty(AMF_DISPLAYCAPTURE_MONITOR_INDEX, &displayMonitorIndex);
 	// Get the frame rate
 	GetProperty(AMF_DISPLAYCAPTURE_FRAMERATE, &m_frameRate);
-	amf_pts frameDuration = amf_pts(AMF_SECOND / m_frameRate);
+    amf_pts frameDuration = 0;
+    if (m_frameRate.num != 0)
+    {
+        frameDuration = amf_pts(AMF_SECOND * m_frameRate.den / m_frameRate.num);
+    }
 	// Get the current time interface property if it has been set
 	AMFInterfacePtr pTmp;
 	GetProperty(AMF_DISPLAYCAPTURE_CURRENT_TIME_INTERFACE, &pTmp);
 	m_pCurrentTime = (AMFCurrentTimePtr)pTmp.GetPtr();
 
-	res = m_pDesktopDuplication->InitDisplayCapture(displayMonitorIndex, frameDuration);
+    bool bEnableDirtyRects = false;
+    GetProperty(AMF_DISPLAYCAPTURE_ENABLE_DIRTY_RECTS, &bEnableDirtyRects);
+
+	res = m_pDesktopDuplication->InitDisplayCapture(displayMonitorIndex, frameDuration, bEnableDirtyRects);
 	AMF_RETURN_IF_FAILED(res, L"InitDisplayCapture() failed");
+
+    AMFSize resolution = m_pDesktopDuplication->GetResolution();
+    SetProperty(AMF_DISPLAYCAPTURE_RESOLUTION, resolution);
+
+    AMFRect desktopRect = m_pDesktopDuplication->GetDesktopRect();
+    SetProperty(AMF_DISPLAYCAPTURE_DESKTOP_RECT, desktopRect);
 
 #ifdef WANT_CAPTURE_STATS
 	gCaptureStats.Init("./displaycapture-queryoutput-log.txt", "Display Capture Statistics");
 #endif
+
+    GetProperty(AMF_DISPLAYCAPTURE_DUPLICATEOUTPUT, &m_bCopyOutputSurface);
+
+    GetProperty(AMF_DISPLAYCAPTURE_DRAW_DIRTY_RECTS, &m_bDrawDirtyRects);
+    if (m_bDrawDirtyRects)
+    {
+        InitDrawDirtyRects();
+    }
 
 	return res;
 }
@@ -148,6 +177,8 @@ AMF_RESULT AMF_STD_CALL  AMFDisplayCaptureImpl::Terminate()
 
 		m_pDesktopDuplication.Release();
 	}
+    TerminateDrawDirtyRects();
+
 #ifdef WANT_CAPTURE_STATS
 	gCaptureStats.Terminate();
 #endif
@@ -199,12 +230,18 @@ AMF_RESULT AMF_STD_CALL  AMFDisplayCaptureImpl::QueryOutput(AMFData** ppData)
 	*ppData = NULL;
 
 	amf::AMFSurfacePtr surfPtr;
-	res = m_pDesktopDuplication->AcquireSurface(&surfPtr);
+	res = m_pDesktopDuplication->AcquireSurface(m_bCopyOutputSurface, &surfPtr);
 	if (AMF_REPEAT == res)
 	{	// Specal case for repeat
 			return res;
 	}
 	AMF_RETURN_IF_FAILED(res, L"AcquireSurface() failed");
+
+    if (m_bDrawDirtyRects)
+    {
+        DrawDirtyRects(surfPtr);
+    }
+
 
 	// Update the surface format in case it has changed
 	AMF_SURFACE_FORMAT surfFormat = surfPtr->GetFormat();
@@ -219,6 +256,13 @@ AMF_RESULT AMF_STD_CALL  AMFDisplayCaptureImpl::QueryOutput(AMFData** ppData)
 	amf_pts duration = currentPts - m_lastStartPts;
 	surfPtr->SetDuration(duration);
 	m_lastStartPts = currentPts;
+
+    AMFSize resolution = AMFConstructSize(surfPtr->GetPlaneAt(0)->GetWidth(), surfPtr->GetPlaneAt(0)->GetHeight());
+    SetProperty(AMF_DISPLAYCAPTURE_RESOLUTION, resolution);
+
+    AMFRect desktopRect = m_pDesktopDuplication->GetDesktopRect();
+    SetProperty(AMF_DISPLAYCAPTURE_DESKTOP_RECT, desktopRect);
+
 	// Pts
 	surfPtr->SetPts(currentPts);
 	//
@@ -245,13 +289,16 @@ AMF_RESULT AMF_STD_CALL AMFDisplayCaptureImpl::Optimize(AMFComponentOptimization
 	///////////TODO:///////////////////////////////
 	return AMF_NOT_IMPLEMENTED;
 }
-
-//-------------------------------------------------------------------------------------------------
-void AMF_STD_CALL  AMFDisplayCaptureImpl::OnPropertyChanged(const wchar_t* pName)
+void AMF_STD_CALL amf::AMFDisplayCaptureImpl::OnPropertyChanged(const wchar_t* pName)
 {
-	// const amf_wstring  name(pName);
-}
+	if (std::wcscmp(pName, AMF_DISPLAYCAPTURE_FRAMERATE) == 0
+		|| std::wcscmp(pName, AMF_DISPLAYCAPTURE_MONITOR_INDEX) == 0)
+	{
+		Init(AMF_SURFACE_FORMAT::AMF_SURFACE_UNKNOWN, 0, 0);
+	}
 
+	return;
+}
 //-------------------------------------------------------------------------------------------------
 amf_pts AMFDisplayCaptureImpl::GetCurrentPts() const
 {
@@ -265,5 +312,114 @@ amf_pts AMFDisplayCaptureImpl::GetCurrentPts() const
 		result = amf_high_precision_clock();
 	}
 	return result;
+}
+#if defined( _M_AMD64)
+#include "DrawRectsBGRA_64.h"
+#else 
+#include "DrawRectsBGRA_32.h"
+#endif
+//-------------------------------------------------------------------------------------------------
+static amf::AMF_KERNEL_ID  kernelIDs[AMF_MEMORY_VULKAN + 1];
+
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT  AMFDisplayCaptureImpl::InitDrawDirtyRects()
+{
+    //MM TODO add vulkan and DX12 when capure is avaiable
+    AMF_RESULT res = AMF_OK;
+    if (kernelIDs[AMF_MEMORY_DX11] == 0)
+    {
+        AMFPrograms* pPograms = NULL;
+        res = g_AMFFactory.GetFactory()->GetPrograms(&pPograms);
+
+        AMF_RETURN_IF_FAILED(pPograms->RegisterKernelBinary1(AMF_MEMORY_DX11, &kernelIDs[AMF_MEMORY_DX11], L"main", "main", sizeof(DrawRectsBGRA), DrawRectsBGRA, NULL));
+    }
+    res = m_pContext->GetCompute(AMF_MEMORY_DX11, &m_pComputeDevice);
+    AMF_RETURN_IF_FAILED(res, L"Failed to get DX11 Compute");
+
+    res = m_pComputeDevice->GetKernel(kernelIDs[AMF_MEMORY_DX11], &m_pDirtyRectsKernel);
+    AMF_RETURN_IF_FAILED(res, L"Failed to get DrawRectsBGRA kernel");
+
+    return AMF_OK;
+}
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT  AMFDisplayCaptureImpl::TerminateDrawDirtyRects()
+{
+    m_pDirtyRectsKernel.Release();
+    m_pComputeDevice.Release();
+    m_pDirtyRectsBuffer.Release();
+    return AMF_OK;
+}
+
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT  AMFDisplayCaptureImpl::DrawDirtyRects(AMFSurfacePtr& surface)
+{
+    AMF_RETURN_IF_FALSE(m_pDirtyRectsKernel != nullptr, AMF_NOT_INITIALIZED, L"m_pDirtyRectsKernel  == nullptr");
+    // process buffer with rectangles
+
+    AMF_RESULT res = AMF_OK;
+
+    AMFVariant var;
+    surface->GetProperty(AMF_DISPLAYCAPTURE_DIRTY_RECTS, &var);
+    if (var.type != AMF_VARIANT_INTERFACE || var.pInterface == nullptr)
+    {
+        return AMF_NOT_FOUND;
+    }
+    AMFBufferPtr pBuffer(var.pInterface);
+    amf_uint count = amf_uint(pBuffer->GetSize() / sizeof(AMFRect));
+    if (count == 0)
+    {
+        return AMF_NOT_FOUND;
+    }
+    if (m_pDirtyRectsBuffer != nullptr)
+    {
+        if (m_pDirtyRectsBuffer->GetSize() < count * sizeof(AMFRect))
+        {
+            m_pDirtyRectsBuffer = nullptr;
+        }
+    }
+
+
+    AMFPlane* pPlaneSrc = surface->GetPlane(AMF_PLANE_PACKED);
+
+    // copy texture 
+    AMFSurfacePtr surfaceOut;
+    res = m_pContext->AllocSurface(AMF_MEMORY_DX11, surface->GetFormat(), pPlaneSrc->GetWidth(), pPlaneSrc->GetHeight(), &surfaceOut);
+    AMF_RETURN_IF_FAILED(res, L"AllocSurface() failed");
+
+    if (m_pDirtyRectsBuffer == nullptr)
+    {
+        res = m_pContext->AllocBufferEx(AMF_MEMORY_DX11, count * sizeof(AMFRect), AMF_BUFFER_USAGE_SHADER_RESOURCE, 0, &m_pDirtyRectsBuffer);
+        AMF_RETURN_IF_FAILED(res, L"AllocBufferEx() failed");
+    }
+    DXGI_FORMAT formatDX11 = DXGI_FORMAT_R32G32B32A32_UINT;
+    ((ID3D11Buffer*)(m_pDirtyRectsBuffer->GetNative()))->SetPrivateData(AMFStructuredBufferFormatGUID, sizeof(DXGI_FORMAT), &formatDX11);
+
+    res = m_pComputeDevice->CopyBufferFromHost(pBuffer->GetNative(), pBuffer->GetSize(), m_pDirtyRectsBuffer, 0, false);
+    AMF_RETURN_IF_FAILED(res, L"CopyBufferFromHost() failed");
+
+
+    amf::AMFContext::AMFDX11Locker dxLock(m_pContext);
+
+    AMFPlane* pPlaneDst = surfaceOut->GetPlane(AMF_PLANE_PACKED);
+    // submit kernel
+    amf_size index = 0;
+    m_pDirtyRectsKernel->SetArgPlane(index++, pPlaneSrc, AMF_ARGUMENT_ACCESS_READ);
+    m_pDirtyRectsKernel->SetArgBuffer(index++, m_pDirtyRectsBuffer, AMF_ARGUMENT_ACCESS_READ);
+    m_pDirtyRectsKernel->SetArgPlane(index++, pPlaneDst, AMF_ARGUMENT_ACCESS_WRITE);
+    m_pDirtyRectsKernel->SetArgInt32(index++, count);
+
+    amf_size offset[2] = { 0,0 };
+    amf_size size[2] = { (amf_size)(pPlaneDst->GetWidth() + 7) / 8 * 8, (amf_size)(pPlaneDst->GetHeight() + 7) / 8 * 8 };
+    amf_size localSize[2] = { 8,8 };
+
+
+    AMF_RETURN_IF_FAILED(m_pDirtyRectsKernel->Enqueue(2, offset, size, localSize));
+
+    AMF_RETURN_IF_FAILED(m_pComputeDevice->FlushQueue());
+
+    surface->CopyTo(surfaceOut, true);
+
+    surface = surfaceOut;
+    return AMF_OK;
 }
 

@@ -149,7 +149,13 @@ namespace amf
         amf_uint32 GetColorTransferModeDst(AMFSurfacePtr pSurfaceOut, amf_int64 iBypass);
         AMF_RESULT ConvertFormat(AMFSurfacePtr pSurfaceIn, AMFSurface** ppSurface);
 
+        //debug functions
+        AMF_RESULT DumpSurface(AMFSurfacePtr pSurfaceIn);
+        AMF_RESULT DumpBuffer(AMFBufferPtr pBufferIn);
         AMF_RESULT ReadData(AMFBufferPtr pBufferIn, amf_uint32 length, amf_uint8* pData);
+        AMF_RESULT SaveSurface(AMFSurfacePtr pSurfaceIn, std::wstring fileName);
+        AMF_RESULT SaveToBmp(amf_uint8* pData, std::wstring fileName, amf_int32 width, amf_int32 height, amf_int32 channels, amf_int32 pitch);
+
 
         AMFContextPtr           m_pContext;         //context
         AMFComputePtr           m_Compute;          //compute object

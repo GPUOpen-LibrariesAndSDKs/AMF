@@ -54,7 +54,9 @@ VideoPresenter::VideoPresenter() :
     m_sourceVertexRect(AMFConstructRect(0, 0, 0, 0)),
     m_destVertexRect(AMFConstructRect(0, 0, 0, 0)),
     m_InputFrameSize(AMFConstructSize(0, 0)),
-    m_ptsDropThreshold(DROP_THRESHOLD)
+    m_ptsDropThreshold(DROP_THRESHOLD),
+    m_bFullScreen(false),
+	m_bWaitForVSync(false)
 {
     amf_increase_timer_precision();
 }
@@ -72,7 +74,7 @@ AMF_RESULT VideoPresenter::Reset()
 
     return AMF_OK;
 }
-AMF_RESULT VideoPresenter::Init(amf_int32 width, amf_int32 height)
+AMF_RESULT VideoPresenter::Init(amf_int32 width, amf_int32 height, amf::AMFSurface* /*pSurface*/)
 {
     m_iFrameCount = 0;
     m_FpsStatStartTime = 0;
@@ -177,7 +179,7 @@ bool VideoPresenter::WaitForPTS(amf_pts pts, bool bRealWait)
             {
                 m_iFramesDropped++;
 
-                AMFTraceWarning(AMF_FACILITY, L"+++ Drop Frame #%d pts=%5.2f time=%5.2f diff=%5.2f %s", (int)m_iFrameCount, (double)pts / 10000., (double)currTime / 10000., (double)diff / 10000., bRealWait ? L"R" : L"");
+//                AMFTraceWarning(AMF_FACILITY, L"+++ Drop Frame #%d pts=%5.2f time=%5.2f diff=%5.2f %s", (int)m_iFrameCount, (double)pts / 10000., (double)currTime / 10000., (double)diff / 10000., bRealWait ? L"R" : L"");
                 bRet = false;
             }
         }

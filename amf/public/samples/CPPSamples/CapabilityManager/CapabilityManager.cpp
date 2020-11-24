@@ -42,14 +42,14 @@
 #include <stdio.h>
 
 #define USE_VULKAN 0
+#define USE_DX12   1
 
 #ifdef _WIN32
-
     #include <tchar.h>
     #include <windows.h>
     #include "../common/DeviceDX9.h"
     #include "../common/DeviceDX11.h"
-
+    #include "../common/DeviceDX12.h"
 #endif
 
 #include "../common/DeviceVulkan.h"
@@ -391,6 +391,7 @@ int main(int argc, char* argv[])
             {
                 if (osvi.dwMinorVersion >= 2)   //  Win 8 or Win Server 2012 or newer
                 {
+	#if USE_DX12==0
                     DeviceDX11  deviceDX11;
                     if (deviceDX11.Init(deviceIdx) == AMF_OK)
                     {
@@ -400,6 +401,17 @@ int main(int argc, char* argv[])
                     {
                         break;
                     }
+	#else	
+					DeviceDX12  deviceDX12;
+					if (deviceDX12.Init(deviceIdx) == AMF_OK)
+					{
+						deviceInit = (amf::AMFContext2Ptr(pContext)->InitDX12(deviceDX12.GetDevice()) == AMF_OK);
+					}
+					else
+					{
+						break;
+					}
+	#endif
                 }
                 else
                 {

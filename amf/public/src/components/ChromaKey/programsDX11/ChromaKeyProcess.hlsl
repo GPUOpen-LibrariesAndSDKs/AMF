@@ -126,6 +126,17 @@ void CSProcess(uint3 coord : SV_DispatchThreadID)
             dataOut = dataIn;
         }
     }
+#if 0
+    if (enableEdge)
+    {
+        uint edge = EdgeSub(planeIn, pos);
+        if (edge > alpha)
+        {
+            dataOut.xyz = dataIn.xyz;
+        }
+        alpha = max(alpha, edge);
+    }
+#endif
 
 #if defined(YUV444)
     //YUV

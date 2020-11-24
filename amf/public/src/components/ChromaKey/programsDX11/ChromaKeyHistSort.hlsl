@@ -58,15 +58,18 @@ void CSHistSort(uint3 coord : SV_DispatchThreadID, uint3 GTid : SV_GroupThreadID
         }
     }
     posMaxList[lid] = posMax;
+//    pHistOut[lid] = posMax;
     GroupMemoryBarrierWithGroupSync();
 
+    //64x1 --> 1
     if (lid == 0)
     {
         uint posMax = 0;
         uint histMax = 0;
         for (uint pos = 0; pos < 64; pos++)
         {
-           uint posIn = posMaxList[pos];
+            uint posIn = posMaxList[pos];
+//            uint posIn = pHistOut[pos];
            if (pHistIn[posIn] > histMax)
             {
                 histMax = pHistIn[posIn];

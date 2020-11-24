@@ -70,7 +70,7 @@ public:
     virtual AMF_RESULT              SetSubresourceIndex(amf_int32 index);
     virtual amf_int32               GetSubresourceIndex();
 
-    virtual AMF_RESULT              Init(amf_int32 width, amf_int32 height);
+    virtual AMF_RESULT              Init(amf_int32 width, amf_int32 height, amf::AMFSurface* pSurface = nullptr);
     virtual AMF_RESULT              Terminate();
     virtual AMF_RESULT              Reset();
     virtual amf_pts                 GetCurrentTime() { return m_currentTime; }
@@ -79,6 +79,11 @@ public:
     virtual amf_int64           GetFramesDropped() const {return m_iFramesDropped; }
     virtual bool                SupportAllocator() const { return true; }
     virtual void                DoActualWait(bool bDoWait) {m_bDoWait = bDoWait;}
+    virtual void                SetFullScreen(bool bFullScreen) { m_bFullScreen = bFullScreen; }
+    virtual bool                GetFullScreen() { return m_bFullScreen; }
+    virtual AMFSize             GetSwapchainSize() { AMFSize size = {};  return size; }
+	virtual void                SetWaitForVSync(bool bDoWait) { m_bWaitForVSync = bDoWait; }
+	virtual	AMFRate				GetDisplayRefreshRate() { return AMFConstructRate(60, 0); }
 
     virtual AMF_RESULT          Resume();
     AMF_RESULT Pause() { m_state = ModePaused; return AMF_OK; }
@@ -104,6 +109,11 @@ public:
     amf_int32 GetFrameWidth() const     { return m_InputFrameSize.width; }
     amf_int32 GetFrameHeight() const    { return m_InputFrameSize.height; }
 
+    void SetFrameSize(amf_int32 width, amf_int32 height)
+    {
+        m_InputFrameSize.width = width;
+        m_InputFrameSize.height = height;
+    }
 
     virtual void SetAVSyncObject(AVSyncObject *pAVSync) {m_pAVSync = pAVSync;}
 
@@ -143,5 +153,6 @@ protected:
     amf_int32                           m_iSubresourceIndex;
     AMFRect                             m_sourceVertexRect;
     AMFRect                             m_destVertexRect;
-
+    bool                                m_bFullScreen;
+	bool								m_bWaitForVSync;
 };

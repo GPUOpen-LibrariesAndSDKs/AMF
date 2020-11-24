@@ -9,7 +9,7 @@ AMF is a light-weight, portable multimedia framework that abstracts away most of
 ### Prerequisites
 * Windows&reg; 7 (SP1 with the [Platform Update](https://msdn.microsoft.com/en-us/library/windows/desktop/jj863687.aspx)), Windows&reg; 8.1, or Windows&reg; 10
 * Visual Studio&reg; 2017 or Visual Studio&reg; 2019
-* Version 1.4.16: AMD Radeon Software Adrenalin Edition 20.2.1 or newer. Added the Pre-Analysis component to improve perceptual quality of encoded video.
+* Version 1.4.18: AMD Radeon Software Adrenalin Edition 20.11.2 or newer. Added the Pre-Analysis component to improve perceptual quality of encoded video.
 * Version 1.4.9 or later requires Vulkan SDK for some samples: https://vulkan.lunarg.com/  and AMD Radeon Software Adrenalin Edition 18.8.1 (18.30.01.01) or newer. This version supports Linux (see amd.com for driver support)
 * Version 1.4.4 or later requires OCL_SDK_Light: https://github.com/GPUOpen-LibrariesAndSDKs/OCL-SDK/releases. Previous versions of AMF require the AMD APP SDK (Version 3.0 or later), Windows 10 SDK (Version 10586). This version requires AMD Radeon Software Crimson Edition 17.7.2 (17.30.1041) or newer
 * Version 1.4: AMD Radeon Software Crimson Edition 17.1.1 (16.50.2611) or newer

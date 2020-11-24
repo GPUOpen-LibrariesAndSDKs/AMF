@@ -44,7 +44,7 @@ VideoPresenterDX9::~VideoPresenterDX9()
     Terminate();
 }
 
-AMF_RESULT VideoPresenterDX9::Init(amf_int32 width, amf_int32 height)
+AMF_RESULT VideoPresenterDX9::Init(amf_int32 width, amf_int32 height, amf::AMFSurface* /*pSurface*/)
 {
     AMF_RESULT err = AMF_OK;
 
@@ -217,6 +217,11 @@ AMF_RESULT VideoPresenterDX9::Present(amf::AMFSurface* pSurface)
     }
     WaitForPTS(pSurface->GetPts());
     amf::AMFLock lock(&m_sect);
+	DWORD presentFlags = D3DPRESENT_FORCEIMMEDIATE;
+	if (m_bWaitForVSync == false)
+	{
+		presentFlags |= D3DPRESENT_DONOTWAIT;
+	}
     for(int i=0;i<100;i++)
     {
        HRESULT hr = m_pSwapChain->Present(NULL, NULL, NULL, NULL, 0);

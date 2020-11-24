@@ -76,6 +76,55 @@ RWTexture2D<unorm float4> planeOut    : register(u0);
 //Pixel.g - alpha * PixelBack.g < Pixel.r - alpha * PixelBack.r
 //Pixel.g - alpha * PixelBack.g < Pixel.b - alpha * PixelBack.b
 
+float4 GreenReducingExt(float4 dataIn, float4 dataBK, uint keycolor, uint delta)
+{
+    //not green dominate
+    if ((dataIn.y < dataIn.x) && (dataIn.y < dataIn.z))
+    {
+        return dataIn;
+    }
+
+    float4 dataKey;
+    dataKey.z = (float)((keycolor >> 10) & 0x000003FF) / 1024.f;	//U
+    dataKey.y = (float)(keycolor & 0x000003FF) / 1024.f;			//V
+    dataKey.x = (float)((keycolor >> 20) & 0x000003FF) / 1024.f;	//Y
+    dataKey = NV12toRGB(dataKey);
+
+    float alphaMax = min((float)dataIn.x / (float)dataKey.x, (float)dataIn.y / (float)dataKey.y);
+    alphaMax = min(alphaMax, (float)dataIn.z / (float)dataKey.z);
+#if 1
+    float alphaMin1 = ((float)dataIn.y - (float)dataIn.z) / ((float)dataKey.y - (float)dataKey.z);	//(G-R)/Gkey-Rkey)
+    float alphaMin2 = ((float)dataIn.y - (float)dataIn.x) / ((float)dataKey.y - (float)dataKey.x);	//(G-B)/Gkey-Bkey)
+#else	//adjust threshold
+    delta = delta;// * dataIn.s1 / 255;	//
+    float alphaMin1 = ((float)dataIn.y + delta - (float)dataIn.z) / ((float)dataKey.y - (float)dataKey.z);	//(G-R)/Gkey-Rkey)
+    float alphaMin2 = ((float)dataIn.y + delta - (float)dataIn.x) / ((float)dataKey.y - (float)dataKey.x);	//(G-B)/Gkey-Bkey)
+#endif
+    float alphaMin = max(0.0f, min(alphaMin1, alphaMin2));
+
+    float alpha2 = min(alphaMin, alphaMax);
+    //aggressive
+    //	float alpha2 = min(alphaMin, 1.0f);
+
+    dataKey.x = dataKey.x * alpha2;
+    dataKey.y = dataKey.y * alpha2;
+    dataKey.z = dataKey.z * alpha2;
+
+    dataIn.xyz = dataIn.xyz - dataKey.xyz;
+    //for aggressive case
+    //	dataIn.s0 = (dataIn.s0 < dataKey.s0) ? 0 : dataIn.s0 - dataKey.s0;
+    //	dataIn.s1 = (dataIn.s1 < dataKey.s1) ? 0 : dataIn.s1 - dataKey.s1;
+    //	dataIn.s2 = (dataIn.s2 < dataKey.s2) ? 0 : dataIn.s2 - dataKey.s2;
+
+
+    dataBK.x = dataBK.x * alpha2;
+    dataBK.y = dataBK.y * alpha2;
+    dataBK.z = dataBK.z * alpha2;
+
+    dataIn.xyz += dataBK.xyz;
+    return dataIn;
+}
+
 float3 BokehSub(Texture2D<unorm float>  planeY, Texture2D<unorm float2>  planeUV, int3 posIn, int radiusBokeh, int height)
 {
     int3 pos = posIn;
@@ -87,6 +136,7 @@ float3 BokehSub(Texture2D<unorm float>  planeY, Texture2D<unorm float2>  planeUV
     float weight = 0;
     float coef = 0;
     int3 posUV = 0;
+#if 1
     //optimized circular filter
     for (int y = -radiusBokeh; y <= radiusBokeh; y++, pos.y++)
     {
@@ -104,6 +154,24 @@ float3 BokehSub(Texture2D<unorm float>  planeY, Texture2D<unorm float2>  planeUV
             weight += coef;
         }
     }
+#else
+    //circular filter
+    for (int y = -radiusBokeh; y <= radiusBokeh; y++, pos.y++)
+    {
+        pos.x = posX;
+        for (int x = -radiusBokeh; x <= radiusBokeh; x++, pos.x++)
+        {
+            posUV = int3(pos.x / 2, pos.y / 2, 0);
+            float myDistance = distance(pos, posIn);
+            if (myDistance >= (float)radiusBokeh) continue;
+            dataH.x = (float)planeY.Load(pos);
+            dataH.yz = (float2)planeUV.Load(posUV);
+            coef = (float)dataH.x * (float)dataH.x + 25.0f/255.0f;
+            data.xyz += dataH.xyz * coef;
+            weight += coef;
+        }
+    }
+#endif
     data.xyz /= weight;
     return data.xyz;
 }
@@ -230,8 +298,23 @@ void CSBlendBKRGB(uint3 coord : SV_DispatchThreadID)
             dataBK = DeGamma(dataBK);
         }
 
-        dataOut = GreenReducing(dataOut, threshold / 255.0f, threshold2 / 255.0f, debug);
-        dataOut.xyz = (dataOut.xyz * alpha + dataBK.xyz * (1.0f - alpha));
+        if (greenReducing == 1)
+        {
+            dataOut = GreenReducing(dataOut, threshold / 255.0f, threshold2 / 255.0f, debug);
+            dataOut.xyz = (dataOut.xyz * alpha + dataBK.xyz * (1.0f - alpha));
+        }
+        else if (alpha < 1.0f / 255.0f)
+        {
+            dataOut = dataBK;
+        }
+        else if (alpha >= 0.99f)
+        {
+            ;//			dataOut = NV12toRGB(dataOut);
+        }
+        else
+        {
+            dataOut = GreenReducingExt(dataOut, dataBK, keycolor, radiusBokeh);
+        }
     }
 
     planeOut[posOut.xy] = (colorTransferDst == 0) ? dataOut : Gamma(dataOut);

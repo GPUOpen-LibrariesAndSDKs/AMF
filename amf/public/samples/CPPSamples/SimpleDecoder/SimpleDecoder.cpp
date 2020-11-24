@@ -136,6 +136,9 @@ int main(int argc, char* argv[])
     case amf::AMF_MEMORY_DX11:
         res = context->InitDX11(NULL); // can be DX11 device
         break;
+    case amf::AMF_MEMORY_DX12:
+        res = amf::AMFContext2Ptr(context)->InitDX12(NULL); // can be DX11 device
+        break;
     case amf::AMF_MEMORY_VULKAN:
         res = amf::AMFContext1Ptr(context)->InitVulkan(NULL); // can be Vulkan device
         break;
@@ -207,6 +210,17 @@ int main(int argc, char* argv[])
     // drain decoder queue 
     res = decoder->Drain();
     thread.WaitForStop();
+
+    switch (memoryTypeOut)
+    {
+    case amf::AMF_MEMORY_DX12:
+    {
+        amf::AMFComputePtr pCompute;
+        context->GetCompute(amf::AMF_MEMORY_DX12, &pCompute);
+        pCompute->FinishQueue();
+        //        outputSurface->Convert(amf::AMF_MEMORY_HOST);
+    }
+    }
 
     // cleanup in this order
     data = NULL;
@@ -281,10 +295,20 @@ static void WaitDecoder(amf::AMFContext *context, amf::AMFSurface *surface)
 #endif
     case amf::AMF_MEMORY_VULKAN:
         {
-            // release temp objects
-            outputSurface->Convert(amf::AMF_MEMORY_HOST);
+            amf::AMFComputePtr pCompute;
+            context->GetCompute(amf::AMF_MEMORY_VULKAN, &pCompute),
+            pCompute->FinishQueue();
+//        outputSurface->Convert(amf::AMF_MEMORY_HOST);
         }
         break;
+    case amf::AMF_MEMORY_DX12:
+    {
+            amf::AMFComputePtr pCompute;
+            context->GetCompute(amf::AMF_MEMORY_DX12, &pCompute);
+//            pCompute->FinishQueue();
+//        outputSurface->Convert(amf::AMF_MEMORY_HOST);
+    }
+    break;
     }
 }
 

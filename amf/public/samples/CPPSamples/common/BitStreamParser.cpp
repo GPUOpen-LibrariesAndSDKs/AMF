@@ -39,6 +39,7 @@
 #include "BitStreamParser.h"
 #include "BitStreamParserH264.h"
 #include "BitStreamParserH265.h"
+#include "BitStreamParserIVF.h"
 
 BitStreamParser::~BitStreamParser()
 {
@@ -88,7 +89,10 @@ BitStreamType GetStreamType(const wchar_t* path)
     {
         //CreateAvcCParser(fileName);
     }
-
+	if (ext == L".IVF")
+	{
+//		return BitStreamIVF;
+	}
     return BitStreamUnknown;
 }
 
@@ -103,6 +107,8 @@ BitStreamParserPtr BitStreamParser::Create(amf::AMFDataStream* pStream, BitStrea
     case BitStream265AnnexB:
         pParser = BitStreamParserPtr(CreateHEVCParser(pStream, pContext));
         break;
+	case BitStreamIVF:
+		pParser = BitStreamParserPtr(CreateIVFParser(pStream, pContext));
     case BitStreamH264AvcC:
     case BitStreamMpeg2:
     case BitStreamMpeg4part2:

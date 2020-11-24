@@ -37,6 +37,7 @@
 #include "public/include/core/VulkanAMF.h"
 #include "../common/SwapChainVulkan.h"
 
+
 class VideoRenderVulkan : public VideoRender, public SwapChainVulkan 
 {
 public:
@@ -47,7 +48,7 @@ public:
     virtual AMF_RESULT              Terminate();
     virtual AMF_RESULT              Render(amf::AMFData** ppData);
 #if defined(_WIN32)
-    virtual amf::AMF_SURFACE_FORMAT GetFormat() { return amf::AMF_SURFACE_RGBA; }
+    virtual amf::AMF_SURFACE_FORMAT GetFormat() { return amf::AMF_SURFACE_BGRA; }
 #elif defined(__linux)    
     virtual amf::AMF_SURFACE_FORMAT GetFormat() { return amf::AMF_SURFACE_BGRA; }
 #endif

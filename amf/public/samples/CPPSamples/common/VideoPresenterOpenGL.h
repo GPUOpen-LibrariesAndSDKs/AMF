@@ -48,7 +48,7 @@ public:
         return format == amf::AMF_SURFACE_BGRA ? AMF_OK : AMF_FAIL;
     }
 
-    virtual AMF_RESULT Init(amf_int32 width, amf_int32 height);
+    virtual AMF_RESULT Init(amf_int32 width, amf_int32 height, amf::AMFSurface* pSurface);
     virtual AMF_RESULT Terminate();
     virtual bool                SupportAllocator() const { return false; }
 

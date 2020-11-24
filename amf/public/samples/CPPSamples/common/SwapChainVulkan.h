@@ -55,7 +55,6 @@ protected:
     AMF_RESULT CreateSwapChain(amf_handle hWnd, amf_handle hDisplay, amf_uint32 format);
     AMF_RESULT CreateRenderPass();
     AMF_RESULT CreateFrameBuffers();
-    AMF_RESULT CreateRenderTargets();
     AMF_RESULT CreateCommandPool();
 
     AMF_RESULT TransitionSurface(amf::AMFVulkanSurface    *surface, amf_int32 layout);

@@ -101,6 +101,7 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -124,6 +125,7 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -196,6 +198,7 @@
     <ClInclude Include="..\common\ByteArray.h" />
     <ClInclude Include="..\common\CmdLogger.h" />
     <ClInclude Include="..\common\DeviceDX11.h" />
+    <ClInclude Include="..\common\DeviceDX12.h" />
     <ClInclude Include="..\common\DeviceDX9.h" />
     <ClInclude Include="..\common\DeviceVulkan.h" />
     <ClInclude Include="stdafx.h" />
@@ -220,6 +223,7 @@
     </ClCompile>
     <ClCompile Include="..\common\CmdLogger.cpp" />
     <ClCompile Include="..\common\DeviceDX11.cpp" />
+    <ClCompile Include="..\common\DeviceDX12.cpp" />
     <ClCompile Include="..\common\DeviceDX9.cpp" />
     <ClCompile Include="..\common\DeviceVulkan.cpp" />
     <ClCompile Include="CapabilityManager.cpp" />

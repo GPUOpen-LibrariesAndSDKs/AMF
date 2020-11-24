@@ -102,6 +102,10 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT form
     {
         codecID = codecAMF;
     }
+    if (codecID == AMF_CODEC_H265MAIN10)
+    {
+        codecID = AV_CODEC_ID_HEVC;
+    }
 
     // find the correct codec
     AVCodec *codec = avcodec_find_decoder((AVCodecID) codecID);
@@ -187,7 +191,10 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT form
         m_pCodecContext->thread_count = 1;
     }
 
-    m_eFormat = format; //get from demuxer
+    if (format != AMF_SURFACE_UNKNOWN)
+    {
+        m_eFormat = format; //get from demuxer if not reinit
+    }
 
 //    avcodec_set_dimensions(m_pCodecContext, m_pCodecContext->width, m_pCodecContext->height);
 //    ff_set_dimensions(m_pCodecContext, m_pCodecContext->width, m_pCodecContext->height);
@@ -220,7 +227,7 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT form
 AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::ReInit(amf_int32 width, amf_int32 height)
 {
     Terminate();
-    return Init(AMF_SURFACE_UNKNOWN, width, height);
+    return Init(m_eFormat, width, height);
 }
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::Terminate()
@@ -701,6 +708,8 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
     }
 
     pSurfaceOut->SetFrameType(eFrameType);
+
+    pInBuffer->CopyTo(pSurfaceOut, false);
 
     *ppData = pSurfaceOut;
     (*ppData)->Acquire();

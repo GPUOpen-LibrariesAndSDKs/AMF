@@ -32,7 +32,9 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDI_PLAYBACKHW          ICON                    "PlaybackHW.ico"
+
 IDI_SMALL               ICON                    "small.ico"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -52,8 +54,11 @@ BEGIN
     BEGIN
         MENUITEM "VideoPresenter DX9",          ID_OPTIONS_PRESENTER_DX9
         MENUITEM "VideoPresenter DX11",         ID_OPTIONS_PRESENTER_DX11
-        MENUITEM "VideoPresenter OpenGL",       ID_OPTIONS_PRESENTER_OPENGL
+		MENUITEM "VideoPresenter DX12",         ID_OPTIONS_PRESENTER_DX12
+		MENUITEM "VideoPresenter OpenGL",       ID_OPTIONS_PRESENTER_OPENGL
         MENUITEM "VideoPresenter Vulkan",       ID_OPTIONS_VIDEOPRESENTER_VULKAN
+        MENUITEM SEPARATOR
+        MENUITEM "Fullscreen\tCtrl+F",          ID_OPTIONS_FULLSCREEN
     END
     MENUITEM "Play",                        ID_PLAYBACK_PLAY
     MENUITEM "Pause",                       ID_PLAYBACK_PAUSE
@@ -76,6 +81,7 @@ IDC_PLAYBACKHW ACCELERATORS
 BEGIN
     "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL
     "N",            ID_FILE_OPENNETWORKSTREAM, VIRTKEY, CONTROL
+    "F",            ID_OPTIONS_FULLSCREEN,  VIRTKEY, CONTROL
     "?",            IDM_ABOUT,              ASCII,  ALT
     "/",            IDM_ABOUT,              ASCII,  ALT
 END

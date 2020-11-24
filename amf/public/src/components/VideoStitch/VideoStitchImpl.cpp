@@ -575,7 +575,7 @@ void AMF_STD_CALL AMFVideoStitchImpl::OnPropertyChanged(const wchar_t* pName)
         {
             m_pEngine->UpdateFOV(m_width, m_height, m_outputSize.width, m_outputSize.height, this);
         }
-        m_PropertyValues[name] = 0.0;
+        m_PropertyValues[name].value = 0.0;
     }
     else if(name == AMF_VIDEO_STITCH_WIRE_RENDER)
     {

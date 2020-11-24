@@ -42,7 +42,6 @@
 #endif
 #include "public/common/AMFFactory.h"
 #include "public/include/components/PreAnalysis.h"
-#include "runtime/src/components/PreAnalysis_Internal.h"
 #include "public/common/Thread.h"
 #include "public/common/AMFSTL.h"
 #include "public/common/TraceAdapter.h"
@@ -158,10 +157,10 @@ int main(int argc, char* argv[])
 	AMF_RETURN_IF_FAILED(res, L"Create PreAnalysis failed");
 
 	// Enable Scene change detection and set sensitivity to medium
-	res = pre_analysis->SetProperty(AMF_PA_SCENE_CHANGE_DETECTION_ENABLE, true);
-	AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_PA_SCENE_CHANGE_DETECTION_ENABLE, true) failed");
-	res = pre_analysis->SetProperty(AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY, AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_MEDIUM);
-	AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY, %d) failed", AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_MEDIUM);
+    res = pre_analysis->SetProperty(AMF_PA_SCENE_CHANGE_DETECTION_ENABLE, true);
+    AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_PA_SCENE_CHANGE_DETECTION_ENABLE, true) failed");
+    res = pre_analysis->SetProperty(AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY, AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_MEDIUM);
+    AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY, %d) failed", AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_MEDIUM);
 
 	res = pre_analysis->Init(formatIn, widthIn, heightIn);
 	AMF_RETURN_IF_FAILED(res, L"pre_analysis->Init() failed");
@@ -242,8 +241,8 @@ static void FillSurfaceDX9(amf::AMFContext *context, amf::AMFSurface *surface)
 {
 	HRESULT hr = S_OK;
 	// fill surface with something something useful. We fill with color and color rect
-	D3DCOLOR color1 = D3DCOLOR_XYUV(128, 255, 128);
-	D3DCOLOR color2 = D3DCOLOR_XYUV(128, 0, 128);
+    D3DCOLOR color1 = D3DCOLOR_XYUV(0, 255, 128);
+    D3DCOLOR color2 = D3DCOLOR_XYUV(128, 0, 128);
 	// get native DX objects
 	IDirect3DDevice9 *deviceDX9 = (IDirect3DDevice9 *)context->GetDX9Device(); // no reference counting - do not Release()
 	IDirect3DSurface9* surfaceDX9 = (IDirect3DSurface9*)surface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
@@ -344,7 +343,7 @@ static void PrepareFillFromHost(amf::AMFContext *context)
 	res = context->AllocSurface(amf::AMF_MEMORY_HOST, formatIn, rectSize, rectSize, &pColor2);
 
 	FillNV12SurfaceWithColor(pColor2, 128, 0, 128);
-	FillNV12SurfaceWithColor(pColor1, 128, 255, 128);
+	FillNV12SurfaceWithColor(pColor1, 0, 255, 128);
 
 	pColor1->Convert(memoryTypeIn);
 	pColor2->Convert(memoryTypeIn);
@@ -439,9 +438,19 @@ void PollingThread::Run()
 			res = frame->GetProperty(AMF_PA_ACTIVITY_MAP, &activityMapVar);
 
 			// Get Activity Map out of data
-			amf::AMFBufferPtr buffer(activityMapVar.ToInterface());
-			
-			m_pFile.write(reinterpret_cast<char*>(buffer->GetNative()), buffer->GetSize()); //write activity map to file
+			amf::AMFSurfacePtr spSurface(activityMapVar.ToInterface());
+			amf::AMFPlane*     pPlane  = spSurface->GetPlaneAt(0);
+			const amf_int32    xBlocks = pPlane->GetWidth();
+			const amf_int32    yBlocks = pPlane->GetHeight();
+			const amf_uint32*  pData   = static_cast<amf_uint32*>(pPlane->GetNative());
+            const amf_int32    hPitch  = pPlane->GetHPitch() / pPlane->GetPixelSizeInBytes();
+            const amf_int32    hWidth  = xBlocks * sizeof(amf_uint32);
+
+			for (amf_int32 y = 0; y < yBlocks; y++)
+			{
+				m_pFile.write(reinterpret_cast<const char*>(pData), hWidth);
+                pData += hPitch;
+			}
 
 			write_duration += amf_high_precision_clock() - poll_time;
 		}

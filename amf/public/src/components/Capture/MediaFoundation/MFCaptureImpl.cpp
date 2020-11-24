@@ -449,7 +449,7 @@ AMF_RESULT  AMF_STD_CALL    AMFMFCaptureImpl::AMFVideoOutput::GetInitAttributes(
 
     MFCreateAttributes(ppAttributes, 2);
 
-    (*ppAttributes)->SetUnknown(MF_SOURCE_READER_D3D_MANAGER, m_pDxgiDeviceManager);
+//    (*ppAttributes)->SetUnknown(MF_SOURCE_READER_D3D_MANAGER, m_pDxgiDeviceManager);
     (*ppAttributes)->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, 1);
 
     return AMF_OK;

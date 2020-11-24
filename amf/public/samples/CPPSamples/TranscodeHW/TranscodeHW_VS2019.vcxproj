@@ -98,6 +98,7 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -118,6 +119,7 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -197,6 +199,7 @@
     <ClCompile Include="..\common\BitStreamParser.cpp" />
     <ClCompile Include="..\common\BitStreamParserH264.cpp" />
     <ClCompile Include="..\common\BitStreamParserH265.cpp" />
+    <ClCompile Include="..\common\BitStreamParserIVF.cpp" />
     <ClCompile Include="..\common\CmdLineParser.cpp" />
     <ClCompile Include="..\common\CmdLogger.cpp" />
     <ClCompile Include="..\common\DeviceDX11.cpp" />
@@ -206,10 +209,14 @@
     <ClCompile Include="..\common\EncoderParamsHEVC.cpp" />
     <ClCompile Include="..\common\ParametersStorage.cpp" />
     <ClCompile Include="..\common\Pipeline.cpp" />
+    <ClCompile Include="..\common\PreProcessingParams.cpp" />
+    <ClCompile Include="..\common\RawStreamReader.cpp" />
+    <ClCompile Include="..\common\SwapChainDX12.cpp" />
     <ClCompile Include="..\common\SwapChainVulkan.cpp" />
     <ClCompile Include="..\common\TranscodePipeline.cpp" />
     <ClCompile Include="..\common\VideoPresenter.cpp" />
     <ClCompile Include="..\common\VideoPresenterDX11.cpp" />
+    <ClCompile Include="..\common\VideoPresenterDX12.cpp" />
     <ClCompile Include="..\common\VideoPresenterDX9.cpp" />
     <ClCompile Include="..\common\VideoPresenterOpenGL.cpp" />
     <ClCompile Include="..\common\VideoPresenterVulkan.cpp" />
@@ -218,6 +225,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\common\AMFFactory.h" />
     <ClInclude Include="..\..\..\common\AMFSTL.h" />
+    <ClInclude Include="..\..\..\common\ByteArray.h" />
     <ClInclude Include="..\..\..\common\DataStreamFile.h" />
     <ClInclude Include="..\..\..\common\DataStreamMemory.h" />
     <ClInclude Include="..\..\..\common\Thread.h" />
@@ -227,7 +235,7 @@
     <ClInclude Include="..\common\BitStreamParser.h" />
     <ClInclude Include="..\common\BitStreamParserH264.h" />
     <ClInclude Include="..\common\BitStreamParserH265.h" />
-    <ClInclude Include="..\common\ByteArray.h" />
+    <ClInclude Include="..\common\BitStreamParserIVF.h" />
     <ClInclude Include="..\common\CmdLineParser.h" />
     <ClInclude Include="..\common\CmdLogger.h" />
     <ClInclude Include="..\common\DeviceDX11.h" />
@@ -237,11 +245,16 @@
     <ClInclude Include="..\common\EncoderParamsHEVC.h" />
     <ClInclude Include="..\common\ParametersStorage.h" />
     <ClInclude Include="..\common\Pipeline.h" />
+    <ClInclude Include="..\common\PipelineDefines.h" />
     <ClInclude Include="..\common\PipelineElement.h" />
+    <ClInclude Include="..\common\PreProcessingParams.h" />
+    <ClInclude Include="..\common\RawStreamReader.h" />
+    <ClInclude Include="..\common\SwapChainDX12.h" />
     <ClInclude Include="..\common\SwapChainVulkan.h" />
     <ClInclude Include="..\common\TranscodePipeline.h" />
     <ClInclude Include="..\common\VideoPresenter.h" />
     <ClInclude Include="..\common\VideoPresenterDX11.h" />
+    <ClInclude Include="..\common\VideoPresenterDX12.h" />
     <ClInclude Include="..\common\VideoPresenterDX9.h" />
     <ClInclude Include="..\common\VideoPresenterOpenGL.h" />
     <ClInclude Include="..\common\VideoPresenterVulkan.h" />

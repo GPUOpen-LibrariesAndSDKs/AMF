@@ -89,6 +89,15 @@
     <ClCompile Include="..\..\..\..\public\common\PropertyStorageExImpl.cpp" />
     <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\EncoderParamsAVC.cpp" />
     <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\EncoderParamsHEVC.cpp" />
+    <ClCompile Include="..\common\SwapChainDX12.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\VideoPresenterDX12.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\BitStreamParserIVF.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\public\common\AMFFactory.h">
@@ -188,6 +197,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\EncoderParamsAVC.h" />
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\EncoderParamsHEVC.h" />
+    <ClInclude Include="..\common\SwapChainDX12.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\VideoPresenterDX12.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\BitStreamParserIVF.h">
+      <Filter>common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="small.ico" />

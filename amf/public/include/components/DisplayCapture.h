@@ -40,28 +40,26 @@
 
 #include "Component.h"
 
-#define AMFDisplayCapture L"AMFDisplayCapture"
+extern "C"
+{
+    // To create capture component with Desktop Duplication API use this function
+    AMF_RESULT AMF_CDECL_CALL AMFCreateComponentDisplayCapture(amf::AMFContext* pContext, void* reserved, amf::AMFComponent** ppComponent);
+}
 
 // Static properties
 //
-// Index of the display monitor
-// - Monitor index is determined by using EnumAdapters() in DX11.
-#define AMF_DISPLAYCAPTURE_MONITOR_INDEX			L"InMonitorIndex"         // amf_int64 (default = 0)
-// Capture frame rate
-#define AMF_DISPLAYCAPTURE_FRAMERATE				L"InFrameRate"            // amf_int64 (default = 60)
-// Optional interface object for getting current time.
-#define AMF_DISPLAYCAPTURE_CURRENT_TIME_INTERFACE	L"CurrentTimeInterface"
-// Capture format
-#define AMF_DISPLAYCAPTURE_FORMAT					L"CurrentFormat"
+// 
+#define AMF_DISPLAYCAPTURE_MONITOR_INDEX			L"MonitorIndex"             // amf_int64, default = 0, Index of the display monitor; is determined by using EnumAdapters() in DXGI.
+#define AMF_DISPLAYCAPTURE_FRAMERATE				L"FrameRate"                // AMFRate,  default = (0, 1) Capture frame rate, if 0 - capture rate will be driven by flip off the app or dwm
+#define AMF_DISPLAYCAPTURE_CURRENT_TIME_INTERFACE	L"CurrentTimeInterface"     // Optional interface object for getting current time.
+#define AMF_DISPLAYCAPTURE_FORMAT					L"CurrentFormat"            // amf_int64(AMF_SURFACE_FORMAT) Capture format - read-only
+#define AMF_DISPLAYCAPTURE_RESOLUTION			    L"Resolution"               // AMFSize - screen resolution - read-only
+#define AMF_DISPLAYCAPTURE_DUPLICATEOUTPUT		    L"DuplicateOutput"          // amf_bool, default = false, output AMF surface is a copy of captured 
+#define AMF_DISPLAYCAPTURE_DESKTOP_RECT             L"DesktopRect"              // AMFRect - rect of the capture desktop - read-only
+#define AMF_DISPLAYCAPTURE_ENABLE_DIRTY_RECTS       L"EnableDirtyRects"         // amf_bool, default = false, enable dirty rectangles attached to output as AMF_DISPLAYCAPTURE_DIRTY_RECTS
+#define AMF_DISPLAYCAPTURE_DRAW_DIRTY_RECTS         L"DrawDirtyRects"           // amf_bool, default = false, copies capture output and draws dirty rectangles with red - for debugging only
 
-extern "C"
-{
-	// Component that allows the desktop to be captured:
-	// - DX11 only and the device must be created with IDXGIFactory1 or later support
-	// - The monitor display must not be rotated.  See DDAPISource.cpp
-	// - Component will fail to initialize on Windows 7 as the Desktop Duplication API
-	// is not supported
-	//
-	AMF_RESULT AMF_CDECL_CALL AMFCreateComponentDisplayCapture(amf::AMFContext* pContext, amf::AMFComponent** ppComponent);
-}
+// can be set on output AMFSurface
+#define AMF_DISPLAYCAPTURE_DIRTY_RECTS              L"DirtyRects"               // AMFInterface*(AMFBuffer*) - array of AMFRect
+
 #endif // #ifndef AMF_DisplayCapture_h

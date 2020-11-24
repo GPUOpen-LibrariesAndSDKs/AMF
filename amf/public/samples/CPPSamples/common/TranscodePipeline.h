@@ -37,6 +37,7 @@
 #include "public/include/components/VideoConverter.h"
 #include "public/include/components/VideoEncoderVCE.h"
 #include "public/include/components/VideoEncoderHEVC.h"
+#include "public/include/components/PreProcessing.h"
 
 #if defined(_WIN32)
     #if !defined(METRO_APP)
@@ -51,7 +52,9 @@
 #include "ParametersStorage.h"
 #include "EncoderParamsAVC.h"
 #include "EncoderParamsHEVC.h"
+#include "PreProcessingParams.h"
 #include "BackBufferPresenter.h"
+#include "RawStreamReader.h"
 
 
 class TranscodePipeline : public Pipeline
@@ -61,14 +64,8 @@ public:
     TranscodePipeline();
     virtual ~TranscodePipeline();
 public:
-    static const wchar_t* PARAM_NAME_CODEC;
-    static const wchar_t* PARAM_NAME_OUTPUT;
-    static const wchar_t* PARAM_NAME_INPUT;
-
     static const wchar_t* PARAM_NAME_SCALE_WIDTH;
     static const wchar_t* PARAM_NAME_SCALE_HEIGHT;
-    static const wchar_t* PARAM_NAME_ADAPTERID;
-    static const wchar_t* PARAM_NAME_ENGINE;
     static const wchar_t* PARAM_NAME_FRAMES;
 
 
@@ -88,10 +85,12 @@ public:
 
 protected:
     virtual AMF_RESULT  InitAudio(amf::AMFOutput* pOutput);
-    virtual AMF_RESULT  InitVideo(BitStreamParserPtr pParser, amf::AMFOutput* pOutput, amf::AMF_MEMORY_TYPE presenterEngine, amf_handle previewTarget, amf_handle display, ParametersStorage* pParams);
+    virtual AMF_RESULT  InitVideo(BitStreamParserPtr pParser, RawStreamReaderPtr pRawReader, amf::AMFOutput* pOutput, amf::AMF_MEMORY_TYPE presenterEngine, amf_handle previewTarget, amf_handle display, ParametersStorage* pParams);
 
     virtual AMF_RESULT  InitVideoDecoder(const wchar_t *pDecoderID, amf_int64 codecID, amf_int32 videoWidth, amf_int32 videoHeight, AMFRate frameRate, amf::AMFBuffer* pExtraData);
     virtual AMF_RESULT  InitVideoProcessor(amf::AMF_MEMORY_TYPE presenterEngine, amf_int32 inWidth, amf_int32 inHeight, amf_int32 outWidth, amf_int32 outHeight);
+
+    virtual AMF_RESULT  InitPreProcessFilter(ParametersStorage* pParams);
 
 #if defined(_WIN32)
 #if !defined(METRO_APP)
@@ -101,26 +100,28 @@ protected:
 #endif    
     DeviceVulkan                m_deviceVulkan;
 
-    amf::AMFContextPtr              m_pContext;
+    amf::AMFContextPtr          m_pContext;
 
-    amf::AMFDataStreamPtr           m_pStreamIn;
-    amf::AMFDataStreamPtr           m_pStreamOut;
+    amf::AMFDataStreamPtr       m_pStreamIn;
+    amf::AMFDataStreamPtr       m_pStreamOut;
     
-    amf::AMFComponentExPtr          m_pDemuxer;
-    amf::AMFComponentPtr            m_pDecoder;
-    amf::AMFComponentPtr            m_pConverter;
-    amf::AMFComponentPtr            m_pEncoder;
-    std::wstring                    m_EncoderID;
-    StreamWriterPtr                 m_pStreamWriter;
+    amf::AMFComponentExPtr      m_pDemuxer;
+    amf::AMFComponentPtr        m_pDecoder;
+    amf::AMFComponentPtr        m_pConverter;
+    amf::AMFComponentPtr        m_pEncoder;
+    std::wstring                m_EncoderID;
+    StreamWriterPtr             m_pStreamWriter;
+    RawStreamReaderPtr          m_pRawStreamReader;
 
-    amf::AMFComponentPtr    m_pAudioDecoder;
-    amf::AMFComponentPtr    m_pAudioConverter;
-    amf::AMFComponentPtr    m_pAudioEncoder;
+    amf::AMFComponentPtr        m_pAudioDecoder;
+    amf::AMFComponentPtr        m_pAudioConverter;
+    amf::AMFComponentPtr        m_pAudioEncoder;
 
-    amf::AMFComponentExPtr          m_pMuxer;
+    amf::AMFComponentExPtr      m_pMuxer;
 
-    SplitterPtr                     m_pSplitter;
-    amf::AMFComponentPtr            m_pConverter2;
-    BackBufferPresenterPtr          m_pPresenter;
-    amf::AMF_SURFACE_FORMAT         m_eDecoderFormat;
+    SplitterPtr                 m_pSplitter;
+    amf::AMFComponentPtr        m_pConverter2;
+    amf::AMFComponentPtr        m_pPreProcFilter;
+    BackBufferPresenterPtr      m_pPresenter;
+    amf::AMF_SURFACE_FORMAT     m_eDecoderFormat;
 };

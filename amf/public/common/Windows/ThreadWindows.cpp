@@ -252,6 +252,8 @@ amf_pts AMF_CDECL_CALL amf_high_precision_clock()
     static int state = 0;
     static LARGE_INTEGER Frequency;
     static LARGE_INTEGER StartCount;
+    static amf_pts offset = 0;
+
     if(state == 0)
     {
         if(QueryPerformanceFrequency(&Frequency))
@@ -269,7 +271,20 @@ amf_pts AMF_CDECL_CALL amf_high_precision_clock()
         LARGE_INTEGER PerformanceCount;
         if(QueryPerformanceCounter(&PerformanceCount))
         {
-            return static_cast<amf_pts>((PerformanceCount.QuadPart - StartCount.QuadPart) * 10000000LL / Frequency.QuadPart);
+            amf_pts elapsed = static_cast<amf_pts>((PerformanceCount.QuadPart - StartCount.QuadPart) * 10000000LL / Frequency.QuadPart);
+
+            // periodically reset StartCount in order to avoid overflow
+            if (elapsed > (3600LL * AMF_SECOND))
+            {
+                offset += elapsed;
+                StartCount = PerformanceCount;
+
+                return offset;
+            }
+            else
+            {
+                return offset + elapsed;
+            }
         }
     }
 #if defined(METRO_APP)

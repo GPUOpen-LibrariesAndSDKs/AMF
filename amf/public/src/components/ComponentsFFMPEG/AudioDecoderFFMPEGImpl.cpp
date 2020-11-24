@@ -234,6 +234,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::Terminate()
 
     // clear the internally stored buffer
     m_pInputData = nullptr;
+    m_pLastInputData = nullptr;
 
     // clean-up codec related items
     if (m_pCodecContext != NULL)
@@ -270,6 +271,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::Flush()
 
     // clear the internally stored buffer
     m_pInputData = nullptr;
+    m_pLastInputData = nullptr;
 
     return AMF_OK;
 }
@@ -302,6 +304,8 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::SubmitInput(AMFData* pData)
         m_ptsLastDataOffset = 0;
         m_pInputData = AMFBufferPtr(pData);
         AMF_RETURN_IF_FALSE(m_pInputData != 0, AMF_INVALID_ARG, L"SubmitInput() - Input should be Buffer");
+
+        m_pLastInputData = AMFBufferPtr(pData);
 
         AMF_RESULT err = m_pInputData->Convert(AMF_MEMORY_HOST);
         AMF_RETURN_IF_FAILED(err, L"SubmitInput() - Convert(AMF_MEMORY_HOST) failed");
@@ -435,6 +439,11 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
         amf_pts duration = (tmpPts / m_pCodecContext->sample_rate);
         pOutputAudioBuffer->SetDuration(duration);
         m_ptsLastDataOffset += duration;
+
+        if (m_pLastInputData)
+        {
+            m_pLastInputData->CopyTo(pOutputAudioBuffer, false);
+        }
 
         *ppData = pOutputAudioBuffer;
         (*ppData)->Acquire();

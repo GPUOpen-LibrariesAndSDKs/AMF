@@ -196,4 +196,9 @@
       <Filter>windows</Filter>
     </Image>
   </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\..\..\src\components\DisplayCapture\DrawRectsBGRA.hlsl">
+      <Filter>public\components</Filter>
+    </FxCompile>
+  </ItemGroup>
 </Project>

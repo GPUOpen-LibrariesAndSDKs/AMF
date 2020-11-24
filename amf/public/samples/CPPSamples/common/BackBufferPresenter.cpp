@@ -32,6 +32,7 @@
 #include "BackBufferPresenter.h"
 
 #ifdef _WIN32
+#include "VideoPresenterDX12.h"
 #include "VideoPresenterDX11.h"
 #include "VideoPresenterDX9.h"
 #endif
@@ -70,6 +71,9 @@ BackBufferPresenter::Create(
     case amf::AMF_MEMORY_DX11:
         pPresenter = std::make_shared<VideoPresenterDX11>(hwnd, pContext);
         return AMF_OK;
+	case amf::AMF_MEMORY_DX12:
+		pPresenter = std::make_shared<VideoPresenterDX12>(hwnd, pContext);
+		return AMF_OK;
 #endif
     case amf::AMF_MEMORY_OPENGL:
         pPresenter = std::make_shared<VideoPresenterOpenGL>(hwnd, pContext);

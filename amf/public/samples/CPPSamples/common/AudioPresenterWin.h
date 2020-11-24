@@ -105,6 +105,7 @@ protected:
     amf_pts                     m_iAVSyncDelay;
     amf_pts                     m_iLastTime;
     UINT32                      m_uiNumSamplesWritten;
+    long                        m_hResultCoInitialize;
 };
 
 

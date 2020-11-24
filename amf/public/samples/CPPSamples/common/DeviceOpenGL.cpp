@@ -85,6 +85,11 @@ AMF_RESULT DeviceOpenGL::Init(HWND hWnd, const wchar_t* displayDeviceName)
 {
     DWORD error = 0;
 
+    if (hWnd == nullptr)
+    {
+        hWnd = ::GetDesktopWindow();
+    }
+
     if(hWnd == ::GetDesktopWindow() && displayDeviceName)
     {
         LOG_INFO("OPENGL : Chosen Device " << displayDeviceName);

@@ -47,7 +47,7 @@
 
 #pragma warning(disable: 4996)
 
-#if defined(__linux)
+#if defined(__linux) || defined(__APPLE__)
 extern "C"
 {
     extern int vscwprintf(const wchar_t* p_fmt, va_list p_args);
@@ -562,7 +562,7 @@ amf_string AMF_STD_CALL amf::amf_string_format(const char* format, ...)
 //----------------------------------------------------------------------------------------
 amf_wstring AMF_STD_CALL amf::amf_string_formatVA(const wchar_t* format, va_list args)
 {
-#if defined(__linux)
+#if defined(__linux) || defined(__APPLE__)
     //replace %s with %ls
     amf_wstring text(format);
     amf_wstring textReplaced;
@@ -619,7 +619,7 @@ amf_string AMF_STD_CALL amf::amf_string_formatVA(const char* format, va_list arg
     vsnprintf(pBuf, size + 1, format, args);
     return pBuf;
 }
-#if defined(__linux)  && !defined(__ANDROID__)
+#if (defined(__linux) || defined(__APPLE__)) && !defined(__ANDROID__)
 int vscprintf(const char* format, va_list argptr)
 {
     char* p_tmp_buf;
@@ -1223,6 +1223,7 @@ extern "C"
         return vfwprintf(p_stream, p_fmt, argptr);
     }
 
+#if !defined(__APPLE__)
     int vscwprintf(const wchar_t* p_fmt, va_list p_args)
     {
         return (int)amf_wprintfCore(NULL, NULL, p_fmt, p_args);
@@ -1232,6 +1233,7 @@ extern "C"
     {
         return (int)amf_printfCore(NULL, NULL, p_fmt, p_args);
     }
+#endif
 }
 #endif
 
@@ -1243,9 +1245,11 @@ extern "C"
 {
     int _wcsicmp(const wchar_t* s1, const wchar_t* s2)
     {
-        amf_wstring low_s1 = amf_ConvertStringToLower(s1);
-        amf_wstring low_s2 = amf_ConvertStringToLower(s2);
-
+        amf_wstring low_s1 = s1;
+        amf_wstring low_s2 = s2;
+        std::transform(low_s1.begin(), low_s1.end(), low_s1.begin(), ::tolower);
+        std::transform(low_s2.begin(), low_s2.end(), low_s2.begin(), ::tolower);
+        
         return wcscmp(low_s1.c_str(), low_s2.c_str());
     }
 }

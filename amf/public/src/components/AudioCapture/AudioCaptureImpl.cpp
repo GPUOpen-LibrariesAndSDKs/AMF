@@ -352,7 +352,10 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
 
         amf_uint64 posStream = 0;
         bool bDiscontinuity = false;
-	    int err = m_pAMFDataStreamAudio->CaptureOnePacketTry(&pData, capturedSamples, posStream, bDiscontinuity);
+        int err = 0;
+        res = m_pAMFDataStreamAudio->CaptureOnePacket(&pData, capturedSamples, posStream, bDiscontinuity);
+
+//        AMF_RETURN_IF_FAILED(res, L"CaptureOnePacket failed");
 
         if (m_iSamplesFromStream == 0xFFFFFFFFFFFFFFFFLL || bDiscontinuity)
         {
@@ -399,7 +402,7 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
             }
         }
         amf_size capturedDataSize = amf_size(capturedSamples) * sampleSize * channels;
-        amf_size silenceDataSize = silenceSamples * sampleSize * channels;
+        amf_size silenceDataSize = amf_size(silenceSamples * sampleSize * channels);
 		if (silenceSamples + (amf_int32)capturedSamples > 0)
 		{
 			err = m_pContext->AllocAudioBuffer(AMF_MEMORY_HOST, sampleFormat, (amf_int32)silenceSamples + (amf_int32)capturedSamples, sampleRate, channels, &pAudioBuffer);
@@ -433,11 +436,8 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
 				pAudioBuffer->SetDuration(duration);
 			}
 		}
-	    if (capturedSamples > 0)
-	    {
-
-		    err = m_pAMFDataStreamAudio->CaptureOnePacketDone(capturedSamples);
-	    }
+        err = m_pAMFDataStreamAudio->CaptureOnePacketDone();
+	    
         if(m_bFlush)
         {
             m_bFlush = false;

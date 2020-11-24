@@ -69,7 +69,7 @@ VideoPresenterVulkan::VideoPresenterVulkan(amf_handle hwnd, amf::AMFContext* pCo
     m_uiAvailableBackBuffer(0),
     m_bResizeSwapChain(false),
 #if defined(_WIN32)
-    m_eInputFormat(amf::AMF_SURFACE_RGBA),
+    m_eInputFormat(amf::AMF_SURFACE_BGRA),
 #elif defined(__linux)    
     m_eInputFormat(amf::AMF_SURFACE_BGRA),
 #endif
@@ -92,7 +92,7 @@ VideoPresenterVulkan::~VideoPresenterVulkan()
     Terminate();
 }
 
-AMF_RESULT VideoPresenterVulkan::Init(amf_int32 width, amf_int32 height)
+AMF_RESULT VideoPresenterVulkan::Init(amf_int32 width, amf_int32 height, amf::AMFSurface* /*pSurface*/)
 {
 
     VkFormat format = VK_FORMAT_UNDEFINED;
@@ -779,12 +779,12 @@ AMF_RESULT VideoPresenterVulkan::Present(amf::AMFSurface* pSurface)
 
 
     err = SwapChainVulkan::Present(imageIndex, true);
-    CHECK_AMF_ERROR_RETURN(err, L"Present() failed");
-    
-    if(m_bRenderToBackBuffer)
+    if (m_bRenderToBackBuffer)
     {
         m_uiAvailableBackBuffer--;
     }
+    CHECK_AMF_ERROR_RETURN(err, L"Present() failed");
+    
 
 //    AMFTraceInfo(AMF_FACILITY, L"Presented backbuffer %d", imageIndex);
 #if defined(__linux)
@@ -1093,7 +1093,7 @@ AMF_RESULT VideoPresenterVulkan::ResizeSwapChain()
     Terminate();
     m_hwnd = hWnd;
     m_hDisplay = hDisplay;
-    Init(width, height);
+    Init(width, height, nullptr);
 
     m_rectClient = clientRect;
     return AMF_OK;

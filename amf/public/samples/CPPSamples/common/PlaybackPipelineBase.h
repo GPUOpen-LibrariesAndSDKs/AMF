@@ -67,6 +67,8 @@ public:
     static const wchar_t* PARAM_NAME_LOOP;
     static const wchar_t* PARAM_NAME_DOTIMING;
     static const wchar_t* PARAM_NAME_LOWLATENCY;
+    static const wchar_t* PARAM_NAME_FULLSCREEN;
+    static const wchar_t* PARAM_NAME_SW_DECODER;
 
     virtual AMF_RESULT Play();
     virtual AMF_RESULT Pause();
@@ -89,6 +91,8 @@ public:
     amf_int64  GetFramesDropped() const;
 
     virtual void        UpdateVideoProcessorProperties(const wchar_t* name);
+
+    virtual AMF_RESULT OnActivate(bool bActivated);
 
 protected:
     virtual void OnEof();

@@ -104,11 +104,28 @@
     <ClInclude Include="..\common\BackBufferPresenter.h">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\SwapChainVulkan.h" />
     <ClInclude Include="..\..\..\common\VulkanImportTable.h">
       <Filter>public\common</Filter>
     </ClInclude>
     <ClInclude Include="..\common\VideoPresenterVulkan.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\SwapChainDX12.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\VideoPresenterDX12.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\SwapChainVulkan.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\d3dx12.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\BitStreamParserIVF.h">
       <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
@@ -188,11 +205,22 @@
     <ClCompile Include="..\common\BackBufferPresenter.cpp">
       <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="..\common\SwapChainVulkan.cpp" />
     <ClCompile Include="..\..\..\common\VulkanImportTable.cpp">
       <Filter>public\common</Filter>
     </ClCompile>
     <ClCompile Include="..\common\VideoPresenterVulkan.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\SwapChainDX12.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\VideoPresenterDX12.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\SwapChainVulkan.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\BitStreamParserIVF.cpp">
       <Filter>common</Filter>
     </ClCompile>
   </ItemGroup>

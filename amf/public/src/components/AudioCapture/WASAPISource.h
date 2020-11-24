@@ -40,50 +40,60 @@
 
 namespace amf
 {
-	class AMFWASAPISourceImpl : public AMFInterfaceImpl<AMFInterface>
-	{
-	public:
-		AMFWASAPISourceImpl();
-		virtual ~AMFWASAPISourceImpl();
+    class AMFWASAPISourceImpl : public AMFInterfaceImpl<AMFInterface>
+    {
+    public:
+        AMFWASAPISourceImpl();
+        virtual ~AMFWASAPISourceImpl();
 
-		// Setup and teardown
-		AMF_RESULT Init(bool capture, amf_int32 activeDevice = 0, amf_pts bufferDuration = AMF_SECOND);
-		AMF_RESULT Terminate();
+        // Setup and teardown
+        AMF_RESULT Init(bool capture, amf_int32 activeDevice = 0, amf_pts bufferDuration = AMF_SECOND);
+        AMF_RESULT Terminate();
 
-		// Capture start and done
-		int CaptureOnePacket(char** ppData, UINT& numSamples, amf_uint64 &posStream, bool &bDiscontinuity);
-		int CaptureOnePacketTry(char** ppData, UINT& numSamples, amf_uint64 &posStream, bool &bDiscontinuity);
-		int CaptureOnePacketDone(UINT numSamples);
+        // Capture start and done
+        AMF_RESULT CaptureOnePacket(char** ppData, UINT& numSamples, amf_uint64 &posStream, bool &bDiscontinuity);
+        AMF_RESULT CaptureOnePacketDone();
 
-		// Getters
-		WAVEFORMATEX*	GetWaveFormat(){ return &m_waveFormat; };
-		UINT			GetFrameSize(){ return m_frameSize; };
-		UINT			GetSampleCount(){ return m_sampleCount; };
-		REFERENCE_TIME	GetFrameDuration(){ return m_duration; };
-		amf_vector<amf_string> 
-						GetDeviceList() { return m_deviceList; };
+        // render silence workaround
+        int RenderSilence();
 
-		// Call to end thread loop
-		void SetAtEOF() { m_eof = true;  }
+        // Getters
+        WAVEFORMATEX*	GetWaveFormat(){ return &m_waveFormat; };
+        UINT			GetFrameSize(){ return m_frameSize; };
+        UINT			GetSampleCount(){ return m_sampleCount; };
+        REFERENCE_TIME	GetFrameDuration(){ return m_duration; };
+        amf_vector<amf_string> 
+                        GetDeviceList() { return m_deviceList; };
 
-	private:
-		AMF_RESULT InitCaptureMicrophone(amf_int32 activeDevice, amf_pts bufferDuration);
-		AMF_RESULT InitCaptureDesktop(amf_pts bufferDuration);
+        // Call to end thread loop
+        void SetAtEOF() { m_eof = true;  }
 
-		AMF_RESULT CreateDeviceList();
+    private:
+        AMF_RESULT InitCaptureMicrophone(amf_int32 activeDevice, amf_pts bufferDuration);
+        AMF_RESULT InitCaptureDesktop(amf_pts bufferDuration);
 
-		mutable AMFCriticalSection				m_sync;
+        AMF_RESULT InitRenderClient();
 
-		ATL::CComPtr<IMMDevice>					m_device;
-		ATL::CComPtr<IAudioClient>				m_client;
-		ATL::CComPtr<IAudioCaptureClient>		m_capture;
-		amf_vector<amf_string>				m_deviceList;
-		
-		WAVEFORMATEX							m_waveFormat;
-		amf_uint32								m_frameSize;
-		amf_uint32								m_sampleCount;
-		REFERENCE_TIME							m_duration;
-		bool									m_eof;
-	};
-	typedef AMFInterfacePtr_T<AMFWASAPISourceImpl>    AMFWASAPISourceImplPtr;
+        AMF_RESULT CreateDeviceList();
+
+        mutable AMFCriticalSection				m_sync;
+
+        ATL::CComPtr<IMMDevice>					m_device;
+        ATL::CComPtr<IAudioClient>				m_client;
+        ATL::CComPtr<IAudioCaptureClient>		m_capture;
+        
+        ATL::CComPtr<IAudioClient>				m_renderClient;
+        ATL::CComPtr<IAudioRenderClient>        m_render;
+
+        amf_vector<amf_string>				    m_deviceList;
+        
+        WAVEFORMATEX							m_waveFormat;
+        amf_uint32								m_frameSize;
+        amf_uint32								m_sampleCount;
+        REFERENCE_TIME							m_duration;
+        bool									m_eof;
+        bool                                    m_silenceStarted;
+        UINT                                    m_LastNumOfSamples;
+    };
+    typedef AMFInterfacePtr_T<AMFWASAPISourceImpl>    AMFWASAPISourceImplPtr;
 } //namespace amf

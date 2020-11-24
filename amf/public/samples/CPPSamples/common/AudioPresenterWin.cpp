@@ -80,7 +80,8 @@ AudioPresenterWin::AudioPresenterWin()
     m_eEngineState(AMFAPS_UNKNOWN_STATUS),
     m_iAVSyncDelay(-1LL),
     m_iLastTime(0),
-    m_uiNumSamplesWritten(0)
+    m_uiNumSamplesWritten(0),
+    m_hResultCoInitialize(E_FAIL)
 {
 }
 //-------------------------------------------------------------------------------------------------
@@ -97,6 +98,10 @@ AMF_RESULT AudioPresenterWin::Init()
     {
         return AMF_OK;
     }
+
+    m_hResultCoInitialize = ::CoInitializeEx(0, COINIT_MULTITHREADED);
+
+
     AMF_RESULT err=AMF_OK;
     err=InitDevice();
     if(err != AMF_OK)
@@ -147,6 +152,12 @@ AMF_RESULT AudioPresenterWin::Terminate()
 
     m_iAVSyncDelay = -1LL;
     m_iLastTime = 0;
+
+    if (SUCCEEDED(m_hResultCoInitialize))
+    {
+        ::CoUninitialize();
+    }
+    m_hResultCoInitialize = E_FAIL;
 
     return err;
 }
@@ -212,7 +223,7 @@ AMF_RESULT AudioPresenterWin::SelectFormat()
 
 //-------------------------------------------------------------------------------------------------
 #define REFTIMES_PER_SEC  10000000
-#define LOW_LATENCY_DIVIDER  20
+#define LOW_LATENCY_DIVIDER  15
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AudioPresenterWin::InitClient()
 {
@@ -224,7 +235,7 @@ AMF_RESULT AudioPresenterWin::InitClient()
     if(m_bLowLatency)
     {
         hnsRequestedDuration = REFTIMES_PER_SEC / LOW_LATENCY_DIVIDER;
-        hnsRequestedDuration = ((hnsRequestedDuration + (64 - 1)) & ~(64 - 1));
+        hnsRequestedDuration = ((hnsRequestedDuration + (128 - 1)) & ~(128 - 1));
     }
     WAVEFORMATEX *pMixFormat=(WAVEFORMATEX *)m_pMixFormat;
     IAudioClient *pAudioClient=(IAudioClient *)m_pAudioClient;
@@ -389,11 +400,20 @@ AMF_RESULT AudioPresenterWin::Present(AMFAudioBuffer *buffer,amf_pts &sleeptime)
     // define delay
     UINT32 iSamplesInBuffer=0;
     hr = pAudioClient->GetCurrentPadding(&iSamplesInBuffer);
-    if(iSamplesInBuffer < m_iBufferSampleSize / 4)
+    if (m_bLowLatency)
     {
-        AMFTraceWarning(AMF_FACILITY, L"Buffer is too empty = %d", iSamplesInBuffer);
+        if (iSamplesInBuffer == 0)
+        {
+            AMFTraceWarning(AMF_FACILITY, L"Buffer is empty");
+        }
     }
-
+    else
+    {
+        if (iSamplesInBuffer < m_iBufferSampleSize / 4)
+        {
+            AMFTraceWarning(AMF_FACILITY, L"Buffer is too empty = %d", iSamplesInBuffer);
+        }
+    }
     sleeptime=0;
     if(m_eEngineState==AMFAPS_PLAYING_STATUS)
     {

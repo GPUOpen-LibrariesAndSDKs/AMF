@@ -32,9 +32,11 @@
 #include "PlaybackPipelineBase.h"
 #include "public/common/AMFFactory.h"
 #include "public/include/components/MediaSource.h"
+#include "public/common/TraceAdapter.h"
 
 #pragma warning(disable:4355)
 
+#define AMF_FACILITY L"PlaybackPipelineBase"
 
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_INPUT      = L"INPUT";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_URL_VIDEO  = L"UrlVideo";
@@ -45,6 +47,9 @@ const wchar_t* PlaybackPipelineBase::PARAM_NAME_LOOP = L"LOOP";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_LISTEN_FOR_CONNECTION = L"LISTEN";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_DOTIMING = L"DOTIMING";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_LOWLATENCY = L"LOWLATENCY";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_FULLSCREEN = L"FULLSCREEN";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_SW_DECODER = L"swdecoder";
+
 
 PlaybackPipelineBase::PlaybackPipelineBase() :
     m_iVideoWidth(0),
@@ -59,14 +64,18 @@ PlaybackPipelineBase::PlaybackPipelineBase() :
     SetParamDescription(PARAM_NAME_INPUT, ParamCommon,  L"Input file name", NULL);
     SetParamDescription(PARAM_NAME_URL_VIDEO, ParamCommon,  L"Input stream URL Video", NULL);
     SetParamDescription(PARAM_NAME_URL_AUDIO, ParamCommon,  L"Input stream URL Audio", NULL);
-    SetParamDescription(PARAM_NAME_PRESENTER, ParamCommon,  L"Specifies presenter engine type (DX9, DX11, OPENGL)", ParamConverterVideoPresenter);
+    SetParamDescription(PARAM_NAME_PRESENTER, ParamCommon,  L"Specifies presenter engine type (DX9, DX11, DX12, OPENGL)", ParamConverterVideoPresenter);
     SetParamDescription(PARAM_NAME_FRAMERATE, ParamCommon,  L"Forces Video Frame Rate (double)", ParamConverterDouble);
     SetParamDescription(PARAM_NAME_LOOP, ParamCommon,  L"Loop Video, boolean, default = true", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_LISTEN_FOR_CONNECTION, ParamCommon,  L"LIsten for connection, boolean, default = true", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_DOTIMING, ParamCommon,  L"Play Video and Audio using timestamps, boolean, default = true", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_LOWLATENCY, ParamCommon, L"Low latency mode, boolean, default = false", ParamConverterBoolean);
+    SetParamDescription(PARAM_NAME_FULLSCREEN, ParamCommon, L"Specifies fullscreen mode, true, false, default false", ParamConverterBoolean);
+    SetParamDescription(PARAM_NAME_SW_DECODER, ParamCommon, L"Forces sw decoder, true, false, default false", ParamConverterBoolean);
+    
 
     SetParam(PARAM_NAME_LISTEN_FOR_CONNECTION, false);
+    SetParam(PARAM_NAME_FULLSCREEN, false);
 
 #if defined(_WIN32)
     SetParam(PlaybackPipelineBase::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_DX11);
@@ -236,7 +245,7 @@ AMF_RESULT PlaybackPipelineBase::Init()
         res = GetParamWString(PARAM_NAME_URL_AUDIO, inputUrlAudio);
     }
 
-    amf::AMF_MEMORY_TYPE presenterEngine;
+	amf::AMF_MEMORY_TYPE presenterEngine = amf::AMF_MEMORY_UNKNOWN;
     {
         amf_int64 engineInt = amf::AMF_MEMORY_UNKNOWN;
         if(GetParam(PARAM_NAME_PRESENTER, engineInt) == AMF_OK)
@@ -384,7 +393,12 @@ AMF_RESULT PlaybackPipelineBase::Init()
     if(iAudioStreamIndex >= 0)
     {
         res = InitAudio(pAudioOutput);
-        CHECK_AMF_ERROR_RETURN(res, L"InitAudio() failed");
+        if (res != AMF_OK)
+        {
+            LOG_AMF_ERROR(res, L"InitAudio() failed");
+            iAudioStreamIndex = -1;
+        }
+//        CHECK_AMF_ERROR_RETURN(res, L"InitAudio() failed");
     }
 
     //---------------------------------------------------------------------------------------------
@@ -499,18 +513,18 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoProcessor()
 
     if (m_eDecoderFormat == amf::AMF_SURFACE_P010) //HDR support
     {
-        m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_COLOR_PROFILE, AMF_VIDEO_CONVERTER_COLOR_PROFILE_2020);
-        m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_LINEAR_RGB, true);
+//        m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_COLOR_PROFILE, AMF_VIDEO_CONVERTER_COLOR_PROFILE_2020);
+//        m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_LINEAR_RGB, true);
     }
     else
     {
-        m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_COLOR_PROFILE, AMF_VIDEO_CONVERTER_COLOR_PROFILE_709);
+//        m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_COLOR_PROFILE, AMF_VIDEO_CONVERTER_COLOR_PROFILE_709);
     }
     m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_MEMORY_TYPE, m_pVideoPresenter->GetMemoryType());
     m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, m_pVideoPresenter->GetInputFormat());
 
-    m_pVideoProcessor->Init(m_eDecoderFormat, m_iVideoWidth, m_iVideoHeight);
-    return AMF_OK;
+    res = m_pVideoProcessor->Init(m_eDecoderFormat, m_iVideoWidth, m_iVideoHeight);
+    return res;
 }
 
 AMF_RESULT  PlaybackPipelineBase::InitVideoDecoder(const wchar_t *pDecoderID, amf_int64 codecID, amf_int64 bitrate, AMFRate frameRate, amf::AMFBuffer* pExtraData)
@@ -520,13 +534,24 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoDecoder(const wchar_t *pDecoderID, am
 
     AMF_VIDEO_DECODER_MODE_ENUM   decoderMode = bLowlatency ? AMF_VIDEO_DECODER_MODE_LOW_LATENCY : AMF_VIDEO_DECODER_MODE_COMPLIANT; // AMF_VIDEO_DECODER_MODE_REGULAR , AMF_VIDEO_DECODER_MODE_LOW_LATENCY;
 
-    AMF_RESULT res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, pDecoderID, &m_pVideoDecoder);
-    CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << pDecoderID << L") failed");
+    AMF_RESULT res = AMF_OK;
 
+    bool bSWDecoder = false;
+    GetParam(PARAM_NAME_SW_DECODER, bSWDecoder);
+    
+    if (bSWDecoder == false)
+    {
+        res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, pDecoderID, &m_pVideoDecoder);
+        CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << pDecoderID << L") failed");
+    }
     // check resolution
 
     amf::AMFCapsPtr pCaps;
-    m_pVideoDecoder->GetCaps(&pCaps);
+
+    if (m_pVideoDecoder != nullptr)
+    {
+        m_pVideoDecoder->GetCaps(&pCaps);
+    }
     if (pCaps != nullptr)
     {
         amf::AMFIOCapsPtr pInputCaps;
@@ -552,6 +577,18 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoDecoder(const wchar_t *pDecoderID, am
                 }
                 res = m_pVideoDecoder->Init(m_eDecoderFormat, m_iVideoWidth, m_iVideoHeight);
                 CHECK_AMF_ERROR_RETURN(res, L"m_pVideoDecoder->Init(" << m_iVideoWidth << m_iVideoHeight << L") failed " << pDecoderID);
+				if (std::wstring(pDecoderID) == AMFVideoDecoderHW_AV1) 
+				{
+					//Only up to above m_pVideoDecoder->Init(), got/updated actual eDecoderFormat, then also update m_eDecoderFormat here.
+					amf_int64 format = 0;
+					if (m_pVideoDecoder->GetProperty(L"AV1 Stream Format", &format) == AMF_OK)
+					{
+						if (m_pVideoDecoder->GetProperty(L"AV1 Stream Format", &format) == AMF_OK)
+						{
+							m_eDecoderFormat = (amf::AMF_SURFACE_FORMAT)format;
+						}
+					}
+				}
                 m_bCPUDecoder = false;
             }
             else
@@ -580,7 +617,11 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoDecoder(const wchar_t *pDecoderID, am
             {
                 codecID = AMF_STREAM_CODEC_ID_H265_HEVC;
             }
-        }
+			else if (std::wstring(pDecoderID) == AMFVideoDecoderHW_AV1)
+			{
+				codecID = AMF_STREAM_CODEC_ID_AV1;
+			}
+		}
         m_pVideoDecoder->SetProperty(VIDEO_DECODER_CODEC_ID, codecID);
         m_pVideoDecoder->SetProperty(VIDEO_DECODER_BITRATE, bitrate);
         m_pVideoDecoder->SetProperty(VIDEO_DECODER_FRAMERATE, frameRate);
@@ -747,11 +788,21 @@ AMF_RESULT PlaybackPipelineBase::Stop()
 
 void PlaybackPipelineBase::OnParamChanged(const wchar_t* name)
 {
+    if (std::wstring(name) == std::wstring(PARAM_NAME_FULLSCREEN))
+    {
+        if (m_pVideoPresenter != nullptr)
+        {
+            bool bFullScreen = false;
+            GetParam(PARAM_NAME_FULLSCREEN, bFullScreen);
+            m_pVideoPresenter->SetFullScreen(bFullScreen);
+        }
+    }
     if(m_pVideoProcessor == NULL)
     {
         return;
     }
     UpdateVideoProcessorProperties(name);
+
 }
 
 void PlaybackPipelineBase::UpdateVideoProcessorProperties(const wchar_t* name)
@@ -972,6 +1023,10 @@ AMF_RESULT  PlaybackPipelineBase::InitVideo(amf::AMFOutput* pOutput, amf::AMF_ME
     res = CreateVideoPresenter(presenterEngine, bitRate, dFps);
     CHECK_AMF_ERROR_RETURN(res, L"CreatePresenter() failed");
 
+    bool bFullScreen = false;
+    GetParam(PARAM_NAME_FULLSCREEN, bFullScreen);
+    m_pVideoPresenter->SetFullScreen(bFullScreen);
+
     if(m_eDecoderFormat == amf::AMF_SURFACE_P010) //HDR support
     {
         m_pVideoPresenter->SetInputFormat(amf::AMF_SURFACE_RGBA_F16);
@@ -1038,4 +1093,23 @@ void PlaybackPipelineBase::OnEof()
         }
     }
 }
+AMF_RESULT PlaybackPipelineBase::OnActivate(bool bActivated)
+{
+    if (m_pVideoPresenter != nullptr)
+    {
+        if (bActivated)
+        {
+            bool bFullScreen = false;
+            GetParam(PARAM_NAME_FULLSCREEN, bFullScreen);
+            AMFTraceDebug(AMF_FACILITY, L"ProcessMessage() Window Activated");
+            m_pVideoPresenter->SetFullScreen(bFullScreen);
 
+        }
+        else
+        {
+            m_pVideoPresenter->SetFullScreen(false);
+            AMFTraceDebug(AMF_FACILITY, L"ProcessMessage() Window Deactivated");
+        }
+    }
+    return AMF_OK;
+}

@@ -50,6 +50,8 @@ src_files = \
     $(samples_common_dir)/BitStreamParser.cpp \
     $(samples_common_dir)/BitStreamParserH264.cpp \
     $(samples_common_dir)/BitStreamParserH265.cpp \
+    $(samples_common_dir)/BitStreamParserIVF.cpp \
+    $(samples_common_dir)/RawStreamReader.cpp \
     $(samples_common_dir)/CmdLogger.cpp \
     $(samples_common_dir)/DeviceVulkan.cpp \
     $(samples_common_dir)/CmdLineParser.cpp \
@@ -57,6 +59,7 @@ src_files = \
     $(samples_common_dir)/EncoderParamsHEVC.cpp \
     $(samples_common_dir)/ParametersStorage.cpp \
     $(samples_common_dir)/Pipeline.cpp \
+    $(samples_common_dir)/PreProcessingParams.cpp \
     $(samples_common_dir)/TranscodePipeline.cpp \
     $(samples_common_dir)/SwapChainVulkan.cpp \
     $(samples_common_dir)/VideoPresenter.cpp \

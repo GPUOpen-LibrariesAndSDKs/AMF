@@ -121,7 +121,7 @@ AMF_RESULT VideoPresenterOpenGL::Present(amf::AMFSurface* pSurface)
     return AMF_OK;
 }
 
-AMF_RESULT VideoPresenterOpenGL::Init(amf_int32 width, amf_int32 height)
+AMF_RESULT VideoPresenterOpenGL::Init(amf_int32 width, amf_int32 height, amf::AMFSurface* /*pSurface*/)
 {
     AMF_RESULT res = AMF_OK;
 

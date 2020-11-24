@@ -56,13 +56,14 @@ namespace amf
         AMF_MEMORY_HOST             = 1,
         AMF_MEMORY_DX9              = 2,
         AMF_MEMORY_DX11             = 3,
-        AMF_MEMORY_OPENCL           = 4,
+		AMF_MEMORY_OPENCL           = 4,
         AMF_MEMORY_OPENGL           = 5,
         AMF_MEMORY_XV               = 6,
         AMF_MEMORY_GRALLOC          = 7,
         AMF_MEMORY_COMPUTE_FOR_DX9  = 8, // deprecated, the same as AMF_MEMORY_OPENCL
         AMF_MEMORY_COMPUTE_FOR_DX11 = 9, // deprecated, the same as AMF_MEMORY_OPENCL
         AMF_MEMORY_VULKAN           = 10,
+        AMF_MEMORY_DX12             = 11,
     } AMF_MEMORY_TYPE;
 
     //----------------------------------------------------------------------------------------------
@@ -71,7 +72,8 @@ namespace amf
         AMF_DX9                     = 90,
         AMF_DX9_EX                  = 91,
         AMF_DX11_0                  = 110,
-        AMF_DX11_1                  = 111 
+        AMF_DX11_1                  = 111,
+		AMF_DX12                    = 120,
     } AMF_DX_VERSION;
 
     //----------------------------------------------------------------------------------------------
@@ -79,13 +81,13 @@ namespace amf
     // bit mask
     //----------------------------------------------------------------------------------------------
     typedef enum AMF_MEMORY_CPU_ACCESS_BITS
-    {                                           // D3D11                    Vulkan 
-        AMF_MEMORY_CPU_DEFAULT  = 0x80000000,   // 0                     , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-        AMF_MEMORY_CPU_NONE     = 0x00000000,   // 0                     , 0
-        AMF_MEMORY_CPU_READ     = 0x00000001,   // D3D11_CPU_ACCESS_READ,   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-        AMF_MEMORY_CPU_WRITE    = 0x00000002,   // D3D11_CPU_ACCESS_WRITE,  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-        AMF_MEMORY_CPU_LOCAL    = 0x00000004,   //                       ,  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-        AMF_MEMORY_CPU_PINNED   = 0x00000008,   //                       ,  VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR
+    {                                           // D3D11                    D3D12                      Vulkan 
+        AMF_MEMORY_CPU_DEFAULT  = 0x80000000,   // 0                     ,  D3D12_HEAP_TYPE_DEFAULT ,  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        AMF_MEMORY_CPU_NONE     = 0x00000000,   // 0                     ,  D3D12_HEAP_TYPE_DEFAULT ,
+        AMF_MEMORY_CPU_READ     = 0x00000001,   // D3D11_CPU_ACCESS_READ ,  D3D12_HEAP_TYPE_READBACK,  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+        AMF_MEMORY_CPU_WRITE    = 0x00000002,   // D3D11_CPU_ACCESS_WRITE,  D3D12_HEAP_TYPE_UPLOAD  ,  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+        AMF_MEMORY_CPU_LOCAL    = 0x00000004,   //                       ,  D3D12_HEAP_TYPE_DEFAULT ,  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        AMF_MEMORY_CPU_PINNED   = 0x00000008,   //                       ,                          ,  VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR
     } AMF_MEMORY_CPU_ACCESS_BITS;
     typedef amf_flags AMF_MEMORY_CPU_ACCESS;
     //----------------------------------------------------------------------------------------------

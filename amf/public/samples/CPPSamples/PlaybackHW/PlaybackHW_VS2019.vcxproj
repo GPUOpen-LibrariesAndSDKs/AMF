@@ -99,6 +99,7 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -120,6 +121,7 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -242,6 +244,7 @@
     <ClInclude Include="..\common\BitStreamParser.h" />
     <ClInclude Include="..\common\BitStreamParserH264.h" />
     <ClInclude Include="..\common\BitStreamParserH265.h" />
+    <ClInclude Include="..\common\BitStreamParserIVF.h" />
     <ClInclude Include="..\common\CmdLogger.h" />
     <ClInclude Include="..\common\CmdLineParser.h" />
     <ClInclude Include="..\common\ParametersStorage.h" />
@@ -249,9 +252,11 @@
     <ClInclude Include="..\common\PipelineElement.h" />
     <ClInclude Include="..\common\PlaybackPipeline.h" />
     <ClInclude Include="..\common\PlaybackPipelineBase.h" />
+    <ClInclude Include="..\common\SwapChainDX12.h" />
     <ClInclude Include="..\common\SwapChainVulkan.h" />
     <ClInclude Include="..\common\VideoPresenter.h" />
     <ClInclude Include="..\common\VideoPresenterDX11.h" />
+    <ClInclude Include="..\common\VideoPresenterDX12.h" />
     <ClInclude Include="..\common\VideoPresenterDX9.h" />
     <ClInclude Include="..\common\VideoPresenterOpenGL.h" />
     <ClInclude Include="..\common\VideoPresenterVulkan.h" />
@@ -295,12 +300,14 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\common\BitStreamParserH265.cpp" />
+    <ClCompile Include="..\common\BitStreamParserIVF.cpp" />
     <ClCompile Include="..\common\CmdLogger.cpp" />
     <ClCompile Include="..\common\CmdLineParser.cpp" />
     <ClCompile Include="..\common\ParametersStorage.cpp" />
     <ClCompile Include="..\common\Pipeline.cpp" />
     <ClCompile Include="..\common\PlaybackPipeline.cpp" />
     <ClCompile Include="..\common\PlaybackPipelineBase.cpp" />
+    <ClCompile Include="..\common\SwapChainDX12.cpp" />
     <ClCompile Include="..\common\SwapChainVulkan.cpp" />
     <ClCompile Include="..\common\VideoPresenter.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
@@ -314,6 +321,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\common\VideoPresenterDX12.cpp" />
     <ClCompile Include="..\common\VideoPresenterDX9.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>

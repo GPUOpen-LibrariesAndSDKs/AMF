@@ -33,11 +33,15 @@
 #include "DeviceDX11.h"
 #include "CmdLogger.h"
 #include <set>
+#include <Dxgi1_3.h>
 
 #pragma comment(lib, "d3d11.lib")
 
-DeviceDX11::DeviceDX11()
-    :m_adaptersCount(0)
+typedef     HRESULT(WINAPI *CreateDXGIFactory2_Fun)(UINT Flags, REFIID riid, _COM_Outptr_ void **ppFactory);
+
+DeviceDX11::DeviceDX11() :
+    m_adaptersCount(0),
+    m_LUID{}
 {
     memset(m_adaptersIndexes, 0, sizeof(m_adaptersIndexes));
 }
@@ -66,8 +70,29 @@ AMF_RESULT DeviceDX11::Init(amf_uint32 adapterID, bool onlyWithOutputs)
     //convert logical id to real index
     adapterID = m_adaptersIndexes[adapterID];
 
+    UINT flagDXGI = 0;
+#ifdef _DEBUG
+    flagDXGI |= DXGI_CREATE_FACTORY_DEBUG;
+#endif
+
     ATL::CComPtr<IDXGIFactory1> pFactory;
-    hr = CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void **)&pFactory);
+
+    HMODULE hModule = ::LoadLibraryW(L"Dxgi.dll");
+    CreateDXGIFactory2_Fun fun = (CreateDXGIFactory2_Fun)::GetProcAddress(hModule, "CreateDXGIFactory2");
+    if (fun != nullptr)
+    {
+        hr = fun(flagDXGI, __uuidof(IDXGIFactory), (void **)&pFactory);
+    }
+    else
+    {
+        hr = E_FAIL;
+    }
+    ::FreeLibrary(hModule);
+
+    if (FAILED(hr))
+    {
+        hr = CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void **)&pFactory);
+    }
     if(FAILED(hr))
     {
         LOG_ERROR("CreateDXGIFactory failed. Error: " << std::hex << hr);
@@ -82,6 +107,8 @@ AMF_RESULT DeviceDX11::Init(amf_uint32 adapterID, bool onlyWithOutputs)
 
     DXGI_ADAPTER_DESC desc;
     pAdapter->GetDesc(&desc);
+
+    m_LUID = desc.AdapterLuid;
 
     char strDevice[100];
     _snprintf_s(strDevice, 100, "%X", desc.DeviceId);

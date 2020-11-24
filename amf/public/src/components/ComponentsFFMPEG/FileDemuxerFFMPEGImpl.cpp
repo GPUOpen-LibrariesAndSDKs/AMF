@@ -61,6 +61,9 @@ static const AMFEnumDescriptionEntry VIDEO_CODEC_IDS_ENUM[] =
     { AMF_STREAM_CODEC_ID_MJPEG, AMFVideoDecoderUVD_MJPEG },
     { AMF_STREAM_CODEC_ID_H265_HEVC, AMFVideoDecoderHW_H265_HEVC },
     { AMF_STREAM_CODEC_ID_H265_MAIN10, AMFVideoDecoderHW_H265_MAIN10},
+    { AMF_STREAM_CODEC_ID_VP9, AMFVideoDecoderHW_VP9},
+    { AMF_STREAM_CODEC_ID_VP9_10BIT, AMFVideoDecoderHW_VP9_10BIT},
+	{ AMF_STREAM_CODEC_ID_AV1, AMFVideoDecoderHW_AV1},
     { 0, 0 }
 };
 
@@ -296,6 +299,8 @@ AMFFileDemuxerFFMPEGImpl::AMFVideoOutputDemuxerImpl::AMFVideoOutputDemuxerImpl(A
         case AV_CODEC_ID_H264 :
         case AV_CODEC_ID_MJPEG :
         case AV_CODEC_ID_HEVC :
+        case AV_CODEC_ID_VP9 :
+		case AV_CODEC_ID_AV1:
             codecID = ist->codec->codec_id;
             break;
 
@@ -343,6 +348,10 @@ AMFFileDemuxerFFMPEGImpl::AMFVideoOutputDemuxerImpl::AMFVideoOutputDemuxerImpl(A
     if(surfaceFormat == AMF_SURFACE_P010 && codecID == AV_CODEC_ID_HEVC)
     {
          codecID = AMF_CODEC_H265MAIN10;
+    }
+    if(surfaceFormat == AMF_SURFACE_P010 && codecID == AV_CODEC_ID_VP9)
+    {
+         codecID = AMF_CODEC_VP9_10BIT;
     }
 
     AMFSize frame = AMFConstructSize(ist->codec->width, ist->codec->height);
@@ -863,7 +872,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
             return AMF_OK;
         }
 //        convertedfilename = amf_string("vlfile:") + amf_from_unicode_to_utf8(Path);
-        convertedfilename = amf_string("file:") + amf_from_unicode_to_multibyte(Path);
+        convertedfilename = amf_string("file:") + amf_from_unicode_to_utf8(Path);
         Url = Path;
     }
 
@@ -1174,6 +1183,10 @@ bool AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::OutOfRange()
 {
     amf_uint64 val = 0;
     AMF_ASSERT_OK(GetProperty(FFMPEG_DEMUXER_FRAME_COUNT, &val));
+    if (val == 0)
+    {
+        val = GetFrameFromPts(GetDuration());
+    }
 
     const amf_pts maxPos     = GetMaxPosition();
     const bool    outOfRange = ((val != 0) && (m_ptsPosition >= maxPos) && (maxPos != 0));

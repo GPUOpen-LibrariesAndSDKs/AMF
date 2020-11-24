@@ -53,6 +53,7 @@
 #include "../common/ParametersStorage.h"
 #include "../common/TranscodePipeline.h"
 #include "../common/CmdLineParser.h"
+#include "../common/PipelineDefines.h"
 #include "public/include/core/Debug.h"
 
 #if defined(_WIN32)
@@ -225,28 +226,27 @@ private:
 #endif
 
 
-static const wchar_t* PARAM_NAME_THREADCOUNT = L"THREADCOUNT";
 static const wchar_t* PARAM_NAME_PREVIEW_MODE = L"PREVIEWMODE";
 
 
 static AMF_RESULT RegisterCodecParams(ParametersStorage* pParams)
 {
-    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_CODEC, ParamCommon, L"Codec name (AVC or H264, HEVC or H265)", ParamConverterCodec);
+    pParams->SetParamDescription(PARAM_NAME_CODEC, ParamCommon, L"Codec name (AVC or H264, HEVC or H265)", ParamConverterCodec);
     return AMF_OK;
 }
 
 
 AMF_RESULT RegisterParams(ParametersStorage* pParams)
 {
-    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_OUTPUT, ParamCommon, L"Output file name", NULL);
-    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_INPUT, ParamCommon,  L"Input file name", NULL);
+    pParams->SetParamDescription(PARAM_NAME_OUTPUT, ParamCommon, L"Output file name", NULL);
+    pParams->SetParamDescription(PARAM_NAME_INPUT, ParamCommon,  L"Input file name", NULL);
 
     pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_SCALE_WIDTH, ParamCommon, L"Frame width (integer, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_SCALE_HEIGHT, ParamCommon, L"Frame height (integer, default = 0)", ParamConverterInt64);
 
-    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_ADAPTERID, ParamCommon, L"Index of GPU adapter (number, default = 0)", NULL);
+    pParams->SetParamDescription(PARAM_NAME_ADAPTERID, ParamCommon, L"Index of GPU adapter (number, default = 0)", NULL);
 
-    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_ENGINE, ParamCommon,  L"Specifiy engine type (DX9, DX11, Vulkan)", NULL);
+    pParams->SetParamDescription(PARAM_NAME_ENGINE, ParamCommon,  L"Specifiy engine type (DX9, DX11, Vulkan)", NULL);
     pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_FRAMES, ParamCommon, L"Number of frames to render (in frames, default = 0 - means all )", ParamConverterInt64);
 
 
@@ -309,7 +309,7 @@ int main(int argc, char* argv[])
     }
 
     std::wstring codec = AMFVideoEncoderVCE_AVC;
-    params.GetParamWString(TranscodePipeline::PARAM_NAME_CODEC, codec);
+    params.GetParamWString(PARAM_NAME_CODEC, codec);
     if(codec == AMFVideoEncoderVCE_AVC)
     {
         RegisterEncoderParamsAVC(&params);
@@ -324,6 +324,7 @@ int main(int argc, char* argv[])
 
     }
     RegisterParams(&params);
+    RegisterPreProcessingParams(&params);
 
     // parse again with codec - dependent set of parameters
 #if defined(_WIN32)

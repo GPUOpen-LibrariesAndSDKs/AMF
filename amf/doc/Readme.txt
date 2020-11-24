@@ -27,15 +27,21 @@
 // THE SOFTWARE.
 //
 
-New features are available in Driver: Radeon Software Adrenalin 2019 Edition; 20.2.1 Software: 19.50.19.01 and later 
+New features are available in 
+Driver: Radeon Software Adrenalin 2019 Edition; 19.7.1 Software: 19.30 and later 
 
-1.4.16.0 (04.02.2020) version
+1.4.18.0 (16.09.2020) version
 --------------------------
-	- Added encode pre-analysis component to improve perceived quality of encoded video
+   - AV1 decoding
+   - VP9 decoding
+   - DX12 decoding and color conversion
+   - Pre-analysis component  (PA)
+   - Pre-processing filter 
+   - Encoder: output timeout support, throughput information, picture management , statistic
 
 1.4.14.0 (08.07.2019) version
 --------------------------
-    - Support for RX5700 (Navi) GPUs
+   - Support for RX5700 (Navi) GPUs
 	- FFmpeg updated to version 4.1.3
 	- Added sample projects for Visual Studio 2019
 	- Dropped support for Visual Studio 2013 and 1015

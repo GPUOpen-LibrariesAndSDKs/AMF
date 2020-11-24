@@ -45,9 +45,9 @@
 #pragma warning(disable:4355)
 
 
-const wchar_t* DisplayDvrPipeline::PARAM_NAME_CODEC          = L"CODEC";
-const wchar_t* DisplayDvrPipeline::PARAM_NAME_OUTPUT         = L"OUTPUT";
-const wchar_t* DisplayDvrPipeline::PARAM_NAME_URL            = L"URL";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_CODEC             = L"CODEC";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_OUTPUT            = L"OUTPUT";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_URL               = L"URL";
 
 const wchar_t* DisplayDvrPipeline::PARAM_NAME_ADAPTERID			= L"ADAPTERID";
 const wchar_t* DisplayDvrPipeline::PARAM_NAME_MONITORID			= L"MONITORID";
@@ -55,7 +55,7 @@ const wchar_t* DisplayDvrPipeline::PARAM_NAME_MONITORID			= L"MONITORID";
 const wchar_t* DisplayDvrPipeline::PARAM_NAME_VIDEO_HEIGHT		= L"VIDEOHEIGHT";
 const wchar_t* DisplayDvrPipeline::PARAM_NAME_VIDEO_WIDTH		= L"VIDEOWIDTH";
 
-const wchar_t* DisplayDvrPipeline::PARAM_NAME_OPENCL_CONVERTER = L"OPENCLCONVERTER";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_OPENCL_CONVERTER  = L"OPENCLCONVERTER";
 
 const unsigned kFFMPEG_AAC_CODEC_ID = 0x15002;
 
@@ -66,8 +66,11 @@ const unsigned kFrameRate = 60;
 
 bool bLowLatency = true;
 
-// streaming command line:
-//-URL rtmp://192.168.50.240 -VIDEOHEIGHT 2160 -VIDEOWIDTH 3840 -TargetBitrate 48000000 -PeakBitrate 50000000 -VBVBufferSize 1000000 -QualityPreset 1 -FrameRate 60,1
+// DVR.exe streaming command line:
+//-URL rtmp://192.168.50.247  -VIDEOWIDTH 3840 -VIDEOHEIGHT 2160 -TargetBitrate 48000000 -PeakBitrate 50000000 -VBVBufferSize 1000000 -QualityPreset 1 -FrameRate 60,1 -LowLatencyInternal true -IDRPeriod 0 -ProfileLevel 51 -CAPTURE dd
+
+// PlaybackHW.exe streaming command line
+// -UrlVideo rtmp://0.0.0.0 -LISTEN true -LOWLATENCY true
 namespace
 {
 	// Helper for changing the surface format on the display capture connection
@@ -275,7 +278,7 @@ DisplayDvrPipeline::DisplayDvrPipeline()
 	SetParamDescription(PARAM_NAME_VIDEO_HEIGHT, ParamCommon, L"Video height (number, default = 1080)", NULL);
 	SetParamDescription(PARAM_NAME_VIDEO_WIDTH, ParamCommon, L"Video width (number, default = 1920)", NULL);
 	SetParamDescription(PARAM_NAME_OPENCL_CONVERTER, ParamCommon, L"Use OpenCL Converter (bool, default = false)", NULL);
-	
+
 	// to demo frame-specific properties - will be applied to each N-th frame (force IDR)
 	SetParam(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, amf_int64(AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR));
 }
@@ -332,7 +335,7 @@ AMF_RESULT DisplayDvrPipeline::InitContext(const std::wstring& engineStr, amf::A
 
 	if (m_useOpenCLConverter)
 	{
-		res = m_deviceOpenCL.Init(m_deviceDX9.GetDevice(), m_deviceDX11.GetDevice(),NULL, NULL);
+		res = m_deviceOpenCL.Init(m_deviceDX9.GetDevice(), m_deviceDX11.GetDevice(), NULL, NULL);
 		CHECK_AMF_ERROR_RETURN(res, L"m_deviceOpenCL.Init() failed");
 
 		res = m_pContext->InitOpenCL(m_deviceOpenCL.GetCommandQueue());
@@ -353,13 +356,17 @@ AMF_RESULT DisplayDvrPipeline::InitVideo(amf::AMF_MEMORY_TYPE engineMemoryType, 
 	GetParam(PARAM_NAME_MONITORID, monitorID);
 
 	// Init dvr capture component
-	res = AMFCreateComponentDisplayCapture(m_pContext, &m_pDisplayCapture);
+    // create capture component here
+    res = AMFCreateComponentDisplayCapture(m_pContext, nullptr, &m_pDisplayCapture);
+    CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << L"AMFCreateComponentDisplayCapture()" << L") failed");
+
 	res = m_pDisplayCapture->SetProperty(AMF_DISPLAYCAPTURE_MONITOR_INDEX, monitorID);
 	CHECK_AMF_ERROR_RETURN(res, L"Failed to set Dvr component monitor ID");
 	res = m_pDisplayCapture->SetProperty(AMF_DISPLAYCAPTURE_CURRENT_TIME_INTERFACE, m_pCurrentTime);
 	CHECK_AMF_ERROR_RETURN(res, L"Failed to set Dvr component current time interface");
-	res = m_pDisplayCapture->SetProperty(AMF_DISPLAYCAPTURE_FRAMERATE, kFrameRate);
+	res = m_pDisplayCapture->SetProperty(AMF_DISPLAYCAPTURE_FRAMERATE, AMFConstructRate(kFrameRate, 1));
 	CHECK_AMF_ERROR_RETURN(res, L"Failed to set Dvr component frame rate");
+
 	res = m_pDisplayCapture->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
 	CHECK_AMF_ERROR_RETURN(res, L"Failed to make Dvr component");
 
@@ -397,21 +404,26 @@ AMF_RESULT DisplayDvrPipeline::InitVideo(amf::AMF_MEMORY_TYPE engineMemoryType, 
 	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, frameRate);
 	CHECK_AMF_ERROR_RETURN(res, L"Failed to set video encoder frame rate");
 
-	// Usage is preset that will set many parameters
+
+    // Usage is preset that will set many parameters
 	PushParamsToPropertyStorage(this, ParamEncoderUsage, m_pEncoder);
+
 	// override some usage parameters
 	PushParamsToPropertyStorage(this, ParamEncoderStatic, m_pEncoder);
 
+    PushParamsToPropertyStorage(this, ParamEncoderDynamic, m_pEncoder);
+
+//    res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(3840, 2160));
 
     if (bLowLatency)
     {
-            m_pEncoder->SetProperty(m_szEncoderID == AMFVideoEncoderVCE_AVC ? AMF_VIDEO_ENCODER_LOWLATENCY_MODE : AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE, true);
+        m_pEncoder->SetProperty(m_szEncoderID == AMFVideoEncoderVCE_AVC ? AMF_VIDEO_ENCODER_LOWLATENCY_MODE : AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE, true);
     }
 
 	res = m_pEncoder->Init(amf::AMF_SURFACE_NV12, videoWidth, videoHeight);
 	CHECK_AMF_ERROR_RETURN(res, L"m_pEncoder->Init() failed");
 
-	PushParamsToPropertyStorage(this, ParamEncoderDynamic, m_pEncoder);
+//	PushParamsToPropertyStorage(this, ParamEncoderDynamic, m_pEncoder);
 
 	return res;
 }
@@ -528,6 +540,8 @@ AMF_RESULT DisplayDvrPipeline::InitMuxer(
 	{
 		m_pMuxer->SetProperty(FFMPEG_MUXER_ENABLE_AUDIO, true);
 	}
+
+    m_pMuxer->SetProperty(FFMPEG_MUXER_CURRENT_TIME_INTERFACE, m_pCurrentTime);
 
 	amf_int32 inputs = m_pMuxer->GetInputCount();
 	for (amf_int32 input = 0; input < inputs; input++)

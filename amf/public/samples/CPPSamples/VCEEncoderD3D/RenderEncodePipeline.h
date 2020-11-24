@@ -76,7 +76,7 @@ public:
 
 	static const wchar_t* PARAM_NAME_QUERY_INST_COUNT;
 	static const wchar_t* PARAM_NAME_SELECT_INSTANCE;
-
+	static const wchar_t* PARAM_NAME_FRAMERATE;
     AMF_RESULT Init(ParametersStorage* pParams, int threadID = -1);
     void Terminate();
 

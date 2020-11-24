@@ -30,7 +30,7 @@ include $(amf_root)/public/make/common_defs.mak
 target_name = amf-component-ffmpeg
 target_type = so
 
-ffmpeg_dir = $(amf_root)/../Thirdparty/ffmpeg/ffmpeg-3.3.1/lnx$(host_bits)/release
+ffmpeg_dir = $(amf_root)/../Thirdparty/ffmpeg/ffmpeg-4.1.3/lnx$(host_bits)/release
 
 pp_defines += \
   AMF_COMPONENT_FFMPEG_EXPORTS
@@ -42,14 +42,14 @@ pp_include_dirs = $(amf_root) \
   $(ffmpeg_dir)/include
 
 ffmpeg_libs = \
-  libavcodec.so.57 \
-  libavdevice.so.57 \
-  libavfilter.so.6 \
-  libavformat.so.57 \
-  libavresample.so.3 \
-  libavutil.so.55 \
-  libswresample.so.2 \
-  libswscale.so.4
+  libavcodec.so.58 \
+  libavdevice.so.58 \
+  libavfilter.so.7 \
+  libavformat.so.58 \
+  libavresample.so.4 \
+  libavutil.so.56 \
+  libswresample.so.3 \
+  libswscale.so.5
 
 linker_libs += $(patsubst %,:"%",$(ffmpeg_libs))
 

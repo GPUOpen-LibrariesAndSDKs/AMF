@@ -60,6 +60,9 @@
     <ClInclude Include="..\..\..\common\TraceAdapter.h">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\DeviceDX12.h">
+      <Filter>common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -96,6 +99,9 @@
       <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\common\TraceAdapter.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\DeviceDX12.cpp">
       <Filter>common</Filter>
     </ClCompile>
   </ItemGroup>

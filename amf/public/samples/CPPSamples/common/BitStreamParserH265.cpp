@@ -1344,10 +1344,11 @@ void HevcParser::SpsData::ParseScalingList(AMFH265_scaling_list_data_t * s_data,
             s_data->scaling_list_pred_mode_flag[sizeId][matrixId] = Parser::getBit(nalu, offset);
             if(!s_data->scaling_list_pred_mode_flag[sizeId][matrixId])
             {
+                s_data->scaling_list_pred_matrix_id_delta[sizeId][matrixId] = Parser::ExpGolomb::readUe(nalu, offset);
+
                 int refMatrixId = matrixId - s_data->scaling_list_pred_matrix_id_delta[sizeId][matrixId];
                 int coefNum = std::min(64, (1<< (4 + (sizeId<<1))));
 
-                s_data->scaling_list_pred_matrix_id_delta[sizeId][matrixId] = Parser::ExpGolomb::readUe(nalu, offset);
                 //fill in scaling_list_dc_coef_minus8
                 if (!s_data->scaling_list_pred_matrix_id_delta[sizeId][matrixId])
                 {

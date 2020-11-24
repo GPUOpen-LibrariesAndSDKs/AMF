@@ -171,26 +171,27 @@ int main(int argc, char* argv[])
         MyPlaybackPipeline        pipeline;
         s_pPipeline = &pipeline;
 
-        if (!InitInstance(nCmdShow))
-        {
-            CloseInstance();
-            g_AMFFactory.Terminate();
-            return 1;
-        }
-
-#if defined(_WIN32)
-        if(DialogBox((HINSTANCE)hInst, MAKEINTRESOURCE(IDD_PROGRESS_DLG),  hMainWindow,  (DLGPROC) ProgressDlgProc ) != IDOK)
-        {
-            return 1;
-        }
-#endif
-        //------------------------------------------------------------------------------------------------------------
 #if defined(_WIN32)
         if (parseCmdLineParameters(s_pPipeline))
 #else
         if (parseCmdLineParameters(s_pPipeline, argc, argv))
 #endif        
         {
+
+            if (!InitInstance(nCmdShow))
+            {
+                CloseInstance();
+                g_AMFFactory.Terminate();
+                return 1;
+            }
+
+#if defined(_WIN32)
+            if(DialogBox((HINSTANCE)hInst, MAKEINTRESOURCE(IDD_PROGRESS_DLG),  hMainWindow,  (DLGPROC) ProgressDlgProc ) != IDOK)
+            {
+                return 1;
+            }
+#endif
+        //------------------------------------------------------------------------------------------------------------
 
 
             if(s_pPipeline->Init((amf_handle)hClientWindow, hInst) == AMF_OK)
@@ -326,11 +327,15 @@ void UpdateMenuItems()
         }
     }
 
-    CheckMenuItem(hMenu,ID_OPTIONS_PRESENTER_DX11,      MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_DX11 ? MF_CHECKED : MF_UNCHECKED));
-    CheckMenuItem(hMenu,ID_OPTIONS_PRESENTER_DX9,       MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_DX9 ? MF_CHECKED: MF_UNCHECKED));
-    CheckMenuItem(hMenu,ID_OPTIONS_PRESENTER_OPENGL,    MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_OPENGL ? MF_CHECKED: MF_UNCHECKED));
-    CheckMenuItem(hMenu,ID_OPTIONS_VIDEOPRESENTER_VULKAN,    MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_VULKAN ? MF_CHECKED: MF_UNCHECKED));
-    
+	CheckMenuItem(hMenu,ID_OPTIONS_PRESENTER_DX12,        MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_DX12 ? MF_CHECKED : MF_UNCHECKED));
+    CheckMenuItem(hMenu,ID_OPTIONS_PRESENTER_DX11,        MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_DX11 ? MF_CHECKED : MF_UNCHECKED));
+    CheckMenuItem(hMenu,ID_OPTIONS_PRESENTER_DX9,         MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_DX9 ? MF_CHECKED: MF_UNCHECKED));
+    CheckMenuItem(hMenu,ID_OPTIONS_PRESENTER_OPENGL,      MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_OPENGL ? MF_CHECKED: MF_UNCHECKED));
+    CheckMenuItem(hMenu,ID_OPTIONS_VIDEOPRESENTER_VULKAN, MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_VULKAN ? MF_CHECKED: MF_UNCHECKED));
+ 
+    bool bFullScreen = false;
+    s_pPipeline->GetParam(PlaybackPipeline::PARAM_NAME_FULLSCREEN, bFullScreen);
+    CheckMenuItem(hMenu, ID_OPTIONS_FULLSCREEN, MF_BYCOMMAND | (bFullScreen ? MF_CHECKED : MF_UNCHECKED));
 }
 
 //
@@ -392,6 +397,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case ID_PLAYBACK_STOP:
             s_pPipeline->Stop();
             break;
+		case ID_OPTIONS_PRESENTER_DX12:
+			s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_DX12);
+			UpdateMenuItems();
+			break;
         case ID_OPTIONS_PRESENTER_DX11:
             s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_DX11);
             UpdateMenuItems();
@@ -408,6 +417,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_VULKAN);
             UpdateMenuItems();
             break;
+        case ID_OPTIONS_FULLSCREEN:
+        {
+            bool bFullScreen = false;
+            s_pPipeline->GetParam(PlaybackPipeline::PARAM_NAME_FULLSCREEN, bFullScreen);
+            s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_FULLSCREEN, !bFullScreen);
+            UpdateMenuItems();
+            break;
+        }
         case ID_TOOLBAR:
             ToggleToolbar(hWnd);
             break;
@@ -421,11 +438,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         EndPaint(hWnd, &ps);
         break;
     case WM_CREATE:
-        hClientWindow = CreateClientWindow(hWnd);
+        //hClientWindow = CreateClientWindow(hWnd);
+        hClientWindow = hWnd;
         ResizeClient(hWnd);
         break;
     case WM_SIZE:
         ResizeClient(hWnd);
+        break;
+    case WM_ACTIVATE:
+        s_pPipeline->OnActivate(LOWORD(wParam) != WA_INACTIVE);
+        break;
+    case WM_CHAR:
+        if (wParam == VK_ESCAPE)
+        {
+            bool bFullScreen = false;
+            s_pPipeline->GetParam(PlaybackPipeline::PARAM_NAME_FULLSCREEN, bFullScreen);
+            if (bFullScreen)
+            {
+                s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_FULLSCREEN, false);
+                UpdateMenuItems();
+            }
+        }
         break;
     case WM_TIMER:
         UpdateCaption(hWnd);
@@ -454,7 +487,7 @@ void FileOpen(HWND hwnd)
     ofn.lpstrFile = szFile;
     ofn.lpstrFile[0] = '\0';
     ofn.nMaxFile = _countof(szFile);
-    ofn.lpstrFilter = L"Videos\0*.WMV;*.WMA;*.AVI;*.ASF;*.FLV;*.BFI;*.CAF;*.GXF;*.IFF;*.RL2;*.MP4;*.3GP;*.QTFF;*.MKV;*.MK3D;*.MKA;*.MKS;*.MPG;*.MPEG;*.PS;*.TS;*.MXF;*.OGV;*.OGA;*.OGX;*.OGG;*.SPX;*.FLV;*.F4V;*.F4P;*.F4A;*.F4B;*.JSV;*.h264;*.264;*.vc1;*.mov;*.mvc;*.m1v;*.m2v;*.m2ts;*.vpk;*.yuv;*.rgb;*.nv12;*.h265;*.265\0All\0*.*\0";
+    ofn.lpstrFilter = L"Videos\0*.WMV;*.WMA;*.AVI;*.ASF;*.FLV;*.BFI;*.CAF;*.GXF;*.IFF;*.RL2;*.MP4;*.3GP;*.QTFF;*.MKV;*.MK3D;*.MKA;*.MKS;*.MPG;*.MPEG;*.PS;*.TS;*.MXF;*.OGV;*.OGA;*.OGX;*.OGG;*.SPX;*.FLV;*.F4V;*.F4P;*.F4A;*.F4B;*.JSV;*.h264;*.264;*.vc1;*.mov;*.mvc;*.m1v;*.m2v;*.m2ts;*.vpk;*.yuv;*.rgb;*.nv12;*.h265;*.265;*.ivf\0All\0*.*\0";
 //    ofn.lpstrFilter = L"Video streams\0*.h264;*.264;*.h265;*.265;*.hevc;\0All\0*.*\0";
     ofn.nFilterIndex = 1;
     ofn.lpstrFileTitle = NULL;
@@ -523,7 +556,7 @@ HWND CreateClientWindow(HWND hWndParent)
 }
 void ResizeClient(HWND hWndParent)
 {
-    if(hWndParent != NULL && hClientWindow!=NULL)
+    if(hWndParent != NULL && hClientWindow!=NULL && hWndParent != hClientWindow)
     {
         RECT client;
         ::GetClientRect(hWndParent, &client);

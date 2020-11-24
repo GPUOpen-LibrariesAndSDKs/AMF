@@ -47,12 +47,18 @@
     #define amf_read _read
     #define amf_write _write
     #define amf_seek64 _lseeki64
-#elif defined(__linux) // Linux
+#elif defined(__linux)// Linux
     #include <unistd.h>
     #define amf_close        close
     #define amf_read         read
     #define amf_write        write
     #define amf_seek64       lseek64
+#elif defined(__APPLE__)
+    #include <unistd.h>
+    #define amf_close        close
+    #define amf_read         read
+    #define amf_write        write
+    #define amf_seek64       lseek
 #endif
 
 using namespace amf;

@@ -26,7 +26,7 @@
 #include "public/common/PropertyStorageExImpl.h"
 #include "public/include/core/Context.h"
 #include "public/common/ByteArray.h"
-#include "public/common/CurrentTime.h"
+#include "public/include/core/CurrentTime.h"
 #include "public/src/components/DisplayCapture/DDAPISource.h"
 
 using namespace amf;
@@ -67,33 +67,32 @@ namespace amf
 		virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* callback)    {  return AMF_NOT_SUPPORTED;  };
 
 		virtual AMF_RESULT  AMF_STD_CALL GetCaps(AMFCaps** ppCaps);
-
 		virtual AMF_RESULT  AMF_STD_CALL Optimize(AMFComponentOptimizationCallback* pCallback);
 
-		virtual void        AMF_STD_CALL OnPropertyChanged(const wchar_t* pName);
-
-		amf_pts GetCurrentPts() const;
-
-		void SetEOF(bool eof) { m_eof = eof; }
-
-		bool GetEOF() const { return m_eof;  }
-
+		virtual void        AMF_STD_CALL  OnPropertyChanged(const wchar_t* pName);
 	private:
-		mutable AMFCriticalSection				m_sync;
+        AMF_RESULT  AMF_STD_CALL InitDrawDirtyRects();
+        AMF_RESULT  AMF_STD_CALL TerminateDrawDirtyRects();
+        AMF_RESULT  AMF_STD_CALL DrawDirtyRects(AMFSurfacePtr& surface);
 
-		AMFContextPtr							m_pContext;
-
+        amf_pts GetCurrentPts() const;
+        void SetEOF(bool eof) { m_eof = eof; }
+        bool GetEOF() const { return m_eof; }
+        mutable AMFCriticalSection				m_sync;
+		AMFContext1Ptr							m_pContext;
 		AMFDDAPISourceImplPtr                   m_pDesktopDuplication;
-
 		AMFCurrentTimePtr						m_pCurrentTime;
-
 		bool									m_eof;
-
 		amf_pts									m_lastStartPts;
+		AMFRate								    m_frameRate;
+        bool                                    m_bCopyOutputSurface;
 
-		amf_int32								m_frameRate;
+        bool                                    m_bDrawDirtyRects;
+        AMFComputePtr                           m_pComputeDevice;
+        AMFComputeKernelPtr                     m_pDirtyRectsKernel;
+        AMFBufferPtr                            m_pDirtyRectsBuffer;
 
-		// No copy or assign
+        // No copy or assign
 		AMFDisplayCaptureImpl(const AMFDisplayCaptureImpl&);
 		AMFDisplayCaptureImpl& operator=(const AMFDisplayCaptureImpl&);
 	};

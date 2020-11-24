@@ -55,7 +55,7 @@ public:
     virtual AMF_RESULT              SetInputFormat(amf::AMF_SURFACE_FORMAT format);
     virtual AMF_RESULT              Flush();
 
-    virtual AMF_RESULT Init(amf_int32 width, amf_int32 height);
+    virtual AMF_RESULT Init(amf_int32 width, amf_int32 height, amf::AMFSurface* pSurface);
     virtual AMF_RESULT Terminate();
 
     // amf::AMFDataAllocatorCB interface
@@ -101,46 +101,6 @@ private:
 
     VkDescriptorSet                    m_hDescriptorSet;
     VkDescriptorPool                m_hDescriptorPool;
-
-    /*
-    AMF_RESULT BitBlt(amf::AMF_FRAME_TYPE eFrameType, ID3D11Texture2D* pSrcSurface, AMFRect* pSrcRect, ID3D11Texture2D* pDstSurface, AMFRect* pDstRect);
-    AMF_RESULT BitBltRender(amf::AMF_FRAME_TYPE eFrameType, ID3D11Texture2D* pSrcSurface, AMFRect* pSrcRect, ID3D11Texture2D* pDstSurface, AMFRect* pDstRect);
-    AMF_RESULT BitBltCopy(ID3D11Texture2D* pSrcSurface, AMFRect* pSrcRect, ID3D11Texture2D* pDstSurface, AMFRect* pDstRect);
-    AMF_RESULT CompileShaders();
-    AMF_RESULT PrepareStates();
-    AMF_RESULT CheckForResize(bool bForce, bool *bResized);
-    AMF_RESULT ResizeSwapChain();
-    AMF_RESULT UpdateVertices(AMFRect srcRect, AMFSize srcSize, AMFRect dstRect);
-    AMF_RESULT DrawFrame(ID3D11Texture2D* pSrcSurface, bool bLeft);
-    AMF_RESULT CopySurface(amf::AMF_FRAME_TYPE eFrameType, ID3D11Texture2D* pSrcSurface, AMFRect* pSrcRect);
-
-    AMF_RESULT CreatePresentationSwapChain();
-
-    CComPtr<ID3D11Device>               m_pDevice;
-    CComQIPtr<IDXGISwapChain>           m_pSwapChain;
-    CComPtr<IDXGISwapChain1>            m_pSwapChain1;
-    bool                                m_stereo;
-    CComPtr<ID3D11Texture2D>            m_pCopyTexture_L;
-    CComPtr<ID3D11Texture2D>            m_pCopyTexture_R;
-
-    CComPtr<ID3D11Buffer>               m_pVertexBuffer;
-    CComPtr<ID3D11Buffer>               m_pCBChangesOnResize;
-    CComPtr<ID3D11VertexShader>         m_pVertexShader;
-    CComPtr<ID3D11PixelShader>          m_pPixelShader;
-    CComPtr<ID3D11InputLayout>          m_pVertexLayout;
-    CComPtr<ID3D11SamplerState>         m_pSampler;
-    CComPtr<ID3D11DepthStencilState>    m_pDepthStencilState;
-    CComPtr<ID3D11RasterizerState>      m_pRasterizerState;
-    CComPtr<ID3D11BlendState>           m_pBlendState;
-    D3D11_VIEWPORT                      m_CurrentViewport;
-
-    CComPtr<ID3D11RenderTargetView>     m_pRenderTargetView_L;
-    CComPtr<ID3D11RenderTargetView>     m_pRenderTargetView_R;
-#if defined(METRO_APP)
-    CComPtr<ISwapChainBackgroundPanelNative> m_pSwapChainPanel;
-    AMFSize                                     m_swapChainPanelSize;
-#endif
-    */
 
     float                               m_fScale;
     float                               m_fPixelAspectRatio;

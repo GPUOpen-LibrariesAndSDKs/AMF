@@ -75,7 +75,8 @@ enum AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_ENUM
     AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CONSTANT_QP = 0,
     AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CBR,
     AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR,
-    AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_LATENCY_CONSTRAINED_VBR
+    AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_LATENCY_CONSTRAINED_VBR,
+    AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_QUALITY_VBR
 };
 
 enum AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM
@@ -125,6 +126,12 @@ enum AMF_VIDEO_ENCODER_CODING_ENUM
 
 };
 
+enum AMF_VIDEO_ENCODER_PICTURE_TRANSFER_MODE_ENUM
+{
+    AMF_VIDEO_ENCODER_PICTURE_TRANSFER_MODE_OFF = 0,
+    AMF_VIDEO_ENCODER_PICTURE_TRANSFER_MODE_ON
+};
+
 
 // Static properties - can be set before Init()
 
@@ -154,10 +161,16 @@ enum AMF_VIDEO_ENCODER_CODING_ENUM
 
     // color conversion
 #define AMF_VIDEO_ENCODER_COLOR_BIT_DEPTH                       L"ColorBitDepth"            // amf_int64(AMF_COLOR_BIT_DEPTH_ENUM); default = AMF_COLOR_BIT_DEPTH_8
-#define AMF_VIDEO_ENCODER_INPUT_COLOR_PROFILE                   L"InColorProfile"             // amf_int64(AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM); default = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN - mean AUTO by size
-#define AMF_VIDEO_ENCODER_OUTPUT_COLOR_PROFILE                  L"OutColorProfile"             // amf_int64(AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM); default = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN - mean AUTO by size
+
+#define AMF_VIDEO_ENCODER_INPUT_COLOR_PROFILE                   L"InColorProfile"           // amf_int64(AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM); default = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN - mean AUTO by size
 #define AMF_VIDEO_ENCODER_INPUT_TRANSFER_CHARACTERISTIC         L"InColorTransferChar"      // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 § 7.2 See VideoDecoderUVD.h for enum 
+#define AMF_VIDEO_ENCODER_INPUT_COLOR_PRIMARIES                 L"InColorPrimaries"         // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 § 7.1 See ColorSpace.h for enum 
+#define AMF_VIDEO_ENCODER_INPUT_HDR_METADATA                    L"InHDRMetadata"            // AMFBuffer containing AMFHDRMetadata; default NULL
+
+#define AMF_VIDEO_ENCODER_OUTPUT_COLOR_PROFILE                  L"OutColorProfile"          // amf_int64(AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM); default = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN - mean AUTO by size
 #define AMF_VIDEO_ENCODER_OUTPUT_TRANSFER_CHARACTERISTIC        L"OutColorTransferChar"     // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 § 7.2 See VideoDecoderUVD.h for enum 
+#define AMF_VIDEO_ENCODER_OUTPUT_COLOR_PRIMARIES                L"OutColorPrimaries"        // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 § 7.1 See ColorSpace.h for enum 
+#define AMF_VIDEO_ENCODER_OUTPUT_HDR_METADATA                   L"OutHDRMetadata"           // AMFBuffer containing AMFHDRMetadata; default NULL
 
 
 // Dynamic properties - can be set at any time
@@ -204,9 +217,11 @@ enum AMF_VIDEO_ENCODER_CODING_ENUM
     // SVC
 #define AMF_VIDEO_ENCODER_NUM_TEMPORAL_ENHANCMENT_LAYERS        L"NumOfTemporalEnhancmentLayers" // amf_int64; default = 0; range = 0, min(2, caps->GetMaxNumOfTemporalLayers()) number of temporal enhancment Layers (SVC)
 
-    // color conversion
-#define AMF_VIDEO_ENCODER_INPUT_HDR_METADATA                    L"InHDRMetadata"            // AMFBuffer containing AMFHDRMetadata; default NULL
-#define AMF_VIDEO_ENCODER_OUTPUT_HDR_METADATA                   L"OutHDRMetadata"           // AMFBuffer containing AMFHDRMetadata; default NULL
+
+    // DPB management
+#define AMF_VIDEO_ENCODER_PICTURE_TRANSFER_MODE                 L"PicTransferMode"               // amf_int64(AMF_VIDEO_ENCODER_PICTURE_TRANSFER_MODE_ENUM); default = AMF_VIDEO_ENCODER_PICTURE_TRANSFER_MODE_OFF - whether to exchange reference/reconstructed pic between encoder and application
+    // misc
+#define AMF_VIDEO_ENCODER_QUERY_TIMEOUT                       L"QueryTimeout"            // amf_int64; default = 0 (no wait); timeout for QueryOutput call in ms.
 
 // Per-submittion properties - can be set on input surface interface
 #define AMF_VIDEO_ENCODER_END_OF_SEQUENCE                       L"EndOfSequence"            // bool; default = false; generate end of sequence
@@ -219,11 +234,13 @@ enum AMF_VIDEO_ENCODER_CODING_ENUM
 #define AMF_VIDEO_ENCODER_MARK_CURRENT_WITH_LTR_INDEX           L"MarkCurrentWithLTRIndex"  // //amf_int64; default = N/A; Mark current frame with LTR index
 #define AMF_VIDEO_ENCODER_FORCE_LTR_REFERENCE_BITFIELD          L"ForceLTRReferenceBitfield"// amf_int64; default = 0; force LTR bit-field 
 #define AMF_VIDEO_ENCODER_ROI_DATA                              L"ROIData"                  // 2D AMFSurface, surface format: AMF_SURFACE_GRAY32
+#define AMF_VIDEO_ENCODER_REFERENCE_PICTURE                     L"ReferencePicture"         // AMFInterface(AMFSurface); surface used for frame injection
 
 // properties set by encoder on output buffer interface
 #define AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE                      L"OutputDataType"           // amf_int64(AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_ENUM); default = N/A
 #define AMF_VIDEO_ENCODER_OUTPUT_MARKED_LTR_INDEX               L"MarkedLTRIndex"           //amf_int64; default = -1; Marked LTR index
 #define AMF_VIDEO_ENCODER_OUTPUT_REFERENCED_LTR_INDEX_BITFIELD  L"ReferencedLTRIndexBitfield" // amf_int64; default = 0; referenced LTR bit-field 
+#define AMF_VIDEO_ENCODER_RECONSTRUCTED_PICTURE                 L"ReconstructedPicture"     // AMFInterface(AMFSurface); returns reconstructed picture as an AMFSurface attached to the output buffer as property AMF_VIDEO_ENCODER_RECONSTRUCTED_PICTURE of AMFInterface type
 
 
 #define AMF_VIDEO_ENCODER_HDCP_COUNTER                          L"HDCPCounter"              //  const void*
@@ -248,8 +265,29 @@ enum AMF_VIDEO_ENCODER_CODING_ENUM
 #define AMF_VIDEO_ENCODER_CAP_COLOR_CONVERSION                  L"ColorConversion"          // amf_int64(AMF_ACCELERATION_TYPE) - type of supported color conversion. default AMF_ACCEL_GPU
 #define AMF_VIDEO_ENCODER_CAP_PRE_ANALYSIS                      L"PreAnalysis"              // amf_bool - pre analysis module is available for H264 UVE encoder, n/a for the other encoders
 #define AMF_VIDEO_ENCODER_CAP_ROI                               L"ROIMap"                   // amf_bool - ROI map support is available for H264 UVE encoder, n/a for the other encoders
+#define AMF_VIDEO_ENCODER_CAP_MAX_THROUGHPUT                    L"MaxThroughput"            // amf_int64 - MAX throughput for H264 encoder in MB (16 x 16 pixel)
+#define AMF_VIDEO_ENCODER_CAP_REQUESTED_THROUGHPUT              L"RequestedThroughput"      // amf_int64 - Currently total requested throughput for H264 encoder in MB (16 x 16 pixel)
+#define AMF_VIDEO_ENCODER_CAPS_QUERY_TIMEOUT_SUPPORT            L"QueryTimeoutSupport"      // amf_bool - Timeout supported for QueryOutout call
 
 // properties set on AMFComponent to control component creation
 #define AMF_VIDEO_ENCODER_MEMORY_TYPE                           L"EncoderMemoryType"        // amf_int64(AMF_MEMORY_TYPE) , default is AMF_MEMORY_UNKNOWN, Values : AMF_MEMORY_DX11, AMF_MEMORY_DX9, AMF_MEMORY_VULKAN or AMF_MEMORY_UNKNOWN (auto)
+
+// properties set on a frame to retrieve encoder statistics
+#define AMF_VIDEO_ENCODER_STATISTICS_FEEDBACK                   L"StatisticsFeedback"                       // amf_bool; default = false; Signal encoder to collect and feedback statistics
+
+#define AMF_VIDEO_ENCODER_STATISTIC_FRAME_QP                    L"StatisticsFeedbackFrameQP"                // amf_uin32; Rate control base frame QP
+#define AMF_VIDEO_ENCODER_STATISTIC_AVERAGE_QP                  L"StatisticsFeedbackAvgQP"                  // amf_uin32; Average QP of all encoded CTBs in a picture
+#define AMF_VIDEO_ENCODER_STATISTIC_MAX_QP                      L"StatisticsFeedbackMaxQP"                  // amf_uin32; Max QP among all encoded CTBs in a picture
+#define AMF_VIDEO_ENCODER_STATISTIC_MIN_QP                      L"StatisticsFeedbackMinQP"                  // amf_uin32; Min QP among all encoded CTBs in a picture
+#define AMF_VIDEO_ENCODER_STATISTIC_PIX_NUM_INTRA               L"StatisticsFeedbackPixNumIntra"            // amf_uin32; Number of the intra encoded pixels
+#define AMF_VIDEO_ENCODER_STATISTIC_PIX_NUM_INTER               L"StatisticsFeedbackPixNumInter"            // amf_uin32; Number of the inter encoded pixels
+#define AMF_VIDEO_ENCODER_STATISTIC_PIX_NUM_SKIP                L"StatisticsFeedbackPixNumSkip"             // amf_uin32; Number of the skip mode pixels
+#define AMF_VIDEO_ENCODER_STATISTIC_BITCOUNT_RESIDUAL           L"StatisticsFeedbackBitcountResidual"       // amf_uin32; The bit count that corresponds to residual data
+#define AMF_VIDEO_ENCODER_STATISTIC_BITCOUNT_MOTION             L"StatisticsFeedbackBitcountMotion"         // amf_uin32; The bit count that corresponds to motion vectors
+#define AMF_VIDEO_ENCODER_STATISTIC_BITCOUNT_INTER              L"StatisticsFeedbackBitcountInter"          // amf_uin32; The bit count that are assigned to inter CTBs
+#define AMF_VIDEO_ENCODER_STATISTIC_BITCOUNT_INTRA              L"StatisticsFeedbackBitcountIntra"          // amf_uin32; The bit count that are assigned to intra CTBs
+#define AMF_VIDEO_ENCODER_STATISTIC_BITCOUNT_ALL_MINUS_HEADER   L"StatisticsFeedbackBitcountAllMinusHeader" // amf_uin32; The bit count of the bitstream excluding header
+#define AMF_VIDEO_ENCODER_STATISTIC_MV_X                        L"StatisticsFeedbackMvX"                    // amf_uin32; Accumulated absolute values of horizontal MV’s
+#define AMF_VIDEO_ENCODER_STATISTIC_MV_Y                        L"StatisticsFeedbackMvY"                    // amf_uin32; Accumulated absolute values of vertical MV’s
 
 #endif //#ifndef AMF_VideoEncoderVCE_h

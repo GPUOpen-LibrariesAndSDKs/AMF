@@ -585,6 +585,14 @@ namespace amf
             return *this;
         }
 
+        inline bool operator==(const Matrix& other) const 
+        {
+            return memcmp(this, &other, sizeof(*this)) == 0;
+        }
+        inline bool operator!=(const Matrix& other) const
+        {
+            return memcmp(this, &other, sizeof(*this)) != 0;
+        }
 
         inline Vector operator*(const Vector& v)
         {
@@ -976,98 +984,56 @@ namespace amf
         inline Matrix Inverse(Vector *pDeterminant)
         {
 
-            Matrix MT = Transpose();
+            float A2323 = m[2][2] * m[3][3] - m[2][3] * m[3][2];
+            float A1323 = m[2][1] * m[3][3] - m[2][3] * m[3][1];
+            float A1223 = m[2][1] * m[3][2] - m[2][2] * m[3][1];
+            float A0323 = m[2][0] * m[3][3] - m[2][3] * m[3][0];
+            float A0223 = m[2][0] * m[3][2] - m[2][2] * m[3][0];
+            float A0123 = m[2][0] * m[3][1] - m[2][1] * m[3][0];
+            float A2313 = m[1][2] * m[3][3] - m[1][3] * m[3][2];
+            float A1313 = m[1][1] * m[3][3] - m[1][3] * m[3][1];
+            float A1213 = m[1][1] * m[3][2] - m[1][2] * m[3][1];
+            float A2312 = m[1][2] * m[2][3] - m[1][3] * m[2][2];
+            float A1312 = m[1][1] * m[2][3] - m[1][3] * m[2][1];
+            float A1212 = m[1][1] * m[2][2] - m[1][2] * m[2][1];
+            float A0313 = m[1][0] * m[3][3] - m[1][3] * m[3][0];
+            float A0213 = m[1][0] * m[3][2] - m[1][2] * m[3][0];
+            float A0312 = m[1][0] * m[2][3] - m[1][3] * m[2][0];
+            float A0212 = m[1][0] * m[2][2] - m[1][2] * m[2][0];
+            float A0113 = m[1][0] * m[3][1] - m[1][1] * m[3][0];
+            float A0112 = m[1][0] * m[2][1] - m[1][1] * m[2][0];
 
-            Vector V0[4], V1[4];
-            V0[0] = Vector(MT.r[2].x, MT.r[2].x, MT.r[2].y, MT.r[2].y);
-            V1[0] = Vector(MT.r[3].z, MT.r[3].w, MT.r[3].z, MT.r[3].w);
-            V0[1] = Vector(MT.r[0].x, MT.r[0].x, MT.r[0].y, MT.r[0].y);
-            V1[1] = Vector(MT.r[1].z, MT.r[1].w, MT.r[1].z, MT.r[1].w);
-            V0[2] = MT.r[2].VectorPermute(MT.r[0], AMF_PERMUTE_0X, AMF_PERMUTE_0Z, AMF_PERMUTE_1X, AMF_PERMUTE_1Z);
-            V1[2] = MT.r[3].VectorPermute(MT.r[1], AMF_PERMUTE_0Y, AMF_PERMUTE_0W, AMF_PERMUTE_1Y, AMF_PERMUTE_1W);
-
-            Vector D0 = V0[0] *V1[0];
-            Vector D1 = V0[1] *V1[1];
-            Vector D2 = V0[2] *V1[2];
-
-            V0[0] = Vector(MT.r[2].z, MT.r[2].w, MT.r[2].z, MT.r[2].w);
-            V1[0] = Vector(MT.r[3].x, MT.r[3].x, MT.r[3].y, MT.r[3].y);
-            V0[1] = Vector(MT.r[0].z, MT.r[0].w, MT.r[0].z, MT.r[0].w);
-            V1[1] = Vector(MT.r[1].x, MT.r[1].x, MT.r[1].y, MT.r[1].y);
-            V0[2] = MT.r[2].VectorPermute(MT.r[0], AMF_PERMUTE_0Y, AMF_PERMUTE_0W, AMF_PERMUTE_1Y, AMF_PERMUTE_1W);
-            V1[2] = MT.r[3].VectorPermute(MT.r[1], AMF_PERMUTE_0X, AMF_PERMUTE_0Z, AMF_PERMUTE_1X, AMF_PERMUTE_1Z);
-
-            D0 -= V0[0] * V1[0];
-            D1 -= V0[1] * V1[1];
-            D2 -= V0[2] * V1[2];
-
-            V0[0] = Vector(MT.r[1].y, MT.r[1].z, MT.r[1].x, MT.r[1].y);
-            V1[0] = D0.VectorPermute(D2, AMF_PERMUTE_1Y, AMF_PERMUTE_0Y, AMF_PERMUTE_0W, AMF_PERMUTE_0X);
-            V0[1] = Vector(MT.r[0].z, MT.r[0].z, MT.r[0].y, MT.r[0].x);
-            V1[1] = D0.VectorPermute(D2, AMF_PERMUTE_0W, AMF_PERMUTE_1Y, AMF_PERMUTE_0Y, AMF_PERMUTE_0Z);
-            V0[2] = Vector(MT.r[3].y, MT.r[3].z, MT.r[3].x, MT.r[3].y);
-            V1[2] = D1.VectorPermute(D2, AMF_PERMUTE_1W, AMF_PERMUTE_0Y, AMF_PERMUTE_0W, AMF_PERMUTE_0X);
-            V0[3] = Vector(MT.r[2].z, MT.r[2].x, MT.r[2].y, MT.r[2].x);
-            V1[3] = D1.VectorPermute(D2, AMF_PERMUTE_0W, AMF_PERMUTE_1W, AMF_PERMUTE_0Y, AMF_PERMUTE_0Z);
-
-            Vector C0 = V0[0] * V1[0];
-            Vector C2 = V0[1] * V1[1];
-            Vector C4 = V0[2] * V1[2];
-            Vector C6 = V0[3] * V1[3];
-
-            V0[0] = Vector(MT.r[1].z, MT.r[1].w, MT.r[1].y, MT.r[1].z);
-            V1[0] = D0.VectorPermute(D2, AMF_PERMUTE_0W, AMF_PERMUTE_0X, AMF_PERMUTE_0Y, AMF_PERMUTE_1X);
-            V0[1] = Vector(MT.r[0].w, MT.r[0].z, MT.r[0].w, MT.r[0].y);
-            V1[1] = D0.VectorPermute(D2, AMF_PERMUTE_0Z, AMF_PERMUTE_0Y, AMF_PERMUTE_1X, AMF_PERMUTE_0X);
-            V0[2] = Vector(MT.r[3].z, MT.r[3].w, MT.r[3].y, MT.r[3].z);
-            V1[2] = D1.VectorPermute(D2, AMF_PERMUTE_0W, AMF_PERMUTE_0X, AMF_PERMUTE_0Y, AMF_PERMUTE_1Z);
-            V0[3] = Vector(MT.r[2].w, MT.r[2].z, MT.r[2].w, MT.r[2].y);
-            V1[3] = D1.VectorPermute(D2, AMF_PERMUTE_0Z, AMF_PERMUTE_0Y, AMF_PERMUTE_1Z, AMF_PERMUTE_0X);
-
-            C0 -= V0[0] * V1[0];
-            C2 -= V0[1] * V1[1];
-            C4 -= V0[2] * V1[2];
-            C6 -= V0[3] * V1[3];
-
-            V0[0] = Vector(MT.r[1].w, MT.r[1].x, MT.r[1].w, MT.r[1].x);
-            V1[0] = D0.VectorPermute(D2, AMF_PERMUTE_0Z, AMF_PERMUTE_1Y, AMF_PERMUTE_1X, AMF_PERMUTE_0Z);
-            V0[1] = Vector(MT.r[0].y, MT.r[0].w, MT.r[0].x, MT.r[0].z);
-            V1[1] = D0.VectorPermute(D2, AMF_PERMUTE_1Y, AMF_PERMUTE_0X, AMF_PERMUTE_0W, AMF_PERMUTE_1X);
-            V0[2] = Vector(MT.r[3].w, MT.r[3].x, MT.r[3].w, MT.r[3].x);
-            V1[2] = D1.VectorPermute(D2, AMF_PERMUTE_0Z, AMF_PERMUTE_1W, AMF_PERMUTE_1Z, AMF_PERMUTE_0Z);
-            V0[3] = Vector(MT.r[2].y, MT.r[2].w, MT.r[2].x, MT.r[2].z);
-            V1[3] = D1.VectorPermute(D2, AMF_PERMUTE_1W, AMF_PERMUTE_0X, AMF_PERMUTE_0W, AMF_PERMUTE_1Z);
-
-            Vector C1 = C0 - V0[0] * V1[0];
-            C0 += V0[0] * V1[0];
-            Vector C3 = C2 + V0[1] * V1[1];
-            C2 -= V0[1] * V1[1];
-            Vector C5 = C4 - V0[2] * V1[2];
-            C4 += V0[2] * V1[2];
-            Vector C7 = C6 + V0[3] * V1[3];
-            C6 -= V0[3] * V1[3];
-
-            Matrix R;
-            R.r[0] = Vector(C0.x, C1.y, C0.z, C1.w);
-            R.r[1] = Vector(C2.x, C3.y, C2.z, C3.w);
-            R.r[2] = Vector(C4.x, C5.y, C4.z, C5.w);
-            R.r[3] = Vector(C6.x, C7.y, C6.z, C7.w);
-
-            Vector Determinant = R.r[0].Dot4(MT.r[0]);
+            float det =
+              m[0][0] * (m[1][1] * A2323 - m[1][2] * A1323 + m[1][3] * A1223)
+            - m[0][1] * (m[1][0] * A2323 - m[1][2] * A0323 + m[1][3] * A0223)
+            + m[0][2] * (m[1][0] * A1323 - m[1][1] * A0323 + m[1][3] * A0123)
+            - m[0][3] * (m[1][0] * A1223 - m[1][1] * A0223 + m[1][2] * A0123);
+            det = 1.0f / det;
+            Matrix ret;
+            ret.m[0][0] = det *  (m[1][1] * A2323 - m[1][2] * A1323 + m[1][3] * A1223);
+            ret.m[0][1] = det * -(m[0][1] * A2323 - m[0][2] * A1323 + m[0][3] * A1223);
+            ret.m[0][2] = det *  (m[0][1] * A2313 - m[0][2] * A1313 + m[0][3] * A1213);
+            ret.m[0][3] = det * -(m[0][1] * A2312 - m[0][2] * A1312 + m[0][3] * A1212);
+            ret.m[1][0] = det * -(m[1][0] * A2323 - m[1][2] * A0323 + m[1][3] * A0223);
+            ret.m[1][1] = det *  (m[0][0] * A2323 - m[0][2] * A0323 + m[0][3] * A0223);
+            ret.m[1][2] = det * -(m[0][0] * A2313 - m[0][2] * A0313 + m[0][3] * A0213);
+            ret.m[1][3] = det *  (m[0][0] * A2312 - m[0][2] * A0312 + m[0][3] * A0212);
+            ret.m[2][0] = det *  (m[1][0] * A1323 - m[1][1] * A0323 + m[1][3] * A0123);
+            ret.m[2][1] = det * -(m[0][0] * A1323 - m[0][1] * A0323 + m[0][3] * A0123);
+            ret.m[2][2] = det *  (m[0][0] * A1313 - m[0][1] * A0313 + m[0][3] * A0113);
+            ret.m[2][3] = det * -(m[0][0] * A1312 - m[0][1] * A0312 + m[0][3] * A0112);
+            ret.m[3][0] = det * -(m[1][0] * A1223 - m[1][1] * A0223 + m[1][2] * A0123);
+            ret.m[3][1] = det *  (m[0][0] * A1223 - m[0][1] * A0223 + m[0][2] * A0123);
+            ret.m[3][2] = det * -(m[0][0] * A1213 - m[0][1] * A0213 + m[0][2] * A0113);
+            ret.m[3][3] = det *  (m[0][0] * A1212 - m[0][1] * A0212 + m[0][2] * A0112);
 
             if (pDeterminant != nullptr)
-                *pDeterminant = Determinant;
-
-            Vector Reciprocal = Determinant.Reciprocal();
-
-            Matrix Result;
-            Result.r[0] = R.r[0] * Reciprocal;
-            Result.r[1] = R.r[1] * Reciprocal;
-            Result.r[2] = R.r[2] * Reciprocal;
-            Result.r[3] = R.r[3] * Reciprocal;
-            return Result;
-
+            {
+                *pDeterminant = Vector(det,det,det,det);
+            }
+            return ret;
         }
+
     };
 
     class Pose

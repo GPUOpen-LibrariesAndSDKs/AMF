@@ -36,7 +36,27 @@
 #include "public/include/components/VideoDecoderUVD.h"
 #include "public/include/components/VideoConverter.h"
 
+// to enble this code switch to Windows 10 SDK for Windows 10 RS2 (10.0.15063.0) or later.
+#if defined(NTDDI_WIN10_RS2)
+#include <DXGI1_6.h>
+#endif
+
+#define USE_COLOR_TWITCH_IN_DISPLAY 0
+
+
 #pragma comment(lib, "d3dcompiler.lib")
+
+#define  AMF_FACILITY  L"VideoPresenterDX11"
+
+struct SimpleVertex
+{
+	XMFLOAT3 position;
+	XMFLOAT2 texture;
+};
+struct CBNeverChanges
+{
+	XMMATRIX mView;
+};
 
 const char DX11_FullScreenQuad[] = 
 "//--------------------------------------------------------------------------------------\n"
@@ -84,25 +104,12 @@ const char DX11_FullScreenQuad[] =
 "}                                                                                       \n"
 ;
 
-#if defined(METRO_APP)
-VideoPresenterDX11::VideoPresenterDX11(ISwapChainBackgroundPanelNative* pSwapChainPanel, AMFSize swapChainPanelSize, amf::AMFContext* pContext) :
-    VideoPresenter(NULL, pContext),
-    m_stereo(false),
-    m_fScale(1.0f),
-    m_fPixelAspectRatio(1.0f),
-    m_fOffsetX(0.0f),
-    m_fOffsetY(0.0f),
-    m_pSwapChainPanel(pSwapChainPanel),
-    m_swapChainPanelSize(swapChainPanelSize),
-    m_uiAvailableBackBuffer(0),
-    m_uiBackBufferCount(4),
-    m_bResizeSwapChain(false),
-    m_eInputFormat(amf::AMF_SURFACE_BGRA)
-{
-}
+typedef     HRESULT(WINAPI *DCompositionCreateSurfaceHandle_Fn)(DWORD desiredAccess, SECURITY_ATTRIBUTES *securityAttributes, HANDLE *surfaceHandle);
+typedef     HRESULT(WINAPI *DCompositionCreateDevice_Fn)(IDXGIDevice *dxgiDevice, REFIID iid, void **dcompositionDevice);
+typedef     HRESULT(WINAPI *DCompositionCreateDevice2_Fn)(IUnknown *renderingDevice,REFIID iid,void **dcompositionDevice);
+typedef     HRESULT(WINAPI *DCompositionCreateDevice3_Fn)(IUnknown *renderingDevice, REFIID iid, void **dcompositionDevice);
 
-#else
-
+typedef     HRESULT(WINAPI *DCompositionAttachMouseDragToHwnd_Fn)(IDCompositionVisual* visual,HWND hwnd, BOOL enable);
 VideoPresenterDX11::VideoPresenterDX11(amf_handle hwnd, amf::AMFContext* pContext) :
     BackBufferPresenter(hwnd, pContext),
     m_stereo(false),
@@ -114,6 +121,8 @@ VideoPresenterDX11::VideoPresenterDX11(amf_handle hwnd, amf::AMFContext* pContex
     m_uiBackBufferCount(4),
     m_bResizeSwapChain(false),
     m_bFirstFrame(true),
+    m_hDcompDll(0),
+    m_hDCompositionSurfaceHandle(nullptr),
 //    m_eInputFormat(amf::AMF_SURFACE_BGRA)
     m_eInputFormat(amf::AMF_SURFACE_RGBA)
 //     m_eInputFormat(amf::AMF_SURFACE_RGBA_F16)
@@ -121,11 +130,13 @@ VideoPresenterDX11::VideoPresenterDX11(amf_handle hwnd, amf::AMFContext* pContex
 
 {
 }
-#endif
 
 VideoPresenterDX11::~VideoPresenterDX11()
 {
     Terminate();
+    m_pContext = NULL;
+    m_hwnd = NULL;
+
 }
 
 
@@ -147,36 +158,53 @@ AMF_RESULT VideoPresenterDX11::Present(amf::AMFSurface* pSurface)
     }
 
     ApplyCSC(pSurface);
+	UINT presentFlags = DXGI_PRESENT_RESTART;
+	UINT syncInterval = 1;
+	if (m_bWaitForVSync == false)
+	{
+		presentFlags |= DXGI_PRESENT_DO_NOT_WAIT;
+		syncInterval = 0;
+	}
 
-#if 0
-    amf_pts timestamp;
-    pSurface->GetProperty(L"Stitch", &timestamp);
-    amf_pts latency = amf_high_precision_clock() - timestamp;
-    AMFTraceWarning(L"stitch", L"Stitch - Latency = %5.2f", (double)latency / 10000.);
-#endif
     {
         amf::AMFContext::AMFDX11Locker dxlock(m_pContext);
 
-        AMFRect rectClient;
-        #if defined(METRO_APP)
-            //TODO: calculate rect
+        if (m_pSwapChainVideo != nullptr)
         {
-            CComPtr<ID3D11Texture2D> pDestDxSurface;
-            if(FAILED(m_pSwapChain->GetBuffer( 0,  __uuidof(pDestDxSurface), reinterpret_cast<void**>(&pDestDxSurface))))
-            {
-                return AMF_DIRECTX_FAILED;
-            }
 
-            D3D11_TEXTURE2D_DESC desc;
-            pDestDxSurface->GetDesc(&desc);
-            rectClient.left = 0;
-            rectClient.top = 0;
-            rectClient.right = desc.Width;
-            rectClient.bottom = desc.Height;
+            if (m_pDecodeTexture != (ID3D11Texture2D*)pSurface->GetPlaneAt(0)->GetNative())
+            {
+                Terminate();
+                Init(0, 0, pSurface);
+            }
+            amf_int64 index = 0;
+            pSurface->GetProperty(L"TextureArrayIndex", &index);
+
+            amf::AMFLock lock(&m_sect);
+
+            for (int i = 0; i < 100; i++)
+            {
+                HRESULT hr = m_pSwapChainVideo->PresentBuffer((UINT)index, syncInterval, presentFlags);
+//                HRESULT hr = m_pSwapChainVideo->PresentBuffer((UINT)index, 0, 0);
+
+                if (FAILED(hr))
+                {
+
+//                    AMFTraceWarning(AMF_FACILITY, L"Present() - Present() failed hr=HR = %0X", hr);
+                }
+                if (hr != DXGI_ERROR_WAS_STILL_DRAWING)
+                {
+                    //ASSERT_RETURN_IF_HR_FAILED(hr,AMF_DIRECTX_FAILED,L"Present() - Present() failed");
+                    break;
+                }
+                amf_sleep(1);
+            }
+            return AMF_OK;
         }
-        #else
-            rectClient = GetClientRect();
-        #endif
+
+        AMFRect rectClient;
+
+        rectClient = GetClientRect();
 
         bool bResized = false;
         CheckForResize(false, &bResized);
@@ -186,7 +214,7 @@ AMF_RESULT VideoPresenterDX11::Present(amf::AMFSurface* pSurface)
             {
                 ResizeSwapChain();
             }
-            amf::AMFPlane* pPlane = pSurface->GetPlane(amf::AMF_PLANE_PACKED);
+            amf::AMFPlane* pPlane = pSurface->GetPlaneAt(0);
             CComPtr<ID3D11Texture2D> pSrcDxSurface = (ID3D11Texture2D*)pPlane->GetNative();
             if (pSrcDxSurface == NULL)
             {
@@ -211,9 +239,12 @@ AMF_RESULT VideoPresenterDX11::Present(amf::AMFSurface* pSurface)
 
     amf::AMFLock lock(&m_sect);
     
+    HRESULT hr = S_OK;
     for(int i=0;i<100;i++)
     {
-        HRESULT hr=m_pSwapChain->Present( 0, DXGI_PRESENT_DO_NOT_WAIT);
+//        
+        hr = m_pSwapChain->Present(syncInterval, presentFlags);
+        
         if(hr != DXGI_ERROR_WAS_STILL_DRAWING )
         {
             //ASSERT_RETURN_IF_HR_FAILED(hr,AMF_DIRECTX_FAILED,L"Present() - Present() failed");
@@ -231,7 +262,10 @@ AMF_RESULT VideoPresenterDX11::Present(amf::AMFSurface* pSurface)
 
 AMF_RESULT VideoPresenterDX11::BitBlt(amf::AMF_FRAME_TYPE eFrameType, ID3D11Texture2D* pSrcSurface, AMFRect* pSrcRect, ID3D11Texture2D* pDstSurface, AMFRect* pDstRect)
 {
-//    return BitBltCopy(pSrcSurface, pSrcRect, pDstSurface, pDstRect);
+    if (GetInputFormat() == amf::AMF_SURFACE_NV12)
+    {
+        return BitBltCopy(pSrcSurface, pSrcRect, pDstSurface, pDstRect);
+    }
     return BitBltRender(eFrameType, pSrcSurface, pSrcRect, pDstSurface, pDstRect);
 }
 
@@ -256,6 +290,8 @@ AMF_RESULT VideoPresenterDX11::BitBltCopy(ID3D11Texture2D* pSrcSurface, AMFRect*
     box.back=1;
 
     spContext->CopySubresourceRegion(pDstSurface, 0, pDstRect->left, pDstRect->top, 0, pSrcSurface, 0, &box);
+    spContext->Flush();
+
     return err;
 }
 
@@ -448,7 +484,7 @@ AMF_RESULT VideoPresenterDX11::DrawFrame(ID3D11Texture2D* pSrcSurface, bool bLef
     return AMF_OK;
 }
 
-AMF_RESULT VideoPresenterDX11::Init(amf_int32 width, amf_int32 height)
+AMF_RESULT VideoPresenterDX11::Init(amf_int32 width, amf_int32 height, amf::AMFSurface* pSurface)
 {
     AMF_RESULT err = AMF_OK;
 
@@ -462,10 +498,13 @@ AMF_RESULT VideoPresenterDX11::Init(amf_int32 width, amf_int32 height)
 
     if(err == AMF_OK)
     {
-        err = CreatePresentationSwapChain();
+        err = CreatePresentationSwapChain(pSurface);
     }
-    err = CompileShaders();
-    PrepareStates();
+    if (m_hDCompositionSurfaceHandle == nullptr)
+    {
+        err = CompileShaders();
+        PrepareStates();
+    }
     m_bFirstFrame = true;
 
     return err;
@@ -473,6 +512,13 @@ AMF_RESULT VideoPresenterDX11::Init(amf_int32 width, amf_int32 height)
 
 AMF_RESULT VideoPresenterDX11::Terminate()
 {
+    m_pCurrentOutput = NULL;
+
+    if (m_pSwapChain1 != nullptr)
+    {
+        m_pSwapChain1->SetFullscreenState(FALSE, NULL);
+    }
+
     m_pRenderTargetView_L = NULL;
     m_pRenderTargetView_R = NULL;
 
@@ -489,24 +535,56 @@ AMF_RESULT VideoPresenterDX11::Terminate()
     m_pCopyTexture_L = NULL;
     m_pCopyTexture_R = NULL;
 
-    m_pContext = NULL;
-    m_hwnd = NULL;
     
-    m_pDevice = NULL;
+    m_pSwapChainVideo.Release();
+    m_pSwapChain1.Release();
     m_pSwapChain.Release();
+
+    m_pDecodeTexture.Release();
+    m_pVisualSurface.Release();
+    m_pDCompTarget.Release();
+    m_pDCompDevice.Release();
+
+    if (m_hDCompositionSurfaceHandle != nullptr)
+    {
+        CloseHandle(m_hDCompositionSurfaceHandle);
+        m_hDCompositionSurfaceHandle = nullptr;
+    }
+    if (m_hDcompDll != 0)
+    {
+        amf_free_library(m_hDcompDll);
+        m_hDcompDll = 0;
+    }
+
+    m_pDevice = NULL;
 
     return VideoPresenter::Terminate();
 }
 
 
-AMF_RESULT VideoPresenterDX11::CreatePresentationSwapChain()
+AMF_RESULT VideoPresenterDX11::CreatePresentationSwapChain(amf::AMFSurface* pSurface)
 {
     AMF_RESULT err=AMF_OK;
     HRESULT hr=S_OK;
 
     amf::AMFLock lock(&m_sect);
 
+    m_pCurrentOutput.Release();
+    m_pSwapChainVideo.Release();
+    m_pSwapChain1.Release();
     m_pSwapChain.Release();
+    m_pDecodeTexture.Release();
+
+    m_pVisualSurface.Release();
+    m_pDCompTarget.Release();
+    m_pDCompDevice.Release();
+    if (m_hDCompositionSurfaceHandle != nullptr)
+    {
+        CloseHandle(m_hDCompositionSurfaceHandle);
+        m_hDCompositionSurfaceHandle = nullptr;
+    }
+
+
     for(std::vector<amf::AMFSurface*>::iterator it = m_TrackSurfaces.begin(); it != m_TrackSurfaces.end(); it++)
     {
         (*it)->RemoveObserver(this);
@@ -522,8 +600,29 @@ AMF_RESULT VideoPresenterDX11::CreatePresentationSwapChain()
     CComPtr<IDXGIFactory2> spIDXGIFactory2;
     spDXGIAdapter->GetParent(__uuidof(IDXGIFactory2), (void **)&spIDXGIFactory2);
 
-    CComPtr<IDXGIOutput>  spOutput;
+    HMONITOR hMonitor = MonitorFromWindow((HWND)m_hwnd, MONITOR_DEFAULTTONEAREST);
 
+    for (UINT i = 0;; i++)
+    {
+        CComPtr<IDXGIOutput>                pOutput;
+        hr = spDXGIAdapter->EnumOutputs(i, &pOutput);
+        if (pOutput == nullptr)
+        {
+            break;
+        }
+        DXGI_OUTPUT_DESC outputDesc = {};
+        pOutput->GetDesc(&outputDesc);
+        if (outputDesc.Monitor == hMonitor)
+        {
+            m_pCurrentOutput = pOutput;
+            break;
+        }
+    }
+    if (m_pCurrentOutput == nullptr)
+    {
+        hr = spDXGIAdapter->EnumOutputs(0, &m_pCurrentOutput);
+        ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"EnumOutputs(0) failed");
+    }
     m_stereo = false;//for future
 
     if(spIDXGIFactory2!=NULL)
@@ -534,55 +633,164 @@ AMF_RESULT VideoPresenterDX11::CreatePresentationSwapChain()
         spContext->ClearState();
         spContext->Flush();
 
-        DXGI_SWAP_CHAIN_DESC1 swapChainDescription = {0};
-#if defined(METRO_APP)
-        swapChainDescription.Width = (UINT)m_swapChainPanelSize.width;//(UINT)m_window->Bounds.Width;//AK:: it look like winstore mode requires Width Height initialized
-        swapChainDescription.Height = (UINT)m_swapChainPanelSize.height;//(UINT)m_window->Bounds.Height;
-#else
-        swapChainDescription.Width = 0;                                     // use automatic sizing
-        swapChainDescription.Height = 0;
-#endif
-        swapChainDescription.Format = GetDXGIFormat();
-        swapChainDescription.Stereo = m_stereo ? TRUE : FALSE;                      // create swapchain in stereo if stereo is enabled
-        swapChainDescription.SampleDesc.Count = 1;                          // don't use multi-sampling
-        swapChainDescription.SampleDesc.Quality = 0;
-//        swapChainDescription.BufferUsage = DXGI_USAGE_SHADER_INPUT | DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHARED;
-        swapChainDescription.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-        swapChainDescription.BufferCount = m_uiBackBufferCount;                               // use a single buffer and render to it as a FS quad
-#if defined(METRO_APP)
-        swapChainDescription.Scaling = DXGI_SCALING_STRETCH;                   // set scaling to none//;//
-#else
-        swapChainDescription.Scaling = DXGI_SCALING_NONE;                   // set scaling to none//DXGI_SCALING_STRETCH;//
-#endif
-        swapChainDescription.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL; // we recommend using this swap effect for all applications - only this works for stereo
-//        swapChainDescription.SwapEffect = DXGI_SWAP_EFFECT_SEQUENTIAL;
-//        swapChainDescription.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH ;
+        
 
-        CComQIPtr<IDXGIDevice1> spDXGIDevice1=spDXGIDevice;
-
-#if defined(METRO_APP)
+        if (GetInputFormat() == amf::AMF_SURFACE_NV12 && pSurface != nullptr)
         {
-            //hr=spIDXGIFactory2->CreateSwapChainForCoreWindow(m_pDevice,reinterpret_cast<IUnknown*>(m_window.Get()),&swapChainDescription,spOutput,&m_pSwapChain1);
-            hr=spIDXGIFactory2->CreateSwapChainForComposition(m_pDevice, &swapChainDescription, NULL, &m_pSwapChain1);
-            // Associate the new swap chain with the SwapChainBackgroundPanel element.
+            DXGI_OUTPUT_DESC outputDesc = {};
+            m_pCurrentOutput->GetDesc(&outputDesc);
+            ::MoveWindow((HWND)m_hwnd, 0, 0, 
+                outputDesc.DesktopCoordinates.right - outputDesc.DesktopCoordinates.left,
+                outputDesc.DesktopCoordinates.bottom - outputDesc.DesktopCoordinates.top, TRUE);
 
-            //CComPtr<ISwapChainBackgroundPanelNative> panelNative;
-            //reinterpret_cast<IUnknown*>(m_panel.Get())->QueryInterface(IID_PPV_ARGS(&panelNative));
-            hr = m_pSwapChainPanel->SetSwapChain(m_pSwapChain1);
+            m_pDecodeTexture = (ID3D11Texture2D*)pSurface->GetPlaneAt(0)->GetNative();
+            
+            CComQIPtr<IDXGIDevice1> spDXGIDevice1=spDXGIDevice;
 
+            if (m_hDcompDll == 0)
+            {
+                m_hDcompDll = amf_load_library(L"Dcomp.dll");
+                AMF_RETURN_IF_FALSE(m_hDcompDll != nullptr, AMF_DIRECTX_FAILED, L"Dcomp.dll is not available");
+            }
+            DCompositionCreateSurfaceHandle_Fn fDCompositionCreateSurfaceHandle = (DCompositionCreateSurfaceHandle_Fn)amf_get_proc_address(m_hDcompDll, "DCompositionCreateSurfaceHandle");
+            AMF_RETURN_IF_FALSE(fDCompositionCreateSurfaceHandle != nullptr, AMF_DIRECTX_FAILED, L"DCompositionCreateSurfaceHandle is not available");
+            
+            DCompositionCreateDevice_Fn fDCompositionCreateDevice = (DCompositionCreateDevice_Fn)amf_get_proc_address(m_hDcompDll, "DCompositionCreateDevice");
+            AMF_RETURN_IF_FALSE(fDCompositionCreateDevice != nullptr, AMF_DIRECTX_FAILED, L"DCompositionCreateDevice is not available");
+
+            DCompositionCreateDevice3_Fn fDCompositionCreateDevice3 = (DCompositionCreateDevice3_Fn)amf_get_proc_address(m_hDcompDll, "DCompositionCreateDevice3");
+            AMF_RETURN_IF_FALSE(fDCompositionCreateDevice3 != nullptr, AMF_DIRECTX_FAILED, L"DCompositionCreateDevice3 is not available");
+
+            DCompositionAttachMouseDragToHwnd_Fn fDCompositionAttachMouseDragToHwnd= (DCompositionAttachMouseDragToHwnd_Fn)amf_get_proc_address(m_hDcompDll, "DCompositionAttachMouseDragToHwnd");
+            AMF_RETURN_IF_FALSE(fDCompositionAttachMouseDragToHwnd != nullptr, AMF_DIRECTX_FAILED, L"DCompositionAttachMouseDragToHwnd is not available");
+
+            hr = fDCompositionCreateDevice3(spDXGIDevice, __uuidof(IDCompositionDesktopDevice), (void**)&m_pDCompDevice);
+//            hr = fDCompositionCreateDevice(spDXGIDevice, __uuidof(IDCompositionDevice), (void**)&m_pDCompDevice);
+            AMF_RETURN_IF_FALSE(m_pDCompDevice != nullptr, AMF_DIRECTX_FAILED, L"DCompositionCreateDevice() failed");
+
+            hr = m_pDCompDevice->CreateTargetForHwnd((HWND)m_hwnd, TRUE, &m_pDCompTarget);
+            ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"DCompDevice->CreateTargetForHwnd() failed");
+
+
+            #define COMPOSITIONSURFACE_ALL_ACCESS  0x0003L
+
+            hr = fDCompositionCreateSurfaceHandle(COMPOSITIONSURFACE_ALL_ACCESS, nullptr, &m_hDCompositionSurfaceHandle);
+            ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"DCompositionCreateSurfaceHandle() failed");
+
+            hr = m_pDCompDevice->CreateVisual(&m_pVisualSurface);
+            ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"CreateVisual() failed");
+
+            CComQIPtr<IDXGIFactoryMedia> pDXGIDeviceMedia;
+
+            spDXGIAdapter->GetParent(__uuidof(IDXGIFactoryMedia), (void **)&pDXGIDeviceMedia);
+            AMF_RETURN_IF_FALSE(pDXGIDeviceMedia != nullptr, AMF_DIRECTX_FAILED, L"CComQIPtr<IDXGIFactoryMedia> is not available");
+
+            DXGI_DECODE_SWAP_CHAIN_DESC descVideoSwap = {};
+
+            CComQIPtr<IDXGIResource> spDXGResource = m_pDecodeTexture;
+
+            hr = pDXGIDeviceMedia->CreateDecodeSwapChainForCompositionSurfaceHandle(m_pDevice, m_hDCompositionSurfaceHandle, &descVideoSwap, spDXGResource, nullptr, &m_pSwapChainVideo);
+            
+            if (FAILED(hr))
+            {
+                return AMF_FAIL;
+            }
+            m_pSwapChainVideo->SetColorSpace(DXGI_MULTIPLANE_OVERLAY_YCbCr_FLAG_BT709);
+
+            RECT sourceRect = { 0,0,pSurface->GetPlaneAt(0)->GetWidth(), pSurface->GetPlaneAt(0)->GetHeight() };
+
+            m_pSwapChainVideo->SetSourceRect(&sourceRect);
+            RECT dstRect = { 0,0,
+                outputDesc.DesktopCoordinates.right - outputDesc.DesktopCoordinates.left,
+                outputDesc.DesktopCoordinates.bottom - outputDesc.DesktopCoordinates.top };
+
+            m_pSwapChainVideo->SetTargetRect(&dstRect);
+
+//            CComPtr<IUnknown> pUnknownSurface;
+//            hr = m_pDCompDevice->CreateSurfaceFromHandle(m_hDCompositionSurfaceHandle, &pUnknownSurface);
+//            ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"CreateSurfaceFromHandle() failed");
+
+            //            CComPtr<IDCompositionVisual2>        pVisualSurfaceRoot;
+            //            hr = m_pDCompDevice->CreateVisual(&pVisualSurfaceRoot);
+            //            ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"CreateVisual() failed");
+            // hr = m_pVisualSurface->SetContent(pUnknownSurface);
+//            hr = pVisualSurfaceRoot->AddVisual(m_pVisualSurface, TRUE, nullptr);
+
+            hr = m_pVisualSurface->SetContent(m_pSwapChainVideo);
+            ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetContent(m_pSwapChainVideo) failed");
+            hr = m_pDCompTarget->SetRoot(m_pVisualSurface);
+            ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetRoot() failed");
+
+            //m_pVisualSurface->SetOpacityMode(DCOMPOSITION_OPACITY_MODE_INHERIT);
+            CComQIPtr<IDCompositionVisual3>   pVisualSurface3(m_pVisualSurface);
+            pVisualSurface3->SetVisible(TRUE);
+
+//            fDCompositionAttachMouseDragToHwnd(m_pVisualSurface, (HWND)m_hwnd, TRUE);
+
+            hr = m_pDCompDevice->Commit();
+            ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"Commit() failed");
+
+            ShowCursor(TRUE);
         }
-#else
+        else
         {
-            hr=spIDXGIFactory2->CreateSwapChainForHwnd(m_pDevice, (HWND)m_hwnd, &swapChainDescription, NULL, spOutput, &m_pSwapChain1);
+            DXGI_SWAP_CHAIN_DESC1 swapChainDescription = { 0 };
+            swapChainDescription.Width = 0;                                     // use automatic sizing
+            swapChainDescription.Height = 0;
+
+            swapChainDescription.Format = GetDXGIFormat();
+            swapChainDescription.Stereo = m_stereo ? TRUE : FALSE;                      // create swapchain in stereo if stereo is enabled
+            swapChainDescription.SampleDesc.Count = 1;                          // don't use multi-sampling
+            swapChainDescription.SampleDesc.Quality = 0;
+            //        swapChainDescription.BufferUsage = DXGI_USAGE_SHADER_INPUT | DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHARED;
+            swapChainDescription.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+            swapChainDescription.BufferCount = m_uiBackBufferCount;                               // use a single buffer and render to it as a FS quad
+            swapChainDescription.Scaling = DXGI_SCALING_NONE;                   // set scaling to none//DXGI_SCALING_STRETCH;//
+
+            swapChainDescription.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL; // we recommend using this swap effect for all applications - only this works for stereo
+//            swapChainDescription.Flags = DXGI_SWAP_CHAIN_FLAG_FULLSCREEN_VIDEO; //DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+
+            hr = spIDXGIFactory2->CreateSwapChainForHwnd(m_pDevice, (HWND)m_hwnd, &swapChainDescription, NULL, nullptr, &m_pSwapChain1);
+            if (FAILED(hr) && m_stereo)
+            {
+                return AMF_FAIL;
+            }
+            if (SUCCEEDED(hr) && m_bFullScreen)
+            {
+                hr = m_pSwapChain1->SetFullscreenState(m_bFullScreen ? TRUE : FALSE, NULL);
+            }
+
+            if (SUCCEEDED(hr))
+            {
+
+                ATL::CComQIPtr<IDXGIOutput6> spDXGIOutput6(m_pCurrentOutput);
+                if (spDXGIOutput6 != NULL)
+                {
+                    DXGI_OUTPUT_DESC1 desc = {};
+                    spDXGIOutput6->GetDesc1(&desc);
+
+                    if (desc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020) // HDR
+                    {
+                        ATL::CComQIPtr<IDXGISwapChain3> pSwapChain3(m_pSwapChain1);
+                        if (pSwapChain3 != NULL)
+                        {
+                            if (GetInputFormat() == amf::AMF_SURFACE_RGBA_F16)
+                            {
+                                pSwapChain3->SetColorSpace1(DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709);
+                            }
+                            else if (GetInputFormat() == amf::AMF_SURFACE_R10G10B10A2)
+                            {
+                                pSwapChain3->SetColorSpace1(DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
+                            }
+                        }
+                    }
+                }
+            }
         }
-#endif
-        if(FAILED(hr) && m_stereo)
-        {
-            return AMF_FAIL;
-        }
+        
     }
     m_pSwapChain = m_pSwapChain1;
-    if(m_pSwapChain1 == NULL)
+    if(m_pSwapChain1 == nullptr && m_pSwapChainVideo == nullptr)
     {
         m_stereo=false;
         CComPtr<IDXGIFactory> spIDXGIFactory;
@@ -603,13 +811,12 @@ AMF_RESULT VideoPresenterDX11::CreatePresentationSwapChain()
         sd.OutputWindow = (HWND)m_hwnd;
         sd.SampleDesc.Count = 1;
         sd.SampleDesc.Quality = 0;
-        sd.Windowed = TRUE;
-//        sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+        sd.Windowed = m_bFullScreen ? FALSE : TRUE;
         sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
         sd.Flags=DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
         hr = spIDXGIFactory->CreateSwapChain( m_pDevice, &sd, &m_pSwapChain );
-        //ASSERT_RETURN_IF_HR_FAILED(hr,AMF_DIRECTX_FAILED,L"CreatePresentationSwapChain() - CreateSwapChain() failed");
+        ASSERT_RETURN_IF_HR_FAILED(hr,AMF_DIRECTX_FAILED,L"CreatePresentationSwapChain() - CreateSwapChain() failed");
     }
 
     ResizeSwapChain();
@@ -764,18 +971,23 @@ AMF_RESULT            VideoPresenterDX11::CheckForResize(bool bForce, bool *bRes
     AMF_RESULT err=AMF_OK;
     HRESULT hr = S_OK;
 
+    if (m_hDCompositionSurfaceHandle != nullptr)
+    {
+        return AMF_OK;
+    }
 
     CComPtr<ID3D11Texture2D> spBuffer;
+
+    if (m_pSwapChainVideo != nullptr)
+    {
+        return AMF_OK;
+    }
     hr = m_pSwapChain->GetBuffer( 0,  __uuidof(spBuffer), reinterpret_cast<void**>(&spBuffer));
 
 
     D3D11_TEXTURE2D_DESC bufferDesc;
     spBuffer->GetDesc( &bufferDesc );
 
-#if defined(METRO_APP)
-    amf_int width = bufferDesc.Width;
-    amf_int height = bufferDesc.Height;
-#else
     AMFRect client;
     if(m_hwnd!=NULL)
     {
@@ -792,9 +1004,13 @@ AMF_RESULT            VideoPresenterDX11::CheckForResize(bool bForce, bool *bRes
     }
     amf_int width=client.right-client.left;
     amf_int height=client.bottom-client.top;
-#endif
 
-    if(!bForce && ((width==(amf_int)bufferDesc.Width && height==(amf_int)bufferDesc.Height) || width == 0 || height == 0 ))
+    BOOL bFullScreen = FALSE;
+    CComPtr<IDXGIOutput> pOutput;
+    m_pSwapChain->GetFullscreenState(&bFullScreen, &pOutput);
+
+    if(!bForce && ((width==(amf_int)bufferDesc.Width && height==(amf_int)bufferDesc.Height) || width == 0 || height == 0 ) &&
+        (bool)bFullScreen == m_bFullScreen)
     {
         return AMF_OK;
     }
@@ -802,18 +1018,29 @@ AMF_RESULT            VideoPresenterDX11::CheckForResize(bool bForce, bool *bRes
     m_bResizeSwapChain = true;
     return AMF_OK;
 }
+
+AMFSize             VideoPresenterDX11::GetSwapchainSize()
+{
+    AMFSize size = {};
+    if (m_pSwapChain != nullptr)
+    {
+        DXGI_SWAP_CHAIN_DESC SwapDesc;
+        m_pSwapChain->GetDesc(&SwapDesc);
+        size.width = amf_int32(SwapDesc.BufferDesc.Width);
+        size.height = amf_int32(SwapDesc.BufferDesc.Height);
+    }
+    return size;
+}
+
 AMF_RESULT VideoPresenterDX11::ResizeSwapChain()
 {
     AMFRect client;
 
-#if !defined(METRO_APP)
     if(m_hwnd!=NULL)
     {
-
         client = GetClientRect();
     }
     else
-#endif
     if(m_pSwapChain1!=NULL)
     {
         DXGI_SWAP_CHAIN_DESC1 SwapDesc;
@@ -823,14 +1050,23 @@ AMF_RESULT VideoPresenterDX11::ResizeSwapChain()
         client.right=SwapDesc.Width;
         client.bottom=SwapDesc.Height;
     }
-    amf_int width=client.right-client.left;
-    amf_int height=client.bottom-client.top;
+
+    if (m_hDCompositionSurfaceHandle != nullptr)
+    {
+        return AMF_OK;
+    }
 
     // clear views and temp surfaces
     m_pRenderTargetView_L = NULL;
     m_pRenderTargetView_R = NULL;
     m_pCopyTexture_L = NULL;
     m_pCopyTexture_R = NULL;
+
+    HRESULT hr = S_OK;
+    if (m_pSwapChain != nullptr)
+    {
+        hr = m_pSwapChain->SetFullscreenState(m_bFullScreen ? TRUE : FALSE, NULL);
+    }
 
     CComPtr<ID3D11DeviceContext> spContext;
     m_pDevice->GetImmediateContext( &spContext );
@@ -839,11 +1075,16 @@ AMF_RESULT VideoPresenterDX11::ResizeSwapChain()
     spContext->OMSetRenderTargets(0, 0, 0);
 
     // resize
-    HRESULT hr=m_pSwapChain->ResizeBuffers(0,width,height,DXGI_FORMAT_UNKNOWN,DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
+    hr = m_pSwapChain->ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, 0); // DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
+
+    DXGI_SWAP_CHAIN_DESC SwapDesc;
+    m_pSwapChain->GetDesc(&SwapDesc);
 
     // Create render target view
     CComPtr<ID3D11Texture2D> spBackBuffer;
     hr = m_pSwapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), (LPVOID*)&spBackBuffer );
+    D3D11_TEXTURE2D_DESC BackBufferDesc = {};
+    spBackBuffer->GetDesc(&BackBufferDesc);
 
     D3D11_RENDER_TARGET_VIEW_DESC RenderTargetViewDescription;
     ZeroMemory(&RenderTargetViewDescription, sizeof(RenderTargetViewDescription));
@@ -862,10 +1103,23 @@ AMF_RESULT VideoPresenterDX11::ResizeSwapChain()
         hr = m_pDevice->CreateRenderTargetView( spBackBuffer, &RenderTargetViewDescription, &m_pRenderTargetView_R );
     }
 
+    if (m_bFullScreen)
+    {
+        client.left = 0;
+        client.top = 0;
+        client.right = SwapDesc.BufferDesc.Width;
+        client.bottom = SwapDesc.BufferDesc.Height;
+    }
+    else
+    {
+        client = GetClientRect();
+        int a = 1;
+    }
+
     m_CurrentViewport.TopLeftX=0;
     m_CurrentViewport.TopLeftY=0;
-    m_CurrentViewport.Width=FLOAT(width);
-    m_CurrentViewport.Height=FLOAT(height);
+    m_CurrentViewport.Width=FLOAT(SwapDesc.BufferDesc.Width);
+    m_CurrentViewport.Height=FLOAT(SwapDesc.BufferDesc.Height);
     m_CurrentViewport.MinDepth=0.0f;
     m_CurrentViewport.MaxDepth=1.0f;
 
@@ -998,18 +1252,86 @@ void AMF_STD_CALL VideoPresenterDX11::OnSurfaceDataRelease(amf::AMFSurface* pSur
 
 AMF_RESULT              VideoPresenterDX11::SetInputFormat(amf::AMF_SURFACE_FORMAT format)
 {
-    if(format != amf::AMF_SURFACE_BGRA && format != amf::AMF_SURFACE_RGBA  && format != amf::AMF_SURFACE_RGBA_F16 && format != amf::AMF_SURFACE_R10G10B10A2)
+    if(format != amf::AMF_SURFACE_NV12 && format != amf::AMF_SURFACE_BGRA && format != amf::AMF_SURFACE_RGBA  && format != amf::AMF_SURFACE_RGBA_F16 && format != amf::AMF_SURFACE_R10G10B10A2)
     {
-        return AMF_FAIL;
+        return AMF_NOT_SUPPORTED;
+    }
+    // test for MPO
+    if (format == amf::AMF_SURFACE_NV12)
+    {
+        CComPtr<ID3D11Device>    pDevice(static_cast<ID3D11Device*>(m_pContext->GetDX11Device()));
+        CComQIPtr<IDXGIDevice> spDXGIDevice(pDevice);
+        if (spDXGIDevice == nullptr)
+        {
+            return AMF_NOT_SUPPORTED;
+        }
+
+        CComPtr<IDXGIAdapter> spDXGIAdapter;
+        HRESULT hr = spDXGIDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&spDXGIAdapter);
+        ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"GetParent(__uuidof(IDXGIAdapter)) failed");
+
+        CComPtr<IDXGIOutput> pCurrentOutput;
+        hr = spDXGIAdapter->EnumOutputs(0, &pCurrentOutput);
+        ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"EnumOutputs(0) failed");
+
+        CComQIPtr<IDXGIOutput3>  spOutput3(pCurrentOutput);
+        UINT flagsOverlay = 0;
+        hr = spOutput3->CheckOverlaySupport(DXGI_FORMAT_NV12, pDevice, &flagsOverlay);
+        if (flagsOverlay == 0)
+        {
+            return AMF_NOT_SUPPORTED;
+        }
     }
     m_eInputFormat = format;
     return AMF_OK;
 }
+AMFRate		VideoPresenterDX11::GetDisplayRefreshRate()
+{
+	AMFRate rate = VideoPresenter::GetDisplayRefreshRate();
+	CComPtr<ID3D11Device>    pDevice(static_cast<ID3D11Device*>(m_pContext->GetDX11Device()));
+	CComQIPtr<IDXGIDevice> spDXGIDevice(pDevice);
+	if (spDXGIDevice == nullptr)
+	{
+		return rate;
+	}
+
+	CComPtr<IDXGIAdapter> spDXGIAdapter;
+	HRESULT hr = spDXGIDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&spDXGIAdapter);
+	ASSERT_RETURN_IF_HR_FAILED(hr, rate, L"GetParent(__uuidof(IDXGIAdapter)) failed");
+
+	CComPtr<IDXGIOutput> pCurrentOutput;
+	hr = spDXGIAdapter->EnumOutputs(0, &pCurrentOutput);
+	ASSERT_RETURN_IF_HR_FAILED(hr, rate, L"EnumOutputs(0) failed");
+
+	DXGI_OUTPUT_DESC outputDesc = {};
+	pCurrentOutput->GetDesc(&outputDesc);
+
+	MONITORINFOEX monitorInfo = {};
+	monitorInfo.cbSize = sizeof(MONITORINFOEX);
+	GetMonitorInfo(outputDesc.Monitor, &monitorInfo);
+
+	DEVMODE devMode = {};
+	devMode.dmSize = sizeof(DEVMODE);
+	devMode.dmDriverExtra = 0;
+	EnumDisplaySettings(monitorInfo.szDevice, ENUM_CURRENT_SETTINGS, &devMode);
+
+	if (1 == devMode.dmDisplayFrequency || 0 == devMode.dmDisplayFrequency)
+	{
+		return rate;
+	}
+	rate.num = (amf_int32)devMode.dmDisplayFrequency;
+	rate.den = 1;
+	return rate;
+}
+
 DXGI_FORMAT VideoPresenterDX11::GetDXGIFormat() const
 { 
     DXGI_FORMAT format = DXGI_FORMAT_B8G8R8A8_UNORM;
     switch(GetInputFormat())
     {
+    case amf::AMF_SURFACE_NV12:
+        format = DXGI_FORMAT_NV12;
+        break;
     case amf::AMF_SURFACE_BGRA:
         format = DXGI_FORMAT_B8G8R8A8_UNORM;
         break;
@@ -1032,96 +1354,149 @@ AMF_RESULT              VideoPresenterDX11::Flush()
     return BackBufferPresenter::Flush();
 }
 
-// to enble this code switch to Windows 10 SDK for Windows 10 RS2 (10.0.15063.0) or later.
-#if defined(NTDDI_WIN10_RS2)
-#include <DXGI1_6.h>
-#endif
-
-#define USE_COLOR_TWITCH_IN_DISPLAY 0
-
 
 void        VideoPresenterDX11::UpdateProcessor()
 {
     VideoPresenter::UpdateProcessor();
 #if defined(NTDDI_WIN10_RS2)
-    if(m_pProcessor != NULL && m_pDevice != NULL)
+    if (m_pProcessor != NULL && m_pCurrentOutput != NULL)
     {
 #if USE_COLOR_TWITCH_IN_DISPLAY
         ATL::CComQIPtr<IDXGISwapChain3> pSwapChain3(m_pSwapChain);
-        if(pSwapChain3 != NULL)
+        if (pSwapChain3 != NULL)
         {
             UINT supported[20];
-            for(int i = 0; i < 20; i++)
+            for (int i = 0; i < 20; i++)
             {
                 pSwapChain3->CheckColorSpaceSupport((DXGI_COLOR_SPACE_TYPE)i, &supported[i]);
             }
-            if((GetInputFormat() == amf::AMF_SURFACE_RGBA_F16 || GetInputFormat() == amf::AMF_SURFACE_R10G10B10A2) &&
-                (supported[DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709] & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT))
+            if ((GetInputFormat() == amf::AMF_SURFACE_RGBA_F16 || GetInputFormat() == amf::AMF_SURFACE_R10G10B10A2) &&
+                (supported[DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020] & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT))
             {
 
-                DXGI_COLOR_SPACE_TYPE colorSpace = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
-                    pSwapChain3->SetColorSpace1(colorSpace);
-                    m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_USE_DECODER_HDR_METADATA, false);
-                }
+//                DXGI_COLOR_SPACE_TYPE colorSpace = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+//                pSwapChain3->SetColorSpace1(colorSpace);
+//                m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_USE_DECODER_HDR_METADATA, false);
             }
         }
 #endif
-        // check and set color space and HDR support
+    // check and set color space and HDR support
 
-        CComQIPtr<IDXGIDevice> spDXGIDevice=m_pDevice;
+    ATL::CComQIPtr<IDXGIOutput6> spDXGIOutput6(m_pCurrentOutput);
+    if (spDXGIOutput6 != NULL)
+    {
+        DXGI_OUTPUT_DESC1 desc = {};
+        spDXGIOutput6->GetDesc1(&desc);
+        if (desc.MaxLuminance != 0)
+        {
+            amf::AMFBufferPtr pBuffer;
+            m_pContext->AllocBuffer(amf::AMF_MEMORY_HOST, sizeof(AMFHDRMetadata), &pBuffer);
+            AMFHDRMetadata* pHDRData = (AMFHDRMetadata*)pBuffer->GetNative();
 
-        CComPtr<IDXGIAdapter> spDXGIAdapter;
-        HRESULT hr = spDXGIDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&spDXGIAdapter);
+            pHDRData->redPrimary[0] = amf_uint16(desc.RedPrimary[0] * 50000.f);
+            pHDRData->redPrimary[1] = amf_uint16(desc.RedPrimary[1] * 50000.f);
 
-        UINT adapterIndex = 0;
-        for(;;adapterIndex++)
-        { 
-            ATL::CComPtr<IDXGIOutput> spDXGIOutput;
-            spDXGIAdapter->EnumOutputs(adapterIndex, &spDXGIOutput);
-            if(spDXGIOutput == NULL)
-            {
-                break;
-            }
-            ATL::CComQIPtr<IDXGIOutput6> spDXGIOutput6(spDXGIOutput);
-            if(spDXGIOutput6 != NULL)
-            {
-                DXGI_OUTPUT_DESC1 desc = {};
-                spDXGIOutput6->GetDesc1(&desc);
-                if(desc.MaxLuminance != 0 && desc.BitsPerColor > 8)
-//                if(desc.MaxLuminance != 0)
-                {
-                    amf::AMFBufferPtr pBuffer;
-                    m_pContext->AllocBuffer(amf::AMF_MEMORY_HOST, sizeof(AMFHDRMetadata), &pBuffer);
-                    AMFHDRMetadata* pHDRData = (AMFHDRMetadata*)pBuffer->GetNative();
+            pHDRData->greenPrimary[0] = amf_uint16(desc.GreenPrimary[0] * 50000.f);
+            pHDRData->greenPrimary[1] = amf_uint16(desc.GreenPrimary[1] * 50000.f);
 
-                    pHDRData->redPrimary[0] = amf_uint16(desc.RedPrimary[0] * 50000.f);
-                    pHDRData->redPrimary[1] = amf_uint16(desc.RedPrimary[1] * 50000.f);
+            pHDRData->bluePrimary[0] = amf_uint16(desc.BluePrimary[0] * 50000.f);
+            pHDRData->bluePrimary[1] = amf_uint16(desc.BluePrimary[1] * 50000.f);
 
-                    pHDRData->greenPrimary[0] = amf_uint16(desc.GreenPrimary[0] * 50000.f);
-                    pHDRData->greenPrimary[1] = amf_uint16(desc.GreenPrimary[1] * 50000.f);
+            pHDRData->whitePoint[0] = amf_uint16(desc.WhitePoint[0] * 50000.f);
+            pHDRData->whitePoint[1] = amf_uint16(desc.WhitePoint[1] * 50000.f);
 
-                    pHDRData->bluePrimary[0] = amf_uint16(desc.BluePrimary[0] * 50000.f);
-                    pHDRData->bluePrimary[1] = amf_uint16(desc.BluePrimary[1] * 50000.f);
+            pHDRData->maxMasteringLuminance = amf_uint32(desc.MaxLuminance * 10000.f);
+            pHDRData->minMasteringLuminance = amf_uint32(desc.MinLuminance * 10000.f);
+            pHDRData->maxContentLightLevel = 0;
+            pHDRData->maxFrameAverageLightLevel = amf_uint32(desc.MaxFullFrameLuminance* 10000.f);
 
-                    pHDRData->whitePoint[0] = amf_uint16(desc.WhitePoint[0] * 50000.f);
-                    pHDRData->whitePoint[1] = amf_uint16(desc.WhitePoint[1] * 50000.f);
 
-                    pHDRData->maxMasteringLuminance = amf_uint32(desc.MaxLuminance * 10000.f);
-                    pHDRData->minMasteringLuminance = amf_uint32(desc.MinLuminance * 10000.f);
-                    pHDRData->maxContentLightLevel = 0;
-                    pHDRData->maxFrameAverageLightLevel = amf_uint32(desc.MaxFullFrameLuminance* 10000.f);
-
-                    m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_DISPLAY_HDR_METADATA,pBuffer);
-                }
-            }
+            m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_HDR_METADATA, pBuffer);
         }
+        AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_BT709;
+        AMF_COLOR_PRIMARIES_ENUM primaries = AMF_COLOR_PRIMARIES_UNDEFINED;
+
+        switch (desc.ColorSpace)
+        {
+        case  DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709:
+            colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_GAMMA22;
+            primaries = AMF_COLOR_PRIMARIES_BT709;
+            AMFTraceInfo(AMF_FACILITY, L"DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709");
+            break;
+        case  DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709:
+            colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_LINEAR;
+            primaries = AMF_COLOR_PRIMARIES_BT709;
+            AMFTraceInfo(AMF_FACILITY, L"DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709");
+            break;
+        case  DXGI_COLOR_SPACE_RGB_STUDIO_G22_NONE_P709:
+            colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_GAMMA22;
+            primaries = AMF_COLOR_PRIMARIES_BT709;
+            AMFTraceInfo(AMF_FACILITY, L"DXGI_COLOR_SPACE_RGB_STUDIO_G22_NONE_P709");
+            break;
+        case  DXGI_COLOR_SPACE_RGB_STUDIO_G22_NONE_P2020:
+            colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_GAMMA22;
+            primaries = AMF_COLOR_PRIMARIES_BT2020;
+            AMFTraceInfo(AMF_FACILITY, L"DXGI_COLOR_SPACE_RGB_STUDIO_G22_NONE_P2020");
+            break;
+
+            //    case  DXGI_COLOR_SPACE_RESERVED:
+            //    case  DXGI_COLOR_SPACE_YCBCR_FULL_G22_NONE_P709_X601:
+            //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_LEFT_P601:
+            //    case  DXGI_COLOR_SPACE_YCBCR_FULL_G22_LEFT_P601:
+            //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_LEFT_P709:
+            //    case  DXGI_COLOR_SPACE_YCBCR_FULL_G22_LEFT_P709:
+            //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_LEFT_P2020:
+            //    case  DXGI_COLOR_SPACE_YCBCR_FULL_G22_LEFT_P2020:
+        case  DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020:
+            colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE2084;
+            primaries = AMF_COLOR_PRIMARIES_BT2020;
+            AMFTraceInfo(AMF_FACILITY, L"DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020");
+            break;
+            //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_G2084_LEFT_P2020:
+        case  DXGI_COLOR_SPACE_RGB_STUDIO_G2084_NONE_P2020:
+            colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE2084;
+            primaries = AMF_COLOR_PRIMARIES_BT2020;
+            AMFTraceInfo(AMF_FACILITY, L"DXGI_COLOR_SPACE_RGB_STUDIO_G2084_NONE_P2020");
+            break;
+            //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_TOPLEFT_P2020:
+    //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_G2084_TOPLEFT_P2020:
+        case  DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P2020:
+            colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_GAMMA22;
+            primaries = AMF_COLOR_PRIMARIES_BT2020;
+            AMFTraceInfo(AMF_FACILITY, L"DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P2020");
+            break;
+            //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_GHLG_TOPLEFT_P2020:
+    //    case  DXGI_COLOR_SPACE_YCBCR_FULL_GHLG_TOPLEFT_P2020:
+        case  DXGI_COLOR_SPACE_RGB_STUDIO_G24_NONE_P709:
+            //        colorTransfer =
+            primaries = AMF_COLOR_PRIMARIES_BT709;
+            AMFTraceInfo(AMF_FACILITY, L"DXGI_COLOR_SPACE_RGB_STUDIO_G24_NONE_P709");
+            break;
+        case  DXGI_COLOR_SPACE_RGB_STUDIO_G24_NONE_P2020:
+            //        colorTransfer =
+            primaries = AMF_COLOR_PRIMARIES_BT2020;
+            AMFTraceInfo(AMF_FACILITY, L"DXGI_COLOR_SPACE_RGB_STUDIO_G24_NONE_P2020");
+            break;
+            //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_G24_LEFT_P709:
+            //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_G24_LEFT_P2020:
+            //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_G24_TOPLEFT_P2020:
+
+        }
+        if (GetInputFormat() == amf::AMF_SURFACE_RGBA_F16)
+        {
+            colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_LINEAR;
+        }
+
+        m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_TRANSFER_CHARACTERISTIC, colorTransfer);
+        m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_COLOR_PRIMARIES, primaries);
     }
 #endif
+    }
 }
 AMF_RESULT VideoPresenterDX11::ApplyCSC(amf::AMFSurface* pSurface)
 {
 #if defined(NTDDI_WIN10_RS2)
-#ifdef USE_COLOR_TWITCH_IN_DISPLAY
+#if USE_COLOR_TWITCH_IN_DISPLAY
     if(m_bFirstFrame)
     {
         amf::AMFVariant varBuf;

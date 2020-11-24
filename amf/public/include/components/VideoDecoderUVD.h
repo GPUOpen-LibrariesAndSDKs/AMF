@@ -50,6 +50,9 @@
 #define AMFVideoDecoderUVD_MJPEG                     L"AMFVideoDecoderUVD_MJPEG"
 #define AMFVideoDecoderHW_H265_HEVC                  L"AMFVideoDecoderHW_H265_HEVC"
 #define AMFVideoDecoderHW_H265_MAIN10                L"AMFVideoDecoderHW_H265_MAIN10"
+#define AMFVideoDecoderHW_VP9                        L"AMFVideoDecoderHW_VP9"
+#define AMFVideoDecoderHW_VP9_10BIT                  L"AMFVideoDecoderHW_VP9_10BIT"
+#define AMFVideoDecoderHW_AV1                        L"AMFVideoDecoderHW_AV1"
 
 enum AMF_VIDEO_DECODER_MODE_ENUM
 {
@@ -68,7 +71,6 @@ enum AMF_TIMESTAMP_MODE_ENUM
 #define AMF_VIDEO_DECODER_EXTRADATA                    L"ExtraData"             // AMFInterface* -> AMFBuffer* - AVCC - size length + SPS/PPS; or as Annex B. Optional if stream is Annex B
 #define AMF_VIDEO_DECODER_FRAME_RATE                   L"FrameRate"             // amf_double; default = 0.0, optional property to restore duration in the output if needed
 #define AMF_TIMESTAMP_MODE                             L"TimestampMode"         // amf_int64(AMF_TIMESTAMP_MODE_ENUM)  - default AMF_TS_PRESENTATION - how input timestamps are treated
-#define AMF_VIDEO_DECODER_FULL_RANGE_COLOR             L"FullRangeColor"        //  bool; default = false; inidicates that YUV input is (0,255) 
 
 // dynamic/adaptive resolution change
 #define AMF_VIDEO_DECODER_ADAPTIVE_RESOLUTION_CHANGE   L"AdaptiveResolutionChange" // amf_bool; default = false; reuse allocated surfaces if new resolution is smaller
@@ -88,9 +90,33 @@ enum AMF_TIMESTAMP_MODE_ENUM
 
 // metadata information: can be set on output surface
 
-// AMF_VIDEO_DECODER_FULL_RANGE_COLOR will be also set on surface 
+// Properties could be set on surface based on HDR SEI or VUI header
 #define AMF_VIDEO_DECODER_COLOR_TRANSFER_CHARACTERISTIC L"ColorTransferChar"    // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 § 7.2
 #define AMF_VIDEO_DECODER_COLOR_PRIMARIES               L"ColorPrimaries"       // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 § 7.1
 #define AMF_VIDEO_DECODER_HDR_METADATA                  L"HdrMetadata"          // AMFBuffer containing AMFHDRMetadata; default NULL
+
+/////// AMF_VIDEO_DECODER_FULL_RANGE_COLOR deprecated, use AMF_VIDEO_DECODER_COLOR_RANGE
+#define AMF_VIDEO_DECODER_FULL_RANGE_COLOR              L"FullRangeColor"       // bool; default = false; false =  studio range, true = full range 
+///////
+#define AMF_VIDEO_DECODER_COLOR_RANGE                   L"ColorRange"           // amf_int64(AMF_COLOR_RANGE_ENUM) default = AMF_COLOR_RANGE_UNDEFINED
+
+// can be set on output surface if YUV outout or on component to overwrite VUI
+#define AMF_VIDEO_DECODER_COLOR_PROFILE                 L"ColorProfile"         // amf_int64(AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM); default = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN - mean AUTO
+
+// properties to be set on decoder if internal converter is used
+#define AMF_VIDEO_DECODER_OUTPUT_TRANSFER_CHARACTERISTIC        L"OutColorTransferChar"     // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 § 7.2 See VideoDecoderUVD.h for enum 
+#define AMF_VIDEO_DECODER_OUTPUT_COLOR_PRIMARIES                L"OutputColorPrimaries"       // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 § 7.1 See ColorSpace.h for enum 
+#define AMF_VIDEO_DECODER_OUTPUT_HDR_METADATA                   L"OutHDRMetadata"           // AMFBuffer containing AMFHDRMetadata; default NULL
+
+
+#if defined(__ANDROID__)
+#define AMF_VIDEO_DECODER_NATIVEWINDOW                  L"AndroidNativeWindow"  // amf_int64; default = 0; pointer to native window
+#endif //__ANDROID__
+
+
+#if defined(__APPLE__)
+#define AMF_VIDEO_DECODER_NATIVEWINDOW                  L"AppleNativeWindow"  // amf_int64; default = 0; pointer to native window
+#endif //__APPLE__
+
 
 #endif //#ifndef AMF_VideoDecoderUVD_h

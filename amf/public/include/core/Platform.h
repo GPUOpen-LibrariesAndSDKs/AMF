@@ -182,10 +182,12 @@ typedef amf_uint32              amf_flags;
 #define AMF_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define AMF_MAX(a, b) ((a) > (b) ? (a) : (b))
 
+#define AMF_BITS_PER_BYTE 8
+
 #if defined(_WIN32)
     #define PATH_SEPARATOR_WSTR         L"\\"
     #define PATH_SEPARATOR_WCHAR        L'\\'
-#elif defined(__linux) // Linux
+#elif defined(__linux) || defined(__APPLE__) // Linux & Apple
     #define PATH_SEPARATOR_WSTR          L"/"
     #define PATH_SEPARATOR_WCHAR         L'/'
 #endif
@@ -523,6 +525,17 @@ namespace amf
 #endif
 #if defined(__cplusplus)
 }
+#endif
+
+#if defined(__APPLE__)
+//#include <MacTypes.h>
+
+#define media_status_t int
+#define ANativeWindow void
+#define JNIEnv void
+#define jobject int
+#define JavaVM void
+
 #endif
 
 #endif //#ifndef AMF_Platform_h

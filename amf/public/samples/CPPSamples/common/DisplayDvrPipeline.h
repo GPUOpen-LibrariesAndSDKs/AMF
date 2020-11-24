@@ -52,6 +52,8 @@
 #include "EncoderParamsHEVC.h"
 #include "BackBufferPresenter.h"
 
+
+
 // The DisplayDvrPipeline takes input from two sources and writes out
 // out a movie file.  The video is generated from the desktop
 // textures along with audio that is currently being played on
@@ -91,6 +93,7 @@ public:
 
 	// OpenCL Converter
 	static const wchar_t* PARAM_NAME_OPENCL_CONVERTER;
+
 
 #if !defined(METRO_APP)
 	AMF_RESULT Init();

@@ -130,7 +130,7 @@ namespace amf
         virtual AMFContext* AMF_STD_CALL GetContext() = 0;
         virtual AMF_RESULT  AMF_STD_CALL SetOutputDataAllocatorCB(AMFDataAllocatorCB* callback) = 0;
 
-        virtual AMF_RESULT AMF_STD_CALL GetCaps(AMFCaps** ppCaps) = 0;
+        virtual AMF_RESULT  AMF_STD_CALL GetCaps(AMFCaps** ppCaps) = 0;
         virtual AMF_RESULT  AMF_STD_CALL Optimize(AMFComponentOptimizationCallback* pCallback) = 0;
     };
     //----------------------------------------------------------------------------------------------
@@ -411,6 +411,9 @@ typedef enum AMF_STREAM_CODEC_ID_ENUM     // matched codecs from VideoDecoxcderU
     AMF_STREAM_CODEC_ID_MJPEG       = 8,  // AMFVideoDecoderUVD_MJPEG      
     AMF_STREAM_CODEC_ID_H265_HEVC   = 9,  // AMFVideoDecoderHW_H265_HEVC   
     AMF_STREAM_CODEC_ID_H265_MAIN10 = 10, // AMFVideoDecoderHW_H265_MAIN10 
+    AMF_STREAM_CODEC_ID_VP9         = 11, // AMFVideoDecoderHW_VP9
+    AMF_STREAM_CODEC_ID_VP9_10BIT   = 12, // AMFVideoDecoderHW_VP9_10BIT   
+    AMF_STREAM_CODEC_ID_AV1         = 13, // AMFVideoDecoderHW_AV1 
 } AMF_STREAM_CODEC_ID_ENUM;
 
 // common stream properties

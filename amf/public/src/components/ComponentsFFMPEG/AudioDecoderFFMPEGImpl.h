@@ -110,6 +110,7 @@ namespace amf
 
 
         AMFBufferPtr            m_pInputData;
+        AMFBufferPtr            m_pLastInputData;
         amf_size                m_iLastDataOffset;
         amf_pts                 m_ptsLastDataOffset;
 

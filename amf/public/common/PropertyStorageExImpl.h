@@ -82,8 +82,19 @@ namespace amf
         public _TBase,
         public AMFObservableImpl<AMFPropertyStorageObserver>
     {
+    protected:
+        struct  PropertyData
+        {
+            AMFVariant  value;
+            amf_bool    userModified = false;
+        };
+
+        amf_map<amf_wstring, PropertyData>          m_PropertyValues;
+        amf_map<amf_wstring, AMFPropertyInfoImpl*>  m_PropertiesInfo;
+
+
     public:
-        AMFPropertyStorageExImpl() : m_pPropertiesInfo(NULL), m_szPropertiesInfoCount(0), m_PropertyValues()
+        AMFPropertyStorageExImpl() : m_PropertyValues()
         {
         }
 
@@ -113,8 +124,7 @@ namespace amf
         {
             AMF_RETURN_IF_INVALID_POINTER(pDest);
 
-            AMF_RESULT err = AMF_OK;
-            for(amf_map<amf_wstring, AMFVariant>::const_iterator it = m_PropertyValues.begin(); it != m_PropertyValues.end(); it++)
+            for (typename amf_map<amf_wstring, PropertyData>::const_iterator it = m_PropertyValues.begin(); it != m_PropertyValues.end(); it++)
             {
                 if(!overwrite)
                 {
@@ -123,29 +133,11 @@ namespace amf
                         continue;
                     }
                 }
-                /*
-                AMFClonablePtr pClonable;
-                AMFInterfacePtr pInterface = static_cast<AMFInterface*>(it->second);
-                if(pInterface && deep)
+
+                AMF_RESULT err = pDest->SetProperty(it->first.c_str(), it->second.value);
+                if (err != AMF_INVALID_ARG) // not validated - skip it
                 {
-                    pClonable = AMFClonablePtr(pInterface);
-                }
-                if(pClonable)
-                {
-                    AMFClonablePtr pCloned;
-                    err = pClonable->Clone(&pCloned);
-                    AMF_RETURN_IF_FAILED(err, L"AddTo() - failed to duplicate buffer=%s", it->first.c_str());
-                    err = pDest->SetProperty(it->first.c_str(), pCloned);
                     AMF_RETURN_IF_FAILED(err, L"AddTo() - failed to copy property=%s", it->first.c_str());
-                }
-                else
-                */
-                {
-                    err = pDest->SetProperty(it->first.c_str(), it->second);
-                    if(err != AMF_INVALID_ARG) // not validated - skip it
-                    {
-                        AMF_RETURN_IF_FAILED(err, L"AddTo() - failed to copy property=%s", it->first.c_str());
-                    }
                 }
             }
             return AMF_OK;
@@ -155,15 +147,13 @@ namespace amf
         {
             AMF_RETURN_IF_INVALID_POINTER(pDest);
 
-            if(pDest != this)
+            if (pDest != this)
             {
                 pDest->Clear();
                 return AddTo(pDest, true, deep);
             }
-            else
-            {
-                return AMF_OK;
-            }
+
+            return AMF_OK;
         }
         //-------------------------------------------------------------------------------------------------
         virtual AMF_RESULT  AMF_STD_CALL SetProperty(const wchar_t* name, AMFVariantStruct value)
@@ -172,12 +162,12 @@ namespace amf
 
             const AMFPropertyInfo* pParamInfo = NULL;
             AMF_RESULT err = GetPropertyInfo(name, &pParamInfo);
-            if(err != AMF_OK)
+            if (err != AMF_OK)
             {
                 return err;
             }
 
-            if(!pParamInfo->AllowedWrite())
+            if (!pParamInfo->AllowedWrite())
             {
                 return AMF_ACCESS_DENIED;
             }
@@ -224,8 +214,9 @@ namespace amf
             AMF_RETURN_IF_INVALID_POINTER(name);
             AMF_RETURN_IF_INVALID_POINTER(pValue);
             AMF_RETURN_IF_FALSE(nameSize != 0, AMF_INVALID_ARG);
-            amf_map<amf_wstring, AMFVariant>::const_iterator found = m_PropertyValues.begin();
-            if(found == m_PropertyValues.end())
+
+            typename amf_map<amf_wstring, PropertyData>::const_iterator found = m_PropertyValues.begin();
+            if (found == m_PropertyValues.end())
             {
                 return AMF_INVALID_ARG;
             }
@@ -240,20 +231,27 @@ namespace amf
             size_t copySize = AMF_MIN(nameSize-1, found->first.length());
             memcpy(name, found->first.c_str(), copySize * sizeof(wchar_t));
             name[copySize] = 0;
-            AMFVariantCopy(pValue, &found->second);
+            AMFVariantCopy(pValue, &found->second.value);
             return AMF_OK;
         }
         //-------------------------------------------------------------------------------------------------
         virtual amf_size    AMF_STD_CALL GetPropertiesInfoCount() const
         {
-            return m_szPropertiesInfoCount;
+            return m_PropertiesInfo.size();
         }
         //-------------------------------------------------------------------------------------------------
         virtual AMF_RESULT  AMF_STD_CALL GetPropertyInfo(amf_size szInd, const AMFPropertyInfo** ppParamInfo) const
         {
             AMF_RETURN_IF_INVALID_POINTER(ppParamInfo);
+            AMF_RETURN_IF_FALSE(szInd < m_PropertiesInfo.size(), AMF_INVALID_ARG);
 
-            *ppParamInfo = &m_pPropertiesInfo[szInd];
+            typename amf_map<amf_wstring, AMFPropertyInfoImpl*>::const_iterator it = m_PropertiesInfo.begin();
+            for ( ; szInd > 0; --szInd)
+            {
+                it++;
+            }
+
+            *ppParamInfo = it->second;
             return AMF_OK;
         }
         //-------------------------------------------------------------------------------------------------
@@ -262,14 +260,13 @@ namespace amf
             AMF_RETURN_IF_INVALID_POINTER(name);
             AMF_RETURN_IF_INVALID_POINTER(ppParamInfo);
 
-            for(amf_size i = 0; i < m_szPropertiesInfoCount; ++i)
+            amf_map<amf_wstring, AMFPropertyInfoImpl*>::const_iterator it = m_PropertiesInfo.find(name);
+            if (it != m_PropertiesInfo.end())
             {
-                if(wcscmp(m_pPropertiesInfo[i].name, name) == 0)
-                {
-                    *ppParamInfo = &m_pPropertiesInfo[i];
-                    return AMF_OK;
-                }
+                *ppParamInfo = it->second;
+                return AMF_OK;
             }
+
             return AMF_NOT_FOUND;
         }
         //-------------------------------------------------------------------------------------------------
@@ -379,8 +376,12 @@ namespace amf
         {
             AMF_RETURN_IF_INVALID_POINTER(pPropertiesInfo);
 
-            m_pPropertiesInfo = pPropertiesInfo;
-            m_szPropertiesInfoCount = szPropertiesCount;
+            m_PropertiesInfo.clear();
+            for (amf_size i = 0; i < szPropertiesCount; ++i)
+            {
+                AMFPropertyInfoImpl* pPropInfo = pPropertiesInfo + i;
+                m_PropertiesInfo[pPropInfo->name] = pPropInfo;
+            }
             return AMF_OK;
         }
         //-------------------------------------------------------------------------------------------------
@@ -391,47 +392,18 @@ namespace amf
         virtual void        AMF_STD_CALL RemoveObserver(AMFPropertyStorageObserver* pObserver) { AMFObservableImpl<AMFPropertyStorageObserver>::RemoveObserver(pObserver); }
         //-------------------------------------------------------------------------------------------------
     protected:
-		//-------------------------------------------------------------------------------------------------
-		AMF_PROPERTY_ACCESS_TYPE GetAccessType(const wchar_t* name) const
-		{
-			AMF_PROPERTY_ACCESS_TYPE accessType = AMF_PROPERTY_ACCESS_INVALID;
-			AMFPropertyInfo* pPropertyInfo = NULL;
-			for (amf_size i = 0; i < m_szPropertiesInfoCount; ++i)
-			{
-				if (wcscmp(m_pPropertiesInfo[i].name, name) == 0)
-				{
-					pPropertyInfo = &m_pPropertiesInfo[i];
-					break;
-				}
-			}
-
-			if (pPropertyInfo != NULL)
-			{
-				accessType = pPropertyInfo->accessType;
-			}
-			return accessType;
-		}
         //-------------------------------------------------------------------------------------------------
         AMF_RESULT SetAccessType(const wchar_t* name, AMF_PROPERTY_ACCESS_TYPE accessType)
         {
             AMF_RETURN_IF_INVALID_POINTER(name);
 
-            AMFPropertyInfo* pPropertyInfo = NULL;
-            for(amf_size i = 0; i < m_szPropertiesInfoCount; ++i)
-            {
-                if(wcscmp(m_pPropertiesInfo[i].name, name) == 0)
-                {
-                    pPropertyInfo = &m_pPropertiesInfo[i];
-                    break;
-                }
-            }
-
-            if(pPropertyInfo == NULL)
+            amf_map<amf_wstring, AMFPropertyInfoImpl*>::iterator it = m_PropertiesInfo.find(name);
+            if (it == m_PropertiesInfo.end()) 
             {
                 return AMF_NOT_FOUND;
             }
 
-            pPropertyInfo->accessType = accessType;
+            it->second->accessType = accessType;
             OnPropertyChanged(name);
             NotifyObservers<const wchar_t*>(&AMFPropertyStorageObserver::OnPropertyChanged, name);
             return AMF_OK;
@@ -445,18 +417,18 @@ namespace amf
             AMF_RESULT validateResult = ValidateProperty(name, value, &validatedValue);
             if(AMF_OK == validateResult)
             {
-                amf_map<amf_wstring, AMFVariant>::iterator found = m_PropertyValues.find(name);
+                typename amf_map<amf_wstring, PropertyData>::iterator found = m_PropertyValues.find(name);
                 if(found != m_PropertyValues.end())
                 {
-                    if(found->second == validatedValue)
+                    if(found->second.value == validatedValue)
                     {
                         return AMF_OK;
                     }
-                    found->second = validatedValue;
+                    found->second.value = validatedValue;
                 }
                 else
                 {
-                    m_PropertyValues[name] = validatedValue;
+                    m_PropertyValues[name].value = validatedValue;
                 }
                 OnPropertyChanged(name);
                 NotifyObservers<const wchar_t*>(&AMFPropertyStorageObserver::OnPropertyChanged, name);
@@ -469,21 +441,20 @@ namespace amf
             AMF_RETURN_IF_INVALID_POINTER(name);
             AMF_RETURN_IF_INVALID_POINTER(pValue);
 
-            amf_map<amf_wstring, AMFVariant>::const_iterator found = m_PropertyValues.find(name);
-            if(found != m_PropertyValues.end())
+            typename amf_map<amf_wstring, PropertyData>::const_iterator found = m_PropertyValues.find(name);
+            if (found != m_PropertyValues.end())
             {
-                AMFVariantCopy(pValue, &found->second);
+                AMFVariantCopy(pValue, &found->second.value);
                 return AMF_OK;
             }
-            else
+
+            const AMFPropertyInfo* pParamInfo;
+            if (GetPropertyInfo(name, &pParamInfo) == AMF_OK)
             {
-                const AMFPropertyInfo* pParamInfo;
-                if(GetPropertyInfo(name, &pParamInfo) == AMF_OK)
-                {
-                    AMFVariantCopy(pValue, &pParamInfo->defaultValue);
-                    return AMF_OK;
-                }
+                AMFVariantCopy(pValue, &pParamInfo->defaultValue);
+                return AMF_OK;
             }
+
             return AMF_NOT_FOUND;
         }
         //-------------------------------------------------------------------------------------------------
@@ -506,7 +477,6 @@ namespace amf
             return err;
         }
         //-------------------------------------------------------------------------------------------------
-//        template<>
         inline AMF_RESULT AMF_STD_CALL GetPrivateProperty(const wchar_t* name, AMFInterface** ppValue) const
         {
             AMFVariant var;
@@ -528,10 +498,7 @@ namespace amf
             return m_PropertyValues.find(name) != m_PropertyValues.end();
         }
         //-------------------------------------------------------------------------------------------------
-        class AMFPropertyInfoImpl * m_pPropertiesInfo;
-        amf_size m_szPropertiesInfoCount;
 
-        amf_map<amf_wstring, AMFVariant> m_PropertyValues;
     private:
         AMFPropertyStorageExImpl(const AMFPropertyStorageExImpl&);
         AMFPropertyStorageExImpl& operator=(const AMFPropertyStorageExImpl&);
@@ -592,6 +559,10 @@ namespace amf
     #define AMFPropertyInfoRate(_name, _desc, defaultNum, defaultDen, _AllowChangeInRuntime) \
         amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_RATE, 0, amf::AMFVariant(AMFConstructRate(defaultNum, defaultDen)), \
             amf::AMFVariant(), amf::AMFVariant(), _AllowChangeInRuntime, 0)
+
+    #define AMFPropertyInfoRateEx(_name, _desc, _defaultValue, _minValue, _maxValue, _AllowChangeInRuntime) \
+        amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_RATE, 0, amf::AMFVariant(_defaultValue), \
+            amf::AMFVariant(_minValue), amf::AMFVariant(_maxValue), _AllowChangeInRuntime, 0)
 
     #define AMFPropertyInfoRatio(_name, _desc, defaultNum, defaultDen, _AllowChangeInRuntime) \
         amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_RATIO, 0, amf::AMFVariant(AMFConstructRatio(defaultNum, defaultDen)), \

@@ -104,6 +104,7 @@ namespace amf
 
         AVCodecContext*         m_pCodecContext;
 
+        AMFDataPtr              m_pInputData;
         AMFAudioBufferPtr       m_pFrame;
         amf_int32               m_iFrameOffset;
         amf_pts                 m_iFirstFramePts;

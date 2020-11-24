@@ -51,14 +51,14 @@ namespace amf
     // bit mask
     //----------------------------------------------------------------------------------------------
     typedef enum AMF_BUFFER_USAGE_BITS
-    {                                                      // D3D11                        Vulkan 
-        AMF_BUFFER_USAGE_DEFAULT           = 0x80000000,   // D3D11_USAGE_STAGING,          VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT 
-        AMF_BUFFER_USAGE_NONE              = 0x00000000,   // 0                  ,          0
-        AMF_BUFFER_USAGE_CONSTANT          = 0x00000001,   // D3D11_BIND_CONSTANT_BUFFER,   VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT 
-        AMF_BUFFER_USAGE_SHADER_RESOURCE   = 0x00000002,   // D3D11_BIND_SHADER_RESOURCE,   VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
-        AMF_BUFFER_USAGE_UNORDERED_ACCESS  = 0x00000004,   // D3D11_BIND_UNORDERED_ACCESS,  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
-        AMF_BUFFER_USAGE_TRANSFER_SRC      = 0x00000008,   //                               VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-        AMF_BUFFER_USAGE_TRANSFER_DST      = 0x00000010,   //                               VK_BUFFER_USAGE_TRANSFER_DST_BIT
+    {                                                      // D3D11                         D3D12                                       Vulkan 
+        AMF_BUFFER_USAGE_DEFAULT           = 0x80000000,   // D3D11_USAGE_STAGING,                                                      VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT 
+        AMF_BUFFER_USAGE_NONE              = 0x00000000,   // 0                  ,          D3D12_RESOURCE_FLAG_NONE,                   0
+        AMF_BUFFER_USAGE_CONSTANT          = 0x00000001,   // D3D11_BIND_CONSTANT_BUFFER,   											VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT 
+        AMF_BUFFER_USAGE_SHADER_RESOURCE   = 0x00000002,   // D3D11_BIND_SHADER_RESOURCE,   D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+        AMF_BUFFER_USAGE_UNORDERED_ACCESS  = 0x00000004,   // D3D11_BIND_UNORDERED_ACCESS,  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
+        AMF_BUFFER_USAGE_TRANSFER_SRC      = 0x00000008,   //                               								            VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+        AMF_BUFFER_USAGE_TRANSFER_DST      = 0x00000010,   //                               								            VK_BUFFER_USAGE_TRANSFER_DST_BIT
     } AMF_BUFFER_USAGE_BITS;
     typedef amf_flags AMF_BUFFER_USAGE;
     //----------------------------------------------------------------------------------------------
