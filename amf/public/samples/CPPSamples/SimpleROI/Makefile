@@ -34,6 +34,7 @@ pp_include_dirs = $(amf_root)
 src_files = \
     public/samples/CPPSamples/SimpleROI/SimpleROI.cpp \
     $(samples_common_dir)/BitStreamParser.cpp \
+    $(samples_common_dir)/BitStreamParserIVF.cpp \
     $(samples_common_dir)/BitStreamParserH264.cpp \
     $(samples_common_dir)/BitStreamParserH265.cpp \
     $(public_common_dir)/AMFFactory.cpp \
