@@ -581,12 +581,9 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoDecoder(const wchar_t *pDecoderID, am
 				{
 					//Only up to above m_pVideoDecoder->Init(), got/updated actual eDecoderFormat, then also update m_eDecoderFormat here.
 					amf_int64 format = 0;
-					if (m_pVideoDecoder->GetProperty(L"AV1 Stream Format", &format) == AMF_OK)
+					if (m_pVideoDecoder->GetProperty(L"AV1StreamFormat", &format) == AMF_OK)
 					{
-						if (m_pVideoDecoder->GetProperty(L"AV1 Stream Format", &format) == AMF_OK)
-						{
-							m_eDecoderFormat = (amf::AMF_SURFACE_FORMAT)format;
-						}
+                        m_eDecoderFormat = (amf::AMF_SURFACE_FORMAT)format;
 					}
 				}
                 m_bCPUDecoder = false;

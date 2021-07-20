@@ -62,6 +62,48 @@ namespace amf
         AMFAF_LAST      = AMFAF_DBLP,
     } AMF_AUDIO_FORMAT;
 
+    typedef enum AMF_AUDIO_CHANNEL_LAYOUT
+    {
+        AMFACL_SPEAKER_FRONT_LEFT            = 0x1,
+        AMFACL_SPEAKER_FRONT_RIGHT           = 0x2,
+        AMFACL_SPEAKER_FRONT_CENTER          = 0x4,
+        AMFACL_SPEAKER_LOW_FREQUENCY         = 0x8,
+        AMFACL_SPEAKER_BACK_LEFT             = 0x10,
+        AMFACL_SPEAKER_BACK_RIGHT            = 0x20,
+        AMFACL_SPEAKER_FRONT_LEFT_OF_CENTER  = 0x40,
+        AMFACL_SPEAKER_FRONT_RIGHT_OF_CENTER = 0x80,
+        AMFACL_SPEAKER_BACK_CENTER           = 0x100,
+        AMFACL_SPEAKER_SIDE_LEFT             = 0x200,
+        AMFACL_SPEAKER_SIDE_RIGHT            = 0x400,
+        AMFACL_SPEAKER_TOP_CENTER            = 0x800,
+        AMFACL_SPEAKER_TOP_FRONT_LEFT        = 0x1000,
+        AMFACL_SPEAKER_TOP_FRONT_CENTER      = 0x2000,
+        AMFACL_SPEAKER_TOP_FRONT_RIGHT       = 0x4000,
+        AMFACL_SPEAKER_TOP_BACK_LEFT         = 0x8000,
+        AMFACL_SPEAKER_TOP_BACK_CENTER       = 0x10000,
+        AMFACL_SPEAKER_TOP_BACK_RIGHT        = 0x20000
+    } AMF_AUDIO_CHANNEL_LAYOUT;
+
+    // get the most common layout for a given number of speakers
+    inline int GetDefaultChannelLayout(int channels)
+    {
+        switch (channels)
+        {
+        case 1:
+            return (AMFACL_SPEAKER_FRONT_CENTER);
+        case 2:
+            return (AMFACL_SPEAKER_FRONT_LEFT | AMFACL_SPEAKER_FRONT_RIGHT);
+        case 4:
+            return (AMFACL_SPEAKER_FRONT_LEFT | AMFACL_SPEAKER_FRONT_RIGHT | AMFACL_SPEAKER_BACK_LEFT | AMFACL_SPEAKER_BACK_RIGHT);
+        case 6:
+            return (AMFACL_SPEAKER_FRONT_LEFT | AMFACL_SPEAKER_FRONT_RIGHT | AMFACL_SPEAKER_FRONT_CENTER | AMFACL_SPEAKER_LOW_FREQUENCY | AMFACL_SPEAKER_BACK_LEFT | AMFACL_SPEAKER_BACK_RIGHT);
+        case 8:
+            return (AMFACL_SPEAKER_FRONT_LEFT | AMFACL_SPEAKER_FRONT_RIGHT | AMFACL_SPEAKER_FRONT_CENTER | AMFACL_SPEAKER_LOW_FREQUENCY | AMFACL_SPEAKER_BACK_LEFT | AMFACL_SPEAKER_BACK_RIGHT | AMFACL_SPEAKER_FRONT_LEFT_OF_CENTER | AMFACL_SPEAKER_FRONT_RIGHT_OF_CENTER);
+        }
+
+        return AMFACL_SPEAKER_FRONT_LEFT | AMFACL_SPEAKER_FRONT_RIGHT;
+    }
+
     //----------------------------------------------------------------------------------------------
     // AMFAudioBufferObserver interface - callback
     //----------------------------------------------------------------------------------------------
@@ -105,8 +147,16 @@ namespace amf
         virtual amf_size            AMF_STD_CALL GetSize() = 0;
 
         // Observer management
+#ifdef __clang__
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Woverloaded-virtual"
+#endif
         virtual void                AMF_STD_CALL AddObserver(AMFAudioBufferObserver* pObserver) = 0;
         virtual void                AMF_STD_CALL RemoveObserver(AMFAudioBufferObserver* pObserver) = 0;
+#ifdef __clang__
+    #pragma clang diagnostic pop
+#endif
+
 
     };
     //----------------------------------------------------------------------------------------------

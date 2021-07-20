@@ -1243,7 +1243,14 @@ namespace amf
         int readElements = 0;
         if(value.size() > 0)
         {
+          if(strchr(value.c_str(), ',') != nullptr)
+          {
             readElements = sscanf(value.c_str(), "%d,%d", &tmp.width, &tmp.height);
+          } 
+          else if (strchr(value.c_str(), 'x') != nullptr) 
+          {
+            readElements = sscanf(value.c_str(), "%dx%d", &tmp.width, &tmp.height);
+          }
         }
         if(readElements)
         {

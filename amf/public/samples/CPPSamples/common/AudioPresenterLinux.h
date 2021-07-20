@@ -55,7 +55,7 @@ public:
         amf_int64 &streamBlockAlign
     ) const;
 
-    AMF_RESULT                  Init();
+    AMF_RESULT                  Init() override;
     AMF_RESULT                  Terminate();
     AMF_RESULT                  Pause();
     AMF_RESULT                  Resume(amf_pts currentTime);

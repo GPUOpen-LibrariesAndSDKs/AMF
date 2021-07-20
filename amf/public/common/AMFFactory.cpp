@@ -33,7 +33,16 @@
 #include "AMFFactory.h"
 #include "Thread.h"
 
+#ifdef __clang__
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wexit-time-destructors"
+    #pragma clang diagnostic ignored "-Wglobal-constructors"
+#endif
+
 AMFFactoryHelper g_AMFFactory;
+#ifdef __clang__
+    #pragma clang diagnostic pop
+#endif
 
 #ifdef AMF_CORE_STATIC
 extern "C"
@@ -66,7 +75,11 @@ AMF_RESULT AMFFactoryHelper::Init()
         amf_atomic_inc(&m_iRefCount);
         return AMF_OK;
     }
+#ifdef _WIN32
     m_hDLLHandle = amf_load_library(AMF_DLL_NAME);
+#else 
+    m_hDLLHandle = amf_load_library1(AMF_DLL_NAME, false); //load with local flags
+#endif
     if(m_hDLLHandle == NULL)
     {
         return AMF_FAIL;
@@ -183,7 +196,11 @@ AMF_RESULT  AMFFactoryHelper::LoadExternalComponent(amf::AMFContext* pContext, c
         component.m_hDLLHandle = NULL;
         component.m_DLL = dll;
 
+#ifdef _WIN32
         hDll = amf_load_library(dll);
+#else
+        hDll = amf_load_library1(dll, false); //global flag set to true
+#endif
         if (hDll == NULL)
             return AMF_FAIL;
 

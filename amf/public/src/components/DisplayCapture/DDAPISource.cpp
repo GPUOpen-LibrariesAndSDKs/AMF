@@ -34,6 +34,7 @@
 #include "DDAPISource.h"
 //#include "CaptureStats.h"
 #include "public/include/components/DisplayCapture.h"
+#include "public/include/components/ColorSpace.h"
 
 #include <VersionHelpers.h>
 
@@ -58,12 +59,14 @@ namespace
 
 //-------------------------------------------------------------------------------------------------
 AMFDDAPISourceImpl::AMFDDAPISourceImpl(AMFContext* pContext) :
-m_pContext(pContext),
-m_frameDuration(0),
-m_lastPts(-1LL),
-m_bAcquired(false),
-m_iFrameCount(0),
-m_bEnableDirtyRects(false)
+    m_pContext(pContext),
+    m_bAcquired(false),
+    m_outputDescription{},
+    m_frameDuration(0),
+    m_lastPts(-1LL),
+    m_iFrameCount(0),
+    m_bEnableDirtyRects(false),
+    m_eCaptureMode(AMF_DISPLAYCAPTURE_MODE_KEEP_FRAMERATE)
 {
     m_DirtyRects.resize(MAX_RECTS);
     m_MoveRects.resize(MAX_RECTS);
@@ -125,7 +128,7 @@ AMF_RESULT AMFDDAPISourceImpl::InitDisplayCapture(uint32_t displayMonitorIndex, 
 
 	// Basic checks for simple screen display
 	bool supportedRotations = m_outputDescription.Rotation == DXGI_MODE_ROTATION_UNSPECIFIED ||
-		m_outputDescription.Rotation == DXGI_MODE_ROTATION_IDENTITY;
+		                      m_outputDescription.Rotation == DXGI_MODE_ROTATION_IDENTITY;
 	if (!supportedRotations)
 	{
 		AMF_RETURN_IF_FAILED(AMF_FAIL, L"Unsupported display rotation");
@@ -137,7 +140,7 @@ AMF_RESULT AMFDDAPISourceImpl::InitDisplayCapture(uint32_t displayMonitorIndex, 
 	// Query the IDXGIOutput5 interface.  IDXGIOutput5 derives from IDXGIOutput and
 	// has a few extra methods such as DuplicateOutput1 which we use below
 	hr = dxgiOutput->QueryInterface(__uuidof(IDXGIOutput5), reinterpret_cast<void**>(&m_dxgiOutput5));
-    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_FAIL, L"ould not find dxgiOutput5");
+    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_FAIL, L"could not find dxgiOutput5");
 
 	hr = m_dxgiOutput5->DuplicateOutput1(m_deviceAMF, 0, DesktopFormatsCounts, DesktopFormats, &m_displayDuplicator);
 #else
@@ -216,16 +219,17 @@ AMF_RESULT AMFDDAPISourceImpl::AcquireSurface(bool bCopyOutputSurface, amf::AMFS
 
 	// Get new frame
 
+    bool bWait = m_frameDuration != 0 && m_eCaptureMode == AMF_DISPLAYCAPTURE_MODE_KEEP_FRAMERATE;
+
 	DXGI_OUTDUPL_FRAME_INFO frameInfo = {};
 	ATL::CComPtr<IDXGIResource> desktopResource;
 	ATL::CComPtr<ID3D11Texture2D> displayTexture;
 
 // MM AcquireNextFrame() blocks DX11 calls including calls to query encoder. Wait ourselves here
 //	UINT kAcquireTimeout = UINT(waitTime / 10000); // to ms
-//    UINT kAcquireTimeout = 0;
     UINT kAcquireTimeout = 0;
 
-    if (m_frameDuration > 0)
+    if (bWait)
     {
         amf_pts startTime = 0;
         if (m_lastPts == -1LL)
@@ -247,11 +251,7 @@ AMF_RESULT AMFDDAPISourceImpl::AcquireSurface(bool bCopyOutputSurface, amf::AMFS
         m_lastPts = startTime;
     }
     HRESULT hr = S_OK;
-    if (m_bAcquired)
-    {
-//        hr = m_displayDuplicator->ReleaseFrame();
-//        m_bAcquired = false;
-    }
+
     hr = m_displayDuplicator->AcquireNextFrame(kAcquireTimeout, &frameInfo, &desktopResource);
 
     AMFBufferPtr pDirtyRectBuffer;
@@ -352,6 +352,9 @@ AMF_RESULT AMFDDAPISourceImpl::AcquireSurface(bool bCopyOutputSurface, amf::AMFS
             (*ppSurface)->SetProperty(AMF_DISPLAYCAPTURE_DIRTY_RECTS, (AMFInterface*)pDirtyRectBuffer);
         }
 
+        res = GetHDRInformation(*ppSurface);
+//      AMF_RETURN_IF_FAILED(res, L"GetHDRInformation() failed");
+
         return AMF_OK;
     }
 	if (DXGI_ERROR_WAIT_TIMEOUT == hr)
@@ -378,7 +381,153 @@ AMF_RESULT AMFDDAPISourceImpl::AcquireSurface(bool bCopyOutputSurface, amf::AMFS
 
 	return AMF_OK;
 }
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT AMFDDAPISourceImpl::GetHDRInformation(amf::AMFSurface* pSurface)
+{
+    AMF_RETURN_IF_INVALID_POINTER(pSurface, L"No surface to write HDR info into");
 
+#ifdef USE_DUPLICATEOUTPUT1
+    if (m_dxgiOutput5 != nullptr)
+    {
+        CComQIPtr<IDXGIOutput6>  spOutput6(m_dxgiOutput5);
+#else
+    if (m_dxgiOutput1 != nullptr)
+    {
+        CComQIPtr<IDXGIOutput6>  spOutput6(m_dxgiOutput1);
+#endif
+        if (spOutput6 != nullptr)
+        {
+            // Get HDR information from DX
+            DXGI_OUTPUT_DESC1 desc1 = { 0 };
+            HRESULT           hRes  = spOutput6->GetDesc1(&desc1);
+            ASSERT_RETURN_IF_HR_FAILED(hRes, AMF_FAIL, L"Could not get descriiption information");
+
+            // copy the HDR information into an AMF buffer
+            AMFBufferPtr  spHDRBuffer;
+            AMF_RESULT  res = m_pContext->AllocBuffer(AMF_MEMORY_HOST, sizeof(AMFHDRMetadata), &spHDRBuffer);
+            AMF_RETURN_IF_FAILED(res, L"AllocBuffer() failed");
+
+            AMFHDRMetadata *pMetadata = (AMFHDRMetadata *) spHDRBuffer->GetNative();
+            pMetadata->redPrimary[0] = amf_uint16(desc1.RedPrimary[0] * 50000.0f);
+            pMetadata->redPrimary[1] = amf_uint16(desc1.RedPrimary[1] * 50000.0f);
+            pMetadata->greenPrimary[0] = amf_uint16(desc1.GreenPrimary[0] * 50000.0f);
+            pMetadata->greenPrimary[1] = amf_uint16(desc1.GreenPrimary[1] * 50000.0f);
+            pMetadata->bluePrimary[0] = amf_uint16(desc1.BluePrimary[0] * 50000.0f);
+            pMetadata->bluePrimary[1] = amf_uint16(desc1.BluePrimary[1] * 50000.0f);
+            pMetadata->whitePoint[0] = amf_uint16(desc1.WhitePoint[0] * 50000.0f);
+            pMetadata->whitePoint[1] = amf_uint16(desc1.WhitePoint[1] * 50000.0f);
+            pMetadata->minMasteringLuminance = amf_uint32(desc1.MinLuminance * 10000.0f);
+            pMetadata->maxMasteringLuminance = amf_uint32(desc1.MaxLuminance * 10000.0f);
+            pMetadata->maxContentLightLevel = amf_uint16(desc1.MaxLuminance);
+            pMetadata->maxFrameAverageLightLevel = amf_uint16(desc1.MaxFullFrameLuminance);
+
+            // attach the AMF buffer to the surface, so it's available 
+            // for later on if needed
+            res = pSurface->SetProperty(AMF_VIDEO_COLOR_HDR_METADATA, spHDRBuffer);
+            AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_COLOR_HDR_METADATA) failed");
+
+
+            AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM  colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_BT709;
+            AMF_COLOR_PRIMARIES_ENUM                primaries     = AMF_COLOR_PRIMARIES_UNDEFINED;
+            bool                                    bFullRange    = false;
+
+            switch (desc1.ColorSpace)
+            {
+            case  DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709:
+                colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_GAMMA22;
+                primaries = AMF_COLOR_PRIMARIES_BT709;
+                bFullRange = true;
+                break;
+
+            case  DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709:
+                colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_LINEAR;
+                primaries = AMF_COLOR_PRIMARIES_BT709;
+                bFullRange = true;
+                break;
+
+            case  DXGI_COLOR_SPACE_RGB_STUDIO_G22_NONE_P709:
+                colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_GAMMA22;
+                primaries = AMF_COLOR_PRIMARIES_BT709;
+                break;
+
+            case  DXGI_COLOR_SPACE_RGB_STUDIO_G22_NONE_P2020:
+                colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_GAMMA22;
+                primaries = AMF_COLOR_PRIMARIES_BT2020;
+                break;
+
+        //    case  DXGI_COLOR_SPACE_RESERVED:
+        //    case  DXGI_COLOR_SPACE_YCBCR_FULL_G22_NONE_P709_X601:
+        //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_LEFT_P601:
+        //    case  DXGI_COLOR_SPACE_YCBCR_FULL_G22_LEFT_P601:
+        //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_LEFT_P709:
+        //    case  DXGI_COLOR_SPACE_YCBCR_FULL_G22_LEFT_P709:
+        //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_LEFT_P2020:
+        //    case  DXGI_COLOR_SPACE_YCBCR_FULL_G22_LEFT_P2020:
+            case  DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020:
+                colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE2084;
+                primaries = AMF_COLOR_PRIMARIES_CCCS;
+                if (pSurface->GetFormat() == AMF_SURFACE_RGBA_F16)
+                {
+                    colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_LINEAR;
+                    primaries = AMF_COLOR_PRIMARIES_CCCS;
+                }
+
+                bFullRange = true;
+                break;
+
+        //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_G2084_LEFT_P2020:
+            case  DXGI_COLOR_SPACE_RGB_STUDIO_G2084_NONE_P2020:
+                colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE2084;
+                primaries = AMF_COLOR_PRIMARIES_BT2020;
+                break;
+
+        //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_TOPLEFT_P2020:
+        //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_G2084_TOPLEFT_P2020:
+            case  DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P2020:
+                colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_GAMMA22;
+                primaries = AMF_COLOR_PRIMARIES_BT2020;
+                bFullRange = true;
+                break;
+
+        //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_GHLG_TOPLEFT_P2020:
+        //    case  DXGI_COLOR_SPACE_YCBCR_FULL_GHLG_TOPLEFT_P2020:
+            case  DXGI_COLOR_SPACE_RGB_STUDIO_G24_NONE_P709:
+        //        colorTransfer =
+                primaries = AMF_COLOR_PRIMARIES_BT709;
+                break;
+
+            case  DXGI_COLOR_SPACE_RGB_STUDIO_G24_NONE_P2020:
+        //        colorTransfer =
+                primaries = AMF_COLOR_PRIMARIES_BT2020;
+                break;
+
+        //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_G24_LEFT_P709:
+        //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_G24_LEFT_P2020:
+        //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_G24_TOPLEFT_P2020:
+            }
+
+            if (pSurface->GetFormat() == AMF_SURFACE_RGBA_F16)
+            {
+                colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_LINEAR;
+            }
+
+
+            res = pSurface->SetProperty(AMF_VIDEO_COLOR_TRANSFER_CHARACTERISTIC, colorTransfer);
+            AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_COLOR_TRANSFER_CHARACTERISTIC) failed");
+
+            res = pSurface->SetProperty(AMF_VIDEO_COLOR_PRIMARIES, primaries);
+            AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_COLOR_PRIMARIES) failed");
+
+            if (bFullRange)
+            {
+                res = pSurface->SetProperty(AMF_VIDEO_COLOR_RANGE, AMF_COLOR_RANGE_FULL);
+                AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_COLOR_RANGE) failed");
+            }
+        }
+    }
+    
+    return AMF_OK;
+}
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMFDDAPISourceImpl::GetNewDuplicator()
 {
@@ -431,6 +580,7 @@ AMFSize     AMFDDAPISourceImpl::GetResolution()
     }
     return resolution;
 }
+//-------------------------------------------------------------------------------------------------
 AMFRect amf::AMFDDAPISourceImpl::GetDesktopRect()
 {
     AMFLock lock(&m_sync);
@@ -452,21 +602,40 @@ AMFRect amf::AMFDDAPISourceImpl::GetDesktopRect()
 //-------------------------------------------------------------------------------------------------
 void AMF_STD_CALL AMFDDAPISourceImpl::OnSurfaceDataRelease(amf::AMFSurface* pSurface)
 {
+    AMFLock lock(&m_sync);
+    for (amf_list< AMFSurface* >::iterator it = m_freeCopySurfaces.begin(); it != m_freeCopySurfaces.end(); it++)
     {
-        AMFLock lock(&m_sync);
-        for (amf_list< AMFSurface* >::iterator it = m_freeCopySurfaces.begin(); it != m_freeCopySurfaces.end(); it++)
+        if (*it == pSurface)
         {
-            if (*it == pSurface)
-            {
-                m_freeCopySurfaces.erase(it);
-                break;
-            }
+            m_freeCopySurfaces.erase(it);
+            break;
         }
-        m_acquiredTextureAMF = nullptr;
     }
-    m_displayDuplicator->ReleaseFrame();
-    m_bAcquired = false;
+    m_acquiredTextureAMF = nullptr;
+	if (m_displayDuplicator != nullptr)
+	{
+		m_displayDuplicator->ReleaseFrame();
+	}
+	m_bAcquired = false;
+}
+//-------------------------------------------------------------------------------------------------
+AMF_ROTATION_ENUM               AMFDDAPISourceImpl::GetRotation()
+{
+   AMF_ROTATION_ENUM ret = AMF_ROTATION_NONE;
+   switch (m_outputDescription.Rotation)
+   {
+   case DXGI_MODE_ROTATION_ROTATE90: ret = AMF_ROTATION_90; break;
+   case DXGI_MODE_ROTATION_ROTATE180:ret = AMF_ROTATION_180; break;
+   case DXGI_MODE_ROTATION_ROTATE270:ret = AMF_ROTATION_270; break;
+   default:
+       ret = AMF_ROTATION_NONE; break;
+   }
+   return ret;
 
 }
 //-------------------------------------------------------------------------------------------------
+void                            AMFDDAPISourceImpl::SetMode(AMF_DISPLAYCAPTURE_MODE_ENUM mode)
+{
+    m_eCaptureMode = mode;
+}
 //-------------------------------------------------------------------------------------------------

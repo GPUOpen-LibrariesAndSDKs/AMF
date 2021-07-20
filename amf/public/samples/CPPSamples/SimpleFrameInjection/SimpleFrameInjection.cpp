@@ -362,10 +362,14 @@ int main(int argc, char* argv[])
         }
 
         res = encoder->SubmitInput(surfaceIn);
-        if(res == AMF_INPUT_FULL) // handle full queue
+        if(res == AMF_NEED_MORE_INPUT) // handle full queue
         {
-            amf_sleep(1); // input queue is full: wait, poll and submit again
+            // do nothing
         }
+		else if (res == AMF_INPUT_FULL || res == AMF_DECODER_NO_FREE_SURFACES)
+		{
+			amf_sleep(1); // input queue is full: wait, poll and submit again
+		}
         else
         {
             AMF_RETURN_IF_FAILED(res, L"SubmitInput() failed");
@@ -858,6 +862,11 @@ void PollingThread::Run()
         {
             break; // Drain complete
         }
+		if ((res != AMF_OK) && (res != AMF_REPEAT))
+		{
+			// trace possible error message
+			break; // Drain complete
+		}
         if(data != NULL)
         {
             amf_pts poll_time = amf_high_precision_clock();

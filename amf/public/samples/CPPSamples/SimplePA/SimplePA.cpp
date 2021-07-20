@@ -198,7 +198,11 @@ int main(int argc, char* argv[])
 		surfaceIn->SetProperty(START_TIME_PROPERTY, start_time);
 
 		res = pre_analysis->SubmitInput(surfaceIn);
-		if (res == AMF_INPUT_FULL) // handle full queue
+		if (res == AMF_NEED_MORE_INPUT) // handle full queue
+		{
+			// do nothing
+		}
+		else if (res == AMF_INPUT_FULL || res == AMF_DECODER_NO_FREE_SURFACES)
 		{
 			amf_sleep(1); // input queue is full: wait, poll and submit again
 		}
@@ -414,6 +418,11 @@ void PollingThread::Run()
 
 		if (res == AMF_EOF)
 		{
+			break; // Drain complete
+		}
+		if ((res != AMF_OK) && (res != AMF_REPEAT))
+		{
+			// trace possible error message
 			break; // Drain complete
 		}
 		if (frame != NULL)

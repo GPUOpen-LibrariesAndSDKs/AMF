@@ -65,8 +65,19 @@ extern "C"
 
 using namespace amf;
 
+#ifdef __clang__
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wexit-time-destructors"
+    #pragma clang diagnostic ignored "-Wglobal-constructors"
+#endif
+
 static const amf_string AMF_FORBIDDEN_SYMBOLS = ":? %,;@&=+$<>#\"";
 static const amf_string AMF_FORBIDDEN_SYMBOLS_QUERY = ":? %,;@+$<>#\"";
+
+#ifdef __clang__
+    #pragma clang diagnostic pop
+#endif
+
 
 //MM: in question:  unwise      = "{" | "}" | "|" | "\" | "^" | "[" | "]" | "`"
 

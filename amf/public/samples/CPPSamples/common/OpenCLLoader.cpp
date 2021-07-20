@@ -59,7 +59,7 @@ AMF_RESULT OpenCLLoader::Init()
 #ifdef _WIN32
     m_hDLL = amf_load_library(L"OpenCL.dll");
 #else
-    m_hDLL = amf_load_library(L"libOpenCL.so.1");
+    m_hDLL = amf_load_library1(L"libOpenCL.so.1", true); //global flag set to true
 #endif
     CHECK_RETURN(m_hDLL != NULL, AMF_FAIL, L"Cannot load OpenCL library");
 

@@ -104,8 +104,16 @@ namespace amf
         virtual void*               AMF_STD_CALL GetNative() = 0;
 
         // Observer management
+#ifdef __clang__
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Woverloaded-virtual"
+#endif
         virtual void                AMF_STD_CALL AddObserver(AMFBufferObserver* pObserver) = 0;
         virtual void                AMF_STD_CALL RemoveObserver(AMFBufferObserver* pObserver) = 0;
+#ifdef __clang__
+    #pragma clang diagnostic pop
+#endif
+
     };
     //----------------------------------------------------------------------------------------------
     // smart pointer

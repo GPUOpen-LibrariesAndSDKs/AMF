@@ -38,7 +38,7 @@
 
 #pragma once
 
-#include "public/include/components/Component.h"
+#include "Component.h"
 
 // Set to capture from either a microphone or desktop
 #define AUDIOCAPTURE_SOURCE                L"AudioCaptureSource"           // amf_bool true for microphone, false for desktop;
@@ -61,6 +61,8 @@
 #define AUDIOCAPTURE_BITRATE                L"AudioCaptureBitRate"         // amf_int64, in bits
 // Channel count used for audio capture
 #define AUDIOCAPTURE_CHANNELS               L"AudioCaptureChannelCount"    // amf_int64, 2
+// Channel layout used for audio capture
+#define AUDIOCAPTURE_CHANNEL_LAYOUT         L"AudioCaptureChannelLayout"   // amf_int64, AMF_AUDIO_CHANNEL_LAYOUT
 // Format used for audio capture
 #define AUDIOCAPTURE_FORMAT                 L"AudioCaptureFormat"          // amf_int64, AMFAF_U8
 // Block alignment

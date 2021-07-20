@@ -317,8 +317,12 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
         CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX11() failed");
         break;
 	case amf::AMF_MEMORY_DX12:
-		res = amf::AMFContext2Ptr(m_pContext)->InitDX12(NULL);
-		CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX12() failed");
+    {
+        amf::AMFContext2Ptr pContext2(m_pContext);
+        CHECK_RETURN(pContext2 != nullptr, AMF_FAIL, "amf::AMFContext2 is not available");
+        res = pContext2->InitDX12(NULL);
+        CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX12() failed");
+    }
 		break;
 #endif        
     case amf::AMF_MEMORY_VULKAN:
@@ -807,17 +811,20 @@ AMF_RESULT  TranscodePipeline::InitVideoDecoder(const wchar_t *pDecoderID, amf_i
                     m_eDecoderFormat = amf::AMF_SURFACE_P010;
                 }
                 res = m_pDecoder->Init(m_eDecoderFormat, videoWidth, videoHeight);
-                CHECK_AMF_ERROR_RETURN(res, L"m_pDecoder->Init(" << videoWidth << videoHeight << L") failed " << pDecoderID);
+                if (res != AMF_OK)
+                {
+                    LOG_WRITE(L"m_pDecoder->Init(" << videoWidth << videoHeight << L") failed " << pDecoderID << L" Error:" << g_AMFFactory.GetTrace()->GetResultText(res) << std::endl, AMFLogLevelInfo);
+                    m_pDecoder = nullptr;
+                }
+                else
+                //CHECK_AMF_ERROR_RETURN(res, L"m_pDecoder->Init(" << videoWidth << videoHeight << L") failed " << pDecoderID);
 				if (std::wstring(pDecoderID) == AMFVideoDecoderHW_AV1)
 				{
 					//Only up to above m_pVideoDecoder->Init(), got/updated actual eDecoderFormat, then also update m_eDecoderFormat here.
 					amf_int64 format = 0;
-					if (m_pDecoder->GetProperty(L"AV1 Stream Format", &format) == AMF_OK)
+					if (m_pDecoder->GetProperty(L"AV1StreamFormat", &format) == AMF_OK)
 					{
-						if (m_pDecoder->GetProperty(L"AV1 Stream Format", &format) == AMF_OK)
-						{
-							m_eDecoderFormat = (amf::AMF_SURFACE_FORMAT)format;
-						}
+                        m_eDecoderFormat = (amf::AMF_SURFACE_FORMAT)format;
 					}
 				}
                 //m_bCPUDecoder = false;
@@ -827,7 +834,16 @@ AMF_RESULT  TranscodePipeline::InitVideoDecoder(const wchar_t *pDecoderID, amf_i
                 m_pDecoder = nullptr;
             }
         }
+        else
+        {
+            m_pDecoder = nullptr;
+        }
     }
+    else
+    {
+        m_pDecoder = nullptr;
+    }
+
 
     if (m_pDecoder == nullptr)
     {

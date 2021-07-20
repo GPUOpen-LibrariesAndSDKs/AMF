@@ -1,0 +1,52 @@
+﻿  Building binary resource header for Histogram.cl...
+  Building binary resource header for StitchD3D11.hlsl...
+  Microsoft (R) Direct3D Shader Compiler 10.1
+  Copyright (C) 2013 Microsoft. All rights reserved.
+  
+  compilation object save succeeded; see C:\p4\amf\1.4.21\public\src\components\VideoStitch\DirectX11\StitchD3D11_ps.bin
+  Microsoft (R) Direct3D Shader Compiler 10.1
+  Copyright (C) 2013 Microsoft. All rights reserved.
+  
+  compilation object save succeeded; see C:\p4\amf\1.4.21\public\src\components\VideoStitch\DirectX11\StitchD3D11_psc.bin
+  Microsoft (R) Direct3D Shader Compiler 10.1
+  Copyright (C) 2013 Microsoft. All rights reserved.
+  
+  compilation object save succeeded; see C:\p4\amf\1.4.21\public\src\components\VideoStitch\DirectX11\StitchD3D11_vs.bin
+  Microsoft (R) Direct3D Shader Compiler 10.1
+  Copyright (C) 2013 Microsoft. All rights reserved.
+  
+  compilation object save succeeded; see C:\p4\amf\1.4.21\public\src\components\VideoStitch\DirectX11\StitchD3D11_gs.bin
+  compilation header save succeeded; see C:\p4\amf\1.4.21\public\src\components\VideoStitch\ProgramsDX11\BuildLUT_64.h
+  compilation object save succeeded; see C:\p4\amf\1.4.21\public\proj\bin\obj\vs2019x64Release\VideoStitch\BuildLUT.cso
+  compilation header save succeeded; see C:\p4\amf\1.4.21\public\src\components\VideoStitch\ProgramsDX11\BuildLUTCenter_64.h
+  compilation object save succeeded; see C:\p4\amf\1.4.21\public\proj\bin\obj\vs2019x64Release\VideoStitch\BuildLUTCenter.cso
+  compilation header save succeeded; see C:\p4\amf\1.4.21\public\src\components\VideoStitch\ProgramsDX11\BuildShifts_64.h
+  compilation object save succeeded; see C:\p4\amf\1.4.21\public\proj\bin\obj\vs2019x64Release\VideoStitch\BuildShifts.cso
+  compilation header save succeeded; see C:\p4\amf\1.4.21\public\src\components\VideoStitch\ProgramsDX11\Color_64.h
+  compilation object save succeeded; see C:\p4\amf\1.4.21\public\proj\bin\obj\vs2019x64Release\VideoStitch\Color.cso
+  compilation header save succeeded; see C:\p4\amf\1.4.21\public\src\components\VideoStitch\ProgramsDX11\Histogram_64.h
+  compilation object save succeeded; see C:\p4\amf\1.4.21\public\proj\bin\obj\vs2019x64Release\VideoStitch\Histogram.cso
+  compilation header save succeeded; see C:\p4\amf\1.4.21\public\src\components\VideoStitch\ProgramsDX11\NV12toRGB_64.h
+  compilation object save succeeded; see C:\p4\amf\1.4.21\public\proj\bin\obj\vs2019x64Release\VideoStitch\NV12toRGB.cso
+  AMFFactory.cpp
+  AMFSTL.cpp
+  DataStreamFactory.cpp
+  DataStreamFile.cpp
+  DataStreamMemory.cpp
+  IOCapsImpl.cpp
+  PropertyStorageExImpl.cpp
+  Thread.cpp
+  TraceAdapter.cpp
+  ThreadWindows.cpp
+  StitchEngineDX11.cpp
+  HistogramImpl.cpp
+  ProgramsDX11.cpp
+  StitchEngineBase.cpp
+  VideoStitchCapsImpl.cpp
+  VideoStitchImpl.cpp
+C:\p4\amf\1.4.21\public\src\components\VideoStitch\VideoStitchCapsImpl.h(35,10): fatal error C1083: Cannot open include file: 'public/include/components/Component.h': No such file or directory (compiling source file ..\..\..\src\components\VideoStitch\VideoStitchCapsImpl.cpp)
+C:\p4\amf\1.4.21\public\src\components\VideoStitch\HistogramImpl.h(34,10): fatal error C1083: Cannot open include file: 'public/include/core/Context.h': No such file or directory (compiling source file ..\..\..\src\components\VideoStitch\HistogramImpl.cpp)
+C:\p4\amf\1.4.21\public\src\components\VideoStitch\VideoStitchImpl.h(38,10): fatal error C1083: Cannot open include file: 'public/include/components/Component.h': No such file or directory (compiling source file ..\..\..\src\components\VideoStitch\VideoStitchImpl.cpp)
+C:\p4\amf\1.4.21\public\src\components\VideoStitch\ProgramsDX11.cpp(32,10): fatal error C1083: Cannot open include file: 'public/include/core/Trace.h': No such file or directory
+C:\p4\amf\1.4.21\public\src\components\VideoStitch\StitchEngineBase.h(34,10): fatal error C1083: Cannot open include file: 'public/include/core/Trace.h': No such file or directory (compiling source file ..\..\..\src\components\VideoStitch\StitchEngineBase.cpp)
+C:\p4\amf\1.4.21\public\src\components\VideoStitch\StitchEngineBase.h(34,10): fatal error C1083: Cannot open include file: 'public/include/core/Trace.h': No such file or directory (compiling source file ..\..\..\src\components\VideoStitch\DirectX11\StitchEngineDX11.cpp)

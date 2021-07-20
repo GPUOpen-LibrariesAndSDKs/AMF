@@ -72,7 +72,9 @@ PlaybackPipeline::InitContext(amf::AMF_MEMORY_TYPE type)
 
 	case amf::AMF_MEMORY_DX12:
 	{
-		const AMF_RESULT res = amf::AMFContext2Ptr(m_pContext)->InitDX12(NULL);
+        amf::AMFContext2Ptr pContext2(m_pContext);
+        CHECK_RETURN(pContext2 != nullptr, AMF_FAIL, "amf::AMFContext2 is not available");
+		const AMF_RESULT res = pContext2->InitDX12(NULL);
 		CHECK_AMF_ERROR_RETURN(res, "Init DX12");
 		m_bVideoPresenterDirectConnect = true;
 		return AMF_OK;

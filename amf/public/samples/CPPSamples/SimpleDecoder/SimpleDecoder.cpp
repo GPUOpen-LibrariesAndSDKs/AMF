@@ -128,7 +128,7 @@ int main(int argc, char* argv[])
     }
     // context
     res = g_AMFFactory.GetFactory()->CreateContext(&context);
-    switch(memoryTypeOut)
+    switch (memoryTypeOut)
     {
     case amf::AMF_MEMORY_DX9:
         res = context->InitDX9(NULL); // can be DX9 or DX9Ex device
@@ -137,7 +137,16 @@ int main(int argc, char* argv[])
         res = context->InitDX11(NULL); // can be DX11 device
         break;
     case amf::AMF_MEMORY_DX12:
-        res = amf::AMFContext2Ptr(context)->InitDX12(NULL); // can be DX11 device
+        {
+    
+        amf::AMFContext2Ptr context2(context);
+        if(context2 == nullptr)
+        { 
+            wprintf(L"amf::AMFContext2 is missing");
+            return 1;
+        }
+        context2->InitDX12(NULL); // can be DX11 device
+        }
         break;
     case amf::AMF_MEMORY_VULKAN:
         res = amf::AMFContext1Ptr(context)->InitVulkan(NULL); // can be Vulkan device
@@ -352,6 +361,11 @@ void PollingThread::Run()
         {
             break; // Drain complete
         }
+		if ((res != AMF_OK) && (res != AMF_REPEAT))
+		{
+			// trace possible error message
+			break; // Drain complete
+		}
         if(data != NULL)
         {
             WaitDecoder(m_pContext, amf::AMFSurfacePtr(data)); // Waits till decoder finishes decode the surface. Need for accurate profiling only. Do not use in the product!!!

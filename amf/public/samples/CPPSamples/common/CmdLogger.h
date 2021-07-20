@@ -42,6 +42,7 @@
 
 enum AMFLogLevel
 { 
+    AMFLogLevelDefault,
     AMFLogLevelInfo,
     AMFLogLevelSuccess,
     AMFLogLevelError

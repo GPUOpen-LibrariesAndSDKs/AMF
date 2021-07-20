@@ -36,8 +36,8 @@
 #include <algorithm>
 #include <cctype>
 #include <iterator>
-#include "public/include/core/PropertyStorage.h"
-#include "public/common/Thread.h"
+//#include "public/include/core/PropertyStorage.h"
+//#include "public/common/Thread.h"
 #include "CmdLogger.h"
 
 
@@ -65,6 +65,9 @@ AMF_RESULT ParamConverterMemoryType(const std::wstring& value, amf::AMFVariant& 
 AMF_RESULT ParamConverterFormat(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterCodec(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterColorProfile(const std::wstring& value, amf::AMFVariant& valueOut);
+AMF_RESULT ParamConverterTransferCharacteristic(const std::wstring& value, amf::AMFVariant& valueOut);
+AMF_RESULT ParamConverterColorPrimaries(const std::wstring& value, amf::AMFVariant& valueOut);
+AMF_RESULT ParamConverterColorRange(const std::wstring& value, amf::AMFVariant& valueOut);
 
 std::wstring AddIndexToPath(const std::wstring& path, amf_int32 index);
 

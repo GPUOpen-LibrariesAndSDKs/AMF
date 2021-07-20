@@ -47,6 +47,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CaptureVideo", "CPPSamples\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleFrameInjection", "CPPSamples\SimpleFrameInjection\SimpleFrameInjection_VS2019.vcxproj", "{C403272E-8D33-4292-8868-E5E10EE20073}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EncoderLatency", "CPPSamples\EncoderLatency\EncoderLatency_VS2019.vcxproj", "{7365BA40-C111-4F23-95C7-8F4847671234}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -191,6 +193,14 @@ Global
 		{C403272E-8D33-4292-8868-E5E10EE20073}.Release|Win32.Build.0 = Release|Win32
 		{C403272E-8D33-4292-8868-E5E10EE20073}.Release|x64.ActiveCfg = Release|x64
 		{C403272E-8D33-4292-8868-E5E10EE20073}.Release|x64.Build.0 = Release|x64
+		{7365BA40-C111-4F23-95C7-8F4847671234}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7365BA40-C111-4F23-95C7-8F4847671234}.Debug|Win32.Build.0 = Debug|Win32
+		{7365BA40-C111-4F23-95C7-8F4847671234}.Debug|x64.ActiveCfg = Debug|x64
+		{7365BA40-C111-4F23-95C7-8F4847671234}.Debug|x64.Build.0 = Debug|x64
+		{7365BA40-C111-4F23-95C7-8F4847671234}.Release|Win32.ActiveCfg = Release|Win32
+		{7365BA40-C111-4F23-95C7-8F4847671234}.Release|Win32.Build.0 = Release|Win32
+		{7365BA40-C111-4F23-95C7-8F4847671234}.Release|x64.ActiveCfg = Release|x64
+		{7365BA40-C111-4F23-95C7-8F4847671234}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

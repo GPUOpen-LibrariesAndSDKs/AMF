@@ -626,6 +626,27 @@ amf_handle AMF_STD_CALL amf_load_library(const wchar_t* filename)
     return ret;
 }
 
+amf_handle AMF_STD_CALL amf_load_library1(const wchar_t* filename, bool bGlobal)
+{
+    void *ret;
+    if (bGlobal) {
+        ret = dlopen(amf_from_unicode_to_multibyte(filename).c_str(), RTLD_NOW | RTLD_GLOBAL);
+    } else {
+#if defined(__ANDROID__)
+        ret = dlopen(amf_from_unicode_to_multibyte(filename).c_str(), RTLD_NOW | RTLD_LOCAL);
+#else
+        ret = dlopen(amf_from_unicode_to_multibyte(filename).c_str(), RTLD_NOW | RTLD_LOCAL| RTLD_DEEPBIND);
+#endif
+    }
+    
+    if(ret == 0)
+    {
+        const char *err = dlerror();
+        int a=1;
+    }
+    return ret;
+}
+
 void* AMF_STD_CALL amf_get_proc_address(amf_handle module, const char* procName)
 {
     return dlsym(module, procName);

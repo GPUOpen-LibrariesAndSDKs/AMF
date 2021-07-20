@@ -480,7 +480,6 @@ inline bool AMFSucceeded(AMF_RESULT result) { return result == AMF_OK || result 
 */
 amf_wstring AMF_CDECL_CALL  AMFFormatResult(AMF_RESULT result);
 
-#if defined(_WIN32)
 /**
 *******************************************************************************
 *   AMFHResultSucceded
@@ -499,7 +498,6 @@ inline bool AMFHResultSucceded(HRESULT result) { return SUCCEEDED(result); }
 *******************************************************************************
 */
 inline amf_wstring AMFFormatHResult(HRESULT result)  { return amf::amf_string_format(L"COM failed, HR = %0X:", result); }
-#endif //defined(_WIN32)
 
 /**
 *******************************************************************************
@@ -583,9 +581,8 @@ inline amf_wstring AMFFormatHResult(HRESULT result)  { return amf::amf_string_fo
 *       Other macroses below are also obsolete
 *******************************************************************************
 */
-#if defined(_WIN32)
 #define ASSERT_RETURN_IF_HR_FAILED(exp, reterr, /*optional format, args,*/...) AMF_BASE_RETURN(exp, HRESULT, amf::AMFHResultSucceded, amf::AMFFormatHResult, AMF_TRACE_ERROR, AMF_FACILITY, reterr, L###exp, ##__VA_ARGS__)
-#endif
+
 
 /**
 *******************************************************************************
@@ -783,7 +780,7 @@ extern "C"
     const wchar_t* AMF_STD_CALL AMFGetResultText(AMF_RESULT res);
     const wchar_t* AMF_STD_CALL AMFSurfaceGetFormatName(const AMF_SURFACE_FORMAT eSurfaceFormat);
     AMF_SURFACE_FORMAT AMF_STD_CALL AMFSurfaceGetFormatByName(const wchar_t* pwName);
-    const wchar_t* const AMF_STD_CALL AMFGetMemoryTypeName(const AMF_MEMORY_TYPE memoryType);
+    const wchar_t*  AMF_STD_CALL AMFGetMemoryTypeName(const AMF_MEMORY_TYPE memoryType);
     AMF_MEMORY_TYPE AMF_STD_CALL AMFGetMemoryTypeByName(const wchar_t* name);
 } //extern "C"
 } // namespace amf

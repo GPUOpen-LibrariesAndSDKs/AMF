@@ -54,7 +54,6 @@ std::wstring AddIndexToPath(const std::wstring& path, amf_int32 index)
     return new_path;
 }
 
-static AMF_RESULT ParamConverterPictureType(const std::wstring& value, amf::AMFVariant& valueOut);
 
 static std::wstring SplitSvcParamName(const std::wstring &fullName);
 
@@ -340,6 +339,126 @@ AMF_RESULT ParamConverterColorProfile(const std::wstring& value, amf::AMFVariant
     return AMF_OK;
 }
 
+AMF_RESULT ParamConverterTransferCharacteristic(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+	AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED;
+	std::wstring uppValue = toUpper(value);
+	if (uppValue == L"BT709" || uppValue == L"1") {
+		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_BT709;
+	} else if (uppValue == L"UNSPECIFIED" || uppValue == L"2") {
+		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNSPECIFIED;
+	} else if (uppValue == L"RESERVED" || uppValue == L"3") {
+		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_RESERVED;
+	} else if (uppValue == L"GAMMA22" || uppValue == L"4") {
+		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_GAMMA22;
+	} else if (uppValue == L"GAMMA28" || uppValue == L"5") {
+		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_GAMMA28;
+	} else if (uppValue == L"SMPTE170M" || uppValue == L"6") {
+		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE170M;
+	} else if (uppValue == L"SMPTE240M" || uppValue == L"7") {
+		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE240M;
+	} else if (uppValue == L"LINEAR" || uppValue == L"8") {
+		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_LINEAR;
+	} else if (uppValue == L"LOG" || uppValue == L"9") {
+		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_LOG;
+	} else if (uppValue == L"LOG_SQRT" || uppValue == L"10") {
+		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_LOG_SQRT;
+	} else if (uppValue == L"IEC61966_2_4" ||  uppValue == L"11") {
+		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_IEC61966_2_4;
+	} else if (uppValue == L"BT1361_ECG" || uppValue == L"12") {
+		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_BT1361_ECG;
+	} else if (uppValue == L"IEC61966_2_1" || uppValue == L"13") {
+		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_IEC61966_2_1;
+	} else if (uppValue == L"BT2020_10" || uppValue == L"14") {
+		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_BT2020_10;
+	} else if (uppValue == L"BT2020_10" || uppValue == L"15") {
+		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_BT2020_12;
+	} else if (uppValue == L"SMPTE2084" || uppValue == L"16") {
+		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE2084;
+	} else if (uppValue == L"SMPTE428" || uppValue == L"17") {
+		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE428;
+	} else if (uppValue == L"ARIB_STD_B67" || uppValue == L"18") {
+		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_ARIB_STD_B67;
+	} else {
+		LOG_ERROR(L"AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM hasn't \"" << value << L"\" value.");
+		return AMF_INVALID_ARG;
+	}
+	valueOut = amf_int64(paramValue);
+	return AMF_OK;
+}
+
+AMF_RESULT ParamConverterColorPrimaries(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+	AMF_COLOR_PRIMARIES_ENUM paramValue = AMF_COLOR_PRIMARIES_UNDEFINED;
+	std::wstring uppValue = toUpper(value);
+	if (uppValue == L"BT709" || uppValue == L"1") {
+		paramValue = AMF_COLOR_PRIMARIES_BT709;
+	}
+	else if (uppValue == L"UNSPECIFIED" || uppValue == L"2") {
+		paramValue = AMF_COLOR_PRIMARIES_UNSPECIFIED;
+	}
+	else if (uppValue == L"RESERVED" || uppValue == L"3") {
+		paramValue = AMF_COLOR_PRIMARIES_RESERVED;
+	}
+	else if (uppValue == L"BT470M" || uppValue == L"4") {
+		paramValue = AMF_COLOR_PRIMARIES_BT470M;
+	}
+	else if (uppValue == L"BT470BG" || uppValue == L"5") {
+		paramValue = AMF_COLOR_PRIMARIES_BT470BG;
+	}
+	else if (uppValue == L"SMPTE170M" || uppValue == L"6") {
+		paramValue = AMF_COLOR_PRIMARIES_SMPTE170M;
+	}
+	else if (uppValue == L"SMPTE240M" || uppValue == L"7") {
+		paramValue = AMF_COLOR_PRIMARIES_SMPTE240M;
+	}
+	else if (uppValue == L"FILM" || uppValue == L"8") {
+		paramValue = AMF_COLOR_PRIMARIES_FILM;
+	}
+	else if (uppValue == L"BT2020" || uppValue == L"9") {
+		paramValue = AMF_COLOR_PRIMARIES_BT2020;
+	}
+	else if (uppValue == L"SMPTE428" || uppValue == L"10") {
+		paramValue = AMF_COLOR_PRIMARIES_SMPTE428;
+	}
+	else if (uppValue == L"SMPTE431" || uppValue == L"11") {
+		paramValue = AMF_COLOR_PRIMARIES_SMPTE431;
+	}
+	else if (uppValue == L"SMPTE432" || uppValue == L"12") {
+		paramValue = AMF_COLOR_PRIMARIES_SMPTE432;
+	}
+	else if (uppValue == L"JEDEC_P22" || uppValue == L"22") {
+		paramValue = AMF_COLOR_PRIMARIES_JEDEC_P22;
+	}
+	else if (uppValue == L"CCCS" || uppValue == L"1000") {
+		paramValue = AMF_COLOR_PRIMARIES_CCCS;
+	}
+	else {
+		LOG_ERROR(L"AMF_COLOR_PRIMARIES_ENUM hasn't \"" << value << L"\" value.");
+		return AMF_INVALID_ARG;
+	}
+	valueOut = amf_int64(paramValue);
+	return AMF_OK;
+}
+
+AMF_RESULT ParamConverterColorRange(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+	AMF_COLOR_RANGE_ENUM paramValue = AMF_COLOR_RANGE_UNDEFINED;
+	std::wstring uppValue = toUpper(value);
+	if (uppValue == L"STUDIO" || uppValue == L"1") {
+		paramValue = AMF_COLOR_RANGE_STUDIO;
+	}
+	else if (uppValue == L"FULL" || uppValue == L"2") {
+		paramValue = AMF_COLOR_RANGE_FULL;
+	}
+	else {
+		LOG_ERROR(L"AMF_COLOR_RANGE_ENUM hasn't \"" << value << L"\" value.");
+		return AMF_INVALID_ARG;
+	}
+	valueOut = amf_int64(paramValue);
+	return AMF_OK;
+}
+
 AMF_RESULT ParamConverterBoolean(const std::wstring& value, amf::AMFVariant& valueOut)
 {
     bool paramValue = true; // if parameter is present default is true
@@ -372,6 +491,10 @@ AMF_RESULT ParamConverterRate(const std::wstring& value, amf::AMFVariant& valueO
     amf::AMFVariant valueIn(value.c_str());
 
     AMFVariantChangeType(&valueOut, &valueIn, amf::AMF_VARIANT_RATE);
+    if (valueIn.rateValue.den == 0)
+    {
+        valueIn.rateValue.den = 1;
+    }
 
     return AMF_OK;
 }
@@ -384,14 +507,12 @@ AMF_RESULT ParamConverterSize(const std::wstring& value, amf::AMFVariant& valueO
 
 AMF_RESULT ParamConverterInt64(const std::wstring& value, amf::AMFVariant& valueOut)
 {
-    amf_int64 paraValue = 0;
     amf::AMFVariant tmp(value.c_str());
     valueOut = amf_int64(tmp);
     return AMF_OK;
 }
 AMF_RESULT ParamConverterDouble(const std::wstring& value, amf::AMFVariant& valueOut)
 {
-    amf_int64 paraValue = 0;
     amf::AMFVariant tmp(value.c_str());
     valueOut = amf_double(tmp);
     return AMF_OK;

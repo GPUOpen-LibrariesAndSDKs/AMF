@@ -47,17 +47,22 @@ DeviceOpenCL::DeviceOpenCL() :
     m_hCommandQueue(0),
     m_hContext(0)
 {
-    m_Loader.Init();
 }
 
 DeviceOpenCL::~DeviceOpenCL()
 {
     Terminate();
-    m_Loader.Terminate();
 }
 
 AMF_RESULT DeviceOpenCL::Init(IDirect3DDevice9* pD3DDevice9, ID3D11Device* pD3DDevice11, HGLRC hContextOGL, HDC hDC)
 {
+    if (m_hCommandQueue != 0)
+    {
+        return AMF_OK;
+    }
+
+    m_Loader.Init();
+
     AMF_RESULT res = AMF_OK;
     cl_int status = 0;
     cl_platform_id platformID = 0;
@@ -166,10 +171,10 @@ AMF_RESULT DeviceOpenCL::Init(IDirect3DDevice9* pD3DDevice9, ID3D11Device* pD3DD
 
 AMF_RESULT DeviceOpenCL::Terminate()
 {
+
     if(m_hCommandQueue != 0)
     {
         GetLoader().clReleaseCommandQueue(m_hCommandQueue);
-        m_hCommandQueue = NULL;
     }
     if(m_hDeviceIDs.size() != 0)
     {
@@ -184,6 +189,12 @@ AMF_RESULT DeviceOpenCL::Terminate()
         GetLoader().clReleaseContext(m_hContext);
         m_hContext = NULL;
     }
+    if (m_hCommandQueue != 0)
+    {
+        m_Loader.Terminate();
+        m_hCommandQueue = NULL;
+    }
+
     return AMF_OK;
 }
 AMF_RESULT DeviceOpenCL::FindPlatformID(cl_platform_id &platform)

@@ -40,7 +40,16 @@
 using namespace amf;
 
 #define AMF_FACILITY L"AMFPropertyStorageExImpl"
+#ifdef __clang__
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wexit-time-destructors"
+    #pragma clang diagnostic ignored "-Wglobal-constructors"
+#endif
+
 amf::AMFCriticalSection amf::ms_csAMFPropertyStorageExImplMaps;
+#ifdef __clang__
+    #pragma clang diagnostic pop
+#endif
 
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT amf::CastVariantToAMFProperty(amf::AMFVariantStruct* pDest, const amf::AMFVariantStruct* pSrc, amf::AMF_VARIANT_TYPE eType,
@@ -366,6 +375,7 @@ void AMFPropertyInfoImpl::Init(const wchar_t* name_, const wchar_t* desc_, AMF_V
             AMFVariantAssignFloatPoint2D(&maxValue, AMFConstructFloatPoint2D(FLT_MAX, FLT_MAX));
         }
     }
+    break;
     case AMF_VARIANT_FLOAT_POINT3D:
     {
         if (CastVariantToAMFProperty(&defaultValue, &defaultValue_, type, contentType, pEnumDescription) != AMF_OK)
@@ -381,6 +391,7 @@ void AMFPropertyInfoImpl::Init(const wchar_t* name_, const wchar_t* desc_, AMF_V
             AMFVariantAssignFloatPoint3D(&maxValue, AMFConstructFloatPoint3D(FLT_MAX, FLT_MAX, FLT_MAX));
         }
     }
+    break;
     case AMF_VARIANT_FLOAT_VECTOR4D:
     {
         if (CastVariantToAMFProperty(&defaultValue, &defaultValue_, type, contentType, pEnumDescription) != AMF_OK)
@@ -396,10 +407,12 @@ void AMFPropertyInfoImpl::Init(const wchar_t* name_, const wchar_t* desc_, AMF_V
             AMFVariantAssignFloatVector4D(&maxValue, AMFConstructFloatVector4D(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX));
         }
     }
-
+    break;
     default:
         break;
     }
+
+    value = defaultValue;
 }
 
 AMFPropertyInfoImpl::AMFPropertyInfoImpl(const AMFPropertyInfoImpl& propertyInfo) : AMFPropertyInfo(), m_name(), m_desc()
@@ -423,6 +436,9 @@ AMFPropertyInfoImpl& AMFPropertyInfoImpl::operator=(const AMFPropertyInfoImpl& p
     AMFVariantCopy(&this->minValue, &propertyInfo.minValue);
     AMFVariantCopy(&this->maxValue, &propertyInfo.maxValue);
     this->pEnumDescription = propertyInfo.pEnumDescription;
+
+    this->value = propertyInfo.value;
+    this->userModified = propertyInfo.userModified;
 
     return *this;
 }

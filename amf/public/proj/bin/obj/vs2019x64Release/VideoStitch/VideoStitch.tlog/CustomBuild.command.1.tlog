@@ -1,0 +1,11 @@
+^C:\P4\AMF\1.4.21\PUBLIC\SRC\COMPONENTS\VIDEOSTITCH\PROGRAMS\HISTOGRAM.CL
+"C:\p4\amf\1.4.21\public\proj\vs2019\VideoStitch\../../../../../Thirdparty/file_to_header/file_to_header.exe" "C:\p4\amf\1.4.21\public\src\components\VideoStitch\Programs\Histogram.cl" Histogram
+^C:\P4\AMF\1.4.21\PUBLIC\SRC\COMPONENTS\VIDEOSTITCH\DIRECTX11\STITCHD3D11.HLSL
+fxc.exe /T ps_4_0 /Fo "C:\\p4\amf\1.4.21\public\src\components\VideoStitch\DirectX11\\StitchD3D11_ps.bin" /E PS  "C:\p4\amf\1.4.21\public\src\components\VideoStitch\DirectX11\StitchD3D11.hlsl"
+fxc.exe /T ps_4_0 /Fo "C:\\p4\amf\1.4.21\public\src\components\VideoStitch\DirectX11\\StitchD3D11_psc.bin" /E PS_Cube  "C:\p4\amf\1.4.21\public\src\components\VideoStitch\DirectX11\StitchD3D11.hlsl"
+fxc.exe /T vs_4_0 /Fo "C:\\p4\amf\1.4.21\public\src\components\VideoStitch\DirectX11\\StitchD3D11_vs.bin" /E VS  "C:\p4\amf\1.4.21\public\src\components\VideoStitch\DirectX11\StitchD3D11.hlsl"
+fxc.exe /T gs_4_0 /Fo "C:\\p4\amf\1.4.21\public\src\components\VideoStitch\DirectX11\\StitchD3D11_gs.bin" /E GS  "C:\p4\amf\1.4.21\public\src\components\VideoStitch\DirectX11\StitchD3D11.hlsl"
+"C:\p4\amf\1.4.21\public\proj\vs2019\VideoStitch\../../../../../Thirdparty/file_to_header/file_to_header.exe" "C:\\p4\amf\1.4.21\public\src\components\VideoStitch\DirectX11\\StitchD3D11_ps.bin" StitchD3D11_ps
+"C:\p4\amf\1.4.21\public\proj\vs2019\VideoStitch\../../../../../Thirdparty/file_to_header/file_to_header.exe" "C:\\p4\amf\1.4.21\public\src\components\VideoStitch\DirectX11\\StitchD3D11_psc.bin" StitchD3D11_psc
+"C:\p4\amf\1.4.21\public\proj\vs2019\VideoStitch\../../../../../Thirdparty/file_to_header/file_to_header.exe" "C:\\p4\amf\1.4.21\public\src\components\VideoStitch\DirectX11\\StitchD3D11_vs.bin" StitchD3D11_vs
+"C:\p4\amf\1.4.21\public\proj\vs2019\VideoStitch\../../../../../Thirdparty/file_to_header/file_to_header.exe" "C:\\p4\amf\1.4.21\public\src\components\VideoStitch\DirectX11\\StitchD3D11_gs.bin" StitchD3D11_gs

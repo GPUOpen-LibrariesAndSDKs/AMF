@@ -462,6 +462,11 @@ void DecPollingThread::Run()
         {
             break; // Drain complete
         }
+		if ((res != AMF_OK) && (res != AMF_REPEAT))
+		{
+			// trace possible error message
+			break; // Drain complete
+		}
         if(data != NULL)
         {
             WaitDecoder(m_pContext, amf::AMFSurfacePtr(data)); // Waits till decoder finishes decode the surface. Need for accurate profiling only. Do not use in the product!!!
@@ -565,6 +570,11 @@ void EncPollingThread::Run()
 		res = m_pEncoder->QueryOutput(&data);
 		if (res == AMF_EOF)
 		{
+			break; // Drain complete
+		}
+		if ((res != AMF_OK) && (res != AMF_REPEAT))
+		{
+			// trace possible error message
 			break; // Drain complete
 		}
 		if (data != NULL)

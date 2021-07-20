@@ -32,12 +32,12 @@
 //
 #pragma once
 
-#include "public/include/core/Context.h"
-#include "public/include/components/Component.h"
-#include "public/common/PropertyStorageExImpl.h"
-#include "public/include/components/AudioCapture.h"
-#include "public/src/components/AudioCapture/WASAPISource.h"
-#include "public/include/core/CurrentTime.h"
+#include "../../../include/core/Context.h"
+#include "../../../include/components/Component.h"
+#include "../../../common/PropertyStorageExImpl.h"
+#include "../../../include/components/AudioCapture.h"
+#include "../../../src/components/AudioCapture/WASAPISource.h"
+#include "../../../include/core/CurrentTime.h"
 
 namespace amf
 {
@@ -66,10 +66,10 @@ namespace amf
 
 		virtual AMF_RESULT  AMF_STD_CALL  SubmitInput(AMFData* pData);
 		virtual AMF_RESULT  AMF_STD_CALL  QueryOutput(AMFData** ppData);
-		virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* /*callback*/)    { return AMF_OK; };
-		virtual AMF_RESULT  AMF_STD_CALL  GetCaps(AMFCaps** /*ppCaps*/)                                 { return AMF_NOT_SUPPORTED; };
-		virtual AMF_RESULT  AMF_STD_CALL  Optimize(AMFComponentOptimizationCallback* /*pCallback*/)     { return AMF_OK; };
-		virtual AMFContext* AMF_STD_CALL  GetContext()                                              { return m_pContext; };
+		virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* /*callback*/)    { return AMF_OK; }
+		virtual AMF_RESULT  AMF_STD_CALL  GetCaps(AMFCaps** /*ppCaps*/)                                 { return AMF_NOT_SUPPORTED; }
+		virtual AMF_RESULT  AMF_STD_CALL  Optimize(AMFComponentOptimizationCallback* /*pCallback*/)     { return AMF_OK; }
+		virtual AMFContext* AMF_STD_CALL  GetContext()                                              { return m_pContext; }
 
 		// AMFPropertyStorageObserver interface
 		virtual void        AMF_STD_CALL  OnPropertyChanged(const wchar_t* pName);
@@ -103,6 +103,7 @@ namespace amf
 		AMFWASAPISourceImplPtr			m_pAMFDataStreamAudio;
 		bool							m_bForceEof;
 		bool							m_bTerminated;
+        bool							m_bShouldReInit;
 		amf_int64						m_frameCount;
 		amf_int32						m_deviceCount;
 		amf_int32						m_deviceActive;

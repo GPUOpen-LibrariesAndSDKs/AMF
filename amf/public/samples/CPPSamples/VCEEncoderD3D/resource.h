@@ -37,7 +37,7 @@
 #define AMF_VERSION_MAJOR               1
 #define AMF_VERSION_MINOR               1
 #define AMF_VERSION_BUILD               1
-#define AMF_VERSION_RELEASE             18
+#define AMF_VERSION_RELEASE             20
 
 // Next default values for new objects
 // 

@@ -23,8 +23,8 @@
 #ifndef AMF_CurrentTime_h
 #define AMF_CurrentTime_h
 
-#include "public/include/core/Platform.h"
-#include "public/include/core/Interface.h"
+#include "Platform.h"
+#include "Interface.h"
 
 namespace amf
 {

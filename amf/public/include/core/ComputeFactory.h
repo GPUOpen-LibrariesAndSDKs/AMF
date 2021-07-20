@@ -52,7 +52,7 @@ namespace amf
     class AMF_NO_VTABLE AMFComputeDevice  : public AMFPropertyStorage
     {
     public:
-        AMF_DECLARE_IID(0xb79d7cf6, 0x2c5c, 0x4deb, 0xb8, 0x96, 0xa2, 0x9e, 0xbe, 0xa6, 0xe3, 0x97);
+        AMF_DECLARE_IID(0xb79d7cf6, 0x2c5c, 0x4deb, 0xb8, 0x96, 0xa2, 0x9e, 0xbe, 0xa6, 0xe3, 0x97)
 
         virtual void*               AMF_STD_CALL GetNativePlatform() = 0;
         virtual void*               AMF_STD_CALL GetNativeDeviceID() = 0;
@@ -66,7 +66,7 @@ namespace amf
     //----------------------------------------------------------------------------------------------
     typedef AMFInterfacePtr_T<AMFComputeDevice> AMFComputeDevicePtr;
 #else // #if defined(__cplusplus)
-    AMF_DECLARE_IID(AMFComputeDevice, 0xb79d7cf6, 0x2c5c, 0x4deb, 0xb8, 0x96, 0xa2, 0x9e, 0xbe, 0xa6, 0xe3, 0x97);
+    AMF_DECLARE_IID(AMFComputeDevice, 0xb79d7cf6, 0x2c5c, 0x4deb, 0xb8, 0x96, 0xa2, 0x9e, 0xbe, 0xa6, 0xe3, 0x97)
     typedef struct AMFComputeDevice AMFComputeDevice;
 
     typedef struct AMFComputeDeviceVtbl
@@ -108,7 +108,7 @@ namespace amf
     class AMF_NO_VTABLE AMFComputeFactory : public AMFInterface
     {
     public:
-        AMF_DECLARE_IID(0xe3c24bd7, 0x2d83, 0x416c, 0x8c, 0x4e, 0xfd, 0x13, 0xca, 0x86, 0xf4, 0xd0);
+        AMF_DECLARE_IID(0xe3c24bd7, 0x2d83, 0x416c, 0x8c, 0x4e, 0xfd, 0x13, 0xca, 0x86, 0xf4, 0xd0)
 
         virtual amf_int32           AMF_STD_CALL GetDeviceCount() = 0;
         virtual AMF_RESULT          AMF_STD_CALL GetDeviceAt(amf_int32 index, AMFComputeDevice **ppDevice) = 0;
@@ -118,7 +118,7 @@ namespace amf
     //----------------------------------------------------------------------------------------------
     typedef AMFInterfacePtr_T<AMFComputeFactory> AMFComputeFactoryPtr;
 #else // #if defined(__cplusplus)
-    AMF_DECLARE_IID(AMFComputeFactory, 0xe3c24bd7, 0x2d83, 0x416c, 0x8c, 0x4e, 0xfd, 0x13, 0xca, 0x86, 0xf4, 0xd0);
+    AMF_DECLARE_IID(AMFComputeFactory, 0xe3c24bd7, 0x2d83, 0x416c, 0x8c, 0x4e, 0xfd, 0x13, 0xca, 0x86, 0xf4, 0xd0)
     typedef struct AMFComputeFactory AMFComputeFactory;
 
     typedef struct AMFComputeFactoryVtbl
@@ -141,7 +141,7 @@ namespace amf
 
     //----------------------------------------------------------------------------------------------
 #if defined(__cplusplus)
-}; // namespace amf
+} // namespace amf
 #endif
 
 #endif // AMF_ComputeFactory_h

@@ -40,6 +40,9 @@
 #include <cctype>
 #include <vector>
 
+#ifdef _WIN32
+#include <shellapi.h>
+#endif
 
 typedef std::pair<std::wstring, std::wstring> CmdArg;
 typedef std::list<CmdArg> CmdArgs;

@@ -72,6 +72,12 @@
 //     #error Need to define AMF_ALIGN
  #endif
 
+#if defined(__linux)
+typedef signed int HRESULT;
+#define SUCCEEDED(hr) (((HRESULT)(hr)) >= 0)
+#define FAILED(hr) (((HRESULT)(hr)) < 0)
+#endif
+
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>

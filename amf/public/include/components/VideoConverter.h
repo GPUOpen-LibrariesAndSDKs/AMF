@@ -49,6 +49,17 @@ enum AMF_VIDEO_CONVERTER_SCALE_ENUM
     AMF_VIDEO_CONVERTER_SCALE_BICUBIC           = 1
 };
 
+enum AMF_VIDEO_CONVERTER_TONEMAPPING_ENUM
+{
+    AMF_VIDEO_CONVERTER_TONEMAPPING_COPY = 0,
+    AMF_VIDEO_CONVERTER_TONEMAPPING_AMD = 1,
+    AMF_VIDEO_CONVERTER_TONEMAPPING_LINEAR = 2,
+    AMF_VIDEO_CONVERTER_TONEMAPPING_GAMMA = 3,
+    AMF_VIDEO_CONVERTER_TONEMAPPING_REINHARD = 4,
+    AMF_VIDEO_CONVERTER_TONEMAPPING_2390 = 5,
+};
+
+
 
 #define AMF_VIDEO_CONVERTER_OUTPUT_FORMAT                   L"OutputFormat"             // Values : AMF_SURFACE_NV12 or AMF_SURFACE_BGRA or AMF_SURFACE_YUV420P
 #define AMF_VIDEO_CONVERTER_MEMORY_TYPE                     L"MemoryType"               // Values : AMF_MEMORY_DX11 or AMF_MEMORY_DX9 or AMF_MEMORY_UNKNOWN (get from input type)
@@ -79,20 +90,22 @@ enum AMF_VIDEO_CONVERTER_SCALE_ENUM
 
 // these properties can be set on converter component to configure input and output 
 // these properties overwrite properties set on surface - see below
-#define AMF_VIDEO_CONVERTER_INPUT_TRANSFER_CHARACTERISTIC   L"InputTransferChar"    // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 § 7.2 See ColorSpace.h for enum 
-#define AMF_VIDEO_CONVERTER_INPUT_COLOR_PRIMARIES           L"InputColorPrimaries"  // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 § 7.1 See ColorSpace.h for enum 
+#define AMF_VIDEO_CONVERTER_INPUT_TRANSFER_CHARACTERISTIC   L"InputTransferChar"    // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013   7.2 See ColorSpace.h for enum 
+#define AMF_VIDEO_CONVERTER_INPUT_COLOR_PRIMARIES           L"InputColorPrimaries"  // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013   7.1 See ColorSpace.h for enum 
 #define AMF_VIDEO_CONVERTER_INPUT_COLOR_RANGE               L"InputColorRange"      // amf_int64(AMF_COLOR_RANGE_ENUM) default = AMF_COLOR_RANGE_UNDEFINED
 #define AMF_VIDEO_CONVERTER_INPUT_HDR_METADATA              L"InputHdrMetadata"     // AMFBuffer containing AMFHDRMetadata; default NULL
+#define AMF_VIDEO_CONVERTER_INPUT_TONEMAPPING               L"InputTonemapping"   // amf_int64(AMF_VIDEO_CONVERTER_TONEMAPPING_ENUM) default = AMF_VIDEO_CONVERTER_TONEMAPPING_LINEAR
 
-#define AMF_VIDEO_CONVERTER_OUTPUT_TRANSFER_CHARACTERISTIC  L"OutputTransferChar"   // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 § 7.2 See ColorSpace.h for enum 
-#define AMF_VIDEO_CONVERTER_OUTPUT_COLOR_PRIMARIES          L"OutputColorPrimaries" // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 § 7.1 See ColorSpace.h for enum 
+#define AMF_VIDEO_CONVERTER_OUTPUT_TRANSFER_CHARACTERISTIC  L"OutputTransferChar"   // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013   7.2 See ColorSpace.h for enum 
+#define AMF_VIDEO_CONVERTER_OUTPUT_COLOR_PRIMARIES          L"OutputColorPrimaries" // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013   7.1 See ColorSpace.h for enum 
 #define AMF_VIDEO_CONVERTER_OUTPUT_COLOR_RANGE              L"OutputColorRange"     // amf_int64(AMF_COLOR_RANGE_ENUM) default = AMF_COLOR_RANGE_UNDEFINED
 #define AMF_VIDEO_CONVERTER_OUTPUT_HDR_METADATA             L"OutputHdrMetadata"    // AMFBuffer containing AMFHDRMetadata; default NULL
+#define AMF_VIDEO_CONVERTER_OUTPUT_TONEMAPPING              L"OutputTonemapping"  // amf_int64(AMF_VIDEO_CONVERTER_TONEMAPPING_ENUM) default = AMF_VIDEO_CONVERTER_TONEMAPPING_AMD
 
 // these properties can be set on input or outout surface See ColorSpace.h
 // the same as decoder properties set on input surface - see below
-//#define AMF_VIDEO_COLOR_TRANSFER_CHARACTERISTIC         L"ColorTransferChar"      // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 § 7.2 See ColorSpace.h for enum 
-//#define AMF_VIDEO_COLOR_PRIMARIES                       L"ColorPrimaries"         // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 § 7.1 See ColorSpace.h for enum 
+//#define AMF_VIDEO_COLOR_TRANSFER_CHARACTERISTIC         L"ColorTransferChar"      // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013   7.2 See ColorSpace.h for enum 
+//#define AMF_VIDEO_COLOR_PRIMARIES                       L"ColorPrimaries"         // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013   7.1 See ColorSpace.h for enum 
 //#define AMF_VIDEO_COLOR_RANGE                           L"ColorRange"           // amf_int64(AMF_COLOR_RANGE_ENUM) default = AMF_COLOR_RANGE_UNDEFINED
 //#define AMF_VIDEO_COLOR_HDR_METADATA                    L"HdrMetadata"            // AMFBuffer containing AMFHDRMetadata; default NULL
 

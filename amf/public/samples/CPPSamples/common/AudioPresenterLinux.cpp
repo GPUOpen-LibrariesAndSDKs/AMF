@@ -210,13 +210,24 @@ AMF_RESULT AudioPresenterLinux::SubmitInput(amf::AMFData* pData)
         return AMF_EOF;
     }
 
-    if(m_pAVSync != NULL && !m_pAVSync->IsVideoStarted())
+    if(m_pAVSync != NULL)
     {
-        if(m_iAVSyncDelay == -1LL)
+        if (m_pAVSync->IsVideoStarted() == false)
         {
-            m_iAVSyncDelay = amf_high_precision_clock();
+            if (m_iAVSyncDelay == -1LL)
+            {
+                m_iAVSyncDelay = amf_high_precision_clock();;
+            }
+            return AMF_INPUT_FULL;
         }
-        return AMF_INPUT_FULL;
+        if (ShouldPresentAudioOrNot(m_pAVSync->GetVideoPts(), pData->GetPts()) == false)
+        {
+            return AMF_OK;
+        }
+        else
+        {
+            m_pAVSync->SetAudioPts(pData->GetPts());
+        }
     }
     amf::AMFAudioBufferPtr pAudioBuffer(pData);
 

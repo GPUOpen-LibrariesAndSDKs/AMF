@@ -29,11 +29,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+#if !defined(WIN32_LEAN_AND_MEAN)
 #define WIN32_LEAN_AND_MEAN
+#endif
 
-#include "public/include/core/Context.h"
-#include "public/common/InterfaceImpl.h"
-#include "public/common/PropertyStorageImpl.h"
+#include "../../../include/core/Context.h"
+#include "../../../common/InterfaceImpl.h"
+#include "../../../common/PropertyStorageImpl.h"
+#include "public/include/components/DisplayCapture.h"
 
 #define USE_DUPLICATEOUTPUT1
 
@@ -41,6 +44,7 @@
 #ifdef USE_DUPLICATEOUTPUT1
 // Requires Windows SDK 10.0.10586
 #include <dxgi1_5.h>
+#include <dxgi1_6.h>
 #else
 #include <dxgi1_2.h>
 #endif
@@ -65,13 +69,16 @@ namespace amf
         AMFSize                         GetResolution();
 
         AMFRect                         GetDesktopRect();
+        AMF_ROTATION_ENUM               GetRotation();
+        void                            SetMode(AMF_DISPLAYCAPTURE_MODE_ENUM mode);
 
 		// AMFSurfaceObserver interface
 		virtual void        AMF_STD_CALL OnSurfaceDataRelease(AMFSurface* pSurface);
 
 	private:
 		// Utility methods
-		AMF_RESULT                              GetNewDuplicator();
+        AMF_RESULT                      GetHDRInformation(AMFSurface* pSurface);
+        AMF_RESULT                      GetNewDuplicator();
 
 		// When we are done with a texture, we push it onto a free list
 		// We must track the AMF surfaces in case Terminate() is called
@@ -106,6 +113,7 @@ namespace amf
         amf_vector<DXGI_OUTDUPL_MOVE_RECT>      m_MoveRects;
 
         bool                                    m_bEnableDirtyRects;
+        AMF_DISPLAYCAPTURE_MODE_ENUM            m_eCaptureMode;
     };
 	typedef AMFInterfacePtr_T<AMFDDAPISourceImpl>    AMFDDAPISourceImplPtr;
 } //namespace amf

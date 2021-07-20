@@ -31,6 +31,7 @@
 // THE SOFTWARE.
 //
 
+#include "libavutil/channel_layout.h"
 #include "AudioDecoderFFMPEGImpl.h"
 #include "UtilsFFMPEG.h"
 
@@ -186,6 +187,10 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
             return AMF_NOT_SUPPORTED;
     }
 
+	AMFTraceInfo(AMF_FACILITY, L"AudioDecoder:IN codec=%d format=%d rate=%d channels=%d layout=%d frame-size=%d",
+		codecID, m_pCodecContext->sample_fmt, m_pCodecContext->sample_rate, m_pCodecContext->channels,
+		m_pCodecContext->channel_layout, m_pCodecContext->frame_size);
+
     if (avcodec_open2(m_pCodecContext, codec, NULL) < 0)
     {
         Terminate();
@@ -195,8 +200,27 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
     // MM get - around some WMV audio codecs
     if(m_pCodecContext->channel_layout == 0)
     {
-        m_pCodecContext->channel_layout = 3;
+        m_pCodecContext->channel_layout = AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT;
     }
+
+	switch (m_pCodecContext->sample_fmt)
+	{
+	case AV_SAMPLE_FMT_U8:   sampleFormat = AMFAF_U8;    break;
+	case AV_SAMPLE_FMT_S16:  sampleFormat = AMFAF_S16;   break;
+	case AV_SAMPLE_FMT_S32:  sampleFormat = AMFAF_S32;   break;
+	case AV_SAMPLE_FMT_FLT:  sampleFormat = AMFAF_FLT;   break;
+	case AV_SAMPLE_FMT_DBL:  sampleFormat = AMFAF_DBL;   break;
+
+	case AV_SAMPLE_FMT_U8P:  sampleFormat = AMFAF_U8P;   break;
+	case AV_SAMPLE_FMT_S16P: sampleFormat = AMFAF_S16P;  break;
+	case AV_SAMPLE_FMT_S32P: sampleFormat = AMFAF_S32P;  break;
+	case AV_SAMPLE_FMT_FLTP: sampleFormat = AMFAF_FLTP;  break;
+	case AV_SAMPLE_FMT_DBLP: sampleFormat = AMFAF_DBLP;  break;
+
+	case AV_SAMPLE_FMT_NONE:
+	default:
+		sampleFormat = AMFAF_UNKNOWN; break;
+	}
 
     // output properties
     AMF_RETURN_IF_FAILED(SetProperty(AUDIO_DECODER_OUT_AUDIO_SAMPLE_FORMAT, sampleFormat));
@@ -218,6 +242,10 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
     {
         AMFTraceDebug(AMF_FACILITY, L"AMFAudioDecoderFFMPEG::InitContext() - Completed", m_pCodecContext->codec_id);
     }
+
+	AMFTraceInfo(AMF_FACILITY, L"AudioDecoder:OUT codec=%d format=%d rate=%d channels=%d layout=%d",
+		codecID, sampleFormat, m_pCodecContext->sample_rate, m_pCodecContext->channels,
+		m_pCodecContext->channel_layout);
 
     return AMF_OK;
 }
