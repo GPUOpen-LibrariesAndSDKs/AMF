@@ -391,27 +391,32 @@ int main(int argc, char* argv[])
             {
                 if (osvi.dwMinorVersion >= 2)   //  Win 8 or Win Server 2012 or newer
                 {
-	#if USE_DX12==0
-                    DeviceDX11  deviceDX11;
-                    if (deviceDX11.Init(deviceIdx) == AMF_OK)
+#if USE_DX12==1
+                    amf::AMFContext2Ptr pContext2(pContext);
+                    if (pContext2 != nullptr)
                     {
-                        deviceInit = (pContext->InitDX11(deviceDX11.GetDevice()) == AMF_OK);
+                        DeviceDX12  deviceDX12;
+                        if (deviceDX12.Init(deviceIdx) == AMF_OK)
+                        {
+                            deviceInit = (pContext2->InitDX12(deviceDX12.GetDevice()) == AMF_OK);
+                        } else
+                        {
+                            break;
+                        }
                     }
                     else
+#endif
                     {
-                        break;
+                        DeviceDX11  deviceDX11;
+                        if (deviceDX11.Init(deviceIdx) == AMF_OK)
+                        {
+                            deviceInit = (pContext->InitDX11(deviceDX11.GetDevice()) == AMF_OK);
+                        } else
+                        {
+                            break;
+                        }
+
                     }
-	#else	
-					DeviceDX12  deviceDX12;
-					if (deviceDX12.Init(deviceIdx) == AMF_OK)
-					{
-						deviceInit = (amf::AMFContext2Ptr(pContext)->InitDX12(deviceDX12.GetDevice()) == AMF_OK);
-					}
-					else
-					{
-						break;
-					}
-	#endif
                 }
                 else
                 {

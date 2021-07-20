@@ -377,9 +377,10 @@ namespace amf
         }
     };
     //----------------------------------------------------------------------------
-    AMFThreadObj::AMFThreadObj(AMFThread* owner)
-        : m_pThread(uintptr_t(-1)),
-        m_StopEvent(true, true), m_pOwner(owner)
+    AMFThreadObj::AMFThreadObj(AMFThread* owner) :
+        m_pOwner(owner),
+        m_pThread(uintptr_t(-1)),
+        m_StopEvent(true, true)
     {}
     //----------------------------------------------------------------------------
     AMFThreadObj::~AMFThreadObj()
@@ -447,7 +448,7 @@ namespace amf
         return m_pThread != (uintptr_t)-1L;
     }
     //----------------------------------------------------------------------------
-    void amf::ExitThread()
+    void ExitThread()
     {
         _endthread();
     }

@@ -30,6 +30,15 @@
 New features are available in 
 Driver: Radeon Software Adrenalin 2019 Edition; 19.7.1 Software: 19.30 and later 
 
+1.4.21.0 (07.05.2021) version
+--------------------------
+   - HDR color conversion updated
+   - HDR color conversion in encoder
+   - QVBR rate control mode in encoder 
+   - Extended statistic and quality metrics in encoder
+   - Frame rate parameter became dynamic
+   - new LTR encoder mode
+
 1.4.18.0 (16.09.2020) version
 --------------------------
    - AV1 decoding

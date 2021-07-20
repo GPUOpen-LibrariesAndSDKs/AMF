@@ -159,11 +159,10 @@ AMF_RESULT VideoPresenterDX11::Present(amf::AMFSurface* pSurface)
 
     ApplyCSC(pSurface);
 	UINT presentFlags = DXGI_PRESENT_RESTART;
-	UINT syncInterval = 1;
+	UINT syncInterval = 0;
 	if (m_bWaitForVSync == false)
 	{
 		presentFlags |= DXGI_PRESENT_DO_NOT_WAIT;
-		syncInterval = 0;
 	}
 
     {
@@ -182,10 +181,11 @@ AMF_RESULT VideoPresenterDX11::Present(amf::AMFSurface* pSurface)
 
             amf::AMFLock lock(&m_sect);
 
+
             for (int i = 0; i < 100; i++)
             {
-                HRESULT hr = m_pSwapChainVideo->PresentBuffer((UINT)index, syncInterval, presentFlags);
-//                HRESULT hr = m_pSwapChainVideo->PresentBuffer((UINT)index, 0, 0);
+//                HRESULT hr = m_pSwapChainVideo->PresentBuffer((UINT)index, syncInterval, presentFlags);
+                HRESULT hr = m_pSwapChainVideo->PresentBuffer((UINT)index, 1, DXGI_PRESENT_RESTART);
 
                 if (FAILED(hr))
                 {
@@ -541,7 +541,8 @@ AMF_RESULT VideoPresenterDX11::Terminate()
     m_pSwapChain.Release();
 
     m_pDecodeTexture.Release();
-    m_pVisualSurface.Release();
+    m_pVisualSurfaceRoot.Release();
+
     m_pDCompTarget.Release();
     m_pDCompDevice.Release();
 
@@ -573,9 +574,11 @@ AMF_RESULT VideoPresenterDX11::CreatePresentationSwapChain(amf::AMFSurface* pSur
     m_pSwapChainVideo.Release();
     m_pSwapChain1.Release();
     m_pSwapChain.Release();
+
     m_pDecodeTexture.Release();
 
-    m_pVisualSurface.Release();
+    m_pVisualSurfaceRoot.Release();
+
     m_pDCompTarget.Release();
     m_pDCompDevice.Release();
     if (m_hDCompositionSurfaceHandle != nullptr)
@@ -633,8 +636,6 @@ AMF_RESULT VideoPresenterDX11::CreatePresentationSwapChain(amf::AMFSurface* pSur
         spContext->ClearState();
         spContext->Flush();
 
-        
-
         if (GetInputFormat() == amf::AMF_SURFACE_NV12 && pSurface != nullptr)
         {
             DXGI_OUTPUT_DESC outputDesc = {};
@@ -649,7 +650,11 @@ AMF_RESULT VideoPresenterDX11::CreatePresentationSwapChain(amf::AMFSurface* pSur
 
             if (m_hDcompDll == 0)
             {
+#ifdef _WIN32
                 m_hDcompDll = amf_load_library(L"Dcomp.dll");
+#else
+                m_hDcompDll = amf_load_library1(L"Dcomp.dll", true); //global flag set to true
+#endif
                 AMF_RETURN_IF_FALSE(m_hDcompDll != nullptr, AMF_DIRECTX_FAILED, L"Dcomp.dll is not available");
             }
             DCompositionCreateSurfaceHandle_Fn fDCompositionCreateSurfaceHandle = (DCompositionCreateSurfaceHandle_Fn)amf_get_proc_address(m_hDcompDll, "DCompositionCreateSurfaceHandle");
@@ -677,8 +682,10 @@ AMF_RESULT VideoPresenterDX11::CreatePresentationSwapChain(amf::AMFSurface* pSur
             hr = fDCompositionCreateSurfaceHandle(COMPOSITIONSURFACE_ALL_ACCESS, nullptr, &m_hDCompositionSurfaceHandle);
             ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"DCompositionCreateSurfaceHandle() failed");
 
-            hr = m_pDCompDevice->CreateVisual(&m_pVisualSurface);
-            ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"CreateVisual() failed");
+            hr = m_pDCompDevice->CreateVisual(&m_pVisualSurfaceRoot);
+
+            hr = m_pDCompTarget->SetRoot(m_pVisualSurfaceRoot);
+            ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetRoot() failed");
 
             CComQIPtr<IDXGIFactoryMedia> pDXGIDeviceMedia;
 
@@ -688,7 +695,6 @@ AMF_RESULT VideoPresenterDX11::CreatePresentationSwapChain(amf::AMFSurface* pSur
             DXGI_DECODE_SWAP_CHAIN_DESC descVideoSwap = {};
 
             CComQIPtr<IDXGIResource> spDXGResource = m_pDecodeTexture;
-
             hr = pDXGIDeviceMedia->CreateDecodeSwapChainForCompositionSurfaceHandle(m_pDevice, m_hDCompositionSurfaceHandle, &descVideoSwap, spDXGResource, nullptr, &m_pSwapChainVideo);
             
             if (FAILED(hr))
@@ -716,16 +722,15 @@ AMF_RESULT VideoPresenterDX11::CreatePresentationSwapChain(amf::AMFSurface* pSur
             // hr = m_pVisualSurface->SetContent(pUnknownSurface);
 //            hr = pVisualSurfaceRoot->AddVisual(m_pVisualSurface, TRUE, nullptr);
 
-            hr = m_pVisualSurface->SetContent(m_pSwapChainVideo);
+
+            hr = m_pVisualSurfaceRoot->SetContent(m_pSwapChainVideo);
             ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetContent(m_pSwapChainVideo) failed");
-            hr = m_pDCompTarget->SetRoot(m_pVisualSurface);
-            ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetRoot() failed");
-
-            //m_pVisualSurface->SetOpacityMode(DCOMPOSITION_OPACITY_MODE_INHERIT);
-            CComQIPtr<IDCompositionVisual3>   pVisualSurface3(m_pVisualSurface);
-            pVisualSurface3->SetVisible(TRUE);
-
-//            fDCompositionAttachMouseDragToHwnd(m_pVisualSurface, (HWND)m_hwnd, TRUE);
+            CComQIPtr<IDCompositionVisual3>   pVisualSurface3(m_pVisualSurfaceRoot);
+            if (pVisualSurface3 != nullptr)
+            {
+                pVisualSurface3->SetVisible(TRUE);
+            }
+            fDCompositionAttachMouseDragToHwnd(m_pVisualSurfaceRoot, (HWND)m_hwnd, TRUE);
 
             hr = m_pDCompDevice->Commit();
             ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"Commit() failed");
@@ -988,26 +993,27 @@ AMF_RESULT            VideoPresenterDX11::CheckForResize(bool bForce, bool *bRes
     D3D11_TEXTURE2D_DESC bufferDesc;
     spBuffer->GetDesc( &bufferDesc );
 
-    AMFRect client;
-    if(m_hwnd!=NULL)
-    {
-        client = GetClientRect();
-    }
-    else if(m_pSwapChain1!=NULL)
-    {
-        DXGI_SWAP_CHAIN_DESC1 SwapDesc;
-        m_pSwapChain1->GetDesc1(&SwapDesc);
-        client.left=0;
-        client.top=0;
-        client.right=SwapDesc.Width;
-        client.bottom=SwapDesc.Height;
-    }
-    amf_int width=client.right-client.left;
-    amf_int height=client.bottom-client.top;
-
     BOOL bFullScreen = FALSE;
     CComPtr<IDXGIOutput> pOutput;
     m_pSwapChain->GetFullscreenState(&bFullScreen, &pOutput);
+
+    amf_uint width = 0;
+    amf_uint height = 0;
+
+    if(m_hwnd!=NULL && bFullScreen == FALSE)
+    {
+        AMFRect client = GetClientRect();
+        width = client.right - client.left;
+        height = client.bottom - client.top;
+    }
+    else 
+    {
+        DXGI_SWAP_CHAIN_DESC SwapDesc;
+        m_pSwapChain->GetDesc(&SwapDesc);
+        width = SwapDesc.BufferDesc.Width;
+        width = SwapDesc.BufferDesc.Height;
+    }
+
 
     if(!bForce && ((width==(amf_int)bufferDesc.Width && height==(amf_int)bufferDesc.Height) || width == 0 || height == 0 ) &&
         (bool)bFullScreen == m_bFullScreen)
@@ -1034,23 +1040,6 @@ AMFSize             VideoPresenterDX11::GetSwapchainSize()
 
 AMF_RESULT VideoPresenterDX11::ResizeSwapChain()
 {
-    AMFRect client;
-
-    if(m_hwnd!=NULL)
-    {
-        client = GetClientRect();
-    }
-    else
-    if(m_pSwapChain1!=NULL)
-    {
-        DXGI_SWAP_CHAIN_DESC1 SwapDesc;
-        m_pSwapChain1->GetDesc1(&SwapDesc);
-        client.left=0;
-        client.top=0;
-        client.right=SwapDesc.Width;
-        client.bottom=SwapDesc.Height;
-    }
-
     if (m_hDCompositionSurfaceHandle != nullptr)
     {
         return AMF_OK;
@@ -1074,11 +1063,26 @@ AMF_RESULT VideoPresenterDX11::ResizeSwapChain()
  //   spContext->ClearState();
     spContext->OMSetRenderTargets(0, 0, 0);
 
-    // resize
-    hr = m_pSwapChain->ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, 0); // DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
+    DXGI_OUTPUT_DESC outputDesc = {};
+    m_pCurrentOutput->GetDesc(&outputDesc);
 
+    UINT width = 0;
+    UINT height = 0;
+
+    if (m_bFullScreen)
+    {
+        width = outputDesc.DesktopCoordinates.right - outputDesc.DesktopCoordinates.left;
+        height = outputDesc.DesktopCoordinates.bottom - outputDesc.DesktopCoordinates.top;
+    }
+
+    // resize
+    hr = m_pSwapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0); // DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
+
+    // verify
     DXGI_SWAP_CHAIN_DESC SwapDesc;
     m_pSwapChain->GetDesc(&SwapDesc);
+    width = SwapDesc.BufferDesc.Width;
+    height = SwapDesc.BufferDesc.Height;
 
     // Create render target view
     CComPtr<ID3D11Texture2D> spBackBuffer;
@@ -1103,23 +1107,24 @@ AMF_RESULT VideoPresenterDX11::ResizeSwapChain()
         hr = m_pDevice->CreateRenderTargetView( spBackBuffer, &RenderTargetViewDescription, &m_pRenderTargetView_R );
     }
 
+    AMFRect client;
+
     if (m_bFullScreen)
     {
         client.left = 0;
         client.top = 0;
-        client.right = SwapDesc.BufferDesc.Width;
-        client.bottom = SwapDesc.BufferDesc.Height;
+        client.right = width;
+        client.bottom = height;
     }
     else
     {
         client = GetClientRect();
-        int a = 1;
     }
 
     m_CurrentViewport.TopLeftX=0;
     m_CurrentViewport.TopLeftY=0;
-    m_CurrentViewport.Width=FLOAT(SwapDesc.BufferDesc.Width);
-    m_CurrentViewport.Height=FLOAT(SwapDesc.BufferDesc.Height);
+    m_CurrentViewport.Width=FLOAT(width);
+    m_CurrentViewport.Height=FLOAT(height);
     m_CurrentViewport.MinDepth=0.0f;
     m_CurrentViewport.MaxDepth=1.0f;
 
@@ -1449,13 +1454,24 @@ void        VideoPresenterDX11::UpdateProcessor()
             //    case  DXGI_COLOR_SPACE_YCBCR_FULL_G22_LEFT_P2020:
         case  DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020:
             colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE2084;
+
             primaries = AMF_COLOR_PRIMARIES_BT2020;
+
+            if (GetInputFormat() == amf::AMF_SURFACE_RGBA_F16)
+            {
+                primaries = AMF_COLOR_PRIMARIES_CCCS;
+            }
+
             AMFTraceInfo(AMF_FACILITY, L"DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020");
             break;
             //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_G2084_LEFT_P2020:
         case  DXGI_COLOR_SPACE_RGB_STUDIO_G2084_NONE_P2020:
             colorTransfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE2084;
             primaries = AMF_COLOR_PRIMARIES_BT2020;
+            if (GetInputFormat() == amf::AMF_SURFACE_RGBA_F16)
+            {
+                primaries = AMF_COLOR_PRIMARIES_CCCS;
+            }
             AMFTraceInfo(AMF_FACILITY, L"DXGI_COLOR_SPACE_RGB_STUDIO_G2084_NONE_P2020");
             break;
             //    case  DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_TOPLEFT_P2020:

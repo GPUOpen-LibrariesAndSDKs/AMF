@@ -21,16 +21,13 @@
 //
 
 #pragma once
-#include "public/include/components/Component.h"
-#include "public/include/components/DisplayCapture.h"
-#include "public/common/PropertyStorageExImpl.h"
-#include "public/include/core/Context.h"
-#include "public/common/ByteArray.h"
-#include "public/include/core/CurrentTime.h"
-#include "public/src/components/DisplayCapture/DDAPISource.h"
-
-using namespace amf;
-
+#include "../../../include/components/Component.h"
+#include "../../../include/components/DisplayCapture.h"
+#include "../../../common/PropertyStorageExImpl.h"
+#include "../../../include/core/Context.h"
+#include "../../../common/ByteArray.h"
+#include "../../../include/core/CurrentTime.h"
+#include "DDAPISource.h"
 
 namespace amf
 {
@@ -63,8 +60,8 @@ namespace amf
 
 		virtual AMF_RESULT  AMF_STD_CALL  SubmitInput(AMFData* pData);
 		virtual AMF_RESULT  AMF_STD_CALL  QueryOutput(AMFData** ppData);
-		virtual AMFContext* AMF_STD_CALL  GetContext()                                              {  return m_pContext;  };
-		virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* callback)    {  return AMF_NOT_SUPPORTED;  };
+		virtual AMFContext* AMF_STD_CALL  GetContext()                                              {  return m_pContext;  }
+		virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* callback)    {  return AMF_NOT_SUPPORTED;  }
 
 		virtual AMF_RESULT  AMF_STD_CALL GetCaps(AMFCaps** ppCaps);
 		virtual AMF_RESULT  AMF_STD_CALL Optimize(AMFComponentOptimizationCallback* pCallback);
@@ -91,6 +88,7 @@ namespace amf
         AMFComputePtr                           m_pComputeDevice;
         AMFComputeKernelPtr                     m_pDirtyRectsKernel;
         AMFBufferPtr                            m_pDirtyRectsBuffer;
+        AMF_ROTATION_ENUM                       m_eRotation;
 
         // No copy or assign
 		AMFDisplayCaptureImpl(const AMFDisplayCaptureImpl&);

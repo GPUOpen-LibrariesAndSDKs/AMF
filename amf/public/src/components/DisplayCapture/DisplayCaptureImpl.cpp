@@ -34,11 +34,11 @@
 #include "DisplayCaptureImpl.h"
 //#include "CaptureStats.h"
 
-#include "public/include/core/Context.h"
-#include "public/include/core/Trace.h"
-#include "public/common/TraceAdapter.h"
-#include "public/common/AMFFactory.h"
-#include "public/common/TraceAdapter.h"
+#include "../../../include/core/Context.h"
+#include "../../../include/core/Trace.h"
+#include "../../../common/TraceAdapter.h"
+#include "../../../common/AMFFactory.h"
+#include "../../../common/TraceAdapter.h"
 
 extern "C"
 {
@@ -65,6 +65,24 @@ using namespace amf;
 //
 //
 
+static const AMFEnumDescriptionEntry AMF_ROTATION_ENUM_DESC[] =
+{
+    {AMF_ROTATION_NONE,       L"None"},
+    {AMF_ROTATION_90,          L"90"},
+    {AMF_ROTATION_180,          L"180"},
+    {AMF_ROTATION_270,          L"270"},
+    {AMF_ROTATION_NONE,       0}  // This is end of description mark
+};
+
+
+static const AMFEnumDescriptionEntry AMF_DISPLAYCAPTURE_MODE_ENUM_DESC[] =
+{
+    {AMF_DISPLAYCAPTURE_MODE_KEEP_FRAMERATE, L"Keep framerate"},
+    {AMF_DISPLAYCAPTURE_MODE_WAIT_FOR_PRESENT, L"Wait for present"},
+    {AMF_DISPLAYCAPTURE_MODE_GET_CURRENT_SURFACE , L"Get current surface"},
+    {0,       0}  // This is end of description mark
+};
+
 //-------------------------------------------------------------------------------------------------
 AMFDisplayCaptureImpl::AMFDisplayCaptureImpl(AMFContext* pContext)
   : m_pContext(pContext)
@@ -74,7 +92,8 @@ AMFDisplayCaptureImpl::AMFDisplayCaptureImpl(AMFContext* pContext)
   , m_lastStartPts(-1)
   , m_frameRate(AMFConstructRate(60,1))
   , m_bCopyOutputSurface(false)
- , m_bDrawDirtyRects(false)
+  , m_bDrawDirtyRects(false)
+  , m_eRotation(AMF_ROTATION_NONE)
 {
 	// Add display dvr properties
     AMFPrimitivePropertyInfoMapBegin
@@ -87,7 +106,9 @@ AMFDisplayCaptureImpl::AMFDisplayCaptureImpl(AMFContext* pContext)
         AMFPropertyInfoBool(AMF_DISPLAYCAPTURE_DUPLICATEOUTPUT, L"Copy output surface", false, true),
         AMFPropertyInfoRect(AMF_DISPLAYCAPTURE_DESKTOP_RECT, L"Desktop rect", 0, 0, 0, 0, true),
         AMFPropertyInfoBool(AMF_DISPLAYCAPTURE_DRAW_DIRTY_RECTS, L"Draw dirty rectangles", false, true),
-        AMFPropertyInfoBool(AMF_DISPLAYCAPTURE_ENABLE_DIRTY_RECTS, L"Enable dirty rectangles", false, true)
+        AMFPropertyInfoBool(AMF_DISPLAYCAPTURE_ENABLE_DIRTY_RECTS, L"Enable dirty rectangles", false, true),
+        AMFPropertyInfoEnum(AMF_DISPLAYCAPTURE_ROTATION, L"Rotation", AMF_ROTATION_NONE, AMF_ROTATION_ENUM_DESC, true),
+        AMFPropertyInfoEnum(AMF_DISPLAYCAPTURE_MODE, L"Capture Mode", AMF_DISPLAYCAPTURE_MODE_KEEP_FRAMERATE, AMF_DISPLAYCAPTURE_MODE_ENUM_DESC, true),
         AMFPrimitivePropertyInfoMapEnd
 }
 
@@ -132,6 +153,10 @@ AMF_RESULT AMF_STD_CALL  AMFDisplayCaptureImpl::Init(AMF_SURFACE_FORMAT /*format
 	res = m_pDesktopDuplication->InitDisplayCapture(displayMonitorIndex, frameDuration, bEnableDirtyRects);
 	AMF_RETURN_IF_FAILED(res, L"InitDisplayCapture() failed");
 
+    amf_int64 mode = AMF_DISPLAYCAPTURE_MODE_KEEP_FRAMERATE;
+    GetProperty(AMF_DISPLAYCAPTURE_MODE, &mode);
+    m_pDesktopDuplication->SetMode((AMF_DISPLAYCAPTURE_MODE_ENUM)mode);
+
     AMFSize resolution = m_pDesktopDuplication->GetResolution();
     SetProperty(AMF_DISPLAYCAPTURE_RESOLUTION, resolution);
 
@@ -149,6 +174,10 @@ AMF_RESULT AMF_STD_CALL  AMFDisplayCaptureImpl::Init(AMF_SURFACE_FORMAT /*format
     {
         InitDrawDirtyRects();
     }
+
+    AMF_ROTATION_ENUM   rotation = m_pDesktopDuplication->GetRotation();
+    m_eRotation = rotation;
+    SetProperty(AMF_DISPLAYCAPTURE_ROTATION, rotation);
 
 	return res;
 }
@@ -266,6 +295,15 @@ AMF_RESULT AMF_STD_CALL  AMFDisplayCaptureImpl::QueryOutput(AMFData** ppData)
 	// Pts
 	surfPtr->SetPts(currentPts);
 	//
+
+    AMF_ROTATION_ENUM   rotation = m_pDesktopDuplication->GetRotation();
+    if (m_eRotation != rotation)
+    {
+        m_eRotation = rotation;
+        SetProperty(AMF_DISPLAYCAPTURE_ROTATION, rotation);
+}
+    surfPtr->SetProperty(AMF_SURFACE_ROTATION, rotation);
+
 	*ppData = surfPtr.Detach();
 
 #ifdef WANT_CAPTURE_STATS
@@ -296,6 +334,15 @@ void AMF_STD_CALL amf::AMFDisplayCaptureImpl::OnPropertyChanged(const wchar_t* p
 	{
 		Init(AMF_SURFACE_FORMAT::AMF_SURFACE_UNKNOWN, 0, 0);
 	}
+    else if (std::wcscmp(pName, AMF_DISPLAYCAPTURE_MODE) == 0)
+    {
+        if (m_pDesktopDuplication != nullptr)
+        {
+            amf_int64 mode = AMF_DISPLAYCAPTURE_MODE_KEEP_FRAMERATE;
+            GetProperty(AMF_DISPLAYCAPTURE_MODE, &mode);
+            m_pDesktopDuplication->SetMode(AMF_DISPLAYCAPTURE_MODE_ENUM(mode));
+        }
+    }
 
 	return;
 }

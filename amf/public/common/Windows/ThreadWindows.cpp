@@ -357,7 +357,7 @@ amf_handle AMF_CDECL_CALL amf_load_library(const wchar_t* filename)
 //----------------------------------------------------------------------------------------
 void* AMF_CDECL_CALL amf_get_proc_address(amf_handle module, const char* procName)
 {
-    return ::GetProcAddress((HMODULE)module, procName);
+    return (void*)::GetProcAddress((HMODULE)module, procName);
 }
 //----------------------------------------------------------------------------------------
 int AMF_CDECL_CALL amf_free_library(amf_handle module)

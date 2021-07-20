@@ -91,7 +91,7 @@ namespace amf
     //----------------------------------------------------------------------------------------------
 
 #if defined(_WIN32)
-    AMF_WEAK GUID  AMFFormatGUID = { 0x8cd592d0, 0x8063, 0x4af8, 0xa7, 0xd0, 0x32, 0x5b, 0xc5, 0xf7, 0x48, 0xab}; // UINT(AMF_SURFACE_FORMAT), default - AMF_SURFACE_UNKNOWN; to be set on ID3D11Texture2D objects when used natively (i.e. force UYVY on DXGI_FORMAT_YUY2 texture)
+    AMF_WEAK GUID  AMFFormatGUID = { 0x8cd592d0, 0x8063, 0x4af8, {0xa7, 0xd0, 0x32, 0x5b, 0xc5, 0xf7, 0x48, 0xab}}; // UINT(AMF_SURFACE_FORMAT), default - AMF_SURFACE_UNKNOWN; to be set on ID3D11Texture2D objects when used natively (i.e. force UYVY on DXGI_FORMAT_YUY2 texture)
 #endif
 
     //----------------------------------------------------------------------------------------------
@@ -130,6 +130,16 @@ namespace amf
         AMF_FRAME_INTERLEAVED_ODD_FIRST_STEREO_RIGHT    = AMF_FRAME_INTERLEAVED_FLAG | AMF_FRAME_ODD_FLAG | AMF_FRAME_RIGHT_FLAG,
         AMF_FRAME_INTERLEAVED_ODD_FIRST_STEREO_BOTH     = AMF_FRAME_INTERLEAVED_FLAG | AMF_FRAME_ODD_FLAG | AMF_FRAME_BOTH_FLAG,
     } AMF_FRAME_TYPE;
+
+    typedef enum AMF_ROTATION_ENUM
+    {
+        AMF_ROTATION_NONE   = 0,
+        AMF_ROTATION_90     = 1,
+        AMF_ROTATION_180    = 2,
+        AMF_ROTATION_270    = 3,
+    } AMF_ROTATION_ENUM;
+
+    #define AMF_SURFACE_ROTATION         L"Rotation"    // amf_int64(AMF_ROTATION_ENUM); default = AMF_ROTATION_NONE, can be set on surfaces
 
     //----------------------------------------------------------------------------------------------
     // AMFSurfaceObserver interface - callback; is called before internal release resources.
@@ -179,8 +189,16 @@ namespace amf
         virtual AMF_RESULT          AMF_STD_CALL CopySurfaceRegion(AMFSurface* pDest, amf_int32 dstX, amf_int32 dstY, amf_int32 srcX, amf_int32 srcY, amf_int32 width, amf_int32 height) = 0;
 
         // Observer management
+#ifdef __clang__
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Woverloaded-virtual"
+#endif
         virtual void                AMF_STD_CALL AddObserver(AMFSurfaceObserver* pObserver) = 0;
         virtual void                AMF_STD_CALL RemoveObserver(AMFSurfaceObserver* pObserver) = 0;
+#ifdef __clang__
+    #pragma clang diagnostic pop
+#endif
+
     };
     //----------------------------------------------------------------------------------------------
     // smart pointer

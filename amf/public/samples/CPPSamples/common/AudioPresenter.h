@@ -68,8 +68,8 @@ public:
     virtual AMF_RESULT  Init() = 0;
     virtual AMF_RESULT  Seek(amf_pts pts);
 
-    virtual amf_int32   GetInputSlotCount() const   {  return 1;  }
-    virtual amf_int32   GetOutputSlotCount() const  {  return 0;  }
+    virtual amf_int32   GetInputSlotCount() const override  {  return 1;  }
+    virtual amf_int32   GetOutputSlotCount() const override {  return 0;  }
 
     virtual AMF_RESULT GetDescription(
         amf_int64 &streamBitRate,
@@ -89,12 +89,24 @@ public:
 
     virtual void                DoActualWait(bool bDoWait) {m_bDoWait = bDoWait;}
 
+    virtual AMF_RESULT Flush() override;
 protected:
     AudioPresenter();
+    bool ShouldPresentAudioOrNot(amf_pts videoPts, amf_pts audioPts);
 
-    amf_pts m_ptsSeek;
-    bool    m_bLowLatency;
-    amf_pts                             m_startTime;
-    AVSyncObject *m_pAVSync;
-    bool m_bDoWait;
+protected:
+    amf_pts         m_ptsSeek;
+    bool            m_bLowLatency;
+    amf_pts         m_startTime;
+    AVSyncObject*   m_pAVSync;
+    bool            m_bDoWait;
+
+    amf_pts         m_FirstAudioSampleTime;
+    amf_pts         m_FirstAudioSamplePts;
+    int             m_SequentiallyLateAudioSamplesCnt;
+    int             m_SequentiallyDroppedAudioSamplesCnt;
+    int             m_DropCyclesCnt;
+    bool            m_ResetAVSync;
+    amf_pts         m_AverageAVDesync;
+    int             m_AudioFrameCntForAverageAVDesync;
 };

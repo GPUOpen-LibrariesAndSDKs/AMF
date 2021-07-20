@@ -64,7 +64,11 @@ static AMFTrace *GetTrace()
     if (s_pTrace == NULL)
     {
 #ifndef AMF_CORE_STATIC
+#ifdef _WIN32
         amf_handle module = amf_load_library(AMF_DLL_NAME);
+#else
+        amf_handle module = amf_load_library1(AMF_DLL_NAME, false); //load with local flags
+#endif
         if(module != NULL)
         {
             AMFInit_Fn initFun = (AMFInit_Fn)amf_get_proc_address(module, AMF_INIT_FUNCTION_NAME);
@@ -96,7 +100,11 @@ static AMFDebug *GetDebug()
     if (s_pDebug == NULL)
     {
 #ifndef AMF_CORE_STATIC
+#ifdef _WIN32
         amf_handle module = amf_load_library(AMF_DLL_NAME);
+#else 
+        amf_handle module = amf_load_library1(AMF_DLL_NAME, false); //load with local flags
+#endif
         if(module != NULL)
         {
             AMFInit_Fn initFun = (AMFInit_Fn)amf_get_proc_address(module, AMF_INIT_FUNCTION_NAME);
@@ -212,7 +220,15 @@ void AMF_CDECL_CALL amf::AMFTraceUnregisterWriter(const wchar_t* writerID)
     GetTrace()->UnregisterWriter(writerID);
 }
 
+#ifdef __clang__
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wexit-time-destructors"
+    #pragma clang diagnostic ignored "-Wglobal-constructors"
+#endif
 static amf_map<amf_uint32, amf_uint32> s_threadDepth;
+#ifdef __clang__
+    #pragma clang diagnostic pop
+#endif
 
 void AMF_CDECL_CALL amf::AMFTraceEnterScope()
 {
@@ -254,7 +270,7 @@ AMF_SURFACE_FORMAT AMF_STD_CALL amf::AMFSurfaceGetFormatByName(const wchar_t* pw
 {
     return GetTrace()->SurfaceGetFormatByName(pwName);
 }
-const wchar_t* const AMF_STD_CALL amf::AMFGetMemoryTypeName(const AMF_MEMORY_TYPE memoryType)
+const wchar_t* AMF_STD_CALL amf::AMFGetMemoryTypeName(const AMF_MEMORY_TYPE memoryType)
 {
     return GetTrace()->GetMemoryTypeName(memoryType);
 }

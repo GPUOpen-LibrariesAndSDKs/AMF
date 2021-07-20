@@ -253,7 +253,7 @@ namespace amf
     class AMF_NO_VTABLE AMFOutput : public AMFPropertyStorageEx
     {
     public:
-        AMF_DECLARE_IID(0x86a8a037, 0x912c, 0x4698, 0xb0, 0x46, 0x7, 0x5a, 0x1f, 0xac, 0x6b, 0x97);
+        AMF_DECLARE_IID(0x86a8a037, 0x912c, 0x4698, 0xb0, 0x46, 0x7, 0x5a, 0x1f, 0xac, 0x6b, 0x97)
 
         virtual AMF_RESULT  AMF_STD_CALL QueryOutput(AMFData** ppData) = 0;
     };
@@ -262,7 +262,7 @@ namespace amf
     //----------------------------------------------------------------------------------------------
     typedef AMFInterfacePtr_T<AMFOutput> AMFOutputPtr;
 #else // #if defined(__cplusplus)
-    AMF_DECLARE_IID(AMFOutput, 0x86a8a037, 0x912c, 0x4698, 0xb0, 0x46, 0x7, 0x5a, 0x1f, 0xac, 0x6b, 0x97);
+    AMF_DECLARE_IID(AMFOutput, 0x86a8a037, 0x912c, 0x4698, 0xb0, 0x46, 0x7, 0x5a, 0x1f, 0xac, 0x6b, 0x97)
     typedef struct AMFOutput AMFOutput;
 
     typedef struct AMFOutputVtbl

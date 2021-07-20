@@ -79,7 +79,7 @@ namespace amf
     //----------------------------------------------------------------------------------------------
 #define AMF_STRUCTURED_BUFFER_FORMAT        L"StructuredBufferFormat"                                                             // amf_int64(AMF_CHANNEL_TYPE), default - AMF_CHANNEL_UNSIGNED_INT32; to be set on AMFBuffer objects
 #if defined(_WIN32)
-    AMF_WEAK GUID  AMFStructuredBufferFormatGUID = { 0x90c5d674, 0xe90, 0x4181, 0xbd, 0xef, 0x26, 0x13, 0xc1, 0xdf, 0xa3, 0xbd }; // UINT(DXGI_FORMAT), default - DXGI_FORMAT_R32_UINT; to be set on ID3D11Buffer or ID3D11Texture2D objects when used natively
+    AMF_WEAK GUID  AMFStructuredBufferFormatGUID = { 0x90c5d674, 0xe90, 0x4181, {0xbd, 0xef, 0x26, 0x13, 0xc1, 0xdf, 0xa3, 0xbd} }; // UINT(DXGI_FORMAT), default - DXGI_FORMAT_R32_UINT; to be set on ID3D11Buffer or ID3D11Texture2D objects when used natively
 #endif
     //----------------------------------------------------------------------------------------------
     // enumeration argument type

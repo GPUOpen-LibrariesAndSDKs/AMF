@@ -100,10 +100,14 @@ AMF_RESULT VideoPresenter::SubmitInput(amf::AMFData* pData)
     if(pData)
     {
         m_currentTime = pData->GetPts();
-        if(m_pAVSync != NULL && !m_pAVSync->IsVideoStarted())
+        if(m_pAVSync != NULL)
         {
              //AMFTraceWarning(AMF_FACILITY, L"First PTS=%5.2f", (double)pData->GetPts() / 10000);
-            m_pAVSync->VideoStarted();
+            if (m_pAVSync->IsVideoStarted() == false)
+            {
+                m_pAVSync->VideoStarted();
+            }
+            m_pAVSync->SetVideoPts(pData->GetPts());
         }
 
         switch(m_state)

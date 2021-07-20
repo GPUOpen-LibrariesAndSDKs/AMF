@@ -35,11 +35,43 @@
 #include <atlbase.h>
 #include <mmdeviceapi.h>
 #include <Audioclient.h>
-#include "public/common/InterfaceImpl.h"
-#include "public/common/AMFSTL.h"
+#include "../../../common/InterfaceImpl.h"
+#include "../../../common/AMFSTL.h"
 
 namespace amf
 {
+    //This class implements IMMNotificationClient
+    //It will return if audio capture should re-initialize due to device change
+    class AudioDeviceNotification : public IMMNotificationClient
+    {
+    public:
+        AudioDeviceNotification();
+        ~AudioDeviceNotification();
+
+        // Inherited via IMMNotificationClient
+        virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void ** ppvObject) override;
+        virtual ULONG STDMETHODCALLTYPE AddRef(void) override;
+        virtual ULONG STDMETHODCALLTYPE Release(void) override;
+        virtual HRESULT STDMETHODCALLTYPE OnDeviceStateChanged(LPCWSTR pwstrDeviceId, DWORD dwNewState) override;
+        virtual HRESULT STDMETHODCALLTYPE OnDeviceAdded(LPCWSTR pwstrDeviceId) override;
+        virtual HRESULT STDMETHODCALLTYPE OnDeviceRemoved(LPCWSTR pwstrDeviceId) override;
+        virtual HRESULT STDMETHODCALLTYPE OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR pwstrDefaultDeviceId) override;
+        virtual HRESULT STDMETHODCALLTYPE OnPropertyValueChanged(LPCWSTR pwstrDeviceId, const PROPERTYKEY key) override;
+
+
+        // set the device id to be monitored
+        void SetDeviceID(const wchar_t *dev);
+
+        // return last audio device event time, 0 if no event has happened since previous call
+        amf_pts GetLastEventTime();
+        // reset last audio device event time to 0
+        void ResetLastEventTime();
+
+    private:
+        amf_pts     m_lastEvent;
+        std::wstring m_deviceId;
+    };
+
     class AMFWASAPISourceImpl : public AMFInterfaceImpl<AMFInterface>
     {
     public:
@@ -51,19 +83,19 @@ namespace amf
         AMF_RESULT Terminate();
 
         // Capture start and done
-        AMF_RESULT CaptureOnePacket(char** ppData, UINT& numSamples, amf_uint64 &posStream, bool &bDiscontinuity);
+        AMF_RESULT CaptureOnePacket(uint8_t** ppData, UINT& numSamples, amf_uint64 &posStream, bool &bDiscontinuity);
         AMF_RESULT CaptureOnePacketDone();
 
         // render silence workaround
         int RenderSilence();
 
         // Getters
-        WAVEFORMATEX*	GetWaveFormat(){ return &m_waveFormat; };
-        UINT			GetFrameSize(){ return m_frameSize; };
-        UINT			GetSampleCount(){ return m_sampleCount; };
-        REFERENCE_TIME	GetFrameDuration(){ return m_duration; };
+        WAVEFORMATEX*	GetWaveFormat(){ return &m_waveFormat; }
+        UINT			GetFrameSize(){ return m_frameSize; }
+        UINT			GetSampleCount(){ return m_sampleCount; }
+        REFERENCE_TIME	GetFrameDuration(){ return m_duration; }
         amf_vector<amf_string> 
-                        GetDeviceList() { return m_deviceList; };
+                        GetDeviceList() { return m_deviceList; }
 
         // Call to end thread loop
         void SetAtEOF() { m_eof = true;  }
@@ -75,9 +107,11 @@ namespace amf
         AMF_RESULT InitRenderClient();
 
         AMF_RESULT CreateDeviceList();
+        AMF_RESULT CreateEnumerator();
 
         mutable AMFCriticalSection				m_sync;
 
+        ATL::CComPtr<IMMDeviceEnumerator>       m_enumerator;
         ATL::CComPtr<IMMDevice>					m_device;
         ATL::CComPtr<IAudioClient>				m_client;
         ATL::CComPtr<IAudioCaptureClient>		m_capture;
@@ -94,6 +128,12 @@ namespace amf
         bool									m_eof;
         bool                                    m_silenceStarted;
         UINT                                    m_LastNumOfSamples;
+        
+        AudioDeviceNotification                 m_notification;
+#ifdef WIN32
+        HRESULT                                 m_hrCoInitializeResult;
+#endif
+
     };
     typedef AMFInterfacePtr_T<AMFWASAPISourceImpl>    AMFWASAPISourceImplPtr;
 } //namespace amf

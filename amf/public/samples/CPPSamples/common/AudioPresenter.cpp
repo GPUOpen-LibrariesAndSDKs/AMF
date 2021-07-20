@@ -32,16 +32,24 @@
 
 #include "AudioPresenter.h"
 #include "AudioPresenterWin.h"
+#include <public/common/TraceAdapter.h>
 
 using namespace amf;
 
+#define AMF_FACILITY    L"AudioPresenter"
 //-------------------------------------------------------------------------------------------------
-AudioPresenter::AudioPresenter()
-    : m_ptsSeek(-1LL),
+AudioPresenter::AudioPresenter() :
+    m_ptsSeek(-1LL),
     m_bLowLatency(false),
     m_startTime(-1LL),
     m_pAVSync(NULL),
-    m_bDoWait(true)
+    m_bDoWait(true),
+    m_ResetAVSync(true),
+    m_SequentiallyDroppedAudioSamplesCnt(0),
+    m_SequentiallyLateAudioSamplesCnt(0),
+    m_AudioFrameCntForAverageAVDesync(0),
+    m_DropCyclesCnt(0),
+    m_AverageAVDesync(0LL)
 {}
 
 //-------------------------------------------------------------------------------------------------
@@ -54,6 +62,14 @@ AMF_RESULT AudioPresenter::Seek(amf_pts pts)
 {
     amf::AMFLock lock(&m_cs);
     m_ptsSeek = pts;
+    m_ResetAVSync = true;
+    return AMF_OK;
+}
+
+AMF_RESULT AudioPresenter::Flush()
+{
+    amf::AMFLock lock(&m_cs);
+    m_ResetAVSync = true;
     return AMF_OK;
 }
 
@@ -100,4 +116,79 @@ bool AudioPresenter::HandleSeek(const AMFAudioBuffer* pBuffer, bool& bDiscard, a
 
     m_ptsSeek = -1LL;
     return true;
+}
+
+bool AudioPresenter::ShouldPresentAudioOrNot(amf_pts videoPts, amf_pts audioPts)
+{
+    bool present = true;
+    amf_pts now = amf_high_precision_clock();
+    static const amf_pts maxLateBy = 80 * AMF_MILLISECOND;
+
+    //  Compensation for audio samples arriving later than real time:
+    //  An audio sample can be delayed on the network and arrive late. Since we generally try to 
+    //  buffer as little as possible not to increase latency and minimize desync with video, 
+    //  this will of course cause audio stutter. However, when the late sample arrives, if we still
+    //  play it right after the gap, it would delay the whole audio stream even further. Since we
+    //  have already stuttered, skipping the late sample won't make it sound worse, would just make the
+    //  gap a little longer, but would allow the rest of the stream to catch up with real time.
+    //  We allow for no more than 80ms of delay and no more than 10 consecutive samples to be skipped.
+    if (m_ResetAVSync == true)
+    {
+        m_FirstAudioSamplePts = audioPts;
+        m_FirstAudioSampleTime = now;
+        m_AverageAVDesync = 0LL;
+        m_AudioFrameCntForAverageAVDesync = 0;
+        m_SequentiallyLateAudioSamplesCnt = 0;
+        m_SequentiallyDroppedAudioSamplesCnt = 0;
+        m_ResetAVSync = false;
+    }
+
+    amf_pts ptsSinceFirstFrame = audioPts - m_FirstAudioSamplePts;
+    amf_pts timeSinceFirstFrame = now - m_FirstAudioSampleTime;
+    if ((timeSinceFirstFrame - ptsSinceFirstFrame) > maxLateBy)
+    {
+        if (m_SequentiallyLateAudioSamplesCnt > 10 && m_SequentiallyDroppedAudioSamplesCnt < 10)
+        {
+            ++m_SequentiallyDroppedAudioSamplesCnt;
+            present = false;
+            AMFTraceInfo(AMF_FACILITY, L"Dropping late audio, late by %5.2fms", float(timeSinceFirstFrame - ptsSinceFirstFrame) / 10000.);
+        }
+        else
+        {
+            ++m_SequentiallyLateAudioSamplesCnt;
+            if (m_SequentiallyDroppedAudioSamplesCnt == 10)
+            {
+                if (++m_DropCyclesCnt == 100)
+                {
+                    m_FirstAudioSampleTime += maxLateBy;
+                    AMFTraceInfo(AMF_FACILITY, L"Cannot re-sync audio, advancing by %5.2fms", maxLateBy / 10000.);
+                }
+            }
+            m_SequentiallyDroppedAudioSamplesCnt = 0;
+        }
+    }
+    else
+    {
+        m_SequentiallyLateAudioSamplesCnt = 0;
+        m_SequentiallyDroppedAudioSamplesCnt = 0;
+        m_DropCyclesCnt = 0;
+    }
+     
+    if (videoPts != -1LL)
+    {
+        //  Here we compensate for audio lagging behind video by more than a certain threshold
+        m_AverageAVDesync += videoPts - audioPts;
+        m_AverageAVDesync /= ++m_AudioFrameCntForAverageAVDesync;
+        if (m_AudioFrameCntForAverageAVDesync > 100)
+        {
+            if (m_AverageAVDesync > maxLateBy)
+            {
+                present = false;
+                AMFTraceInfo(AMF_FACILITY, L"Dropping unsynced audio, desync=%5.2fms", float(m_AverageAVDesync) / 10000.);
+            }
+            m_AverageAVDesync = 0LL;
+            m_AudioFrameCntForAverageAVDesync = 0;
+        }
+    }
+    return present;
 }

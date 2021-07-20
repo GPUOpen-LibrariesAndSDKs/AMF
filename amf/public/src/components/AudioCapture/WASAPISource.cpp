@@ -36,7 +36,7 @@
 #include <windows.h>
 #include <propsys.h>
 #include <functiondiscoverykeys_devpkey.h>
-#include "public/common/TraceAdapter.h"
+#include "../../../common/TraceAdapter.h"
 #include "WASAPISource.h"
 #include <sstream>
 
@@ -57,8 +57,22 @@ namespace
 }
 
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMFWASAPISourceImpl::CaptureOnePacket(char** ppData, UINT& numSamples, amf_uint64 &posStream, bool &bDiscontinuity)
+AMF_RESULT AMFWASAPISourceImpl::CaptureOnePacket(amf_uint8** ppData, UINT& numSamples, amf_uint64 &posStream, bool &bDiscontinuity)
 {
+    // check if any device event has been triggered that make the capture device no longer valid
+    amf_pts lastDeviceEvent = m_notification.GetLastEventTime();
+    amf_pts now = amf_high_precision_clock();
+    if (lastDeviceEvent > 0 && lastDeviceEvent < (now - (AMF_SECOND / 5)))
+    {
+        m_notification.ResetLastEventTime();
+        Terminate();
+    }
+
+    if (m_device == nullptr)
+    {
+        return AMF_NOT_INITIALIZED;
+    }
+
     RenderSilence();
 
 	numSamples = 0;
@@ -74,7 +88,15 @@ AMF_RESULT AMFWASAPISourceImpl::CaptureOnePacket(char** ppData, UINT& numSamples
         if (FAILED(hr))
         {
             AMFTraceError(AMF_FACILITY, L"GetNextPacketSize: hr=0x%X", hr);
-            result = AMF_FAIL;
+
+            if (hr == AUDCLNT_E_DEVICE_INVALIDATED)
+            {
+                return AMF_NOT_INITIALIZED;
+            }
+            else
+            {
+                result = AMF_FAIL;
+            }
         }
         else
         {
@@ -198,20 +220,42 @@ AMFWASAPISourceImpl::AMFWASAPISourceImpl() :
     m_render(),
     m_eof(false),
     m_silenceStarted(false),
-    m_LastNumOfSamples(0)
+    m_LastNumOfSamples(0),
+#ifdef WIN32
+    m_hrCoInitializeResult(S_FALSE)
+#endif
 {
+#ifdef WIN32
+    m_hrCoInitializeResult = CoInitialize(nullptr);
+#endif
+
 }
 
 //-------------------------------------------------------------------------------------------------
 AMFWASAPISourceImpl::~AMFWASAPISourceImpl()
 {
 	Terminate();
+#ifdef WIN32
+    if (m_hrCoInitializeResult == S_OK)
+    {
+        ::CoUninitialize();
+        m_hrCoInitializeResult = S_FALSE;
+    }
+#endif
+
 }
 
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMFWASAPISourceImpl::Terminate()
 {
 	AMF_RESULT err = AMF_OK;
+
+    if (m_enumerator)
+    {
+        m_enumerator->UnregisterEndpointNotificationCallback(&m_notification);
+        m_enumerator.Release();
+    }
+
 	m_deviceList.clear();
 	if (m_client)
 	{
@@ -227,7 +271,6 @@ AMF_RESULT AMFWASAPISourceImpl::Terminate()
         m_renderClient.Release();
     }
     m_render.Release();
-
 
 	m_device.Release();
 
@@ -250,13 +293,12 @@ AMF_RESULT AMFWASAPISourceImpl::InitCaptureMicrophone(amf_int32 activeDevice, am
 	{
 		return CreateDeviceList();
 	}
+    
+    AMF_RETURN_IF_FAILED(CreateEnumerator());
 
-	ATL::CComPtr<IMMDeviceEnumerator> pEnumerator;
 	ATL::CComPtr<IMMDeviceCollection> pCollection;
-	HRESULT hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&pEnumerator);
-	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"CoCreateInstance() failed");
 
-	hr = pEnumerator->EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE, &pCollection);
+	HRESULT hr = m_enumerator->EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE, &pCollection);
 	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"EnumAudioEndpoints() failed");
 
 	UINT count(0);
@@ -323,6 +365,16 @@ AMF_RESULT AMFWASAPISourceImpl::InitCaptureMicrophone(amf_int32 activeDevice, am
 
 	hr = m_client->Start();
 	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"Start() failed");
+    
+    wchar_t *id;
+    m_device->GetId(&id);
+    if (nullptr != id)
+    {
+        m_notification.SetDeviceID(id);
+        CoTaskMemFree(id);
+    }
+    
+    m_enumerator->RegisterEndpointNotificationCallback(&m_notification);
 
 	return AMF_OK;
 }
@@ -345,10 +397,9 @@ static amf_wstring WaveFormatToString(const WAVEFORMATEX* format)
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMFWASAPISourceImpl::InitCaptureDesktop(amf_pts bufferDuration)
 {
-	ATL::CComPtr<IMMDeviceEnumerator> pEnumerator;
-	HRESULT hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&pEnumerator);
+    AMF_RETURN_IF_FAILED(CreateEnumerator());
 
-	hr = pEnumerator->GetDefaultAudioEndpoint(
+	HRESULT hr = m_enumerator->GetDefaultAudioEndpoint(
 		eRender, eConsole, &m_device);
     AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"GetDefaultAudioEndpoint() failed, hr=0x%X", hr);
 
@@ -414,6 +465,15 @@ AMF_RESULT AMFWASAPISourceImpl::InitCaptureDesktop(amf_pts bufferDuration)
     //A better workaround is to create a render client on the same device that's being captured, and continuously render a silent stream. This way the system will never stop producing data and the capture client gets a continous audio stream.
     InitRenderClient();
 
+    wchar_t *id;
+    m_device->GetId(&id);
+    if (nullptr != id)
+    {
+        m_notification.SetDeviceID(id);
+        CoTaskMemFree(id);
+    }
+    m_enumerator->RegisterEndpointNotificationCallback(&m_notification);
+
 	return AMF_OK;
 }
 
@@ -448,14 +508,13 @@ AMF_RESULT amf::AMFWASAPISourceImpl::InitRenderClient()
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMFWASAPISourceImpl::CreateDeviceList()
 {
-	ATL::CComPtr<IMMDeviceEnumerator> pEnumerator;
+    AMF_RETURN_IF_FAILED(CreateEnumerator());
+
 	ATL::CComPtr<IMMDeviceCollection> pCollection;
 
 	m_deviceList.clear();
-	HRESULT hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&pEnumerator);
-	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"CoCreateInstance() failed");
 
-	hr = pEnumerator->EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE, &pCollection);
+	HRESULT hr = m_enumerator->EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE, &pCollection);
 	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"EnumAudioEndpoints() failed");
 
 	UINT count(0);
@@ -483,3 +542,120 @@ AMF_RESULT AMFWASAPISourceImpl::CreateDeviceList()
 	return AMF_OK;
 }
 
+AMF_RESULT amf::AMFWASAPISourceImpl::CreateEnumerator()
+{
+    HRESULT hr = CoInitialize(nullptr);
+    AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"CoInitialize() failed");
+    hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&m_enumerator);
+    AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"CoCreateInstance() failed");
+
+    return AMF_OK;
+
+}
+
+
+//-------------------------------------------------------------------------------------------------
+AudioDeviceNotification::AudioDeviceNotification()
+{
+    m_lastEvent = 0;
+}
+
+AudioDeviceNotification::~AudioDeviceNotification()
+{
+}
+
+HRESULT STDMETHODCALLTYPE AudioDeviceNotification::QueryInterface(REFIID riid, void ** ppvObject)
+{
+    if (ppvObject == NULL)
+    {
+        return E_POINTER;
+    }
+
+    *ppvObject = NULL;
+
+    if (riid == IID_IUnknown || riid == __uuidof(IMMNotificationClient))
+    {
+        *ppvObject = static_cast<IMMNotificationClient *>(this);
+    }
+    else
+    {
+        return E_NOINTERFACE;
+    }
+
+    return S_OK;
+}
+
+ULONG STDMETHODCALLTYPE AudioDeviceNotification::AddRef(void)
+{
+    return 1;
+}
+
+ULONG STDMETHODCALLTYPE AudioDeviceNotification::Release(void)
+{
+    return 1;
+}
+
+HRESULT STDMETHODCALLTYPE AudioDeviceNotification::OnDeviceStateChanged(LPCWSTR pwstrDeviceId, DWORD dwNewState)
+{
+    if (0 == wcscmp(pwstrDeviceId, m_deviceId.c_str())
+        || m_deviceId.empty())
+    {
+        AMFTraceInfo(AMF_FACILITY, L"OnDeviceStateChanged %s", pwstrDeviceId);
+
+        m_lastEvent = amf_high_precision_clock();
+    }
+    
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE AudioDeviceNotification::OnDeviceAdded(LPCWSTR pwstrDeviceId)
+{
+    // does not affect capture
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE AudioDeviceNotification::OnDeviceRemoved(LPCWSTR pwstrDeviceId)
+{
+    if (0 == wcscmp(pwstrDeviceId, m_deviceId.c_str())
+        || m_deviceId.empty())
+    {
+        AMFTraceInfo(AMF_FACILITY, L"OnDeviceRemoved %s", pwstrDeviceId);
+        m_lastEvent = amf_high_precision_clock();
+    }
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE AudioDeviceNotification::OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR pwstrDefaultDeviceId)
+{
+    // match if new default is not our device
+    if (m_deviceId.empty() || (pwstrDefaultDeviceId != nullptr && 0 != wcscmp(pwstrDefaultDeviceId, m_deviceId.c_str())))
+    {
+        AMFTraceInfo(AMF_FACILITY, L"OnDefaultDeviceChanged %s", pwstrDefaultDeviceId ? pwstrDefaultDeviceId : L"nullptr");
+        m_lastEvent = amf_high_precision_clock();
+    }
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE AudioDeviceNotification::OnPropertyValueChanged(LPCWSTR pwstrDeviceId, const PROPERTYKEY key)
+{
+    // property changes are ignored
+    return S_OK;
+}
+
+void AudioDeviceNotification::SetDeviceID(const wchar_t * dev)
+{
+    if (nullptr != dev)
+    {
+        m_deviceId = dev;
+    }
+}
+
+amf_pts AudioDeviceNotification::GetLastEventTime()
+{
+    return m_lastEvent;
+}
+
+void AudioDeviceNotification::ResetLastEventTime()
+{
+    m_lastEvent = 0;
+}

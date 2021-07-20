@@ -123,10 +123,10 @@ namespace amf
         virtual const wchar_t*      AMF_STD_CALL SurfaceGetFormatName(const AMF_SURFACE_FORMAT eSurfaceFormat) = 0;
         virtual AMF_SURFACE_FORMAT  AMF_STD_CALL SurfaceGetFormatByName(const wchar_t* name) = 0;
 
-        virtual const wchar_t* const AMF_STD_CALL GetMemoryTypeName(const AMF_MEMORY_TYPE memoryType) = 0;
+        virtual const wchar_t*      AMF_STD_CALL GetMemoryTypeName(const AMF_MEMORY_TYPE memoryType) = 0;
         virtual AMF_MEMORY_TYPE     AMF_STD_CALL GetMemoryTypeByName(const wchar_t* name) = 0;
 
-        virtual const wchar_t* const AMF_STD_CALL GetSampleFormatName(const AMF_AUDIO_FORMAT eFormat) = 0;
+        virtual const wchar_t*      AMF_STD_CALL GetSampleFormatName(const AMF_AUDIO_FORMAT eFormat) = 0;
         virtual AMF_AUDIO_FORMAT    AMF_STD_CALL GetSampleFormatByName(const wchar_t* name) = 0;
     };
 #else // #if defined(__cplusplus)
@@ -162,10 +162,10 @@ namespace amf
         const wchar_t*      (AMF_STD_CALL *SurfaceGetFormatName)(AMFTrace* pThis, const AMF_SURFACE_FORMAT eSurfaceFormat);
         AMF_SURFACE_FORMAT  (AMF_STD_CALL *SurfaceGetFormatByName)(AMFTrace* pThis, const wchar_t* name);
 
-        const wchar_t* const (AMF_STD_CALL *GetMemoryTypeName)(AMFTrace* pThis, const AMF_MEMORY_TYPE memoryType);
+        const wchar_t*      (AMF_STD_CALL *GetMemoryTypeName)(AMFTrace* pThis, const AMF_MEMORY_TYPE memoryType);
         AMF_MEMORY_TYPE     (AMF_STD_CALL *GetMemoryTypeByName)(AMFTrace* pThis, const wchar_t* name);
 
-        const wchar_t* const (AMF_STD_CALL *GetSampleFormatName)(AMFTrace* pThis, const AMF_AUDIO_FORMAT eFormat);
+        const wchar_t*      (AMF_STD_CALL *GetSampleFormatName)(AMFTrace* pThis, const AMF_AUDIO_FORMAT eFormat);
         AMF_AUDIO_FORMAT    (AMF_STD_CALL *GetSampleFormatByName)(AMFTrace* pThis, const wchar_t* name);
     } AMFTraceVtbl;
 

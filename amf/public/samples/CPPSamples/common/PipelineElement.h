@@ -607,10 +607,21 @@ protected:
 //-------------------------------------------------------------------------------------------------
 class AVSyncObject
 {
+private:
     bool m_bVideoStarted = false;
+    amf_pts m_CurrentVideoPts = -1LL;
+    amf_pts m_CurrentAudioPts = -1LL;
+
 public:
-    bool IsVideoStarted() {return m_bVideoStarted;}
-    void VideoStarted() {m_bVideoStarted = true;}
-    void Reset() {m_bVideoStarted = false;}
+    inline bool IsVideoStarted() const { return m_bVideoStarted; }
+    inline void VideoStarted() { m_bVideoStarted = true; }
+    inline void Reset() { m_bVideoStarted = false; }
+
+    inline amf_pts GetVideoPts() const { return m_CurrentVideoPts; }
+    inline void SetVideoPts(amf_pts pts) { m_CurrentVideoPts = pts; }
+
+    inline amf_pts GetAudioPts() const { return m_CurrentAudioPts; }
+    inline void SetAudioPts(amf_pts pts) { m_CurrentAudioPts = pts; }
+
 };
 //-------------------------------------------------------------------------------------------------

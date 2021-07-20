@@ -48,18 +48,32 @@ extern "C"
 
 // Static properties
 //
-// 
-#define AMF_DISPLAYCAPTURE_MONITOR_INDEX			L"MonitorIndex"             // amf_int64, default = 0, Index of the display monitor; is determined by using EnumAdapters() in DXGI.
-#define AMF_DISPLAYCAPTURE_FRAMERATE				L"FrameRate"                // AMFRate,  default = (0, 1) Capture frame rate, if 0 - capture rate will be driven by flip off the app or dwm
-#define AMF_DISPLAYCAPTURE_CURRENT_TIME_INTERFACE	L"CurrentTimeInterface"     // Optional interface object for getting current time.
-#define AMF_DISPLAYCAPTURE_FORMAT					L"CurrentFormat"            // amf_int64(AMF_SURFACE_FORMAT) Capture format - read-only
-#define AMF_DISPLAYCAPTURE_RESOLUTION			    L"Resolution"               // AMFSize - screen resolution - read-only
-#define AMF_DISPLAYCAPTURE_DUPLICATEOUTPUT		    L"DuplicateOutput"          // amf_bool, default = false, output AMF surface is a copy of captured 
+//
+typedef enum AMF_DISPLAYCAPTURE_MODE_ENUM
+{
+    AMF_DISPLAYCAPTURE_MODE_KEEP_FRAMERATE      = 0,
+    AMF_DISPLAYCAPTURE_MODE_WAIT_FOR_PRESENT    = 1,
+    AMF_DISPLAYCAPTURE_MODE_GET_CURRENT_SURFACE = 2,
+} AMF_DISPLAYCAPTURE_MODE_ENUM;
+
+
+#define AMF_DISPLAYCAPTURE_MONITOR_INDEX            L"MonitorIndex"             // amf_int64, default = 0, Index of the display monitor; is determined by using EnumAdapters() in DXGI.
+#define AMF_DISPLAYCAPTURE_MODE                     L"CaptureMode"              // amf_int64(AMF_DISPLAYCAPTURE_MODE_ENUM), default =  AMF_DISPLAYCAPTURE_MODE_FRAMERATE, controls wait logic
+#define AMF_DISPLAYCAPTURE_FRAMERATE                L"FrameRate"                // AMFRate,  default = (0, 1) Capture frame rate, if 0 - capture rate will be driven by flip off the app or dwm
+#define AMF_DISPLAYCAPTURE_CURRENT_TIME_INTERFACE   L"CurrentTimeInterface"     // Optional interface object for getting current time.
+#define AMF_DISPLAYCAPTURE_FORMAT                   L"CurrentFormat"            // amf_int64(AMF_SURFACE_FORMAT) Capture format - read-only
+#define AMF_DISPLAYCAPTURE_RESOLUTION               L"Resolution"               // AMFSize - screen resolution - read-only
+#define AMF_DISPLAYCAPTURE_DUPLICATEOUTPUT          L"DuplicateOutput"          // amf_bool, default = false, output AMF surface is a copy of captured 
 #define AMF_DISPLAYCAPTURE_DESKTOP_RECT             L"DesktopRect"              // AMFRect - rect of the capture desktop - read-only
 #define AMF_DISPLAYCAPTURE_ENABLE_DIRTY_RECTS       L"EnableDirtyRects"         // amf_bool, default = false, enable dirty rectangles attached to output as AMF_DISPLAYCAPTURE_DIRTY_RECTS
 #define AMF_DISPLAYCAPTURE_DRAW_DIRTY_RECTS         L"DrawDirtyRects"           // amf_bool, default = false, copies capture output and draws dirty rectangles with red - for debugging only
+#define AMF_DISPLAYCAPTURE_ROTATION                 L"Rotation"                 // amf_int64(AMF_ROTATION_ENUM); default = AMF_ROTATION_NONE, monitor rotation state
 
 // can be set on output AMFSurface
 #define AMF_DISPLAYCAPTURE_DIRTY_RECTS              L"DirtyRects"               // AMFInterface*(AMFBuffer*) - array of AMFRect
+#define AMF_DISPLAYCAPTURE_FRAME_INDEX              L"FrameIndex"               // amf_int64; default = 0, index of presented frame since capture started 
+#define AMF_DISPLAYCAPTURE_FRAME_FLIP_TIMESTAMP     L"FlipTimesamp"             // amf_int64; default = 0, flip timestmap of presented frame 
+// see Surface.h
+//#define AMF_SURFACE_ROTATION         L"Rotation"    // amf_int64(AMF_ROTATION_ENUM); default = AMF_ROTATION_NONE, can be set on surfaces - the same value as AMF_DISPLAYCAPTURE_ROTATION
 
 #endif // #ifndef AMF_DisplayCapture_h

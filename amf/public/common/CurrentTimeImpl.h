@@ -23,9 +23,9 @@
 #ifndef AMF_CurrentTimeImpl_h
 #define AMF_CurrentTimeImpl_h
 
-#include "public/include/core/CurrentTime.h"
-#include "public/common/InterfaceImpl.h"
-#include "public/common/Thread.h"
+#include "../include/core/CurrentTime.h"
+#include "InterfaceImpl.h"
+#include "Thread.h"
 
 namespace amf
 {

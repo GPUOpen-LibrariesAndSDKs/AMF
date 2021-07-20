@@ -32,9 +32,11 @@ SUBDIRS = \
 	$(AMF_SAMPLE_COMPONENTS)/ComponentsFFMPEG \
 	$(AMF_SAMPLES)/CapabilityManager \
 	$(AMF_SAMPLES)/PlaybackHW \
+	$(AMF_SAMPLES)/EncoderLatency \
 	$(AMF_SAMPLES)/SimpleEncoder \
 	$(AMF_SAMPLES)/SimpleDecoder \
 	$(AMF_SAMPLES)/SimpleConverter \
+	$(AMF_SAMPLES)/SimpleFrameInjection \
 	$(AMF_SAMPLES)/SimplePA \
 	$(AMF_SAMPLES)/SimpleROI \
 	$(AMF_SAMPLES)/TranscodeHW \

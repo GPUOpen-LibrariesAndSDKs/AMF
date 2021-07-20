@@ -69,11 +69,11 @@ public:
     ) const;
 
     // PipelineElement
-    virtual AMF_RESULT SubmitInput(amf::AMFData* pData);
-    virtual AMF_RESULT Flush();
+    virtual AMF_RESULT SubmitInput(amf::AMFData* pData) override;
+    virtual AMF_RESULT Flush() override;
 
         
-    virtual AMF_RESULT          Init();
+    virtual AMF_RESULT          Init() override;
 
     AMF_RESULT                  Terminate();
     AMF_RESULT                  Pause();

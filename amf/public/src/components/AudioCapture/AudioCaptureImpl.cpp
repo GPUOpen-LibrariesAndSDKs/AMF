@@ -35,11 +35,11 @@
 #include <iosfwd>
 #include "AudioCaptureImpl.h"
 
-#include "public/include/core/Context.h"
-#include "public/include/core/Trace.h"
-#include "public/common/TraceAdapter.h"
-#include "public/common/AMFFactory.h"
-#include "public/common/DataStream.h"
+#include "../../../include/core/Context.h"
+#include "../../../include/core/Trace.h"
+#include "../../../common/TraceAdapter.h"
+#include "../../../common/AMFFactory.h"
+#include "../../../common/DataStream.h"
 
 #define AMF_FACILITY L"AMFAudioCaptureImpl"
 
@@ -64,24 +64,25 @@ extern "C"
 // AMFAudioCaptureImpl
 //-------------------------------------------------------------------------------------------------
 AMFAudioCaptureImpl::AMFAudioCaptureImpl(AMFContext* pContext) :
-	m_pContext(pContext),
-	m_audioPollingThread(this),
-	m_pAMFDataStreamAudio(),
-	m_bForceEof(false),
-	m_bTerminated(false),
-	m_frameCount(0),
-	m_deviceCount(0),
-	m_deviceActive(0),
-	m_pCurrentTime(),
-	m_captureDevice(false),
-	m_iQueueSize(10),
-	m_prevPts(0),
-	m_CurrentPts(0),
-	m_bFlush(false),
-	m_FirstSample(true),
+    m_pContext(pContext),
+    m_audioPollingThread(this),
+    m_pAMFDataStreamAudio(),
+    m_bForceEof(false),
+    m_bTerminated(false),
+    m_bShouldReInit(false),
+    m_frameCount(0),
+    m_deviceCount(0),
+    m_deviceActive(0),
+    m_pCurrentTime(),
+    m_captureDevice(false),
+    m_iQueueSize(10),
+    m_prevPts(0),
+    m_bFlush(false),
+    m_CurrentPts(0),
+    m_iSamplesFromStream(0xFFFFFFFFFFFFFFFFLL),
+    m_FirstSample(true),
     m_DiffsAcc(0),
-    m_StatCount(0),
-    m_iSamplesFromStream(0xFFFFFFFFFFFFFFFFLL)
+    m_StatCount(0)
 {
 	AMFPrimitivePropertyInfoMapBegin
 		AMFPropertyInfoInt64(AUDIOCAPTURE_DEVICE_COUNT, AUDIOCAPTURE_DEVICE_COUNT, m_deviceCount, 0, 8, false),
@@ -91,6 +92,7 @@ AMFAudioCaptureImpl::AMFAudioCaptureImpl(AMFContext* pContext) :
 		AMFPropertyInfoInt64(AUDIOCAPTURE_SAMPLERATE, AUDIOCAPTURE_SAMPLERATE, 44100, 0, 100000000, false),
 		AMFPropertyInfoInt64(AUDIOCAPTURE_SAMPLES, AUDIOCAPTURE_SAMPLES, 1024, 0, 10240, false),
 		AMFPropertyInfoInt64(AUDIOCAPTURE_CHANNELS, AUDIOCAPTURE_CHANNELS, 2, 1, 16, false),
+        AMFPropertyInfoInt64(AUDIOCAPTURE_CHANNEL_LAYOUT, AUDIOCAPTURE_CHANNEL_LAYOUT, 3, 0, 0xffffffff, false),
 		AMFPropertyInfoInt64(AUDIOCAPTURE_FORMAT, AUDIOCAPTURE_FORMAT, AMFAF_U8, AMFAF_UNKNOWN, AMFAF_LAST, false),
 		AMFPropertyInfoInt64(AUDIOCAPTURE_BLOCKALIGN, AUDIOCAPTURE_BLOCKALIGN, 0, 0, -1, false),
 		AMFPropertyInfoInt64(AUDIOCAPTURE_FRAMESIZE, AUDIOCAPTURE_FRAMESIZE, 0, 0, -1, false),
@@ -116,12 +118,13 @@ AMFAudioCaptureImpl::~AMFAudioCaptureImpl()
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL  AMFAudioCaptureImpl::Init(AMF_SURFACE_FORMAT /*format*/, amf_int32 /*width*/, amf_int32 /*height*/)
 {
-	AMFLock lock(&m_sync);
 	AMF_RESULT res = AMF_OK;
 	if (!m_bTerminated)
 	{
 		Terminate();
 	}
+
+    AMFLock lock(&m_sync);
 
     AMFTraceInfo(AMF_FACILITY, L"Init()");
 
@@ -153,14 +156,43 @@ AMF_RESULT AMF_STD_CALL  AMFAudioCaptureImpl::Init(AMF_SURFACE_FORMAT /*format*/
 	SetProperty(AUDIOCAPTURE_SAMPLERATE, (amf_int32)pWaveFormat->nSamplesPerSec);
 	SetProperty(AUDIOCAPTURE_BITRATE, (amf_int32)pWaveFormat->nAvgBytesPerSec * 8);
 	SetProperty(AUDIOCAPTURE_SAMPLES, (amf_int32)m_pAMFDataStreamAudio->GetSampleCount());
-	SetProperty(AUDIOCAPTURE_CHANNELS, pWaveFormat->nChannels);
-
-
+    
+    int channels = pWaveFormat->nChannels;
+    int channelLayout = GetDefaultChannelLayout(channels);
+    
     amf_int64 format = AMFAF_UNKNOWN;
-
+	bool bCaptureExtensibleFormat = false;
+    bool isPCM = false;
     switch (pWaveFormat->wFormatTag)
     {
     case WAVE_FORMAT_PCM:
+        isPCM = true;
+        break;
+    case WAVE_FORMAT_IEEE_FLOAT:
+        format = AMFAF_FLT;
+        break;
+    case WAVE_FORMAT_EXTENSIBLE:
+    {
+		bCaptureExtensibleFormat = true;
+        WAVEFORMATEXTENSIBLE *pWaveFormatEx = (WAVEFORMATEXTENSIBLE *)pWaveFormat;
+        if (IsEqualGUID(KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, pWaveFormatEx->SubFormat))
+        {
+            format = AMFAF_FLT;
+        }
+        else if (IsEqualGUID(KSDATAFORMAT_SUBTYPE_PCM, pWaveFormatEx->SubFormat))
+        {
+            isPCM = true;
+        }
+        if (pWaveFormatEx->dwChannelMask != 0)
+        {
+            channelLayout = pWaveFormatEx->dwChannelMask;
+        }
+        break;
+    }
+    }
+
+    if (isPCM)
+    {
         switch (pWaveFormat->wBitsPerSample)
         {
         case 8:
@@ -173,12 +205,10 @@ AMF_RESULT AMF_STD_CALL  AMFAudioCaptureImpl::Init(AMF_SURFACE_FORMAT /*format*/
             format = AMFAF_S32;
             break;
         }
-        break;
-    case WAVE_FORMAT_IEEE_FLOAT:
-        format = AMFAF_FLT;
-        break;
     }
 
+    SetProperty(AUDIOCAPTURE_CHANNELS, channels);
+    SetProperty(AUDIOCAPTURE_CHANNEL_LAYOUT, channelLayout);
 	SetProperty(AUDIOCAPTURE_FORMAT, format);
 	SetProperty(AUDIOCAPTURE_BLOCKALIGN, pWaveFormat->nBlockAlign);
 	SetProperty(AUDIOCAPTURE_FRAMESIZE, (amf_int32)m_pAMFDataStreamAudio->GetFrameSize());
@@ -208,6 +238,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioCaptureImpl::Init(AMF_SURFACE_FORMAT /*format*/
     AMFTraceDebug(AMF_FACILITY, L"Init() sample rate %d channels = %d format %d", (int)pWaveFormat->nSamplesPerSec, (int)pWaveFormat->nChannels, (int)pWaveFormat->wFormatTag);
 
 	m_bTerminated = false;
+    m_bShouldReInit = false;
 	return res;
 }
 
@@ -292,16 +323,22 @@ AMF_RESULT AMF_STD_CALL  AMFAudioCaptureImpl::QueryOutput(AMFData** ppData)
 {
 	AMFLock lock(&m_sync);
 
-	AMF_RESULT  res = AMF_REPEAT;
-	AMFDataPtr  pFrame;
-	amf_ulong   ulID = 0;
+    if (m_bShouldReInit)
+    {
+        ReInit(0, 0);
+        return AMF_INVALID_FORMAT;
+    }
 
-	if (m_AudioDataQueue.Get(ulID, pFrame, 0))
-	{
-//        AMFTraceInfo(AMF_FACILITY, L"QueryOutput() pts=%5.2f duration=%5.2f", pFrame->GetPts()/10000., pFrame->GetDuration()/10000.);
-		*ppData = pFrame.Detach();
-		res = AMF_OK;
-	}
+    AMF_RESULT  res = AMF_REPEAT;
+    AMFDataPtr  pFrame;
+    amf_ulong   ulID = 0;
+
+    if (m_AudioDataQueue.Get(ulID, pFrame, 0))
+    {
+        //        AMFTraceInfo(AMF_FACILITY, L"QueryOutput() pts=%5.2f duration=%5.2f", pFrame->GetPts()/10000., pFrame->GetDuration()/10000.);
+        *ppData = pFrame.Detach();
+        res = AMF_OK;
+    }
 
 	return res;
 }
@@ -327,7 +364,6 @@ amf_pts AMFAudioCaptureImpl::GetCurrentPts() const
 	}
 	return result;
 }
-
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMFAudioCaptureImpl::PollStream()
 {  
@@ -342,7 +378,7 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
     {
         AMFLock lock(&m_sync);
 
-	    char* pData = nullptr;
+	    uint8_t* pData = nullptr;
 
 	    // Get some of the audio format properties
 	    WAVEFORMATEX* pWaveFormat = m_pAMFDataStreamAudio->GetWaveFormat();
@@ -355,9 +391,14 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
         int err = 0;
         res = m_pAMFDataStreamAudio->CaptureOnePacket(&pData, capturedSamples, posStream, bDiscontinuity);
 
+        if (res == AMF_NOT_INITIALIZED)
+        {
+            return res;
+        }
+
 //        AMF_RETURN_IF_FAILED(res, L"CaptureOnePacket failed");
 
-        if (m_iSamplesFromStream == 0xFFFFFFFFFFFFFFFFLL || bDiscontinuity)
+        if (m_iSamplesFromStream == amf_uint64(0xFFFFFFFFFFFFFFFFLL) || bDiscontinuity)
         {
             m_iSamplesFromStream = posStream;
         }
@@ -383,7 +424,7 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
         }
         else
         {
-            if (posStream != 0xFFFFFFFFFFFFFFFFLL)
+            if (posStream != amf_uint64(0xFFFFFFFFFFFFFFFFLL))
             {
                 if (posStream > m_iSamplesFromStream)
                 {
@@ -502,6 +543,12 @@ void AMFAudioCaptureImpl::AudioCapturePollingThread::Run()
 		{
 			break; // Drain complete
 		}
+        // this return value means capture device has changed
+        if (res == AMF_NOT_INITIALIZED)
+        {
+            m_pHost->m_bShouldReInit = true;
+            break;
+        }
 		if (StopRequested())
 		{
 			break;
@@ -582,9 +629,9 @@ int AMFAudioCaptureImpl::AmbisonicFormatConvert(const void* pSrc, void* pDst, am
 	//3 : Back Left Down(BLD)
 	//4 : Back Right Up(BRU)
 	//    W = FLU + FRD + BLD + BRU
-	//    X = FLU + FRD – BLD – BRU
-	//    Y = FLU – FRD + BLD – BRU
-	//    Z = FLU – FRD – BLD + BRU
+	//    X = FLU + FRD - BLD - BRU
+	//    Y = FLU - FRD + BLD - BRU
+	//    Z = FLU - FRD - BLD + BRU
 	amf_float* pDataSrc = (amf_float*)pSrc;
 	amf_float* pDataDst = (amf_float*)pDst;
 	for (amf_int32 idx = 0; idx < numSamples; idx++, pDataSrc += pWaveFormat->nChannels, pDataDst += pWaveFormat->nChannels)

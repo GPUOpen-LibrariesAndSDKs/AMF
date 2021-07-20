@@ -111,6 +111,11 @@ public:
             {
                 break; // Drain complete
             }
+			if ((res != AMF_OK) && (res != AMF_REPEAT))
+			{
+				// trace possible error message
+				break; // Drain complete
+			}
             if(data != NULL)
             {
                 amf_pts poll_time = amf_high_precision_clock();
@@ -219,10 +224,14 @@ int main(int argc, char* argv[])
         while(true)
         {
             res = converter->SubmitInput(surfaceIn);
-            if(res == AMF_INPUT_FULL)
+            if(res == AMF_NEED_MORE_INPUT)
             {
-                amf_sleep(1);
+                // do nothing
             }
+			else if (res == AMF_INPUT_FULL || res == AMF_DECODER_NO_FREE_SURFACES)
+			{ // queue is full; sleep, try to get ready surfaces in polling thread and repeat submissions
+				amf_sleep(1);
+			}
             else
             {
                 break;

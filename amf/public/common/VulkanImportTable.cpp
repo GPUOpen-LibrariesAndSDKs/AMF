@@ -226,7 +226,7 @@ AMF_RESULT VulkanImportTable::LoadFunctionsTable()
 #if defined(_WIN32)
 	m_hVulkanDll = amf_load_library(L"vulkan-1.dll");
 #elif defined(__linux__)
-	m_hVulkanDll = amf_load_library(L"libvulkan.so.1");
+	m_hVulkanDll = amf_load_library1(L"libvulkan.so.1", true);
 #endif
 
 	if (m_hVulkanDll == nullptr)

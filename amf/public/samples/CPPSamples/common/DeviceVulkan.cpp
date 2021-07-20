@@ -127,7 +127,7 @@ std::vector<const char*> DeviceVulkan::GetDebugInstanceExtensionNames()
     GetVulkan()->vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, instanceExtensions.data());
 
     std::vector<const char*> result;
-    for (const auto& e : instanceExtensions)
+    for (const VkExtensionProperties& e : instanceExtensions)
     {
         if (strcmp(e.extensionName, "VK_EXT_debug_report") == 0)
         {
@@ -144,7 +144,7 @@ std::vector<const char*> DeviceVulkan::GetDebugInstanceLayerNames()
     std::vector<VkLayerProperties> instanceLayers{ layerCount };
     GetVulkan()->vkEnumerateInstanceLayerProperties(&layerCount, instanceLayers.data());
     std::vector<const char*> result;
-    for (const auto& p : instanceLayers)
+    for (const VkLayerProperties& p : instanceLayers)
     {
         if (strcmp(p.layerName, "VK_LAYER_LUNARG_standard_validation") == 0)
         {
@@ -161,7 +161,7 @@ std::vector<const char*> DeviceVulkan::GetDebugDeviceLayerNames(VkPhysicalDevice
     std::vector<VkLayerProperties> deviceLayers{ layerCount };
     GetVulkan()->vkEnumerateDeviceLayerProperties(device, &layerCount, deviceLayers.data());
     std::vector<const char*> result;
-    for (const auto& p : deviceLayers)
+    for (const VkLayerProperties& p : deviceLayers)
     {
         if (strcmp(p.layerName, "VK_LAYER_LUNARG_standard_validation") == 0)
         {
@@ -195,7 +195,7 @@ AMF_RESULT DeviceVulkan::CreateInstance()
     };
 
 #if defined(_DEBUG) && defined(ENABLE_VALIDATION)
-    auto debugInstanceExtensionNames = GetDebugInstanceExtensionNames();
+	std::vector<const char*> debugInstanceExtensionNames = GetDebugInstanceExtensionNames();
 
     instanceExtensions.insert(instanceExtensions.end(),
         debugInstanceExtensionNames.begin(),
@@ -208,7 +208,7 @@ AMF_RESULT DeviceVulkan::CreateInstance()
     std::vector<const char*> instanceLayers;
 
 #if defined(_DEBUG) && defined(ENABLE_VALIDATION)
-    auto debugInstanceLayerNames = GetDebugInstanceLayerNames();
+	std::vector<const char*> debugInstanceLayerNames = GetDebugInstanceLayerNames();
 
     instanceLayers.insert(instanceLayers.end(),
         debugInstanceLayerNames.begin(),
@@ -325,7 +325,7 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
     std::vector<const char*> deviceLayers;
 
 #if defined(_DEBUG) && defined(ENABLE_VALIDATION)
-    auto debugDeviceLayerNames = GetDebugDeviceLayerNames(physicalDevices[0]);
+	std::vector<const char*> debugDeviceLayerNames = GetDebugDeviceLayerNames(physicalDevices[0]);
 
     deviceLayers.insert(deviceLayers.end(),
         debugDeviceLayerNames.begin(),

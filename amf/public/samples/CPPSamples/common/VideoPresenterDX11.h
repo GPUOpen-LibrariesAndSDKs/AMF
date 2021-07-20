@@ -137,7 +137,6 @@ private:
 
     CComPtr<IDCompositionDesktopDevice>        m_pDCompDevice;
     CComPtr<IDCompositionTarget>        m_pDCompTarget;
-    CComPtr<IDCompositionVisual2>        m_pVisualSurface;
+    CComPtr<IDCompositionVisual2>        m_pVisualSurfaceRoot;
     CComPtr <ID3D11Texture2D>           m_pDecodeTexture;
-
 };
