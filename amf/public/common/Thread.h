@@ -88,12 +88,10 @@ extern "C"
 
     void        AMF_CDECL_CALL amf_increase_timer_precision();
     void        AMF_CDECL_CALL amf_restore_timer_precision();
-#if defined(_WIN32)
+
     amf_handle  AMF_CDECL_CALL amf_load_library(const wchar_t* filename);
-#else
-    amf_handle  AMF_STD_CALL amf_load_library(const wchar_t* filename);
-    amf_handle  AMF_STD_CALL amf_load_library1(const wchar_t* filename, bool bGlobal);
-#endif
+    amf_handle  AMF_CDECL_CALL amf_load_library1(const wchar_t* filename, bool bGlobal);
+
     void*       AMF_CDECL_CALL amf_get_proc_address(amf_handle module, const char* procName);
     int         AMF_CDECL_CALL amf_free_library(amf_handle module);
 

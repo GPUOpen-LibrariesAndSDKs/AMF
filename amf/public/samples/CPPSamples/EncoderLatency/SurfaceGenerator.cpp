@@ -1,5 +1,11 @@
 #include "SurfaceGenerator.h"
 
+
+#ifdef _WIN32
+#include <atlbase.h>
+using namespace ATL;
+#endif
+
 extern amf::AMF_MEMORY_TYPE memoryTypeIn;
 extern amf::AMF_SURFACE_FORMAT formatIn;
 extern amf_int32 widthIn;
@@ -14,7 +20,7 @@ static amf_int32 yPos = 0;
 
 
 #ifdef _WIN32
-static void FillSurfaceDX9(amf::AMFContext* context, amf::AMFSurface* surface)
+void FillSurfaceDX9(amf::AMFContext* context, amf::AMFSurface* surface)
 {
     // fill surface with something something useful. We fill with color and color rect
     D3DCOLOR color1 = D3DCOLOR_XYUV(128, 255, 128);
@@ -39,7 +45,7 @@ static void FillSurfaceDX9(amf::AMFContext* context, amf::AMFSurface* surface)
     yPos += 2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
 }
 
-static void FillSurfaceDX11(amf::AMFContext* context, amf::AMFSurface* surface)
+void FillSurfaceDX11(amf::AMFContext* context, amf::AMFSurface* surface)
 {
     // fill surface with something something useful. We fill with color and color rect
     // get native DX objects
@@ -360,7 +366,7 @@ static void FillP010SurfaceWithColor(amf::AMFSurface* surface, amf_uint8 Y, amf_
     }
 }
 
-static void FillSurfaceVulkan(amf::AMFContext* context, amf::AMFSurface* surface)
+void FillSurfaceVulkan(amf::AMFContext* context, amf::AMFSurface* surface)
 {
     amf::AMFComputePtr compute;
     context->GetCompute(amf::AMF_MEMORY_VULKAN, &compute);
@@ -470,4 +476,10 @@ AMF_RESULT FillSurface(amf::AMFContextPtr context, amf::AMFSurface** surfaceIn, 
     }
 
     return AMF_OK;
+}
+
+AMF_RESULT ReadSurface(PipelineElementPtr pipelineElPtr, amf::AMFSurface** surface, amf::AMF_MEMORY_TYPE memoryType)
+{
+    AMF_RETURN_IF_FAILED(pipelineElPtr->QueryOutput((amf::AMFData**)surface));
+    return (surface && *surface) ? (*surface)->Convert(memoryType) : AMF_FAIL;
 }

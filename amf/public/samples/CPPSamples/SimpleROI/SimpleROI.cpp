@@ -65,7 +65,7 @@ static amf_int32 heightIn					= 0;
 static amf_int32 frameRateIn				= 0;
 static amf_int32 submitted					= 0;
 
-static wchar_t *pOutputCodec;
+static const wchar_t *pOutputCodec;
 static amf_int64 bitRateOut					= 5000000L; // in bits, 5MBit
 static bool bMaximumSpeed					= true;
 
@@ -227,8 +227,8 @@ int main(int argc, char* argv[])
 	if (amf_wstring(pOutputCodec) == amf_wstring(AMFVideoEncoderVCE_AVC))
 	{
 		swprintf(fileNameEncOutWithSize, amf_countof(fileNameEncOutWithSize), fileNameEncOut, parser->GetPictureWidth(), parser->GetPictureHeight(), 264);
-		res = encoder->SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_TRANSCONDING);
-		AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_TRANSCONDING) failed");
+		res = encoder->SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_TRANSCODING);
+		AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_TRANSCODING) failed");
 
 		if (bMaximumSpeed)
 		{
@@ -259,8 +259,8 @@ int main(int argc, char* argv[])
 	else
 	{
 		swprintf(fileNameEncOutWithSize, amf_countof(fileNameEncOutWithSize), fileNameEncOut, parser->GetPictureWidth(), parser->GetPictureHeight(), 265);
-		res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_USAGE, AMF_VIDEO_ENCODER_HEVC_USAGE_TRANSCONDING);
-		AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_USAGE, AMF_VIDEO_ENCODER_HEVC_USAGE_TRANSCONDING)");
+		res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_USAGE, AMF_VIDEO_ENCODER_HEVC_USAGE_TRANSCODING);
+		AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_USAGE, AMF_VIDEO_ENCODER_HEVC_USAGE_TRANSCODING)");
 
 		if (bMaximumSpeed)
 		{

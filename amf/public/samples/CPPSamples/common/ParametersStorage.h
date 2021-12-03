@@ -84,6 +84,8 @@ public:
     ParametersStorage();
     virtual ~ParametersStorage() {}
 
+    void  Clear()   {  m_descriptionMap.clear();  m_parameters.clear();  };
+
     AMF_RESULT  SetParam(const wchar_t* name, amf::AMFVariantStruct value);
     AMF_RESULT  GetParam(const wchar_t* name, amf::AMFVariantStruct* value) const;
     AMF_RESULT  SetParamAsString(const std::wstring& name, const std::wstring& value);
@@ -122,18 +124,19 @@ public:
     };
     AMF_RESULT GetParamDescription(const wchar_t* name, ParamDescription& description);
     AMF_RESULT SetParamDescription(const wchar_t* name, ParamType type, const wchar_t* description, ParamConverter converter);
+
     std::wstring  GetParamUsage();
 protected:
     virtual void OnParamChanged(const wchar_t* name) {}
 
     std::wstring  GetParamUsage(ParamType type);
 
-    typedef std::map<std::wstring, amf::AMFVariant> ParametersMap; // name / value
-    
-    ParametersMap m_parameters;
-    typedef std::map<std::wstring, ParamDescription> ParamDescriptionMap; // name / description
     mutable amf::AMFCriticalSection m_csSect;
 
+    typedef std::map<std::wstring, amf::AMFVariant> ParametersMap; // name / value
+    ParametersMap m_parameters;
+
+    typedef std::map<std::wstring, ParamDescription> ParamDescriptionMap; // name / description
     ParamDescriptionMap m_descriptionMap;
 };
 

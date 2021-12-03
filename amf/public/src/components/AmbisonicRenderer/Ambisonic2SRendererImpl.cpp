@@ -465,7 +465,6 @@ AMFAmbisonic2SRendererImpl::AMFAmbisonic2SRendererImpl(AMFContext* pContext)
   , m_eMode(AMF_AMBISONIC2SRENDERER_MODE_HRTF_MIT1)
   , m_ptsLastTime(-1LL)
 {
-    g_AMFFactory.Init();
     AMFPrimitivePropertyInfoMapBegin
         AMFPropertyInfoInt64(AMF_AMBISONIC2SRENDERER_IN_AUDIO_SAMPLE_RATE,      L"Sample Rate", 41000, 0, 256000, false),
         
@@ -492,7 +491,6 @@ AMFAmbisonic2SRendererImpl::AMFAmbisonic2SRendererImpl(AMFContext* pContext)
 AMFAmbisonic2SRendererImpl::~AMFAmbisonic2SRendererImpl()
 {
     Terminate();
-    g_AMFFactory.Terminate();
 }
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL  AMFAmbisonic2SRendererImpl::Init(AMF_SURFACE_FORMAT /*format*/, amf_int32 /*width*/, amf_int32 /*height*/)

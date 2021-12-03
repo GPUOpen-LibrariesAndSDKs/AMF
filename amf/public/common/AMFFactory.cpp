@@ -75,7 +75,8 @@ AMF_RESULT AMFFactoryHelper::Init()
         amf_atomic_inc(&m_iRefCount);
         return AMF_OK;
     }
-#ifdef _WIN32
+
+#if defined (_WIN32) || defined (__APPLE__)
     m_hDLLHandle = amf_load_library(AMF_DLL_NAME);
 #else 
     m_hDLLHandle = amf_load_library1(AMF_DLL_NAME, false); //load with local flags
@@ -196,7 +197,7 @@ AMF_RESULT  AMFFactoryHelper::LoadExternalComponent(amf::AMFContext* pContext, c
         component.m_hDLLHandle = NULL;
         component.m_DLL = dll;
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__APPLE__)
         hDll = amf_load_library(dll);
 #else
         hDll = amf_load_library1(dll, false); //global flag set to true

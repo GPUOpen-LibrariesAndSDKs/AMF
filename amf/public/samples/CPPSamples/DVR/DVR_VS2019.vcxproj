@@ -22,7 +22,7 @@
     <ProjectGuid>{7E7270B4-B894-4BA2-9E89-621276C6BF28}</ProjectGuid>
     <RootNamespace>DVR</RootNamespace>
     <ProjectName>DVR</ProjectName>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -213,8 +213,8 @@
     <ClInclude Include="..\..\..\..\public\src\components\AudioCapture\WASAPISource.h" />
     <ClInclude Include="..\..\..\..\public\src\components\DisplayCapture\DDAPISource.h" />
     <ClInclude Include="..\..\..\..\public\src\components\DisplayCapture\DisplayCaptureImpl.h" />
-    <ClInclude Include="..\..\..\common\CurrentTime.h" />
     <ClInclude Include="..\..\..\common\CurrentTimeImpl.h" />
+    <ClInclude Include="..\..\..\include\core\CurrentTime.h" />
     <ClInclude Include="..\..\..\src\components\DisplayCapture\CaptureStats.h" />
     <ClInclude Include="..\common\CmdLineParser.h" />
     <ClInclude Include="..\common\DeviceOpenCL.h" />

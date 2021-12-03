@@ -54,9 +54,6 @@
     <ClInclude Include="..\common\BitStreamParserH265.h">
       <Filter>public\samples\CPPSamples\common</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\ByteArray.h">
-      <Filter>public\samples\CPPSamples\common</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\CmdLogger.h">
       <Filter>public\samples\CPPSamples\common</Filter>
     </ClInclude>
@@ -86,6 +83,9 @@
     </ClInclude>
     <ClInclude Include="..\common\BitStreamParserIVF.h">
       <Filter>public\samples\CPPSamples\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\ByteArray.h">
+      <Filter>public\common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

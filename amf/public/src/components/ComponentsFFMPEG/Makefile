@@ -30,13 +30,15 @@ include $(amf_root)/public/make/common_defs.mak
 target_name = amf-component-ffmpeg
 target_type = so
 
-ffmpeg_dir = $(amf_root)/../Thirdparty/ffmpeg/ffmpeg-4.1.3/lnx$(host_bits)/release
+ffmpeg_dir = $(amf_root)/../Thirdparty/ffmpeg/ffmpeg-4.3.2/lnx$(host_bits)/release
 
 pp_defines += \
   AMF_COMPONENT_FFMPEG_EXPORTS
 
 cxx_flags += \
- -Wno-deprecated-declarations
+ -Wno-deprecated-declarations \
+ -Wno-error=attributes
+
 
 pp_include_dirs = $(amf_root) \
   $(ffmpeg_dir)/include

@@ -131,14 +131,23 @@ bool parseCmdLineParameters(ParametersStorage* pParams, int argc, char* argv[])
         for (CmdArgs::iterator it = cmdArgs.begin(); it != cmdArgs.end(); it++)
         {
             const std::wstring& name = it->first;
-            if(name == L"HELP" || name == L"?")
+            if (name == L"HELP" || name == L"?")
             {
                 LOG_INFO(pParams->GetParamUsage());
                 return false;
             }
-            else
+
+            AMF_RESULT res = pParams->SetParamAsString(name, it->second);
+            if (res == AMF_NOT_FOUND)
             {
-                pParams->SetParamAsString(name, it->second); // may be need process return value
+                LOG_ERROR(L"Parameter " << name << L" is unknown");
+                LOG_INFO(pParams->GetParamUsage());
+                return false;
+            }
+            else if (res != AMF_OK)
+            {
+                LOG_ERROR(L"Unable to set paramter " << name << L" with value " << it->second.c_str());
+                return false;
             }
         }
         return true;

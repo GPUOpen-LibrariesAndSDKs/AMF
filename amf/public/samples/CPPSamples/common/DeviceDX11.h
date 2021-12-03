@@ -46,14 +46,14 @@ public:
     DeviceDX11();
     virtual ~DeviceDX11();
 
-    AMF_RESULT Init(amf_uint32 adapterID, bool onlyWithOutputs = false);
+    AMF_RESULT Init(amf_uint32 adapterID, bool onlyWithOutputs = false, bool bCheckForAMD = true);
     AMF_RESULT Terminate();
 
     ATL::CComPtr<ID3D11Device>      GetDevice();
     std::wstring GetDisplayDeviceName() { return m_displayDeviceName; }
     LUID        GetLuid() { return m_LUID; }
 private:
-    void EnumerateAdapters(bool onlyWithOutputs);
+    void EnumerateAdapters(bool onlyWithOutputs, bool bCheckForAMD = true);
 
     ATL::CComPtr<ID3D11Device>          m_pD3DDevice;
 

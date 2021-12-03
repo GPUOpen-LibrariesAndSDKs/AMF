@@ -45,6 +45,8 @@ src_files = \
     $(public_common_dir)/VulkanImportTable.cpp \
     $(public_common_dir)/Linux/ThreadLinux.cpp \
     $(samples_common_dir)/CmdLogger.cpp \
+    $(samples_common_dir)/CmdLineParser.cpp \
+    $(samples_common_dir)/ParametersStorage.cpp \
     $(samples_common_dir)/DeviceVulkan.cpp
 
 include $(amf_root)/public/make/common_rules.mak

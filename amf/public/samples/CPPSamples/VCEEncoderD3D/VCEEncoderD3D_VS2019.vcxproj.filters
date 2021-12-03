@@ -21,9 +21,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\common\ByteArray.h">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\CmdLogger.h">
       <Filter>common</Filter>
     </ClInclude>
@@ -118,6 +115,9 @@
       <Filter>RenderEncoder</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\common\VulkanImportTable.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\ByteArray.h">
       <Filter>public\common</Filter>
     </ClInclude>
   </ItemGroup>

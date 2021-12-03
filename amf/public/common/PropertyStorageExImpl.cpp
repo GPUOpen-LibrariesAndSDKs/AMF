@@ -233,11 +233,11 @@ void AMFPropertyInfoImpl::Init(const wchar_t* name_, const wchar_t* desc_, AMF_V
         {
             AMFVariantAssignRate(&defaultValue, AMFConstructRate(0, 0));
         }
-        if (CastVariantToAMFProperty(&this->minValue, &minValue, type, contentType, pEnumDescription) != AMF_OK)
+        if (CastVariantToAMFProperty(&this->minValue, &minValue_, type, contentType, pEnumDescription) != AMF_OK)
         {
             AMFVariantAssignRate(&this->minValue, AMFConstructRate(0, 1));
         }
-        if (CastVariantToAMFProperty(&this->maxValue, &maxValue, type, contentType, pEnumDescription) != AMF_OK)
+        if (CastVariantToAMFProperty(&this->maxValue, &maxValue_, type, contentType, pEnumDescription) != AMF_OK)
         {
             AMFVariantAssignRate(&this->maxValue, AMFConstructRate(INT_MAX, INT_MAX));
         }

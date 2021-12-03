@@ -30,14 +30,24 @@
 New features are available in 
 Driver: Radeon Software Adrenalin 2019 Edition; 19.7.1 Software: 19.30 and later 
 
-1.4.21.0 (07.05.2021) version
+1.4.23.0 (02.12.2021) version
+--------------------------
+   - New Auto LTR encoder mode
+   - FFmpeg updated to version 4.3.2
+   - Additional statistics and feedback in encoder
+   - New encoder usage presets
+   - Main 10 HEVC encoder profile support
+   - Support for encoder instance selection
+
+1.4.21.0 (05.07.2021) version
 --------------------------
    - HDR color conversion updated
    - HDR color conversion in encoder
    - QVBR rate control mode in encoder 
    - Extended statistic and quality metrics in encoder
    - Frame rate parameter became dynamic
-   - new LTR encoder mode
+   - New LTR encoder mode
+   - Optional VUI parameter "matrix_coefficients" now set in encoder
 
 1.4.18.0 (16.09.2020) version
 --------------------------

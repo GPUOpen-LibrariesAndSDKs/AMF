@@ -121,7 +121,7 @@ typedef enum AMF_RESULT
     AMF_TAN_CLIPPING_WAS_REQUIRED               , // Resulting data was truncated to meet output type's value limits.
     AMF_TAN_UNSUPPORTED_VERSION                 , // Not supported version requested, solely for TANCreateContext().
 
-    AMF_NEED_MORE_INPUT                         ,//returned by AMFComponent::SubmitInput did not produce buffer
+    AMF_NEED_MORE_INPUT                         ,//returned by AMFComponent::SubmitInput did not produce a buffer because more input submissions are required.
 } AMF_RESULT;
 
 #endif //#ifndef AMF_Result_h

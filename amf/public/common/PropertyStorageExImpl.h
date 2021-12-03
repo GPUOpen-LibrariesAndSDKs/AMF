@@ -592,6 +592,10 @@ namespace amf
         new amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_WSTRING, AMF_PROPERTY_CONTENT_FILE_SAVE_PATH, amf::AMFVariant(_defaultValue), \
                                      amf::AMFVariant(), amf::AMFVariant(), _AccessType, 0)
 
+    #define AMFPropertyInfoFloatVector4D(_name, _desc, _defaultValue, _minValue, _maxValue, _AccessType) \
+        new amf::AMFPropertyInfoImpl(_name, _desc, amf::AMF_VARIANT_FLOAT_VECTOR4D, 0, amf::AMFVariant(_defaultValue), \
+                                     amf::AMFVariant(_minValue), amf::AMFVariant(_maxValue), _AccessType, 0)
+
 } // namespace amf
 
 #endif // #ifndef AMF_PropertyStorageExImpl_h

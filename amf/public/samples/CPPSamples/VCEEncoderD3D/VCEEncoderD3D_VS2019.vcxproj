@@ -23,7 +23,7 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>VCEEncoderD3D</RootNamespace>
     <ProjectName>VCEEncoderD3D</ProjectName>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -151,7 +151,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.21.27702\atlmfc\lib\spectre\x64;$(SolutionDir)..\..\lib\vs2019x$(PlatformArchitecture)$(Configuration)\;$(VK_SDK_PATH)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\lib\vs2019x$(PlatformArchitecture)$(Configuration)\;$(VK_SDK_PATH)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>opengl32.lib;DXGI.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
@@ -175,7 +175,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.21.27702\atlmfc\lib\spectre\x64;$(SolutionDir)..\..\lib\vs2019x$(PlatformArchitecture)$(Configuration)\;$(VK_SDK_PATH)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\lib\vs2019x$(PlatformArchitecture)$(Configuration)\;$(VK_SDK_PATH)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>opengl32.lib;DXGI.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
       <ImportLibrary>$(SolutionDir)..\..\bin\lib\vs2019x$(PlatformArchitecture)$(Configuration)\$(TargetName).lib</ImportLibrary>
@@ -187,12 +187,12 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\common\AMFFactory.h" />
     <ClInclude Include="..\..\..\common\AMFSTL.h" />
+    <ClInclude Include="..\..\..\common\ByteArray.h" />
     <ClInclude Include="..\..\..\common\DataStreamFile.h" />
     <ClInclude Include="..\..\..\common\DataStreamMemory.h" />
     <ClInclude Include="..\..\..\common\Thread.h" />
     <ClInclude Include="..\..\..\common\TraceAdapter.h" />
     <ClInclude Include="..\..\..\common\VulkanImportTable.h" />
-    <ClInclude Include="..\common\ByteArray.h" />
     <ClInclude Include="..\common\CmdLineParser.h" />
     <ClInclude Include="..\common\CmdLogger.h" />
     <ClInclude Include="..\common\DeviceDX11.h" />

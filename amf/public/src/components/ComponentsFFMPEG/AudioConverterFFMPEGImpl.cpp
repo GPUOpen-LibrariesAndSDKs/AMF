@@ -90,6 +90,8 @@ AMFAudioConverterFFMPEGImpl::AMFAudioConverterFFMPEGImpl(AMFContext* pContext)
     m_audioFrameQueryCount(0),
     m_ptsNext(0)
 {
+    g_AMFFactory.Init();
+
     AMFPrimitivePropertyInfoMapBegin
         AMFPropertyInfoBool(FFMPEG_AUDIO_CONVERTER, L"Enable Debug", false, true),
 
@@ -114,6 +116,7 @@ AMFAudioConverterFFMPEGImpl::AMFAudioConverterFFMPEGImpl(AMFContext* pContext)
 AMFAudioConverterFFMPEGImpl::~AMFAudioConverterFFMPEGImpl()
 {
     Terminate();
+    g_AMFFactory.Terminate();
 }
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*format*/, amf_int32 /*width*/, amf_int32 /*height*/)

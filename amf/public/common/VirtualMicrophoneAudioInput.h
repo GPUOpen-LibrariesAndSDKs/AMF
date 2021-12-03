@@ -34,9 +34,9 @@
 
 #if defined(_WIN32)
 #include <tchar.h>
-#else
-#endif
+#if defined(WIN32)
 #include <conio.h>
+#endif
 
 #include <memory>
 
@@ -84,3 +84,4 @@ protected:
 };
 
 typedef std::shared_ptr<VirtualMicrophoneAudioInput> VirtualMicrophoneAudioInputPtr;
+#endif

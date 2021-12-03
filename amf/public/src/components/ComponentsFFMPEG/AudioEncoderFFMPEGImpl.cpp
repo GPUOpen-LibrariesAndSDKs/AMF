@@ -91,6 +91,8 @@ AMFAudioEncoderFFMPEGImpl::AMFAudioEncoderFFMPEGImpl(AMFContext* pContext)
     m_PrevPts(-1LL)
 
 {
+    g_AMFFactory.Init();
+
     AMFPrimitivePropertyInfoMapBegin
         AMFPropertyInfoBool(AUDIO_ENCODER_ENABLE_DEBUGGING, L"Enable Debug", false, false),
         AMFPropertyInfoBool(AUDIO_ENCODER_ENABLE_ENCODING, L"Enable encoding", true, false),
@@ -118,6 +120,7 @@ AMFAudioEncoderFFMPEGImpl::AMFAudioEncoderFFMPEGImpl(AMFContext* pContext)
 AMFAudioEncoderFFMPEGImpl::~AMFAudioEncoderFFMPEGImpl()
 {
     Terminate();
+    g_AMFFactory.Terminate();
 }
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*format*/, amf_int32 /*width*/, amf_int32 /*height*/)

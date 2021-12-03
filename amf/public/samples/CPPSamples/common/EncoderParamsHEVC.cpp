@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -46,20 +46,28 @@ static AMF_RESULT ParamConverterUsageHEVC(const std::wstring& value, amf::AMFVar
     std::wstring uppValue = toUpper(value);
     if(uppValue == L"TRANSCODING" || uppValue == L"0")
     {
-        paramValue = AMF_VIDEO_ENCODER_HEVC_USAGE_TRANSCONDING;
-    } 
-    else if(uppValue == L"ULTRALOWLATENCY"|| uppValue == L"1") 
+        paramValue = AMF_VIDEO_ENCODER_HEVC_USAGE_TRANSCODING;
+    }
+    else if(uppValue == L"ULTRALOWLATENCY"|| uppValue == L"1")
     {
         paramValue = AMF_VIDEO_ENCODER_HEVC_USAGE_ULTRA_LOW_LATENCY;
-    } 
-    else if(uppValue == L"LOWLATENCY"|| uppValue == L"2") 
+    }
+    else if(uppValue == L"LOWLATENCY"|| uppValue == L"2")
     {
         paramValue = AMF_VIDEO_ENCODER_HEVC_USAGE_LOW_LATENCY;
-    } 
-    else if(uppValue == L"WEBCAM"|| uppValue == L"3") 
+    }
+    else if(uppValue == L"WEBCAM"|| uppValue == L"3")
     {
         paramValue = AMF_VIDEO_ENCODER_HEVC_USAGE_WEBCAM;
-    } 
+    }
+    else if (uppValue == L"HIGHQUALITY" || uppValue == L"HQ" || uppValue == L"4")
+    {
+        paramValue = AMF_VIDEO_ENCODER_HEVC_USAGE_HIGH_QUALITY;
+    }
+    else if (uppValue == L"LOWLATENCYHIGHQUALITY" || uppValue == L"LLHQ" || uppValue == L"5")
+    {
+        paramValue = AMF_VIDEO_ENCODER_HEVC_USAGE_LOW_LATENCY_HIGH_QUALITY;
+    }
     else {
         LOG_ERROR(L"AMF_VIDEO_ENCODER_HEVC_USAGE_ENUM hasn't \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
@@ -90,10 +98,10 @@ static AMF_RESULT ParamConverterProfileHEVC(const std::wstring& value, amf::AMFV
 {
     AMF_VIDEO_ENCODER_HEVC_PROFILE_ENUM paramValue;
     std::wstring uppValue = toUpper(value);
-    if(uppValue == L"MAIN"|| uppValue == L"1") 
+    if(uppValue == L"MAIN"|| uppValue == L"1")
     {   // only main profile is supported for HEVC encoder
         paramValue = AMF_VIDEO_ENCODER_HEVC_PROFILE_MAIN;
-    }  else 
+    }  else
     {
         LOG_ERROR(L"AMF_VIDEO_ENCODER_HEVC_PROFILE_ENUM hasn't \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
@@ -106,13 +114,13 @@ static AMF_RESULT ParamConverterTierHEVC(const std::wstring& value, amf::AMFVari
 {
     AMF_VIDEO_ENCODER_HEVC_TIER_ENUM paramValue;
     std::wstring uppValue = toUpper(value);
-    if(uppValue == L"MAIN"|| uppValue == L"0") 
-    {   
+    if(uppValue == L"MAIN"|| uppValue == L"0")
+    {
         paramValue = AMF_VIDEO_ENCODER_HEVC_TIER_MAIN;
-    } else if(uppValue == L"HIGH"|| uppValue == L"1") 
-    {   
+    } else if(uppValue == L"HIGH"|| uppValue == L"1")
+    {
        paramValue = AMF_VIDEO_ENCODER_HEVC_TIER_HIGH;
-    }  else 
+    }  else
     {
         LOG_ERROR(L"AMF_VIDEO_ENCODER_HEVC_TIER_ENUM hasn't \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
@@ -321,7 +329,7 @@ AMF_RESULT RegisterEncoderParamsHEVC(ParametersStorage* pParams)
 
 
     // ------------- Encoder params usage---------------
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_USAGE, ParamEncoderUsage, L"Encoder usage type. Set many default parameters. (TRANSCONDING, ULTRALOWLATENCY, LOWLATENCY, WEBCAM, default = N/A)", ParamConverterUsageHEVC);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_USAGE, ParamEncoderUsage, L"Encoder usage type. Set many default parameters. (TRANSCODING, ULTRALOWLATENCY, LOWLATENCY, WEBCAM, HIGHQUALITY (or HQ), LOWLATENCYHIGHQUALITY (or LLHQ), default = N/A)", ParamConverterUsageHEVC);
     // ------------- Encoder params static---------------
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_PROFILE, ParamEncoderStatic, L"HEVC profile (Main, default = Main", ParamConverterProfileHEVC);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_TIER, ParamEncoderStatic, L"HEVC tier (Main, High, default = Main", ParamConverterTierHEVC);
@@ -341,6 +349,8 @@ AMF_RESULT RegisterEncoderParamsHEVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE, ParamEncoderStatic, L"insertion mode (none, gop, idr default = none", ParamConverterInsertionModeHEVC);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_SLICES_PER_FRAME, ParamEncoderStatic, L"Slices Per Frame (integer, default = 1)", ParamConverterInt64);
 
+    // color conversion
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_COLOR_BIT_DEPTH, ParamEncoderStatic, L"8 or 10 bit (integer, default = 8)", ParamConverterInt64);
 
 // Rate control properties
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, ParamEncoderStatic, L"Frame Rate (num,den), default = depends on USAGE)", ParamConverterRate);
@@ -371,7 +381,7 @@ AMF_RESULT RegisterEncoderParamsHEVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_QP_I, ParamEncoderDynamic, L"QP I (integer 0-51, default = 22)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_QP_P, ParamEncoderDynamic, L"QP P (integer 0-51, default = 22)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_SKIP_FRAME_ENABLE, ParamEncoderDynamic, L"Rate Control Based Frame Skip (true, false default =  depends on USAGE)", ParamConverterBoolean);
-    
+
     // ------------- Encoder params per frame ---------------
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_INSERT_HEADER, ParamEncoderFrame, L"Insert Header (true, false default =  false)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_INSERT_AUD, ParamEncoderFrame, L"Insert AUD (true, false default =  false)", ParamConverterBoolean);
@@ -392,9 +402,7 @@ AMF_RESULT RegisterEncoderParamsHEVC(ParametersStorage* pParams)
 
     pParams->SetParamDescription(AMF_PA_INITIAL_QP_AFTER_SCENE_CHANGE, ParamEncoderDynamic, L"QP After Scene Change (integer 0-51, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_PA_MAX_QP_BEFORE_FORCE_SKIP, ParamEncoderDynamic, L"Max QP Before Force Skip (integer 0-51, default = 35)", ParamConverterInt64);
-//  pParams->SetParamDescription(AMF_IN_FRAME_QP_FILTERING_STRENGTH, ParamEncoderDynamic, L"In Frame QP Filtering Strength (integer 0-255, default = 0)", ParamConverterInt64);
-//  pParams->SetParamDescription(AMF_BETWEEN_FRAME_QP_FILTERING_STRENGTH, ParamEncoderDynamic, L"Between Frame QP Filtering Strength (integer 0-255, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_PA_CAQ_STRENGTH, ParamEncoderDynamic, L"CAQ Strength (LOW, MEDIUM, HIGH default = MEDIUM)", ParamConverterCAQStrengthHEVC);
-    
+
     return AMF_OK;
 }

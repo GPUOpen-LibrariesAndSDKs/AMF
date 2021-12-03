@@ -40,6 +40,7 @@
 #include "../include/core/Debug.h"
 #include "../include/core/Trace.h"
 #include "../include/core/Result.h"
+#include "public/common/AMFFactory.h"
 #include "AMFSTL.h"
 
 #ifndef WIN32

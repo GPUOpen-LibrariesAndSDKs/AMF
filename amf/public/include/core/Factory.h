@@ -109,7 +109,7 @@ extern "C"
     #if defined(_M_AMD64)
         #define AMF_DLL_NAME    L"amfrt64.dll"
         #define AMF_DLL_NAMEA   "amfrt64.dll"
-    #else
+#else
         #define AMF_DLL_NAME    L"amfrt32.dll"
         #define AMF_DLL_NAMEA   "amfrt32.dll"
     #endif

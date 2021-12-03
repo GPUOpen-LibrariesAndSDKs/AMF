@@ -343,6 +343,11 @@ void AMF_CDECL_CALL amf_restore_timer_precision()
 #endif
 }
 //----------------------------------------------------------------------------------------
+amf_handle  AMF_CDECL_CALL amf_load_library1(const wchar_t* filename, bool /*bGlobal*/)
+{
+    return amf_load_library(filename);
+}
+//----------------------------------------------------------------------------------------
 amf_handle AMF_CDECL_CALL amf_load_library(const wchar_t* filename)
 {
 #if defined(METRO_APP)

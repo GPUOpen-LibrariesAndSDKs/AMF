@@ -72,8 +72,13 @@ AMF_RESULT DeviceVulkan::Init(amf_uint32 adapterID, amf::AMFContext *pContext)
         deviceExtensions.resize(nCount);
         pContext1->GetVulkanDeviceExtensions(&nCount, deviceExtensions.data());
     }
-
-
+    // added fd extension
+#if defined(__linux)
+    deviceExtensions.push_back(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
+    deviceExtensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
+    deviceExtensions.push_back(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
+    deviceExtensions.push_back(VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME);
+#endif
    res = m_ImportTable.LoadFunctionsTable();
    CHECK_RETURN(res == AMF_OK, res, L"LoadFunctionsTable() failed - check if the proper Vulkan SDK is installed");
 
@@ -169,6 +174,8 @@ std::vector<const char*> DeviceVulkan::GetDebugDeviceLayerNames(VkPhysicalDevice
         }
     }
     return result;
+
+
 }
 AMF_RESULT DeviceVulkan::CreateInstance()
 {
@@ -191,6 +198,8 @@ AMF_RESULT DeviceVulkan::CreateInstance()
 #elif defined(__linux)
         "VK_KHR_surface",
         VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
+        VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
+        VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME,
 #endif
     };
 

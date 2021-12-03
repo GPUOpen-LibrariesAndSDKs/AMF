@@ -32,7 +32,7 @@
 
 #include "VirtualMicrophoneAudioInput.h"
 #include "public/common/TraceAdapter.h"
-
+#if defined(_WIN32)
 //-------------------------------------------------------------------------------------------------
 #define AMF_FACILITY L"VirtualMicrophoneAudioInput"
 
@@ -227,3 +227,4 @@ AMF_RESULT VirtualMicrophoneAudioInput::SubmitData(const void* data, amf_size si
     }
 	return res;
 }
+#endif // #if defined(_WIN32)

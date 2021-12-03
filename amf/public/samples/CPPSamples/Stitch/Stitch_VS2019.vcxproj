@@ -23,7 +23,7 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Stitch</RootNamespace>
     <ProjectName>Stitch</ProjectName>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -212,7 +212,6 @@
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\BitStreamParser.h" />
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\BitStreamParserH264.h" />
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\BitStreamParserH265.h" />
-    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\ByteArray.h" />
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\CmdLineParser.h" />
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\CmdLogger.h" />
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\EncoderParamsAVC.h" />
@@ -224,6 +223,7 @@
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\VideoPresenterDX11.h" />
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\VideoPresenterDX9.h" />
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\VideoPresenterOpenGL.h" />
+    <ClInclude Include="..\..\..\common\ByteArray.h" />
     <ClInclude Include="..\..\..\common\VulkanImportTable.h" />
     <ClInclude Include="..\..\..\include\components\VideoCapture.h" />
     <ClInclude Include="..\..\..\include\components\VideoStitch.h" />

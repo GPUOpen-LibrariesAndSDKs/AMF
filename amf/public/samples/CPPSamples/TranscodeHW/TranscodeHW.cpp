@@ -285,8 +285,13 @@ int main(int argc, char* argv[])
 #endif
 
     amf_increase_timer_precision();
+
     ParametersStorage params;
+    RegisterParams(&params);
     RegisterCodecParams(&params);
+    RegisterPreProcessingParams(&params);
+    RegisterEncoderParamsAVC(&params);
+    RegisterEncoderParamsHEVC(&params);
 
 #if defined(_WIN32)
     if (!parseCmdLineParameters(&params))
@@ -294,6 +299,11 @@ int main(int argc, char* argv[])
     if (!parseCmdLineParameters(&params, argc, argv))
 #endif        
     {
+        LOG_INFO(L"+++ Pre processor +++");
+        ParametersStorage paramsPreProc;
+        RegisterPreProcessingParams(&paramsPreProc);
+        LOG_INFO(paramsPreProc.GetParamUsage());
+
         LOG_INFO(L"+++ AVC codec +++");
         ParametersStorage paramsAVC;
         RegisterCodecParams(&paramsAVC);
@@ -305,12 +315,22 @@ int main(int argc, char* argv[])
         RegisterCodecParams(&paramsHEVC);
         RegisterEncoderParamsHEVC(&paramsHEVC);
         LOG_INFO(paramsHEVC.GetParamUsage());
+
         return -1;
     }
 
+    // figure out the codec
     std::wstring codec = AMFVideoEncoderVCE_AVC;
     params.GetParamWString(PARAM_NAME_CODEC, codec);
-    if(codec == AMFVideoEncoderVCE_AVC)
+
+    // clear existing parameters
+    params.Clear();
+
+    // update the proper parameters for the correct codec
+    RegisterParams(&params);
+    RegisterCodecParams(&params);
+    RegisterPreProcessingParams(&params);
+    if (codec == AMFVideoEncoderVCE_AVC)
     {
         RegisterEncoderParamsAVC(&params);
     }
@@ -321,10 +341,8 @@ int main(int argc, char* argv[])
     else
     {
         LOG_ERROR(L"Invalid codec ID");
-
+        return -1;
     }
-    RegisterParams(&params);
-    RegisterPreProcessingParams(&params);
 
     // parse again with codec - dependent set of parameters
 #if defined(_WIN32)
@@ -335,6 +353,7 @@ int main(int argc, char* argv[])
     {
         return -1;
     }
+
     PreviewWindow previewWindow;
     bool previewMode = false;
     params.GetParam(PARAM_NAME_PREVIEW_MODE, previewMode);

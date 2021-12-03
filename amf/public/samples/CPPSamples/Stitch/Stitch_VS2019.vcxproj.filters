@@ -137,9 +137,6 @@
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\BitStreamParserH265.h">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\ByteArray.h">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\CmdLineParser.h">
       <Filter>common</Filter>
     </ClInclude>
@@ -205,6 +202,9 @@
     </ClInclude>
     <ClInclude Include="..\common\BitStreamParserIVF.h">
       <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\ByteArray.h">
+      <Filter>public\common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

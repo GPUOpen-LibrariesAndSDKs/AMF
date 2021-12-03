@@ -1,5 +1,5 @@
 #
-# MIT license 
+# MIT license
 #
 #
 # Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
@@ -43,7 +43,7 @@
 # Description of variables
 #
 # MANDATORY variables your makefile must set:
-#   
+#
 #   amf_root - Relative path to the root of the AMF source tree
 #   src_files - List of .cpp source files relative to amf_root
 #   target_name - Name to give to exe_target
@@ -58,6 +58,7 @@
 #   samples_common_dir - Location of samples common dir relative to amf_root
 #
 # Variables projects can add to or overwrite:
+#   src_c_files - List of .c source files relative to amf_root
 #   target_type - Type of target to produce. Defaults to "exe". Only "exe" and "so" currently supported
 #   pp_include_dirs - Preprocessor include search directories (absolute - use $(amf_root) prefix for relative paths)
 #   pp_defines - Preprocessor macros
@@ -80,17 +81,17 @@
 #   DEPFLAGS - Flags passed to preprocessor to generate dependencies
 #
 # Dev packages to be installed
-#   libvulkan-dev 
-#   libasound2-dev 
-#   libx11-dev 
-#   mesa-common-dev 
-#   libgl1-mesa-dev 
-#   libglu1-mesa-dev 
+#   libvulkan-dev
+#   libasound2-dev
+#   libx11-dev
+#   mesa-common-dev
+#   libgl1-mesa-dev
+#   libglu1-mesa-dev
 #   opencl-dev
-#   lib32stdc++-7-dev 
-#   lib32gcc-7-dev 
-#   libgcc-7-dev 
-#   libstdc++-7-dev 
+#   lib32stdc++-7-dev
+#   lib32gcc-7-dev
+#   libgcc-7-dev
+#   libstdc++-7-dev
 #   ocl-icd-ope
 #
 # Required variable
@@ -142,6 +143,7 @@ target_type = exe
 ######################## Global Overrides ######################################
 
 CXX ?= g++
+CC ?= gcc
 LNK ?= g++
 RM ?= rm -f
 MKDIR ?= mkdir -p
@@ -166,7 +168,7 @@ cxx_flags = \
 
 # In the long run, we should fix this warning
 cxx_flags += -Wno-unused-result
-    
+
 ifeq (dbg,$(build_type))
     pp_defines += DEBUG _DEBUG
     cxx_flags += -O0 -ggdb
@@ -175,9 +177,9 @@ else
     cxx_flags += \
 	-fno-math-errno -fno-threadsafe-statics -fmerge-all-constants\
 	-O3 -fno-strict-aliasing -fno-delete-null-pointer-checks \
-	-fno-strict-overflow -flto -fuse-linker-plugin 
+	-fno-strict-overflow -flto -fuse-linker-plugin
 endif
-    
+
 ifeq (32,$(host_bits))
     cxx_flags += -m32
 else

@@ -1,5 +1,5 @@
 #
-# MIT license 
+# MIT license
 #
 #
 # Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
@@ -41,7 +41,7 @@ endif
 
 target_dir = $(dir $(target_file))
 # sort removes duplicates
-obj_dirs = $(sort $(addprefix $(build_dir)/,$(dir $(src_files)))) 
+obj_dirs = $(sort $(addprefix $(build_dir)/,$(dir $(src_files))))
 
 CPPFLAGS += $(patsubst %,-I"%",$(pp_include_dirs))
 CPPFLAGS += $(patsubst %,-D"%",$(pp_defines))
@@ -80,7 +80,8 @@ clean:
 	$(RM) $(target_file)
 	$(RMDIR) $(build_dir)
 
-$(target_file): | $(target_dir)
+
+$(target_file): $(custom_target) | $(target_dir)
 	$(LNK) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 $(target_dir) $(obj_dirs):
@@ -95,15 +96,29 @@ $$(target_file): $$(build_dir)/$(1:.cpp=.o)
 
 $$(build_dir)/$(1:.cpp=.o): $$(amf_root)/$1 | $$(obj_dirs)
 	$$(CXX) $$(CPPFLAGS) $$(DEPFLAGS) $$(CXXFLAGS) -c $$< -o $$@
-	
+
 $$(build_dir)/$(1:.cpp=.o): $$(build_dir)/$(1:.cpp=.o.d)
 
 $$(build_dir)/$(1:.cpp=.o.d):
 
 -include $$(build_dir)/$(1:.cpp=.o.d)
-
 endef
 
 $(foreach src_file,$(src_files),\
     $(eval $(call compile_source_rule_fn,$(src_file)))\
 )
+
+define compile_c_rule_fn
+source_basename := $$(basename $1)
+$$(target_file): $$(build_dir)/$$(source_basename).o
+
+$$(build_dir)/$$(source_basename).o: $$(amf_root)/$1 | $$(obj_dirs)
+	$$(MKDIR) $$(dir $$@)
+	$$(CC) -c $$< -o $$@
+endef
+
+$(foreach src_file,$(src_c_files),\
+    $(eval $(call compile_c_rule_fn,$(src_file)))\
+)
+
+$(info target_file = $(target_file))

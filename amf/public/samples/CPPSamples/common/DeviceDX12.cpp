@@ -33,6 +33,11 @@
 #include "DeviceDX12.h"
 #include "CmdLogger.h"
 #include <set>
+#ifdef _DEBUG
+#include <initguid.h>
+#include<dxgidebug.h>
+#pragma comment(lib, "dxgi.lib")
+#endif
 
 typedef     HRESULT(WINAPI *CreateDXGIFactory2_Fun)(UINT Flags, REFIID riid, _COM_Outptr_ void **ppFactory);
 
@@ -182,6 +187,15 @@ AMF_RESULT DeviceDX12::Init(amf_uint32 adapterID, bool onlyWithOutputs)
 AMF_RESULT DeviceDX12::Terminate()
 {
     m_pD3DDevice.Release();
+
+#ifdef _DEBUG
+    CComPtr<IDXGIDebug1> pDebugDevice;
+    if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&pDebugDevice))))
+    {
+        pDebugDevice->ReportLiveObjects(DXGI_DEBUG_DX, DXGI_DEBUG_RLO_FLAGS(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL));
+    }
+#endif
+
     return AMF_OK;
 }
 

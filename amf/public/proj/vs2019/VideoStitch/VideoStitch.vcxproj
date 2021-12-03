@@ -206,7 +206,6 @@
     <ClInclude Include="..\..\..\..\public\include\core\Data.h" />
     <ClInclude Include="..\..\..\..\public\include\core\Debug.h" />
     <ClInclude Include="..\..\..\..\public\include\core\Factory.h" />
-    <ClInclude Include="..\..\..\..\public\include\core\Guid.h" />
     <ClInclude Include="..\..\..\..\public\include\core\Interface.h" />
     <ClInclude Include="..\..\..\..\public\include\core\Plane.h" />
     <ClInclude Include="..\..\..\..\public\include\core\Platform.h" />
@@ -217,7 +216,7 @@
     <ClInclude Include="..\..\..\..\public\include\core\Trace.h" />
     <ClInclude Include="..\..\..\..\public\include\core\Variant.h" />
     <ClInclude Include="..\..\..\..\public\include\core\Version.h" />
-    <ClInclude Include="..\..\..\..\stitch\include\components\VideoStitch.h" />
+    <ClInclude Include="..\..\..\include\components\VideoStitch.h" />
     <ClInclude Include="..\..\..\src\components\VideoStitch\DirectX11\StitchEngineDX11.h" />
     <ClInclude Include="..\..\..\src\components\VideoStitch\HistogramImpl.h" />
     <ClInclude Include="..\..\..\src\components\VideoStitch\StitchEngineBase.h" />

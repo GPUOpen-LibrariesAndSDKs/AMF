@@ -31,7 +31,8 @@ target_name = VCEEncoderD3D
 target_type = exe
 
 pp_include_dirs = \
- $(amf_root)
+ $(amf_root) \
+ $(VK_SDK_PATH)/x86_64/include
  
  sample_path = public/samples/CPPSamples/VCEEncoderD3D
 

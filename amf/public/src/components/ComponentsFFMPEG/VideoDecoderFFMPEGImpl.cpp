@@ -64,6 +64,8 @@ AMFVideoDecoderFFMPEGImpl::AMFVideoDecoderFFMPEGImpl(AMFContext* pContext)
     m_FrameRate(AMFConstructRate(25,1)),
     m_CopyPipeline(&m_InputQueue)
 {
+    g_AMFFactory.Init();
+
     AMFPrimitivePropertyInfoMapBegin
         AMFPropertyInfoBool(VIDEO_DECODER_ENABLE_DECODING, L"Enable decoding", true, true),
 
@@ -81,6 +83,7 @@ AMFVideoDecoderFFMPEGImpl::AMFVideoDecoderFFMPEGImpl(AMFContext* pContext)
 AMFVideoDecoderFFMPEGImpl::~AMFVideoDecoderFFMPEGImpl()
 {
     Terminate();
+    g_AMFFactory.Terminate();
 }
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT format, amf_int32 width, amf_int32 height)

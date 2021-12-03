@@ -573,7 +573,7 @@ amf_string AMF_STD_CALL amf::amf_string_format(const char* format, ...)
 //----------------------------------------------------------------------------------------
 amf_wstring AMF_STD_CALL amf::amf_string_formatVA(const wchar_t* format, va_list args)
 {
-#if defined(__linux) || defined(__APPLE__)
+#if (defined(__linux) || defined(__APPLE__)) && (!defined(__ANDROID__))
     //replace %s with %ls
     amf_wstring text(format);
     amf_wstring textReplaced;
@@ -584,6 +584,10 @@ amf_wstring AMF_STD_CALL amf::amf_string_formatVA(const wchar_t* format, va_list
         if(percentFlag && (*i == L's'))
         {
             textReplaced.push_back(L'l');
+            textReplaced.push_back(L's');
+        }
+        else if(percentFlag && (*i == L'S'))
+        {
             textReplaced.push_back(L's');
         }
         else

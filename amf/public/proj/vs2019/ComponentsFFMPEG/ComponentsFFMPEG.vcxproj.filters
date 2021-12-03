@@ -25,9 +25,6 @@
     <ClInclude Include="..\..\..\..\public\include\core\Debug.h">
       <Filter>public\include\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\public\include\core\Guid.h">
-      <Filter>public\include\core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\public\include\core\Interface.h">
       <Filter>public\include\core</Filter>
     </ClInclude>

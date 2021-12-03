@@ -42,6 +42,9 @@
     <ClCompile Include="..\common\EncoderParamsHEVC.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="..\common\RawStreamReader.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\AMFFactory.h">
@@ -79,6 +82,9 @@
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\common\EncoderParamsHEVC.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\RawStreamReader.h">
       <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>

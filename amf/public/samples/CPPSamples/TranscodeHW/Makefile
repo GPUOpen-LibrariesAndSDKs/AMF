@@ -31,7 +31,8 @@ target_name = TranscodeHW
 target_type = exe
 
 pp_include_dirs = \
- $(amf_root)
+ $(amf_root) \
+ $(VK_SDK_PATH)/x86_64/include
  
 src_files = \
     public/samples/CPPSamples/TranscodeHW/TranscodeHW.cpp \

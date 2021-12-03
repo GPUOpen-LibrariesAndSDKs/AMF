@@ -31,9 +31,10 @@ target_name = PlaybackHW
 target_type = exe
 
 pp_include_dirs = \
- $(amf_root)
+ $(amf_root) \
+ $(VK_SDK_PATH)/x86_64/include
 
- linker_libs += vulkan asound
+ linker_libs += asound
 
 src_files = \
     public/samples/CPPSamples/PlaybackHW/PlaybackHW.cpp \

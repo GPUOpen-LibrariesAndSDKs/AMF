@@ -36,15 +36,19 @@
 
 enum AMF_VIDEO_ENCODER_HEVC_USAGE_ENUM
 {
-    AMF_VIDEO_ENCODER_HEVC_USAGE_TRANSCONDING = 0,
+    AMF_VIDEO_ENCODER_HEVC_USAGE_TRANSCONDING = 0, // kept for backwards compatability
+    AMF_VIDEO_ENCODER_HEVC_USAGE_TRANSCODING = 0, // fixed typo
     AMF_VIDEO_ENCODER_HEVC_USAGE_ULTRA_LOW_LATENCY,
     AMF_VIDEO_ENCODER_HEVC_USAGE_LOW_LATENCY,
-    AMF_VIDEO_ENCODER_HEVC_USAGE_WEBCAM
+    AMF_VIDEO_ENCODER_HEVC_USAGE_WEBCAM,
+    AMF_VIDEO_ENCODER_HEVC_USAGE_HIGH_QUALITY,
+    AMF_VIDEO_ENCODER_HEVC_USAGE_LOW_LATENCY_HIGH_QUALITY
 };
 
 enum AMF_VIDEO_ENCODER_HEVC_PROFILE_ENUM
 {
-    AMF_VIDEO_ENCODER_HEVC_PROFILE_MAIN = 1
+    AMF_VIDEO_ENCODER_HEVC_PROFILE_MAIN = 1,
+    AMF_VIDEO_ENCODER_HEVC_PROFILE_MAIN_10 = 2
 };
 
 enum AMF_VIDEO_ENCODER_HEVC_TIER_ENUM
@@ -97,7 +101,7 @@ enum AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE_ENUM
 
 enum AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_ENUM
 {
-    AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_QUALITY    = 0,    
+    AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_QUALITY    = 0,
     AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_BALANCED   = 5,
     AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED      = 10
 };
@@ -128,16 +132,17 @@ enum AMF_VIDEO_ENCODER_HEVC_LTR_MODE_ENUM
 };
 
 // Static properties - can be set before Init()
+#define AMF_VIDEO_ENCODER_HEVC_INSTANCE_INDEX                       L"HevcEncoderInstance"          // amf_int64; selected instance idx
 #define AMF_VIDEO_ENCODER_HEVC_FRAMESIZE                            L"HevcFrameSize"                // AMFSize; default = 0,0; Frame size
 
-#define AMF_VIDEO_ENCODER_HEVC_USAGE                                L"HevcUsage"                    // amf_int64(AMF_VIDEO_ENCODER_HEVC_USAGE_ENUM); default = N/A; Encoder usage type. fully configures parameter set. 
+#define AMF_VIDEO_ENCODER_HEVC_USAGE                                L"HevcUsage"                    // amf_int64(AMF_VIDEO_ENCODER_HEVC_USAGE_ENUM); default = N/A; Encoder usage type. fully configures parameter set.
 #define AMF_VIDEO_ENCODER_HEVC_PROFILE                              L"HevcProfile"                  // amf_int64(AMF_VIDEO_ENCODER_HEVC_PROFILE_ENUM) ; default = AMF_VIDEO_ENCODER_HEVC_PROFILE_MAIN;
 #define AMF_VIDEO_ENCODER_HEVC_TIER                                 L"HevcTier"                     // amf_int64(AMF_VIDEO_ENCODER_HEVC_TIER_ENUM) ; default = AMF_VIDEO_ENCODER_HEVC_TIER_MAIN;
-#define AMF_VIDEO_ENCODER_HEVC_PROFILE_LEVEL                        L"HevcProfileLevel"             // amf_int64 (AMF_VIDEO_ENCODER_LEVEL_ENUM, default depends on HW capabilities); 
+#define AMF_VIDEO_ENCODER_HEVC_PROFILE_LEVEL                        L"HevcProfileLevel"             // amf_int64 (AMF_VIDEO_ENCODER_LEVEL_ENUM, default depends on HW capabilities);
 #define AMF_VIDEO_ENCODER_HEVC_MAX_LTR_FRAMES                       L"HevcMaxOfLTRFrames"           // amf_int64; default = 0; Max number of LTR frames
 #define AMF_VIDEO_ENCODER_HEVC_LTR_MODE                             L"HevcLTRMode"                  // amf_int64(AMF_VIDEO_ENCODER_HEVC_LTR_MODE_ENUM); default = AMF_VIDEO_ENCODER_HEVC_LTR_MODE_RESET_UNUSED; remove/keep unused LTRs (not specified in property AMF_VIDEO_ENCODER_HEVC_FORCE_LTR_REFERENCE_BITFIELD)
 #define AMF_VIDEO_ENCODER_HEVC_MAX_NUM_REFRAMES                     L"HevcMaxNumRefFrames"          // amf_int64; default = 1; Maximum number of reference frames
-#define AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET                       L"HevcQualityPreset"            // amf_int64(AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_ENUM); default = depends on USAGE; Quality Preset 
+#define AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET                       L"HevcQualityPreset"            // amf_int64(AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_ENUM); default = depends on USAGE; Quality Preset
 #define AMF_VIDEO_ENCODER_HEVC_EXTRADATA                            L"HevcExtraData"                // AMFInterface* - > AMFBuffer*; SPS/PPS buffer - read-only
 #define AMF_VIDEO_ENCODER_HEVC_ASPECT_RATIO                         L"HevcAspectRatio"              // AMFRatio; default = 1, 1
 #define AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE					    L"LowLatencyInternal"           // bool; default = false, enables low latency mode
@@ -148,18 +153,18 @@ enum AMF_VIDEO_ENCODER_HEVC_LTR_MODE_ENUM
 #define AMF_VIDEO_ENCODER_HEVC_NUM_GOPS_PER_IDR                     L"HevcGOPSPerIDR"               // amf_int64; default = 1; The frequency to insert IDR as start of a GOP. 0 means no IDR will be inserted.
 #define AMF_VIDEO_ENCODER_HEVC_GOP_SIZE                             L"HevcGOPSize"                  // amf_int64; default = 60; GOP Size, in frames
 #define AMF_VIDEO_ENCODER_HEVC_DE_BLOCKING_FILTER_DISABLE           L"HevcDeBlockingFilter"         // bool; default = depends on USAGE; De-blocking Filter
-#define AMF_VIDEO_ENCODER_HEVC_SLICES_PER_FRAME                     L"HevcSlicesPerFrame"           // amf_int64; default = 1; Number of slices Per Frame 
+#define AMF_VIDEO_ENCODER_HEVC_SLICES_PER_FRAME                     L"HevcSlicesPerFrame"           // amf_int64; default = 1; Number of slices Per Frame
 #define AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE                L"HevcHeaderInsertionMode"      // amf_int64(AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE_ENUM); default = NONE
 
 // Rate control properties
-#define AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD                  L"HevcRateControlMethod"        // amf_int64(AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_MODE_ENUM); default = depends on USAGE; Rate Control Method 
+#define AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD                  L"HevcRateControlMethod"        // amf_int64(AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_ENUM); default = depends on USAGE; Rate Control Method
 #define AMF_VIDEO_ENCODER_HEVC_VBV_BUFFER_SIZE                      L"HevcVBVBufferSize"            // amf_int64; default = depends on USAGE; VBV Buffer Size in bits
 #define AMF_VIDEO_ENCODER_HEVC_INITIAL_VBV_BUFFER_FULLNESS          L"HevcInitialVBVBufferFullness" // amf_int64; default =  64; Initial VBV Buffer Fullness 0=0% 64=100%
 #define AMF_VIDEO_ENCODER_HEVC_ENABLE_VBAQ                          L"HevcEnableVBAQ"               // // bool; default = depends on USAGE; Enable auto VBAQ
 #define AMF_VIDEO_ENCODER_HEVC_HIGH_MOTION_QUALITY_BOOST_ENABLE     L"HevcHighMotionQualityBoostEnable"// bool; default = depends on USAGE; Enable High motion quality boost mode
 
-#define AMF_VIDEO_ENCODER_HEVC_PREENCODE_ENABLE                     L"HevcRateControlPreAnalysisEnable"  // bool; default =  depends on USAGE; enables pre-encode assisted rate control 
-#define AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_PREANALYSIS_ENABLE      L"HevcRateControlPreAnalysisEnable"  // bool; default =  depends on USAGE; enables pre-encode assisted rate control. Deprecated, please use AMF_VIDEO_ENCODER_PREENCODE_ENABLE instead. 
+#define AMF_VIDEO_ENCODER_HEVC_PREENCODE_ENABLE                     L"HevcRateControlPreAnalysisEnable"  // bool; default =  depends on USAGE; enables pre-encode assisted rate control
+#define AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_PREANALYSIS_ENABLE      L"HevcRateControlPreAnalysisEnable"  // bool; default =  depends on USAGE; enables pre-encode assisted rate control. Deprecated, please use AMF_VIDEO_ENCODER_PREENCODE_ENABLE instead.
 #ifdef _MSC_VER
     #ifndef __clang__
         #pragma deprecated("AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_PREANALYSIS_ENABLE")
@@ -167,24 +172,24 @@ enum AMF_VIDEO_ENCODER_HEVC_LTR_MODE_ENUM
 #endif
 
 // Motion estimation
-#define AMF_VIDEO_ENCODER_HEVC_MOTION_HALF_PIXEL                    L"HevcHalfPixel"                // bool; default= true; Half Pixel 
+#define AMF_VIDEO_ENCODER_HEVC_MOTION_HALF_PIXEL                    L"HevcHalfPixel"                // bool; default= true; Half Pixel
 #define AMF_VIDEO_ENCODER_HEVC_MOTION_QUARTERPIXEL                  L"HevcQuarterPixel"             // bool; default= true; Quarter Pixel
 
 // color conversion
 #define AMF_VIDEO_ENCODER_HEVC_COLOR_BIT_DEPTH                      L"HevcColorBitDepth"            // amf_int64(AMF_COLOR_BIT_DEPTH_ENUM); default = AMF_COLOR_BIT_DEPTH_8
 
 #define AMF_VIDEO_ENCODER_HEVC_INPUT_COLOR_PROFILE                  L"HevcInColorProfile"           // amf_int64(AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM); default = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN - mean AUTO by size
-#define AMF_VIDEO_ENCODER_HEVC_INPUT_TRANSFER_CHARACTERISTIC        L"HevcInColorTransferChar"      // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 section 7.2 See VideoDecoderUVD.h for enum 
-#define AMF_VIDEO_ENCODER_HEVC_INPUT_COLOR_PRIMARIES                L"HevcInColorPrimaries"         // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 section 7.1 See ColorSpace.h for enum 
+#define AMF_VIDEO_ENCODER_HEVC_INPUT_TRANSFER_CHARACTERISTIC        L"HevcInColorTransferChar"      // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 section 7.2 See VideoDecoderUVD.h for enum
+#define AMF_VIDEO_ENCODER_HEVC_INPUT_COLOR_PRIMARIES                L"HevcInColorPrimaries"         // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 section 7.1 See ColorSpace.h for enum
 
 #define AMF_VIDEO_ENCODER_HEVC_OUTPUT_COLOR_PROFILE                 L"HevcOutColorProfile"          // amf_int64(AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM); default = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN - mean AUTO by size
-#define AMF_VIDEO_ENCODER_HEVC_OUTPUT_TRANSFER_CHARACTERISTIC       L"HevcOutColorTransferChar"     // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 ?7.2 See VideoDecoderUVD.h for enum 
-#define AMF_VIDEO_ENCODER_HEVC_OUTPUT_COLOR_PRIMARIES               L"HevcOutColorPrimaries"        // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 section 7.1 See ColorSpace.h for enum 
+#define AMF_VIDEO_ENCODER_HEVC_OUTPUT_TRANSFER_CHARACTERISTIC       L"HevcOutColorTransferChar"     // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 ?7.2 See VideoDecoderUVD.h for enum
+#define AMF_VIDEO_ENCODER_HEVC_OUTPUT_COLOR_PRIMARIES               L"HevcOutColorPrimaries"        // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 section 7.1 See ColorSpace.h for enum
 
 // Dynamic properties - can be set at any time
 
 // Rate control properties
-#define AMF_VIDEO_ENCODER_HEVC_FRAMERATE                            L"HevcFrameRate"                // AMFRate; default = depends on usage; Frame Rate 
+#define AMF_VIDEO_ENCODER_HEVC_FRAMERATE                            L"HevcFrameRate"                // AMFRate; default = depends on usage; Frame Rate
 
 #define AMF_VIDEO_ENCODER_HEVC_ENFORCE_HRD                          L"HevcEnforceHRD"               // bool; default = depends on USAGE; Enforce HRD
 #define AMF_VIDEO_ENCODER_HEVC_FILLER_DATA_ENABLE                   L"HevcFillerDataEnable"         // bool; default = depends on USAGE; Enforce HRD
@@ -193,25 +198,25 @@ enum AMF_VIDEO_ENCODER_HEVC_LTR_MODE_ENUM
 
 #define AMF_VIDEO_ENCODER_HEVC_MAX_AU_SIZE                          L"HevcMaxAUSize"                // amf_int64; default = 60; Max AU Size in bits
 
-#define AMF_VIDEO_ENCODER_HEVC_MIN_QP_I                             L"HevcMinQP_I"                  // amf_int64; default = depends on USAGE; Min QP; range = 
-#define AMF_VIDEO_ENCODER_HEVC_MAX_QP_I                             L"HevcMaxQP_I"                  // amf_int64; default = depends on USAGE; Max QP; range = 
-#define AMF_VIDEO_ENCODER_HEVC_MIN_QP_P                             L"HevcMinQP_P"                  // amf_int64; default = depends on USAGE; Min QP; range = 
-#define AMF_VIDEO_ENCODER_HEVC_MAX_QP_P                             L"HevcMaxQP_P"                  // amf_int64; default = depends on USAGE; Max QP; range = 
+#define AMF_VIDEO_ENCODER_HEVC_MIN_QP_I                             L"HevcMinQP_I"                  // amf_int64; default = depends on USAGE; Min QP; range =
+#define AMF_VIDEO_ENCODER_HEVC_MAX_QP_I                             L"HevcMaxQP_I"                  // amf_int64; default = depends on USAGE; Max QP; range =
+#define AMF_VIDEO_ENCODER_HEVC_MIN_QP_P                             L"HevcMinQP_P"                  // amf_int64; default = depends on USAGE; Min QP; range =
+#define AMF_VIDEO_ENCODER_HEVC_MAX_QP_P                             L"HevcMaxQP_P"                  // amf_int64; default = depends on USAGE; Max QP; range =
 
 #define AMF_VIDEO_ENCODER_HEVC_QP_I                                 L"HevcQP_I"                     // amf_int64; default = 26; P-frame QP; range = 0-51
 #define AMF_VIDEO_ENCODER_HEVC_QP_P                                 L"HevcQP_P"                     // amf_int64; default = 26; P-frame QP; range = 0-51
 
-#define AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_SKIP_FRAME_ENABLE       L"HevcRateControlSkipFrameEnable" // bool; default =  depends on USAGE; Rate Control Based Frame Skip 
+#define AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_SKIP_FRAME_ENABLE       L"HevcRateControlSkipFrameEnable" // bool; default =  depends on USAGE; Rate Control Based Frame Skip
 
 // color conversion
-#define AMF_VIDEO_ENCODER_HEVC_INPUT_HDR_METADATA                   L"HevcInHDRMetadata"             // AMFBuffer containing AMFHDRMetadata; default NULL
+#define AMF_VIDEO_ENCODER_HEVC_INPUT_HDR_METADATA                   L"HevcInHDRMetadata"            // AMFBuffer containing AMFHDRMetadata; default NULL
 //#define AMF_VIDEO_ENCODER_HEVC_OUTPUT_HDR_METADATA                  L"HevcOutHDRMetadata"            // AMFBuffer containing AMFHDRMetadata; default NULL
 
 // DPB management
-#define AMF_VIDEO_ENCODER_HEVC_PICTURE_TRANSFER_MODE                L"HevcPicTransferMode"           // amf_int64(AMF_VIDEO_ENCODER_HEVC_PICTURE_TRANSFER_MODE_ENUM); default = AMF_VIDEO_ENCODER_HEVC_PICTURE_TRANSFER_MODE_OFF - whether to exchange reference/reconstructed pic between encoder and application
+#define AMF_VIDEO_ENCODER_HEVC_PICTURE_TRANSFER_MODE                L"HevcPicTransferMode"          // amf_int64(AMF_VIDEO_ENCODER_HEVC_PICTURE_TRANSFER_MODE_ENUM); default = AMF_VIDEO_ENCODER_HEVC_PICTURE_TRANSFER_MODE_OFF - whether to exchange reference/reconstructed pic between encoder and application
 
 // misc
-#define AMF_VIDEO_ENCODER_HEVC_QUERY_TIMEOUT                       L"HevcQueryTimeout"            // amf_int64; default = 0 (no wait); timeout for QueryOutput call in ms.
+#define AMF_VIDEO_ENCODER_HEVC_QUERY_TIMEOUT                        L"HevcQueryTimeout"             // amf_int64; default = 0 (no wait); timeout for QueryOutput call in ms.
 
 // Per-submittion properties - can be set on input surface interface
 #define AMF_VIDEO_ENCODER_HEVC_END_OF_SEQUENCE                      L"HevcEndOfSequence"            // bool; default = false; generate end of sequence
@@ -220,34 +225,62 @@ enum AMF_VIDEO_ENCODER_HEVC_LTR_MODE_ENUM
 #define AMF_VIDEO_ENCODER_HEVC_INSERT_HEADER                        L"HevcInsertHeader"             // bool; default = false; insert header(SPS, PPS, VPS)
 
 #define AMF_VIDEO_ENCODER_HEVC_MARK_CURRENT_WITH_LTR_INDEX          L"HevcMarkCurrentWithLTRIndex"  // amf_int64; default = N/A; Mark current frame with LTR index
-#define AMF_VIDEO_ENCODER_HEVC_FORCE_LTR_REFERENCE_BITFIELD         L"HevcForceLTRReferenceBitfield"// amf_int64; default = 0; force LTR bit-field 
+#define AMF_VIDEO_ENCODER_HEVC_FORCE_LTR_REFERENCE_BITFIELD         L"HevcForceLTRReferenceBitfield"// amf_int64; default = 0; force LTR bit-field
 #define AMF_VIDEO_ENCODER_HEVC_ROI_DATA                             L"HevcROIData"					// 2D AMFSurface, surface format: AMF_SURFACE_GRAY32
 #define AMF_VIDEO_ENCODER_HEVC_REFERENCE_PICTURE                    L"HevcReferencePicture"         // AMFInterface(AMFSurface); surface used for frame injection
 #define AMF_VIDEO_ENCODER_HEVC_PSNR_FEEDBACK                        L"HevcPSNRFeedback"             // amf_bool; default = false; Signal encoder to calculate PSNR score
 #define AMF_VIDEO_ENCODER_HEVC_SSIM_FEEDBACK                        L"HevcSSIMFeedback"             // amf_bool; default = false; Signal encoder to calculate SSIM score
+#define AMF_VIDEO_ENCODER_HEVC_STATISTICS_FEEDBACK                  L"HevcStatisticsFeedback"       // amf_bool; default = false; Signal encoder to collect and feedback encoder statistics
+#define AMF_VIDEO_ENCODER_HEVC_BLOCK_QP_FEEDBACK                    L"HevcBlockQpFeedback"          // amf_bool; default = false; Signal encoder to collect and feedback block level QP values
 
 // Properties set by encoder on output buffer interface
 #define AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE                     L"HevcOutputDataType"           // amf_int64(AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE_ENUM); default = N/A
 #define AMF_VIDEO_ENCODER_HEVC_OUTPUT_MARKED_LTR_INDEX              L"HevcMarkedLTRIndex"           // amf_int64; default = -1; Marked LTR index
-#define AMF_VIDEO_ENCODER_HEVC_OUTPUT_REFERENCED_LTR_INDEX_BITFIELD L"HevcReferencedLTRIndexBitfield"// amf_int64; default = 0; referenced LTR bit-field 
+#define AMF_VIDEO_ENCODER_HEVC_OUTPUT_REFERENCED_LTR_INDEX_BITFIELD L"HevcReferencedLTRIndexBitfield"// amf_int64; default = 0; referenced LTR bit-field
 #define AMF_VIDEO_ENCODER_HEVC_RECONSTRUCTED_PICTURE                L"HevcReconstructedPicture"     // AMFInterface(AMFSurface); returns reconstructed picture as an AMFSurface attached to the output buffer as property AMF_VIDEO_ENCODER_RECONSTRUCTED_PICTURE of AMFInterface type
 #define AMF_VIDEO_ENCODER_HEVC_STATISTIC_PSNR_Y                     L"PSNRY"                        // double; PSNR Y
 #define AMF_VIDEO_ENCODER_HEVC_STATISTIC_PSNR_U                     L"PSNRU"                        // double; PSNR U
 #define AMF_VIDEO_ENCODER_HEVC_STATISTIC_PSNR_V                     L"PSNRV"                        // double; PSNR V
-#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_PSNR_ALL                   L"PSNRALL"                      // double; PSNR All 
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_PSNR_ALL                   L"PSNRALL"                      // double; PSNR All
 #define AMF_VIDEO_ENCODER_HEVC_STATISTIC_SSIM_Y                     L"SSIMY"                        // double; SSIM Y
 #define AMF_VIDEO_ENCODER_HEVC_STATISTIC_SSIM_U                     L"SSIMU"                        // double; SSIM U
 #define AMF_VIDEO_ENCODER_HEVC_STATISTIC_SSIM_V                     L"SSIMV"                        // double; SSIM V
 #define AMF_VIDEO_ENCODER_HEVC_STATISTIC_SSIM_ALL                   L"SSIMALL"                      // double; SSIM ALL
 
+    // Encoder statistics feedback
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_FRAME_QP                   L"HevcStatisticsFeedbackFrameQP"                // amf_int64; Rate control base frame/initial QP
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_AVERAGE_QP                 L"HevcStatisticsFeedbackAvgQP"                  // amf_int64; Average QP of all encoded CTBs in a picture. Value may be different from the one reported by bitstream analyzer when there are skipped CTBs.
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_MAX_QP                     L"HevcStatisticsFeedbackMaxQP"                  // amf_int64; Max QP among all encoded CTBs in a picture. Value may be different from the one reported by bitstream analyzer when there are skipped CTBs.
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_MIN_QP                     L"HevcStatisticsFeedbackMinQP"                  // amf_int64; Min QP among all encoded CTBs in a picture. Value may be different from the one reported by bitstream analyzer when there are skipped CTBs.
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_PIX_NUM_INTRA              L"HevcStatisticsFeedbackPixNumIntra"            // amf_int64; Number of the intra encoded pixels
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_PIX_NUM_INTER              L"HevcStatisticsFeedbackPixNumInter"            // amf_int64; Number of the inter encoded pixels
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_PIX_NUM_SKIP               L"HevcStatisticsFeedbackPixNumSkip"             // amf_int64; Number of the skip mode pixels
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_BITCOUNT_RESIDUAL          L"HevcStatisticsFeedbackBitcountResidual"       // amf_int64; The bit count that corresponds to residual data
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_BITCOUNT_MOTION            L"HevcStatisticsFeedbackBitcountMotion"         // amf_int64; The bit count that corresponds to motion vectors
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_BITCOUNT_INTER             L"HevcStatisticsFeedbackBitcountInter"          // amf_int64; The bit count that are assigned to inter CTBs
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_BITCOUNT_INTRA             L"HevcStatisticsFeedbackBitcountIntra"          // amf_int64; The bit count that are assigned to intra CTBs
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_BITCOUNT_ALL_MINUS_HEADER  L"HevcStatisticsFeedbackBitcountAllMinusHeader" // amf_int64; The bit count of the bitstream excluding header
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_MV_X                       L"HevcStatisticsFeedbackMvX"                    // amf_int64; Accumulated absolute values of horizontal MV's
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_MV_Y                       L"HevcStatisticsFeedbackMvY"                    // amf_int64; Accumulated absolute values of vertical MV's
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_RD_COST_FINAL              L"HevcStatisticsFeedbackRdCostFinal"            // amf_int64; Frame level final RD cost for full encoding
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_RD_COST_INTRA              L"HevcStatisticsFeedbackRdCostIntra"            // amf_int64; Frame level intra RD cost for full encoding
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_RD_COST_INTER              L"HevcStatisticsFeedbackRdCostInter"            // amf_int64; Frame level inter RD cost for full encoding
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_SAD_FINAL                  L"HevcStatisticsFeedbackSadFinal"               // amf_int64; Frame level final SAD for full encoding
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_SAD_INTRA                  L"HevcStatisticsFeedbackSadIntra"               // amf_int64; Frame level intra SAD for full encoding
+#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_SAD_INTER                  L"HevcStatisticsFeedbackSadInter"               // amf_int64; Frame level inter SAD for full encoding
+
+    // Encoder block level feedback
+#define AMF_VIDEO_ENCODER_HEVC_BLOCK_QP_MAP                         L"HevcBlockQpMap"                               // AMFInterface(AMFSurface); AMFSurface of format AMF_SURFACE_GRAY32 containing block level QP values
+
 // HEVC Encoder capabilities - exposed in AMFCaps interface
 #define AMF_VIDEO_ENCODER_HEVC_CAP_MAX_BITRATE                      L"HevcMaxBitrate"               // amf_int64; Maximum bit rate in bits
-#define AMF_VIDEO_ENCODER_HEVC_CAP_NUM_OF_STREAMS                   L"HevcNumOfStreams"             // amf_int64; maximum number of encode streams supported 
+#define AMF_VIDEO_ENCODER_HEVC_CAP_NUM_OF_STREAMS                   L"HevcNumOfStreams"             // amf_int64; maximum number of encode streams supported
 #define AMF_VIDEO_ENCODER_HEVC_CAP_MAX_PROFILE                      L"HevcMaxProfile"               // amf_int64(AMF_VIDEO_ENCODER_HEVC_PROFILE_ENUM)
-#define AMF_VIDEO_ENCODER_HEVC_CAP_MAX_TIER                         L"HevcMaxTier"                  // amf_int64(AMF_VIDEO_ENCODER_HEVC_TIER_ENUM) maximum profile tier 
+#define AMF_VIDEO_ENCODER_HEVC_CAP_MAX_TIER                         L"HevcMaxTier"                  // amf_int64(AMF_VIDEO_ENCODER_HEVC_TIER_ENUM) maximum profile tier
 #define AMF_VIDEO_ENCODER_HEVC_CAP_MAX_LEVEL                        L"HevcMaxLevel"                 // amf_int64 maximum profile level
 #define AMF_VIDEO_ENCODER_HEVC_CAP_MIN_REFERENCE_FRAMES             L"HevcMinReferenceFrames"       // amf_int64 minimum number of reference frames
 #define AMF_VIDEO_ENCODER_HEVC_CAP_MAX_REFERENCE_FRAMES             L"HevcMaxReferenceFrames"       // amf_int64 maximum number of reference frames
+#define AMF_VIDEO_ENCODER_HEVC_CAP_NUM_OF_HW_INSTANCES              L"HevcNumOfHwInstances"         // amf_int64 number of HW encoder instances
 #define AMF_VIDEO_ENCODER_HEVC_CAP_COLOR_CONVERSION                 L"HevcColorConversion"          // amf_int64(AMF_ACCELERATION_TYPE) - type of supported color conversion. default AMF_ACCEL_GPU
 #define AMF_VIDEO_ENCODER_HEVC_CAP_PRE_ANALYSIS                     L"HevcPreAnalysis"              // amf_bool - pre analysis module is available for HEVC UVE encoder, n/a for the other encoders
 #define AMF_VIDEO_ENCODER_HEVC_CAP_ROI                              L"HevcROIMap"                   // amf_bool - ROI map support is available for HEVC UVE encoder, n/a for the other encoders
@@ -257,24 +290,5 @@ enum AMF_VIDEO_ENCODER_HEVC_LTR_MODE_ENUM
 
 // properties set on AMFComponent to control component creation
 #define AMF_VIDEO_ENCODER_HEVC_MEMORY_TYPE                          L"HevcEncoderMemoryType"        // amf_int64(AMF_MEMORY_TYPE) , default is AMF_MEMORY_UNKNOWN, Values : AMF_MEMORY_DX11, AMF_MEMORY_DX9, AMF_MEMORY_UNKNOWN (auto)
-
-// properties set on a frame to retrieve encoder statistics
-#define AMF_VIDEO_ENCODER_HEVC_STATISTICS_FEEDBACK                  L"HevcStatisticsFeedback"                       // amf_bool; default = false; Signal encoder to collect and feedback statistics
-
-#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_FRAME_QP                   L"HevcStatisticsFeedbackFrameQP"                // amf_uin32; Rate control base frame QP
-#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_AVERAGE_QP                 L"HevcStatisticsFeedbackAvgQP"                  // amf_uin32; Average QP of all encoded CTBs in a picture
-#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_MAX_QP                     L"HevcStatisticsFeedbackMaxQP"                  // amf_uin32; Max QP among all encoded CTBs in a picture
-#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_MIN_QP                     L"HevcStatisticsFeedbackMinQP"                  // amf_uin32; Min QP among all encoded CTBs in a picture
-#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_PIX_NUM_INTRA              L"HevcStatisticsFeedbackPixNumIntra"            // amf_uin32; Number of the intra encoded pixels
-#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_PIX_NUM_INTER              L"HevcStatisticsFeedbackPixNumInter"            // amf_uin32; Number of the inter encoded pixels
-#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_PIX_NUM_SKIP               L"HevcStatisticsFeedbackPixNumSkip"             // amf_uin32; Number of the skip mode pixels
-#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_BITCOUNT_RESIDUAL          L"HevcStatisticsFeedbackBitcountResidual"       // amf_uin32; The bit count that corresponds to residual data
-#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_BITCOUNT_MOTION            L"HevcStatisticsFeedbackBitcountMotion"         // amf_uin32; The bit count that corresponds to motion vectors
-#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_BITCOUNT_INTER             L"HevcStatisticsFeedbackBitcountInter"          // amf_uin32; The bit count that are assigned to inter CTBs
-#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_BITCOUNT_INTRA             L"HevcStatisticsFeedbackBitcountIntra"          // amf_uin32; The bit count that are assigned to intra CTBs
-#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_BITCOUNT_ALL_MINUS_HEADER  L"HevcStatisticsFeedbackBitcountAllMinusHeader" // amf_uin32; The bit count of the bitstream excluding header
-#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_MV_X                       L"HevcStatisticsFeedbackMvX"                    // amf_uin32; Accumulated absolute values of horizontal MV's
-#define AMF_VIDEO_ENCODER_HEVC_STATISTIC_MV_Y                       L"HevcStatisticsFeedbackMvY"                    // amf_uin32; Accumulated absolute values of vertical MV's
-
 
 #endif //#ifndef AMF_VideoEncoderHEVC_h

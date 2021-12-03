@@ -632,7 +632,7 @@ amf_handle AMF_STD_CALL amf_load_library1(const wchar_t* filename, bool bGlobal)
     if (bGlobal) {
         ret = dlopen(amf_from_unicode_to_multibyte(filename).c_str(), RTLD_NOW | RTLD_GLOBAL);
     } else {
-#if defined(__ANDROID__)
+#if defined(__ANDROID__) || (__APPLE__)
         ret = dlopen(amf_from_unicode_to_multibyte(filename).c_str(), RTLD_NOW | RTLD_LOCAL);
 #else
         ret = dlopen(amf_from_unicode_to_multibyte(filename).c_str(), RTLD_NOW | RTLD_LOCAL| RTLD_DEEPBIND);

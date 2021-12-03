@@ -33,7 +33,7 @@ pp_include_dirs = $(amf_root)
 
 src_files = \
     public/samples/CPPSamples/EncoderLatency/EncoderLatency.cpp \
-    public/samples/CPPSamples/SurfaceGenerator.cpp \
+    public/samples/CPPSamples/EncoderLatency/SurfaceGenerator.cpp \
     $(public_common_dir)/AMFFactory.cpp \
     $(public_common_dir)/AMFSTL.cpp \
     $(public_common_dir)/DataStreamFactory.cpp \
@@ -41,9 +41,12 @@ src_files = \
     $(public_common_dir)/DataStreamMemory.cpp \
     $(public_common_dir)/Thread.cpp \
     $(public_common_dir)/TraceAdapter.cpp \
-    $(public_common_dir)/Linux/ThreadLinux.cpp
+    $(public_common_dir)/Linux/ThreadLinux.cpp \
     $(samples_common_dir)/CmdLogger.cpp \
     $(samples_common_dir)/CmdLineParser.cpp \
     $(samples_common_dir)/ParametersStorage.cpp \
+    $(samples_common_dir)/RawStreamReader.cpp \
+    $(samples_common_dir)/EncoderParamsAVC.cpp \
+    $(samples_common_dir)/EncoderParamsHEVC.cpp \
 
 include $(amf_root)/public/make/common_rules.mak

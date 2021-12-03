@@ -131,10 +131,13 @@ int main(int argc, char* argv[])
 
     amf_increase_timer_precision();
 
+    // register all paramters
     ParametersStorage params;
+    RegisterParams(&params);
     RegisterCodecParams(&params);
+    RegisterEncoderParamsAVC(&params);
+    RegisterEncoderParamsHEVC(&params);
 
-    // parse for codec name
 #if defined(_WIN32)
     if (!parseCmdLineParameters(&params))
 #else
@@ -155,8 +158,16 @@ int main(int argc, char* argv[])
         return -1;
     }
 
+    // parse for codec name
     std::wstring codec = AMFVideoEncoderVCE_AVC;
     params.GetParamWString(RenderEncodePipeline::PARAM_NAME_CODEC, codec);
+
+    // clear existing parameters
+    params.Clear();
+
+    // update the proper parameters for the correct codec
+    RegisterParams(&params);
+    RegisterCodecParams(&params);
     if(codec == AMFVideoEncoderVCE_AVC)
     {
         RegisterEncoderParamsAVC(&params);
@@ -168,9 +179,8 @@ int main(int argc, char* argv[])
     else
     {
         LOG_ERROR(L"Invalid codec ID");
-
+        return -1;
     }
-    RegisterParams(&params);
 
     // parse again with codec - dependent set of parameters
 #if defined(_WIN32)

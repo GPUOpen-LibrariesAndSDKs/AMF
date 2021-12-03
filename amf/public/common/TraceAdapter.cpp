@@ -39,97 +39,72 @@
 
 using namespace amf;
 
-
-
-#ifdef AMF_CORE_STATIC
+#if defined(AMF_CORE_STATIC) || defined(AMF_RUNTIME) || defined(AMF_LITE)
 extern "C"
 {
-    // forward definition of function from FactoryImpl.cpp
     extern AMF_CORE_LINK AMF_RESULT AMF_CDECL_CALL AMFInit(amf_uint64 version, amf::AMFFactory **ppFactory);
 }
+#else 
+ #include "AMFFactory.h"
 #endif
-
 
 //------------------------------------------------------------------------------------------------
 static AMFTrace *s_pTrace = NULL;
-
-static AMF_RESULT SetATracer(AMFTrace *localTracer)
-{
-    s_pTrace = localTracer;
-    return AMF_OK;
-}
-
+//------------------------------------------------------------------------------------------------
 static AMFTrace *GetTrace()
 {
     if (s_pTrace == NULL)
     {
-#ifndef AMF_CORE_STATIC
-#ifdef _WIN32
-        amf_handle module = amf_load_library(AMF_DLL_NAME);
-#else
-        amf_handle module = amf_load_library1(AMF_DLL_NAME, false); //load with local flags
-#endif
-        if(module != NULL)
-        {
-            AMFInit_Fn initFun = (AMFInit_Fn)amf_get_proc_address(module, AMF_INIT_FUNCTION_NAME);
-            AMFFactory *pFactory = NULL;
-            initFun(AMF_FULL_VERSION, &pFactory);
-            pFactory->GetTrace(&s_pTrace);
-            amf_free_library(module);
-        }
-#else
+#if defined(AMF_CORE_STATIC) || defined(AMF_RUNTIME) || defined(AMF_LITE)
         AMFFactory *pFactory = NULL;
         AMFInit(AMF_FULL_VERSION, &pFactory);
         pFactory->GetTrace(&s_pTrace);
+#else
+        s_pTrace = g_AMFFactory.GetTrace();
+        if (s_pTrace == nullptr) 
+        {
+            g_AMFFactory.Init(); // last resort, should not happen
+            s_pTrace = g_AMFFactory.GetTrace();
+            g_AMFFactory.Terminate();
+        }
 #endif
     }
     return s_pTrace;
 }
-
 //------------------------------------------------------------------------------------------------
 static AMFDebug *s_pDebug = NULL;
-
-static AMF_RESULT SetADebugger(AMFDebug *localTracer)
-{
-    s_pDebug = localTracer;
-    return AMF_OK;
-}
-
+//------------------------------------------------------------------------------------------------
 static AMFDebug *GetDebug()
 {
     if (s_pDebug == NULL)
     {
-#ifndef AMF_CORE_STATIC
-#ifdef _WIN32
-        amf_handle module = amf_load_library(AMF_DLL_NAME);
-#else 
-        amf_handle module = amf_load_library1(AMF_DLL_NAME, false); //load with local flags
-#endif
-        if(module != NULL)
-        {
-            AMFInit_Fn initFun = (AMFInit_Fn)amf_get_proc_address(module, AMF_INIT_FUNCTION_NAME);
-            AMFFactory *pFactory = NULL;
-            initFun(AMF_FULL_VERSION, &pFactory);
-            pFactory->GetDebug(&s_pDebug);
-            amf_free_library(module);
-        }
-#else
+#if defined(AMF_CORE_STATIC) || defined(AMF_RUNTIME) || defined(AMF_LITE)
         AMFFactory *pFactory = NULL;
         AMFInit(AMF_FULL_VERSION, &pFactory);
         pFactory->GetDebug(&s_pDebug);
+#else
+        s_pDebug = g_AMFFactory.GetDebug();
+        if (s_pDebug == nullptr)
+        {
+            g_AMFFactory.Init(); // last resort, should not happen
+            s_pDebug = g_AMFFactory.GetDebug();
+            g_AMFFactory.Terminate();
+        }
 #endif
     }
     return s_pDebug;
 }
 //------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_CDECL_CALL amf::AMFSetCustomDebugger(AMFDebug *ADebugger)
+AMF_RESULT AMF_CDECL_CALL amf::AMFSetCustomDebugger(AMFDebug *pDebugger)
 {
-    return SetADebugger(ADebugger);
+    s_pDebug = pDebugger;
+    return AMF_OK;
 }
 //------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_CDECL_CALL amf::AMFSetCustomTracer(AMFTrace *ATracer)
+AMF_RESULT AMF_CDECL_CALL amf::AMFSetCustomTracer(AMFTrace *pTracer)
 {
-    return SetATracer(ATracer);
+    s_pTrace = pTracer;
+    return AMF_OK;
 }
 //------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_CDECL_CALL amf::AMFTraceEnableAsync(bool enable)
@@ -224,10 +199,6 @@ void AMF_CDECL_CALL amf::AMFTraceUnregisterWriter(const wchar_t* writerID)
     #pragma clang diagnostic push
     #pragma clang diagnostic ignored "-Wexit-time-destructors"
     #pragma clang diagnostic ignored "-Wglobal-constructors"
-#endif
-static amf_map<amf_uint32, amf_uint32> s_threadDepth;
-#ifdef __clang__
-    #pragma clang diagnostic pop
 #endif
 
 void AMF_CDECL_CALL amf::AMFTraceEnterScope()

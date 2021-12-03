@@ -167,9 +167,6 @@
     <ClInclude Include="..\..\..\..\public\src\components\DisplayCapture\DDAPISource.h">
       <Filter>public\components</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\common\CurrentTime.h">
-      <Filter>public\common</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\common\CurrentTimeImpl.h">
       <Filter>public\common</Filter>
     </ClInclude>
@@ -184,6 +181,9 @@
     </ClInclude>
     <ClInclude Include="..\common\CmdLineParser.h">
       <Filter>public\samples\CPPSamples\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\core\CurrentTime.h">
+      <Filter>public\common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

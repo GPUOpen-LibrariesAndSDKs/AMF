@@ -56,7 +56,7 @@ ATL::CComPtr<ID3D11Device>      DeviceDX11::GetDevice()
     return m_pD3DDevice;
 }
 
-AMF_RESULT DeviceDX11::Init(amf_uint32 adapterID, bool onlyWithOutputs)
+AMF_RESULT DeviceDX11::Init(amf_uint32 adapterID, bool onlyWithOutputs, bool bCheckForAMD)
 {
     HRESULT hr = S_OK;
     AMF_RESULT err = AMF_OK;
@@ -64,7 +64,7 @@ AMF_RESULT DeviceDX11::Init(amf_uint32 adapterID, bool onlyWithOutputs)
     ATL::CComPtr<IDXGIAdapter> pAdapter;
 
 #if !defined(METRO_APP)
-    EnumerateAdapters(onlyWithOutputs);
+    EnumerateAdapters(onlyWithOutputs, bCheckForAMD);
     CHECK_RETURN(m_adaptersCount > adapterID, AMF_INVALID_ARG, L"Invalid Adapter ID");
 
     //convert logical id to real index
@@ -205,7 +205,7 @@ AMF_RESULT DeviceDX11::Terminate()
     return AMF_OK;
 }
 
-void DeviceDX11::EnumerateAdapters(bool onlyWithOutputs)
+void DeviceDX11::EnumerateAdapters(bool onlyWithOutputs, bool bCheckForAMD)
 {
 #if !defined(METRO_APP)
     ATL::CComPtr<IDXGIFactory> pFactory;
@@ -230,7 +230,7 @@ void DeviceDX11::EnumerateAdapters(bool onlyWithOutputs)
         DXGI_ADAPTER_DESC desc;
         pAdapter->GetDesc(&desc);
 
-        if(desc.VendorId != 0x1002)
+        if(desc.VendorId != 0x1002 && bCheckForAMD)
         {
             count++;
             continue;

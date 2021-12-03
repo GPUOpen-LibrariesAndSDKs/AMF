@@ -186,6 +186,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\common\AMFFactory.h" />
     <ClInclude Include="..\..\..\common\AMFSTL.h" />
+    <ClInclude Include="..\..\..\common\ByteArray.h" />
     <ClInclude Include="..\..\..\common\DataStreamFile.h" />
     <ClInclude Include="..\..\..\common\DataStreamMemory.h" />
     <ClInclude Include="..\..\..\common\Thread.h" />
@@ -195,7 +196,6 @@
     <ClInclude Include="..\common\BitStreamParserH264.h" />
     <ClInclude Include="..\common\BitStreamParserH265.h" />
     <ClInclude Include="..\common\BitStreamParserIVF.h" />
-    <ClInclude Include="..\common\ByteArray.h" />
     <ClInclude Include="..\common\CmdLogger.h" />
     <ClInclude Include="SVCSplitter.h" />
   </ItemGroup>

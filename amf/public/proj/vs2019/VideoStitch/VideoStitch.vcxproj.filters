@@ -36,9 +36,6 @@
     <ClInclude Include="..\..\..\..\public\include\core\Debug.h">
       <Filter>include\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\public\include\core\Guid.h">
-      <Filter>include\core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\public\include\core\Interface.h">
       <Filter>include\core</Filter>
     </ClInclude>
@@ -111,9 +108,6 @@
     <ClInclude Include="..\..\..\..\public\common\DataStreamMemory.h">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\stitch\include\components\VideoStitch.h">
-      <Filter>include\components</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\components\VideoStitch\HistogramImpl.h" />
     <ClInclude Include="..\..\..\src\components\VideoStitch\StitchEngineBase.h" />
     <ClInclude Include="..\..\..\src\components\VideoStitch\VideoStitchCapsImpl.h" />
@@ -122,6 +116,9 @@
       <Filter>include\components</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\public\include\components\ComponentCaps.h">
+      <Filter>include\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\components\VideoStitch.h">
       <Filter>include\components</Filter>
     </ClInclude>
   </ItemGroup>
