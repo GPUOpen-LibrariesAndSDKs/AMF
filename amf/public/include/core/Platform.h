@@ -72,7 +72,7 @@
 //     #error Need to define AMF_ALIGN
  #endif
 
-#if defined(__linux) || (__clang__)
+#if !defined(_WIN32)
 typedef signed int HRESULT;
 #define SUCCEEDED(hr) (((HRESULT)(hr)) >= 0)
 #define FAILED(hr) (((HRESULT)(hr)) < 0)
