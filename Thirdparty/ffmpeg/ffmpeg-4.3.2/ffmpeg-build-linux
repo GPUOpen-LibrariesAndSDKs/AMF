@@ -36,7 +36,12 @@ else
    lib_arch=X64
    flg_output=linux64
 fi
-
+if [ "$bitness" = "arm64" ]
+then
+   bld_arch=aarch64
+   lib_arch=aarch64
+   flg_output=linuxARM64
+fi
 
 
 #--------------------------------------------------------
@@ -54,6 +59,7 @@ then
   shared_lib_ext=so.*
   exe_ext=
   rpath=--enable-rpath
+  sndio=--disable-sndio
 else
   fftoolchain=
   extralinkflags=--extra-ldflags=-static-libgcc
@@ -63,6 +69,7 @@ else
   shared_lib_ext=dll
   exe_ext=exe
   rpath=
+  sndio=
 fi
 
 if test "$build_type" == "release"
@@ -115,7 +122,7 @@ make clean
 
 #MSYS2 Win build
 
-$fldr_src_ffmpeg/configure $fftoolchain --arch=$bld_arch --enable-shared --enable-$thread_flag --enable-avresample --enable-version3 --enable-openssl --enable-libaom $debug_flags $extracflags $extralinkflags $rpath
+$fldr_src_ffmpeg/configure $fftoolchain --arch=$bld_arch --enable-shared --enable-$thread_flag --enable-avresample --enable-version3 --enable-openssl --enable-libaom $debug_flags $extracflags $extralinkflags $rpath $sndio
 
 # do not use -j6 - conflict writing PDBs
 if [ "$toolchain" == "linux" ]

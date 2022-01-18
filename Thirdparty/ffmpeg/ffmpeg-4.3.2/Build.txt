@@ -157,6 +157,10 @@ Build 64 with gcc under Linux
      extralinkflags='--extra-ldflags=-Wl,-rpath=$ORIGIN,-L/home/rhuts/Desktop/ffmpeg/zlib-1.2.11/bin/lib64,-L/home/rhuts/Desktop/ffmpeg/openssl-1.1.1c/lnx64/lib,-L/home/rhuts/Desktop/ffmpeg/aom/aom_build_lnx64/lib'
 export PKG_CONFIG_PATH=path/to/aom_build_lnx64/lib/pkgconfig	 
 2. Run ./ffmpeg-build-linux release 64 linux
+3. Run patchelf to set binaries runpath to current working directory
+NOTE: ffmpeg doesn't set runpath to current directly correctly with flag -rpath=$ORIGIN, we still need to use other tools to achieve this. I recommend patchelf. Please do this for all the generated binaries.
+eg. sudo patchelf --set-rpath '$ORIGIN' libswscale.so.5
+(to check the binary's runpath, objdump -p libswscale.so.5 | grep RUN)
 
 
 Build 32 with gcc under Linux
@@ -167,8 +171,21 @@ NOTE: WITH ALL THE CHANGES, IT LOOKS LIKE THE 32 BIT LINUX BUILD STILL PRODUCESS
      extracflags='--extra-cflags=-I/home/rhuts/Desktop/ffmpeg/zlib-1.2.11/bin/lib32,-I/home/rhuts/Desktop/ffmpeg/openssl-1.1.1c/lnx32/include'
      extralinkflags='--extra-ldflags=-Wl,-rpath=$ORIGIN,-L/home/rhuts/Desktop/ffmpeg/zlib-1.2.11/bin/lib32,-L/home/rhuts/Desktop/ffmpeg/openssl-1.1.1c/lnx32/lib'
 2. Run ./ffmpeg-build-linux release 32 linux
+3. Run patchelf to set binaries runpath to current working directory
+eg. sudo patchelf --set-rpath '$ORIGIN' libswscale.so.5
 
 
+
+Build ARM64 with gcc under Linux 
+-----------------------------
+It's same as what we have on x64
+1. add path to zlib and openssl by modifying the ffmpeg-build-linux
+     extracflags='--extra-cflags=-I/home/rhuts/Desktop/ffmpeg/zlib-1.2.11/bin/lib64,-I/home/rhuts/Desktop/ffmpeg/openssl-1.1.1c/lnx64/include,-I/home/rhuts/Desktop/ffmpeg/aom/aom_build_lnx64/include'
+     extralinkflags='--extra-ldflags=-Wl,-rpath=$ORIGIN,-L/home/rhuts/Desktop/ffmpeg/zlib-1.2.11/bin/lib64,-L/home/rhuts/Desktop/ffmpeg/openssl-1.1.1c/lnx64/lib,-L/home/rhuts/Desktop/ffmpeg/aom/aom_build_lnx64/lib'
+export PKG_CONFIG_PATH=path/to/aom_build_lnx64/lib/pkgconfig	 
+2. Run ./ffmpeg-build-linux release arm64 linux
+3. Run patchelf to set binaries runpath to current working directory
+eg. sudo patchelf --set-rpath '$ORIGIN' libswscale.so.5
 
 Compile zlib for EXR support
 ----------------------------
@@ -191,9 +208,10 @@ Linux:
 64 bit:
 1. ./configure --static --64
 2. make
-
 (to check x86/x64 for compiled library version in Linux: "objdump -f libz.a | grep ^architecture")
-
+ARM64 Linux:
+1. ./configure --static
+2. make
 
 
 Compile openssl
@@ -273,6 +291,8 @@ perl Configure linux-x86 -m32 --prefix=/home/rhuts/Desktop/ffmpeg/openssl-1.1.1c
     $ make test					// validate the build
     $ make install				// copy required files to specified output directory
 
+ARM64:
+$ ./config --prefix=/home/rhuts/Desktop/ffmpeg/openssl-1.1.1c/lnx64 no-shared zlib --with-zlib-include=/home/rhuts/Desktop/ffmpeg/zlib-1.2.11/bin/lib64 --with-zlib-lib=/home/rhuts/Desktop/ffmpeg/zlib-1.2.11/bin/lib64/libz.a '-Wl,-rpath,$(LIBRPATH)'
 
 
 Compile libaom
@@ -309,10 +329,11 @@ However to generate pkg-config file aom.pc, will still need to cmake with msys2
 	$ make install
 	$ Move aom.lib under path/to/aom_build_x64/lib
 
-3. Linux
+3. Linux or ARM64 Linux
 https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu Most of pre requirements can be found in Get the Dependencies section
 However, -DBUILD_SHARED_LIBS is not enough for static lib build. 
 To avoid error "can not be used when making a shared object; recompile with -fPIC/usr/bin/ld: final link failed: bad value" Please use the following cmake cmd
+The flag -march=znver2 is optional for performance, you can adject with your GPU
 
 64 bit:
 	$ git clone --depth 1 https://aomedia.googlesource.com/aom
