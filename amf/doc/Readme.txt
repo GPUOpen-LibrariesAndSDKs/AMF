@@ -30,6 +30,16 @@
 New features are available in 
 Driver: Radeon Software Adrenalin 2019 Edition; 19.7.1 Software: 19.30 and later 
 
+1.4.24.0 (17.03.2022) version
+--------------------------
+   - New AMD Direct Capture component and updated DVR sample app
+   - New HQ Scaler ( Bilinear / Bicubic / FSR )
+   - Vulkan support for PreAnalysis component
+   - Vulkan support for HEVC Encoder ( Navi+ )
+   - Support for temporal layer query for AVC and HEVC Encoder
+   - Support for consecutive B-frames and adaptive miniGOP for AVC Encoder
+   - Improved H264 Encoding on Vulkan ( both Windows & Linux Navi+ )
+
 1.4.23.0 (02.12.2021) version
 --------------------------
    - New Auto LTR encoder mode

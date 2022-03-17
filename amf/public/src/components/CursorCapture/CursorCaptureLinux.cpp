@@ -48,6 +48,10 @@ AMFCursorCaptureLinux::AMFCursorCaptureLinux(AMFContext* pContext) :
 {
     XInitThreads();
     m_pDisplay = XDisplay::Ptr(new XDisplay);
+    if (m_pDisplay->IsValid() == false)
+    {
+        AMFTraceWarning(AMF_FACILITY, L"Couldn't connect to XDisplay");
+    }
 }
 
 AMFCursorCaptureLinux::~AMFCursorCaptureLinux()
@@ -58,6 +62,21 @@ AMF_RESULT AMF_STD_CALL AMFCursorCaptureLinux::AcquireCursor(AMFSurface** pSurfa
 {
     AMFLock lock(&m_Sect);
     *pSurface = NULL;
+
+    // hide cursor if display is not available
+    if (m_pDisplay->IsValid() == false)
+    {
+        if (m_cursorAtom == 1)
+        {
+            return AMF_REPEAT;
+        }
+
+        AMF_RESULT res = m_pContext->AllocSurface(AMF_MEMORY_HOST, AMF_SURFACE_ARGB, 1, 1, pSurface);
+        AMF_RETURN_IF_FAILED(res, L"AllocSurface failed");
+
+        m_cursorAtom = 1;
+        return AMF_OK;
+    }
 
     XDisplayPtr display(m_pDisplay);
 
@@ -94,6 +113,12 @@ AMF_RESULT AMF_STD_CALL AMFCursorCaptureLinux::AcquireCursor(AMFSurface** pSurfa
             dst[y * dstPitch/4 + x] = static_cast<amf_uint32>(src[y * width + x]);
         }
     }
+
+    AMFPoint hotspot;
+    hotspot.x = cursor->xhot;
+    hotspot.y = cursor->yhot;
+
+    (*pSurface)->SetProperty(L"Hotspot", hotspot);
 
     return AMF_OK;
 }

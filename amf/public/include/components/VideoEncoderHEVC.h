@@ -119,10 +119,10 @@ enum AMF_VIDEO_ENCODER_HEVC_PICTURE_TRANSFER_MODE_ENUM
     AMF_VIDEO_ENCODER_HEVC_PICTURE_TRANSFER_MODE_ON
 };
 
-enum AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE_ENUM
+enum AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE
 {
-    AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE_FULL   = 1,
-    AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE_STUDIO = 2
+    AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE_STUDIO = 0,
+    AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE_FULL   = 1
 };
 
 enum AMF_VIDEO_ENCODER_HEVC_LTR_MODE_ENUM
@@ -147,7 +147,7 @@ enum AMF_VIDEO_ENCODER_HEVC_LTR_MODE_ENUM
 #define AMF_VIDEO_ENCODER_HEVC_ASPECT_RATIO                         L"HevcAspectRatio"              // AMFRatio; default = 1, 1
 #define AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE					    L"LowLatencyInternal"           // bool; default = false, enables low latency mode
 #define AMF_VIDEO_ENCODER_HEVC_PRE_ANALYSIS_ENABLE                  L"HevcEnablePreAnalysis"        // bool; default = false; enables the pre-analysis module. Currently only works in AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR mode. Refer to AMF Video PreAnalysis API reference for more details.
-#define AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE						L"HevcNominalRange"				// amf_int64(AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE_ENUM) default = AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE_FULL
+#define AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE						L"HevcNominalRange"				// amf_int64(AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE); default = amf_int64(AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE_STUDIO); property is bool but amf_int64 also works for backward compatibility.
 
 // Picture control properties
 #define AMF_VIDEO_ENCODER_HEVC_NUM_GOPS_PER_IDR                     L"HevcGOPSPerIDR"               // amf_int64; default = 1; The frequency to insert IDR as start of a GOP. 0 means no IDR will be inserted.
@@ -155,6 +155,7 @@ enum AMF_VIDEO_ENCODER_HEVC_LTR_MODE_ENUM
 #define AMF_VIDEO_ENCODER_HEVC_DE_BLOCKING_FILTER_DISABLE           L"HevcDeBlockingFilter"         // bool; default = depends on USAGE; De-blocking Filter
 #define AMF_VIDEO_ENCODER_HEVC_SLICES_PER_FRAME                     L"HevcSlicesPerFrame"           // amf_int64; default = 1; Number of slices Per Frame
 #define AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE                L"HevcHeaderInsertionMode"      // amf_int64(AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE_ENUM); default = NONE
+#define AMF_VIDEO_ENCODER_HEVC_INTRA_REFRESH_NUM_CTBS_PER_SLOT      L"HevcIntraRefreshCTBsNumberPerSlot" // amf_int64; default = depends on USAGE; Intra Refresh CTBs Number Per Slot in 64x64 CTB
 
 // Rate control properties
 #define AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD                  L"HevcRateControlMethod"        // amf_int64(AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_ENUM); default = depends on USAGE; Rate Control Method
@@ -237,6 +238,7 @@ enum AMF_VIDEO_ENCODER_HEVC_LTR_MODE_ENUM
 #define AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE                     L"HevcOutputDataType"           // amf_int64(AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE_ENUM); default = N/A
 #define AMF_VIDEO_ENCODER_HEVC_OUTPUT_MARKED_LTR_INDEX              L"HevcMarkedLTRIndex"           // amf_int64; default = -1; Marked LTR index
 #define AMF_VIDEO_ENCODER_HEVC_OUTPUT_REFERENCED_LTR_INDEX_BITFIELD L"HevcReferencedLTRIndexBitfield"// amf_int64; default = 0; referenced LTR bit-field
+#define AMF_VIDEO_ENCODER_HEVC_OUTPUT_TEMPORAL_LAYER                L"HevcOutputTemporalLayer"      // amf_int64; Temporal layer
 #define AMF_VIDEO_ENCODER_HEVC_RECONSTRUCTED_PICTURE                L"HevcReconstructedPicture"     // AMFInterface(AMFSurface); returns reconstructed picture as an AMFSurface attached to the output buffer as property AMF_VIDEO_ENCODER_RECONSTRUCTED_PICTURE of AMFInterface type
 #define AMF_VIDEO_ENCODER_HEVC_STATISTIC_PSNR_Y                     L"PSNRY"                        // double; PSNR Y
 #define AMF_VIDEO_ENCODER_HEVC_STATISTIC_PSNR_U                     L"PSNRU"                        // double; PSNR U

@@ -376,12 +376,16 @@ AMF_RESULT RegisterEncoderParamsAVC(ParametersStorage* pParams)
     // ------------- Encoder params usage---------------
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_USAGE, ParamEncoderUsage, L"Encoder usage type. Set many default parameters. (TRANSCODING, ULTRALOWLATENCY, LOWLATENCY, WEBCAM, HIGHQUALITY (or HQ), LOWLATENCYHIGHQUALITY (or LLHQ), default = N/A)", ParamConverterUsageAVC);
     // ------------- Encoder params static---------------
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_INSTANCE_INDEX, ParamEncoderStatic, L" Index of VCN instance 0, 1 etc, default = 0", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_QUERY_TIMEOUT, ParamEncoderStatic, L" QueryOutput timeout in ms , default = 0", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_PROFILE, ParamEncoderStatic, L"H264 profile (Main, Baseline,High, default = Main", ParamConverterProfileAVC);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_PROFILE_LEVEL, ParamEncoderStatic, L"H264 profile level (float or integer, default = 4.2 (or 42)", ParamConverterProfileLevelAVC);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_QUALITY_PRESET, ParamEncoderStatic, L"Quality Preset (BALANCED, SPEED, QUALITY default = depends on USAGE)", ParamConverterQualityAVC);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_SCANTYPE, ParamEncoderStatic, L"Scan Type (PROGRESSIVE, INTERLACED, default = PROGRESSIVE)", ParamConverterScanTypeAVC);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_MAX_LTR_FRAMES, ParamEncoderStatic, L"Max Of LTR frames (integer, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_MAX_NUM_REFRAMES, ParamEncoderStatic, L"Max Of Reference frames (integer, default = 4)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_MAX_CONSECUTIVE_BPICTURES, ParamEncoderStatic, L"Max Number Of Consecutive B frames/pictures (integer, default = 0)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_ADAPTIVE_MINIGOP, ParamEncoderStatic, L"Enable Adaptive MiniGOP (bool, default = false)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_ENABLE_VBAQ, ParamEncoderStatic, L"Enable VBAQ (integer, default = 0)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HIGH_MOTION_QUALITY_BOOST_ENABLE, ParamEncoderStatic, L"High motion quality boost mode enabled(integer, default = 0)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_PREENCODE_ENABLE, ParamEncoderStatic, L"Rate Control 2 Pass Preanalysis Enabled (EANBLED, DISABLED, default = DISABLED)", ParamPreAnalysisAVC);
@@ -443,7 +447,9 @@ AMF_RESULT RegisterEncoderParamsAVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY, ParamEncoderDynamic, L"Scene Change Detection Sensitivity (LOW, MEDIUM, HIGH default = MEDIUM)", ParamConverterSceneChangeAVC);
     pParams->SetParamDescription(AMF_PA_STATIC_SCENE_DETECTION_ENABLE, ParamEncoderDynamic, L"Static Scene Detection Enable (true, false default =  true)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY, ParamEncoderDynamic, L"Scene Change Detection Sensitivity (LOW, MEDIUM, HIGH default = HIGH)", ParamConverterStaticSceneAVC);
+    pParams->SetParamDescription(AMF_PA_FRAME_SAD_ENABLE, ParamEncoderDynamic, L"Enable Frame SAD algorithm (true, false default = true", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_PA_ACTIVITY_TYPE, ParamEncoderDynamic, L"Activity Type (Y, YUV default = Y)", ParamConverterActivityTypeAVC);
+    pParams->SetParamDescription(AMF_PA_LTR_ENABLE, ParamEncoderStatic, L"Auto LTR Enable (true, false default = false)", ParamConverterBoolean);
 
     pParams->SetParamDescription(AMF_PA_INITIAL_QP_AFTER_SCENE_CHANGE, ParamEncoderDynamic, L"QP After Scene Change (integer 0-51, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_PA_MAX_QP_BEFORE_FORCE_SKIP, ParamEncoderDynamic, L"Max QP Before Force Skip (integer 0-51, default = 35)", ParamConverterInt64);

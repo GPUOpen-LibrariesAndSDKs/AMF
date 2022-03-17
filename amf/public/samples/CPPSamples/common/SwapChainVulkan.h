@@ -33,7 +33,6 @@
 
 #pragma once
 
-#include "public/include/core/VulkanAMF.h"
 #include "public/include/core/Context.h"
 #include "public/common/VulkanImportTable.h"
 #include <vector>
@@ -52,7 +51,7 @@ public:
 protected:
 	VulkanImportTable * GetVulkan();
 
-    AMF_RESULT CreateSwapChain(amf_handle hWnd, amf_handle hDisplay, amf_uint32 format);
+    AMF_RESULT CreateSwapChain(amf_handle hWnd, amf_handle hDisplay, amf_uint32 format, bool bFullScreen);
     AMF_RESULT CreateRenderPass();
     AMF_RESULT CreateFrameBuffers();
     AMF_RESULT CreateCommandPool();

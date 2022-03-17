@@ -13,6 +13,7 @@
 #define IDE_MESSAGES                    1006
 #define ID_DEVICE_START                 11000
 #define ID_CAPTURE_SOURCE_START         12000
+#define ID_CAPTURE_COMPONENT_START      13000
 #define IDM_EXIT                        40001
 #define IDM_ABOUT                       40002
 #define IDM_SAVEFILE                    40003

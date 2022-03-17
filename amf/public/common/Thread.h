@@ -545,7 +545,7 @@ namespace amf
                 {
                     bStop = true;
                 }
-#if defined(__linux)
+#if defined(__linux) || defined(__APPLE__)
                 ///< HACK
                 ///< This amf_sleep(0) is required to emulate windows mutex behavior.
                 ///< In Windows release mutext causes some other waiting thread is receiving ownership of mutex.

@@ -77,7 +77,7 @@ AMF_RESULT SwapChainVulkan::Init(amf_handle hWnd, amf_handle hDisplay, bool bFul
     res = m_ImportTable.LoadDeviceFunctionsTableExt( ((amf::AMFVulkanDevice*) m_hVulkanDev)->hDevice);
     CHECK_AMF_ERROR_RETURN(res, L"LoadDeviceFunctionsTableExt() failed - check if the proper Vulkan SDK is installed");
     
-    res = CreateSwapChain(hWnd, hDisplay, format);
+    res = CreateSwapChain(hWnd, hDisplay, format, bFullScreen);
     CHECK_AMF_ERROR_RETURN(res, L"CreateSwapChain() failed");
 
     res = CreateRenderPass();
@@ -172,7 +172,7 @@ AMF_RESULT SwapChainVulkan::Terminate()
 
     return AMF_OK;
 }
-AMF_RESULT SwapChainVulkan::CreateSwapChain(amf_handle hWnd, amf_handle hDisplay, amf_uint32 format)
+AMF_RESULT SwapChainVulkan::CreateSwapChain(amf_handle hWnd, amf_handle hDisplay, amf_uint32 format, bool bFullScreen)
 {
     amf::AMFVulkanDevice* pVulkanDev = (amf::AMFVulkanDevice*)m_hVulkanDev;    
     VkResult res = VK_INCOMPLETE;
@@ -273,13 +273,17 @@ AMF_RESULT SwapChainVulkan::CreateSwapChain(amf_handle hWnd, amf_handle hDisplay
     GetVulkan()->vkGetDeviceQueue(pVulkanDev->hDevice, m_uQueuePresentFamilyIndex , 0, &m_hQueuePresent);
     CHECK_RETURN(m_hQueuePresent!= NULL, AMF_FAIL, L"Present queue not returned");
 
-
+    if (bFullScreen) {
+        m_SwapChainExtent.width = surfaceCapabilities.currentExtent.width;
+        m_SwapChainExtent.height = surfaceCapabilities.currentExtent.height;
+    }
+    VkExtent2D windowExtent = { (amf_uint32)m_SwapChainExtent.width, (amf_uint32)m_SwapChainExtent.height };
     // create swap chain
     VkSwapchainCreateInfoKHR swapChainCreateInfo = {};
     swapChainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     swapChainCreateInfo.surface = m_hSurfaceKHR;
     swapChainCreateInfo.minImageCount = imageCount;
-    swapChainCreateInfo.imageExtent = surfaceCapabilities.currentExtent;
+    swapChainCreateInfo.imageExtent = windowExtent;
     swapChainCreateInfo.imageArrayLayers = 1;
     swapChainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
     swapChainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE; //Potentially change for compute queue VK_SHARING_MODE_CONCURRENT
@@ -334,9 +338,6 @@ AMF_RESULT SwapChainVulkan::CreateSwapChain(amf_handle hWnd, amf_handle hDisplay
     res = GetVulkan()->vkGetSwapchainImagesKHR(pVulkanDev->hDevice, m_hSwapChain, &imageCount, images.data());
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkGetSwapchainImagesKHR() failed with error=" << res);
 
-    m_SwapChainExtent.width = surfaceCapabilities.currentExtent.width;
-    m_SwapChainExtent.height = surfaceCapabilities.currentExtent.height;
-
     VkSemaphoreCreateInfo semaphoreInfo = {};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -372,8 +373,8 @@ AMF_RESULT SwapChainVulkan::CreateSwapChain(amf_handle hWnd, amf_handle hDisplay
         backbuffer.m_Surface.hMemory = 0;
         backbuffer.m_Surface.iSize = 0;      // memory size
         backbuffer.m_Surface.eFormat = m_eSwapChainImageFormat;    // VkFormat
-        backbuffer.m_Surface.iWidth = surfaceCapabilities.currentExtent.width;
-        backbuffer.m_Surface.iHeight = surfaceCapabilities.currentExtent.height;
+        backbuffer.m_Surface.iWidth = m_SwapChainExtent.width;
+        backbuffer.m_Surface.iHeight = m_SwapChainExtent.height;
 
         backbuffer.m_Surface.Sync.cbSizeof = sizeof(backbuffer.m_Surface.Sync);
         backbuffer.m_Surface.Sync.hSemaphore = VK_NULL_HANDLE;
@@ -537,7 +538,7 @@ AMF_RESULT              SwapChainVulkan::Present(amf_uint32 imageIndex, bool Wai
     presentInfo.pImageIndices = &imageIndex;
 
     res = GetVulkan()->vkQueuePresentKHR(m_hQueuePresent, &presentInfo);
-    CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkQueuePresentKHR() failed with error=" << res);
+    CHECK_RETURN((res == VK_SUCCESS||res == VK_SUBOPTIMAL_KHR), AMF_FAIL, L"vkQueuePresentKHR() failed with error=" << res);
 
     m_Semaphores.push_back(backBuffer.m_Surface.Sync.hSemaphore);
     backBuffer.m_Surface.Sync.hSemaphore = VK_NULL_HANDLE;

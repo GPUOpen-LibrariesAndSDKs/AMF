@@ -94,6 +94,8 @@ public:
 	// OpenCL Converter
 	static const wchar_t* PARAM_NAME_OPENCL_CONVERTER;
 
+	// Capture Component
+	static const wchar_t* PARAM_NAME_CAPTURE_COMPONENT;
 
 #if !defined(METRO_APP)
 	AMF_RESULT Init();

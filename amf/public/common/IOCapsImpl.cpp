@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -73,7 +73,7 @@ namespace amf
     {
     }
 
-    AMFIOCapsImpl::AMFIOCapsImpl(amf_int32 minWidth, amf_int32 maxWidth, 
+    AMFIOCapsImpl::AMFIOCapsImpl(amf_int32 minWidth, amf_int32 maxWidth,
                       amf_int32 minHeight, amf_int32 maxHeight,
                       amf_int32 vertAlign, amf_bool interlacedSupport,
                       amf_int32 numOfNativeFormats, const AMF_SURFACE_FORMAT* nativeFormats,
@@ -174,7 +174,7 @@ namespace amf
     {
         return (amf_int32)m_SurfaceFormats.size();
     }
-    
+
     AMF_RESULT AMF_STD_CALL AMFIOCapsImpl::GetFormatAt(amf_int32 index, AMF_SURFACE_FORMAT* format, bool* native) const
     {
         if (index >= 0 && index < static_cast<amf_int32>(m_SurfaceFormats.size()))
@@ -241,7 +241,7 @@ namespace amf
     {
         m_VertAlign = vertAlign;
     }
-    
+
     void AMFIOCapsImpl::SetInterlacedSupport(amf_bool interlaced)
     {
         m_InterlacedSupported = interlaced;

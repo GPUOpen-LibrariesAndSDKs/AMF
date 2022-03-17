@@ -107,7 +107,6 @@ namespace amf
 
         virtual void*               AMF_STD_CALL GetNative() = 0;
         virtual const wchar_t*      AMF_STD_CALL GetIDName() = 0;
-
         virtual AMF_RESULT          AMF_STD_CALL SetArgPlaneNative(amf_size index, void* pPlane, AMF_ARGUMENT_ACCESS_TYPE eAccess) = 0;
         virtual AMF_RESULT          AMF_STD_CALL SetArgBufferNative(amf_size index, void* pBuffer, AMF_ARGUMENT_ACCESS_TYPE eAccess) = 0;
 

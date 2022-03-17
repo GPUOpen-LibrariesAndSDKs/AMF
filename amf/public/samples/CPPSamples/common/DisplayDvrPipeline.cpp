@@ -57,6 +57,8 @@ const wchar_t* DisplayDvrPipeline::PARAM_NAME_VIDEO_WIDTH		= L"VIDEOWIDTH";
 
 const wchar_t* DisplayDvrPipeline::PARAM_NAME_OPENCL_CONVERTER  = L"OPENCLCONVERTER";
 
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_CAPTURE_COMPONENT = L"CAPTURECOMPONENT";
+
 const unsigned kFFMPEG_AAC_CODEC_ID = 0x15002;
 
 // Definitions from include/libavutil/channel_layout.h
@@ -278,6 +280,7 @@ DisplayDvrPipeline::DisplayDvrPipeline()
 	SetParamDescription(PARAM_NAME_VIDEO_HEIGHT, ParamCommon, L"Video height (number, default = 1080)", NULL);
 	SetParamDescription(PARAM_NAME_VIDEO_WIDTH, ParamCommon, L"Video width (number, default = 1920)", NULL);
 	SetParamDescription(PARAM_NAME_OPENCL_CONVERTER, ParamCommon, L"Use OpenCL Converter (bool, default = false)", NULL);
+	SetParamDescription(PARAM_NAME_CAPTURE_COMPONENT, ParamCommon, L"Display capture component (AMD or DD)", NULL);
 
 	// to demo frame-specific properties - will be applied to each N-th frame (force IDR)
 	SetParam(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, amf_int64(AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR));
@@ -357,8 +360,20 @@ AMF_RESULT DisplayDvrPipeline::InitVideo(amf::AMF_MEMORY_TYPE engineMemoryType, 
 
 	// Init dvr capture component
     // create capture component here
-    res = AMFCreateComponentDisplayCapture(m_pContext, nullptr, &m_pDisplayCapture);
-    CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << L"AMFCreateComponentDisplayCapture()" << L") failed");
+	std::wstring captureComp = L"AMD";
+	GetParamWString(DisplayDvrPipeline::PARAM_NAME_CAPTURE_COMPONENT, captureComp);
+	if (captureComp == L"AMD")
+	{
+		// Create AMD capture component
+		res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFDisplayCapture, &m_pDisplayCapture);
+		CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << L"CreateComponent()" << L") failed");
+	}
+	else
+	{
+		// Create DD capture component
+		res = AMFCreateComponentDisplayCapture(m_pContext, nullptr, &m_pDisplayCapture);
+		CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << L"AMFCreateComponentDisplayCapture()" << L") failed");
+	}
 
 	res = m_pDisplayCapture->SetProperty(AMF_DISPLAYCAPTURE_MONITOR_INDEX, monitorID);
 	CHECK_AMF_ERROR_RETURN(res, L"Failed to set Dvr component monitor ID");

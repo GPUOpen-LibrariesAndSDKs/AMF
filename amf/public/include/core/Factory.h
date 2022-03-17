@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -45,6 +45,7 @@
 #include "../components/Component.h"
 
 #if defined(__cplusplus)
+
 namespace amf
 {
 #endif
@@ -100,7 +101,7 @@ extern "C"
     typedef AMF_RESULT             (AMF_CDECL_CALL *AMFInit_Fn)(amf_uint64 version, amf::AMFFactory **ppFactory);
     typedef AMF_RESULT             (AMF_CDECL_CALL *AMFQueryVersion_Fn)(amf_uint64 *pVersion);
 }
-#else 
+#else
     typedef AMF_RESULT             (AMF_CDECL_CALL *AMFInit_Fn)(amf_uint64 version, AMFFactory **ppFactory);
     typedef AMF_RESULT             (AMF_CDECL_CALL *AMFQueryVersion_Fn)(amf_uint64 *pVersion);
 #endif
@@ -120,14 +121,13 @@ extern "C"
     #define AMF_DLL_NAME    L"libamfrt.framework/libamfrt"
     #define AMF_DLL_NAMEA   "libamfrt.framework/libamfrt"
 #elif defined(__linux__)
-    #if defined(__x86_64__)
+    #if defined(__x86_64__) || defined(__aarch64__)
         #define AMF_DLL_NAME    L"libamfrt64.so.1"
         #define AMF_DLL_NAMEA   "libamfrt64.so.1"
     #else
         #define AMF_DLL_NAME    L"libamfrt32.so.1"
         #define AMF_DLL_NAMEA   "libamfrt32.so.1"
     #endif
-#endif 
+#endif
 //----------------------------------------------------------------------------------------------
-
-#endif  // AMF_Factory_h
+#endif   // AMF_Factory_h

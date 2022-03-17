@@ -192,6 +192,8 @@ namespace amf
         amf_int64               m_iViewFrameCount;
         amf_pts                 m_ptsStatTime;
         AMFCurrentTimePtr		m_pCurrentTime;
+        bool                    m_bPtsOffsetIsCalculated;
+        amf_pts                 m_ptsOffset;
     };
 
  //   typedef AMFInterfacePtr_T<AMFFileMuxerFFMPEGImpl>    AMFFileMuxerFFMPEGPtr;

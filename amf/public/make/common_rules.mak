@@ -59,7 +59,6 @@ LDLIBS += $(patsubst %,-l%,$(linker_libs))
 
 DEPFLAGS = -MMD -MQ $@ -MP -MF $(@:=.d)
 
-
 ######################## Configuration summary #################################
 
 $(info ========================================)
@@ -79,14 +78,44 @@ all: $(target_file)
 clean:
 	$(RM) $(target_file)
 	$(RMDIR) $(build_dir)
+	$(foreach clean_file,$(vulkan_shader_sources),\
+		$(RM) $(clean_file).spv\
+		$(RM) $(clean_file).spv.h\
+	)
 
-
-$(target_file): $(custom_target) | $(target_dir)
+#$(target_file): | $(target_dir)
+$(target_file): $(custom_target) | $(target_dir) $(copy_files)
 	$(LNK) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 $(target_dir) $(obj_dirs):
 	$(MKDIR) $@
 
+vulkan_shader_headers =
+# compile Vulkan shaders
+uname_p := $(shell uname -p)
+  ifeq ($(uname_p),aarch64)
+    VULKAN_COMP = $(amf_root)/../Thirdparty/VulkanSDK/1.2.131.2/arm64/bin/glslangValidator
+    FILE_TO_HEADER = $(amf_root)/../Thirdparty/file_to_header/arm64/file_to_header
+  else
+    VULKAN_COMP = $(amf_root)/../Thirdparty/VulkanSDK/1.2.189.2/x86_64/bin/glslangValidator
+    FILE_TO_HEADER = $(amf_root)/../Thirdparty/file_to_header/Linux64/file_to_header
+endif
+
+
+define shader_compile_rule_fn
+  $1.spv: $1
+		$(VULKAN_COMP) -V "$$<" -o "$$@"
+
+  $1.spv.h: $1.spv
+		$(FILE_TO_HEADER) "$$<" "$$(basename $$(basename $$(^F)))"
+
+  vulkan_shader_headers += $1.spv.h
+endef
+
+$(foreach shader_file,$(vulkan_shader_sources),\
+	$(eval $(call shader_compile_rule_fn,$(shader_file)))\
+)
+custom_target += $(vulkan_shader_headers)
 
 # Define a macro that creates rules for each source file, then call
 # it for each one

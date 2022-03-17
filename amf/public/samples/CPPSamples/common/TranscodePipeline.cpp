@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -48,6 +48,7 @@
 const wchar_t* TranscodePipeline::PARAM_NAME_SCALE_WIDTH  = L"WIDTH";
 const wchar_t* TranscodePipeline::PARAM_NAME_SCALE_HEIGHT = L"HEIGHT";
 const wchar_t* TranscodePipeline::PARAM_NAME_FRAMES       = L"FRAMES";
+const wchar_t* TranscodePipeline::PARAM_NAME_SCALE_TYPE   = L"SCALETYPE";
 
 
 // NOTE: AAC codec ID for ffmpeg 4.1.3 - id can change with different ffmpeg versions
@@ -71,7 +72,7 @@ public:
 
     virtual ~PipelineElementEncoder(){}
 
-    AMF_RESULT SubmitInput(amf::AMFData* pData) 
+    AMF_RESULT SubmitInput(amf::AMFData* pData)
     {
         AMF_RESULT res = AMF_OK;
         if(pData == NULL) // EOF
@@ -97,7 +98,7 @@ public:
             }
             m_framesSubmitted++;
         }
-        return res; 
+        return res;
     }
 
 protected:
@@ -196,7 +197,7 @@ void TranscodePipeline::Terminate()
     m_deviceDX9.Terminate();
 #endif//#if !defined(METRO_APP)
     m_deviceDX11.Terminate();
-#endif    
+#endif
     m_deviceVulkan.Terminate();
 
 }
@@ -223,7 +224,7 @@ double TranscodePipeline::GetProgressPosition()
 #if !defined(METRO_APP)
 AMF_RESULT TranscodePipeline::Init(ParametersStorage* pParams, amf_handle previewTarget, amf_handle display, int threadID)
 #else
-AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inputStream, IRandomAccessStream^ outputStream, 
+AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inputStream, IRandomAccessStream^ outputStream,
                                    ISwapChainBackgroundPanelNative* previewTarget, AMFSize swapChainPanelSize, ParametersStorage* pParams)
 #endif
 {
@@ -241,11 +242,11 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     std::wstring outputPath = L"";
     res= pParams->GetParamWString(PARAM_NAME_OUTPUT, outputPath);
     CHECK_AMF_ERROR_RETURN(res, L"Output Path");
-#if defined(_WIN32)    
+#if defined(_WIN32)
     std::wstring engineStr = L"DX9";
 #else
     std::wstring engineStr = L"VULKAN";
-#endif    
+#endif
     pParams->GetParamWString(PARAM_NAME_ENGINE, engineStr);
     engineStr = toUpper(engineStr);
 #else
@@ -275,21 +276,21 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     {
         CHECK_RETURN(false, AMF_INVALID_ARG, L"Wrong parameter " << engineStr);
     }
-   
+
 
     // decode options to be played with
     AMF_VIDEO_DECODER_MODE_ENUM   decoderMode = AMF_VIDEO_DECODER_MODE_COMPLIANT; //amf:::AMF_VIDEO_DECODER_MODE_REGULAR , AMF_VIDEO_DECODER_MODE_LOW_LATENCY;
     bool                    decodeAsAnnexBStream = false; // switches between Annex B and AVCC types of decode input.
 
     // frequency of dynamic changes in the encoder parameters
-    amf_int frameParameterFreq = 0; 
+    amf_int frameParameterFreq = 0;
     amf_int dynamicParameterFreq = 0;
     pParams->GetParam(SETFRAMEPARAMFREQ_PARAM_NAME, frameParameterFreq);
     pParams->GetParam(SETDYNAMICPARAMFREQ_PARAM_NAME, dynamicParameterFreq);
 
     amf_int64 frames = 0;
     pParams->GetParam(PARAM_NAME_FRAMES, frames);
-    
+
 
     //---------------------------------------------------------------------------------------------
     // Init context and devices
@@ -324,7 +325,7 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
         CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX12() failed");
     }
 		break;
-#endif        
+#endif
     case amf::AMF_MEMORY_VULKAN:
 //        res = m_deviceVulkan.Init(adapterID, m_pContext);
         res = amf::AMFContext1Ptr(m_pContext)->InitVulkan(NULL);
@@ -348,7 +349,7 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     amf::AMFOutputPtr       pAudioOutput;
     amf::AMFOutputPtr       pVideoOutput;
     if( inStreamType != BitStreamUnknown)
-    { 
+    {
 #if !defined(METRO_APP)
         amf::AMFDataStream::OpenDataStream(inputPath.c_str(), amf::AMFSO_READ, amf::AMFFS_SHARE_READ, &m_pStreamIn);
 #else
@@ -384,8 +385,8 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
             pParams->SetParam(L"WIDTH", width);
             pParams->SetParam(L"HEIGHT", height);
 
-            // initialize raw stream reader with the correct 
-            // width/height obtained from the string name 
+            // initialize raw stream reader with the correct
+            // width/height obtained from the string name
             res = m_pRawStreamReader->Init(pParams, m_pContext);
             CHECK_AMF_ERROR_RETURN(res, L"m_pRawStreamReader->Init() failed");
 
@@ -465,7 +466,7 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     }
 
     if( outStreamType != BitStreamUnknown)
-    { 
+    {
         amf::AMFDataStream::OpenDataStream(outputPath.c_str(), amf::AMFSO_WRITE, amf::AMFFS_SHARE_READ, &m_pStreamOut);
         CHECK_RETURN(m_pStreamOut != NULL, AMF_FILE_NOT_OPEN, "Open File");
 #else
@@ -510,7 +511,7 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
                 pInput->SetProperty(AMF_STREAM_ENABLED, true);
                 amf_int32 bitrate = 0;
                 if(m_EncoderID == AMFVideoEncoderVCE_AVC || m_EncoderID == AMFVideoEncoderVCE_SVC)
-                { 
+                {
                     pInput->SetProperty(AMF_STREAM_CODEC_ID, AMF_STREAM_CODEC_ID_H264_AVC); // default
                     m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, &bitrate);
                     pInput->SetProperty(AMF_STREAM_BIT_RATE, bitrate);
@@ -598,7 +599,7 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     PipelineElementPtr pPipelineElementEncoder;
 
     if(pParser != NULL)
-    { 
+    {
         pPipelineElementDemuxer = pParser;
     }
     else if (m_pRawStreamReader != NULL)
@@ -632,7 +633,7 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
         pPipelineElementEncoder = PipelineElementPtr(new PipelineElementEncoder(m_pEncoder, pParams, frameParameterFreq, dynamicParameterFreq));
         Connect(pPipelineElementEncoder, 10, CT_Direct);
     }
-    // 
+    //
     if(m_pStreamWriter != NULL)
     {
         Connect(m_pStreamWriter, 5, CT_ThreadQueue);
@@ -888,12 +889,15 @@ AMF_RESULT  TranscodePipeline::InitVideoDecoder(const wchar_t *pDecoderID, amf_i
     return AMF_OK;
 }
 
-AMF_RESULT  TranscodePipeline::InitVideoProcessor(amf::AMF_MEMORY_TYPE presenterEngine, amf_int32 inWidth, amf_int32 inHeight, amf_int32 outWidth, amf_int32 outHeight)
+AMF_RESULT  TranscodePipeline::InitVideoProcessor(amf::AMF_MEMORY_TYPE presenterEngine, amf_int32 inWidth, amf_int32 inHeight, amf_int32 outWidth, amf_int32 outHeight, amf_int64 scaleType)
 {
     AMF_RESULT res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFVideoConverter, &m_pConverter);
     CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFVideoConverter << L") failed");
 
-    
+    if (scaleType != AMF_VIDEO_CONVERTER_SCALE_INVALID)
+    {
+        m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_SCALE, scaleType);
+    }
     m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_MEMORY_TYPE, presenterEngine);
     m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, amf::AMF_SURFACE_NV12);
     m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, AMFConstructSize(outWidth, outHeight));
@@ -939,7 +943,7 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamRe
 {
     bool decodeAsAnnexBStream = false; // switches between Annex B and AVCC types of decode input.
 
-    AMF_RESULT res = AMF_OK; 
+    AMF_RESULT res = AMF_OK;
     amf::AMFBufferPtr pExtraData;
     amf_int32 videoWidth = 0;
     amf_int32 videoHeight = 0;
@@ -963,12 +967,12 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamRe
         videoWidth = pParser->GetPictureWidth();
         videoHeight = pParser->GetPictureHeight();
         pParser->GetFrameRate(&frameRate);
-    
+
         pVideoDecoderID = pParser->GetCodecComponent();
 
     }
     else if(pOutput != NULL)
-    { 
+    {
         amf::AMFInterfacePtr pInterface;
         pOutput->GetProperty(AMF_STREAM_EXTRA_DATA, &pInterface);
         pExtraData = amf::AMFBufferPtr(pInterface);
@@ -977,7 +981,7 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamRe
         pOutput->GetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, &frameSize);
         videoWidth = frameSize.width;
         videoHeight = frameSize.height;
-        
+
         res= pOutput->GetProperty(AMF_STREAM_CODEC_ID, &codecID);
         pVideoDecoderID = StreamCodecIDtoDecoderID(AMF_STREAM_CODEC_ID_ENUM(codecID));
 
@@ -1017,13 +1021,16 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamRe
         scaleHeight = videoHeight;
     }
 
+    amf_int64 scaleType = AMF_VIDEO_CONVERTER_SCALE_INVALID;
+    pParams->GetParam(PARAM_NAME_SCALE_TYPE, scaleType);
+
     //---------------------------------------------------------------------------------------------
     // Init Video Converter/Processor
-    res = InitVideoProcessor(presenterEngine, videoWidth, videoHeight, scaleWidth, scaleHeight);
+    res = InitVideoProcessor(presenterEngine, videoWidth, videoHeight, scaleWidth, scaleHeight, scaleType);
     CHECK_AMF_ERROR_RETURN(res, L"InitVideoProcessor() failed");
 
     if(hwnd != NULL)
-    { 
+    {
         // Init Presenter
         CHECK_AMF_ERROR_RETURN(
             BackBufferPresenter::Create(m_pPresenter, presenterEngine, hwnd, m_pContext, display),
@@ -1053,7 +1060,7 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamRe
     pParams->GetParamWString(PARAM_NAME_CODEC, m_EncoderID);
 
     if(m_EncoderID == AMFVideoEncoderVCE_AVC)
-    { 
+    {
         amf_int64 usage = 0;
         if(pParams->GetParam(AMF_VIDEO_ENCODER_USAGE, usage) == AMF_OK)
         {
@@ -1068,7 +1075,7 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamRe
     CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << m_EncoderID << L") failed");
 
     // Usage is preset that will set many parameters
-    PushParamsToPropertyStorage(pParams, ParamEncoderUsage, m_pEncoder); 
+    PushParamsToPropertyStorage(pParams, ParamEncoderUsage, m_pEncoder);
 
     // if we enable PA, we need to make sure RateCotrolMode gets set first
     // otherwise setting the PA properties might not work...

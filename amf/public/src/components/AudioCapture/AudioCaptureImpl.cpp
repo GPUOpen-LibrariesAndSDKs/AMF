@@ -378,6 +378,8 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
     {
         AMFLock lock(&m_sync);
 
+		AMF_RETURN_IF_FALSE(m_pContext != nullptr, AMF_FAIL, L"AMFAudioCaptureImpl::PollStream(): AMF context is NULL");
+
 	    uint8_t* pData = nullptr;
 
 	    // Get some of the audio format properties
@@ -388,7 +390,7 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
 
         amf_uint64 posStream = 0;
         bool bDiscontinuity = false;
-        int err = 0;
+        AMF_RESULT err = AMF_OK;
         res = m_pAMFDataStreamAudio->CaptureOnePacket(&pData, capturedSamples, posStream, bDiscontinuity);
 
         if (res == AMF_NOT_INITIALIZED)
@@ -398,7 +400,7 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
 
 //        AMF_RETURN_IF_FAILED(res, L"CaptureOnePacket failed");
 
-        if (m_iSamplesFromStream == amf_uint64(0xFFFFFFFFFFFFFFFFLL) || bDiscontinuity)
+        if (m_iSamplesFromStream == amf_uint64(0xFFFFFFFFFFFFFFFFLL) || bDiscontinuity == true)
         {
             m_iSamplesFromStream = posStream;
         }
@@ -486,7 +488,7 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
         }
     }
 	    // Submit the audio
-	if (pAudioBuffer)
+	if (pAudioBuffer != nullptr)
 	{
 
         m_DiffsAcc += pAudioBuffer->GetPts() - GetCurrentPts();
@@ -508,7 +510,7 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
 
 
 	    AMF_RESULT err = AMF_INPUT_FULL;
-	    while (!m_audioPollingThread.StopRequested())
+	    while (m_audioPollingThread.StopRequested() == false)
 	    {
             {
                 AMFLock lock(&m_sync);
@@ -569,7 +571,7 @@ AMFAudioCaptureImpl::AudioCapturePollingThread::~AudioCapturePollingThread()
 }
 
 //-------------------------------------------------------------------------------------------------
-int AMFAudioCaptureImpl::WaveHeader(const WAVEFORMATEX *pWaveFormat, amf_int32 lenData, BYTE** ppData, amf_int32& sizeHeader)
+AMF_RESULT AMFAudioCaptureImpl::WaveHeader(const WAVEFORMATEX *pWaveFormat, amf_int32 lenData, BYTE** ppData, amf_int32& sizeHeader)
 {
 	//  A wave file consists of:
 	//
@@ -615,7 +617,7 @@ int AMFAudioCaptureImpl::WaveHeader(const WAVEFORMATEX *pWaveFormat, amf_int32 l
 
 //Tetrahedral Microphone A-Format to B-Format conversion
 //-------------------------------------------------------------------------------------------------
-int AMFAudioCaptureImpl::AmbisonicFormatConvert(const void* pSrc, void* pDst, amf_int32 numSamples, const WAVEFORMATEX *pWaveFormat)
+AMF_RESULT AMFAudioCaptureImpl::AmbisonicFormatConvert(const void* pSrc, void* pDst, amf_int32 numSamples, const WAVEFORMATEX *pWaveFormat)
 {
 	//only handle float format
 	if (pWaveFormat->wFormatTag != WAVE_FORMAT_IEEE_FLOAT)

@@ -54,9 +54,18 @@ BEGIN
     BEGIN
         MENUITEM "VideoPresenter DX9",          ID_OPTIONS_PRESENTER_DX9
         MENUITEM "VideoPresenter DX11",         ID_OPTIONS_PRESENTER_DX11
-		MENUITEM "VideoPresenter DX12",         ID_OPTIONS_PRESENTER_DX12
-		MENUITEM "VideoPresenter OpenGL",       ID_OPTIONS_PRESENTER_OPENGL
-        MENUITEM "VideoPresenter Vulkan",       ID_OPTIONS_VIDEOPRESENTER_VULKAN
+        MENUITEM "VideoPresenter DX12",         ID_OPTIONS_PRESENTER_DX12
+        MENUITEM "VideoPresenter OpenGL",       ID_OPTIONS_PRESENTER_OPENGL
+        MENUITEM "VideoPresenter Vulkan",       ID_OPTIONS_PRESENTER_VULKAN
+        MENUITEM SEPARATOR
+        POPUP "HQ Scaler"
+        BEGIN
+            MENUITEM "Off",                         ID_HQSCALER_OFF
+            MENUITEM SEPARATOR
+            MENUITEM "Bi-linear\tCtrl+L",           ID_HQSCALER_BILINEAR
+            MENUITEM "Bi-cubic\tCtrl+C",            ID_HQSCALER_BICUBIC
+            MENUITEM "FSR\tCtrl+R",                 ID_HQSCALER_FSR
+        END
         MENUITEM SEPARATOR
         MENUITEM "Fullscreen\tCtrl+F",          ID_OPTIONS_FULLSCREEN
     END
@@ -79,11 +88,14 @@ END
 
 IDC_PLAYBACKHW ACCELERATORS
 BEGIN
-    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL
-    "N",            ID_FILE_OPENNETWORKSTREAM, VIRTKEY, CONTROL
-    "F",            ID_OPTIONS_FULLSCREEN,  VIRTKEY, CONTROL
-    "?",            IDM_ABOUT,              ASCII,  ALT
-    "/",            IDM_ABOUT,              ASCII,  ALT
+    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL, NOINVERT
+    "N",            ID_FILE_OPENNETWORKSTREAM, VIRTKEY, CONTROL, NOINVERT
+    "F",            ID_OPTIONS_FULLSCREEN,  VIRTKEY, CONTROL, NOINVERT
+    "/",            IDM_ABOUT,              ASCII,  ALT, NOINVERT
+    "?",            IDM_ABOUT,              ASCII,  ALT, NOINVERT
+    "L",            ID_HQSCALER_BILINEAR,   VIRTKEY, CONTROL, NOINVERT
+    "C",            ID_HQSCALER_BICUBIC,    VIRTKEY, CONTROL, NOINVERT
+    "R",            ID_HQSCALER_FSR,        VIRTKEY, CONTROL, NOINVERT
 END
 
 

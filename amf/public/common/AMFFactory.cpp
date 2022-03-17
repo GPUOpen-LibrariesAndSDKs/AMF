@@ -67,7 +67,7 @@ AMFFactoryHelper::~AMFFactoryHelper()
     Terminate();
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMFFactoryHelper::Init()
+AMF_RESULT AMFFactoryHelper::Init(const wchar_t* dllName)
 {
 #ifndef AMF_CORE_STATIC
     if (m_hDLLHandle != NULL)
@@ -76,10 +76,11 @@ AMF_RESULT AMFFactoryHelper::Init()
         return AMF_OK;
     }
 
+    const wchar_t* dllName_ = dllName == NULL ? AMF_DLL_NAME : dllName;
 #if defined (_WIN32) || defined (__APPLE__)
-    m_hDLLHandle = amf_load_library(AMF_DLL_NAME);
+    m_hDLLHandle = amf_load_library(dllName_);
 #else 
-    m_hDLLHandle = amf_load_library1(AMF_DLL_NAME, false); //load with local flags
+    m_hDLLHandle = amf_load_library1(dllName_, false); //load with local flags
 #endif
     if(m_hDLLHandle == NULL)
     {

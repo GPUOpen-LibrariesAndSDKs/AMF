@@ -49,7 +49,7 @@ public:
 
     void AddSPS(amf_uint8 *sps, size_t size);
     void AddPPS(amf_uint8 *pps, size_t size);
-    bool SetAnnexB(amf_uint8 *data, size_t size);
+    void SetAnnexB(amf_uint8 *data, size_t size);
     bool GetExtradata(AMFByteArray   &extradata);
 
 private:
@@ -1115,7 +1115,7 @@ bool ExtraDataAvccBuilder::GetExtradata(AMFByteArray   &extradata)
     data += m_PPSs.GetSize();
     return true;
 }
-bool ExtraDataAvccBuilder::SetAnnexB(amf_uint8 *data, size_t size)
+void ExtraDataAvccBuilder::SetAnnexB(amf_uint8 *data, size_t size)
 {
     int zerosCount = 0;
     bool bFirst = true;
@@ -1164,7 +1164,6 @@ bool ExtraDataAvccBuilder::SetAnnexB(amf_uint8 *data, size_t size)
         }
 
     }
-    return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
 #define ZEROBYTES_SHORTSTARTCODE 2 //indicates the number of zero bytes in the short start-code prefix

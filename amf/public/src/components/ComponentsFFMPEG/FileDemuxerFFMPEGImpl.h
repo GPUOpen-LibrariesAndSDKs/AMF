@@ -208,8 +208,8 @@ namespace amf
 
         void AMF_STD_CALL        ReadRangeSettings();
         bool AMF_STD_CALL        IsCached();
-        amf_int32 OpenAsImageSequence(amf_string filename, AVInputFormat* pFmt, AVDictionary* pOptions);
-        amf_int32 OpenFile(amf_string filename, AVInputFormat* pFmt, AVDictionary* pOptions, amf_bool& bIsImage);
+        AMF_RESULT OpenAsImageSequence(amf_string filename, AVInputFormat* pFmt, AVDictionary* pOptions);
+        AMF_RESULT OpenFile(amf_string filename, AVInputFormat* pFmt, AVDictionary* pOptions, amf_bool& bIsImage);
 
     private:
       mutable AMFCriticalSection  m_sync;

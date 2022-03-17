@@ -68,6 +68,7 @@
 #   linker_dirs - Extra path the linker should use
 #   build_info_vars - Variables that should be inspected and printed before the build
 #   custom_target - Custom target
+#   vulkan_shader_sources - Vulkan shader sources to compile. vulkan_shader_headers is output
 #
 # Variables user can override from the command line:
 #   HOST_BITS - 32 or 64
@@ -98,10 +99,10 @@
 # VK_SDK_PATH
 ################### Parameter checks and defaults ##############################
 
-ifeq (, $(VK_SDK_PATH))
-    $(error +++++ VK_SDK_PATH must be defined ++++)
-    exit 1
-endif
+#ifeq (, $(VK_SDK_PATH))
+#    $(error +++++ VK_SDK_PATH must be defined ++++)
+#    exit 1
+#endif
 
 
 ifeq (32,$(HOST_BITS))
@@ -154,7 +155,8 @@ COPY ?= cp
 
 pp_defines = \
     _UNICODE \
-    UNICODE
+    UNICODE \
+    _GLIBCXX_USE_CXX11_ABI=0
 
 cxx_flags = \
    -pthread \
@@ -180,10 +182,13 @@ else
 	-fno-strict-overflow -flto -fuse-linker-plugin
 endif
 
+uname_p := $(shell uname -p)
+ifneq ($(uname_p),aarch64)
 ifeq (32,$(host_bits))
     cxx_flags += -m32
 else
     cxx_flags += -m64
+endif
 endif
 
 linker_flags = \
@@ -196,4 +201,4 @@ linker_libs = \
   GL
 
 build_info_vars = \
-    amf_root target_name host_bits build_type exe_target_file target_type CXX LNK
+    amf_root target_name custom_target host_bits build_type exe_target_file target_type CXX LNK

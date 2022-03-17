@@ -129,6 +129,7 @@ namespace amf
 
         AMFPropertyInfo& operator=(const AMFPropertyInfo& propery)
         {
+            name = propery.name;
             desc = propery.desc;
             type = propery.type;
             contentType = propery.contentType;

@@ -9,7 +9,9 @@ public:
     typedef std::shared_ptr<XDisplay> Ptr;
 
     XDisplay() : m_pDisplay(XOpenDisplay(nullptr)) {}
-    ~XDisplay() { XCloseDisplay(m_pDisplay); }
+    ~XDisplay() { if(IsValid()) XCloseDisplay(m_pDisplay); }
+
+    bool IsValid() { return m_pDisplay != nullptr; }
 
 private:
     Display* m_pDisplay;

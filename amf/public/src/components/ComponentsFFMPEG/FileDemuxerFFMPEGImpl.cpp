@@ -895,8 +895,8 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
     // try open the file, if it fails, return error code
     AVInputFormat* fmt               = NULL;
     amf_bool bImageFormat = false;
-    int ret = OpenFile(convertedfilename, fmt, options, bImageFormat);
-    AMF_RETURN_IF_FALSE(ret>=0 && m_pInputContext!=NULL, AMF_INVALID_ARG, L"Open() failed to open file %s", Url.c_str());
+    AMF_RESULT res = OpenFile(convertedfilename, fmt, options, bImageFormat);
+    AMF_RETURN_IF_FALSE(res==AMF_OK && m_pInputContext!=NULL, AMF_INVALID_ARG, L"Open() failed to open file %s", Url.c_str());
  
     if(file_iformat!= NULL)
     { 
@@ -905,7 +905,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
 
     if (bImageFormat)
     {
-        ret = OpenAsImageSequence(convertedfilename, fmt, options);
+        res = OpenAsImageSequence(convertedfilename, fmt, options);
     }
 
     int videoIndex = -1;
@@ -1597,7 +1597,7 @@ amf_int32   AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::GetOutputCount()
     return (amf_int32)m_OutputStreams.size();  
 };
 //-------------------------------------------------------------------------------------------------
-amf_int32 AMFFileDemuxerFFMPEGImpl::OpenAsImageSequence(
+AMF_RESULT AMFFileDemuxerFFMPEGImpl::OpenAsImageSequence(
     amf_string filename,
     AVInputFormat* pFmt,
     AVDictionary* pOptions)
@@ -1625,7 +1625,7 @@ amf_int32 AMFFileDemuxerFFMPEGImpl::OpenAsImageSequence(
     return OpenFile(filename, pFmt, pOptions, bIsImage);
 }
 //-------------------------------------------------------------------------------------------------
-amf_int32 AMFFileDemuxerFFMPEGImpl::OpenFile(
+AMF_RESULT AMFFileDemuxerFFMPEGImpl::OpenFile(
     amf_string filename,
     AVInputFormat* pFmt,
     AVDictionary* pOptions,
@@ -1635,7 +1635,7 @@ amf_int32 AMFFileDemuxerFFMPEGImpl::OpenFile(
     int ret = avformat_open_input(&m_pInputContext, filename.c_str(), pFmt, &pOptions);
 	if (ret < 0)
 	{
-		return AMF_NOT_FOUND;
+        return AMF_NOT_FOUND;
 	}
     // disable raw video support. toos should use raw reader
     ret = avformat_find_stream_info(m_pInputContext, NULL);
@@ -1729,7 +1729,7 @@ amf_int32 AMFFileDemuxerFFMPEGImpl::OpenFile(
             }
         }
     }
-    return ret;
+    return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
 amf_int32               AMFFileDemuxerFFMPEGImpl::FromFFmpegToOutputIndex(amf_int32 indexFFmpeg)

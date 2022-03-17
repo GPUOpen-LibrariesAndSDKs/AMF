@@ -49,6 +49,7 @@ const wchar_t* PlaybackPipelineBase::PARAM_NAME_DOTIMING = L"DOTIMING";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_LOWLATENCY = L"LOWLATENCY";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_FULLSCREEN = L"FULLSCREEN";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_SW_DECODER = L"swdecoder";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_HQ_SCALER = L"HQSCALER";
 
 
 PlaybackPipelineBase::PlaybackPipelineBase() :
@@ -72,6 +73,7 @@ PlaybackPipelineBase::PlaybackPipelineBase() :
     SetParamDescription(PARAM_NAME_LOWLATENCY, ParamCommon, L"Low latency mode, boolean, default = false", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_FULLSCREEN, ParamCommon, L"Specifies fullscreen mode, true, false, default false", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_SW_DECODER, ParamCommon, L"Forces sw decoder, true, false, default false", ParamConverterBoolean);
+    SetParamDescription(PARAM_NAME_HQ_SCALER, ParamCommon,  L"Use HQ Scaler (OFF, Bilinear, Bicubic, FSR, default = OFF)", ParamConverterHQScalerAlgorithm);
     
 
     SetParam(PARAM_NAME_LISTEN_FOR_CONNECTION, false);
@@ -486,6 +488,10 @@ AMF_RESULT PlaybackPipelineBase::InitVideoPipeline(amf_uint32 iVideoStreamIndex,
             Connect(PipelineElementPtr(new AMFComponentElement(m_pVideoProcessor)), m_bCPUDecoder ? 4 : 1, CT_ThreadQueue);
         }
     }
+    if (m_pHQScaler != NULL)
+    {
+        Connect(PipelineElementPtr(new AMFComponentElement(m_pHQScaler)), 1, CT_Direct);
+    }
     if(m_bVideoPresenterDirectConnect)
     {
         Connect(m_pVideoPresenter, 4, CT_ThreadPoll); // if back buffers are used in multithreading the video memory changes every Present() call so pointer returned by GetBackBuffer() points to wrong memory
@@ -497,19 +503,33 @@ AMF_RESULT PlaybackPipelineBase::InitVideoPipeline(amf_uint32 iVideoStreamIndex,
 	return AMF_OK;
 }
 
-
-
 AMF_RESULT  PlaybackPipelineBase::InitVideoProcessor()
 {
-    AMF_RESULT res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFVideoConverter, &m_pVideoProcessor);
-    CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFVideoConverter << L") failed");
+    // check if we need to create the HQ scaler
+    amf_int64  hqScalerMode = -1;
+    AMF_RESULT res = GetParam(PARAM_NAME_HQ_SCALER, hqScalerMode);
 
-    if (m_pVideoPresenter->SupportAllocator() && m_pContext->GetOpenCLContext() == NULL)
+    if ((res == AMF_OK) &&
+        ((hqScalerMode == AMF_HQ_SCALER_ALGORITHM_BILINEAR) || 
+         (hqScalerMode == AMF_HQ_SCALER_ALGORITHM_BICUBIC) ||
+         (hqScalerMode == AMF_HQ_SCALER_ALGORITHM_FSR)) )
     {
-        m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_KEEP_ASPECT_RATIO, true);
-        m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_FILL, true);
-        m_pVideoPresenter->SetProcessor(m_pVideoProcessor);
+        res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFHQScaler, &m_pHQScaler);
+        CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFHQScaler << L") failed");
+
+        m_pHQScaler->SetProperty(AMF_HQ_SCALER_OUTPUT_SIZE, ::AMFConstructSize(m_iVideoWidth, m_iVideoHeight));
+        m_pHQScaler->SetProperty(AMF_HQ_SCALER_ENGINE_TYPE, m_pVideoPresenter->GetMemoryType());
+        m_pHQScaler->SetProperty(AMF_HQ_SCALER_ALGORITHM, hqScalerMode);
+
+        res = m_pHQScaler->Init(m_pVideoPresenter->GetInputFormat(), m_iVideoWidth, m_iVideoHeight);
+        CHECK_AMF_ERROR_RETURN(res, L"m_pHQScaler->Init() failed");
     }
+
+
+    // create CSC - this one is needed all the time, 
+    // even if we use HQ scaler
+    res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFVideoConverter, &m_pVideoProcessor);
+    CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFVideoConverter << L") failed");
 
     if (m_eDecoderFormat == amf::AMF_SURFACE_P010) //HDR support
     {
@@ -524,6 +544,25 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoProcessor()
     m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, m_pVideoPresenter->GetInputFormat());
 
     res = m_pVideoProcessor->Init(m_eDecoderFormat, m_iVideoWidth, m_iVideoHeight);
+    CHECK_AMF_ERROR_RETURN(res, L"m_pVideoProcessor->Init() failed");
+
+
+    // set-up the processor for presenter - if we use HQ scaler, 
+    // we need to set it, otherwise it will be CSC
+    if (m_pVideoPresenter->SupportAllocator() && m_pContext->GetOpenCLContext() == NULL)
+    {
+        m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_KEEP_ASPECT_RATIO, true);
+        m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_FILL, true);
+
+        if (m_pHQScaler != nullptr)
+        {
+            m_pHQScaler->SetProperty(AMF_HQ_SCALER_KEEP_ASPECT_RATIO, true);
+            m_pHQScaler->SetProperty(AMF_HQ_SCALER_FILL, true);
+        }
+
+        m_pVideoPresenter->SetProcessor(m_pHQScaler ? m_pHQScaler : m_pVideoProcessor);
+    }
+
     return res;
 }
 
@@ -534,69 +573,70 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoDecoder(const wchar_t *pDecoderID, am
 
     AMF_VIDEO_DECODER_MODE_ENUM   decoderMode = bLowlatency ? AMF_VIDEO_DECODER_MODE_LOW_LATENCY : AMF_VIDEO_DECODER_MODE_COMPLIANT; // AMF_VIDEO_DECODER_MODE_REGULAR , AMF_VIDEO_DECODER_MODE_LOW_LATENCY;
 
-    AMF_RESULT res = AMF_OK;
-
     bool bSWDecoder = false;
     GetParam(PARAM_NAME_SW_DECODER, bSWDecoder);
     
     if (bSWDecoder == false)
     {
-        res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, pDecoderID, &m_pVideoDecoder);
+        AMF_RESULT res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, pDecoderID, &m_pVideoDecoder);
         CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << pDecoderID << L") failed");
     }
-    // check resolution
-
-    amf::AMFCapsPtr pCaps;
 
     if (m_pVideoDecoder != nullptr)
     {
-        m_pVideoDecoder->GetCaps(&pCaps);
-    }
-    if (pCaps != nullptr)
-    {
-        amf::AMFIOCapsPtr pInputCaps;
-        pCaps->GetInputCaps(&pInputCaps);
-        if (pInputCaps != nullptr)
-        {
-            amf_int32 minWidth = 0;
-            amf_int32 maxWidth = 0;
-            amf_int32 minHeight = 0;
-            amf_int32 maxHeight = 0;
-            pInputCaps->GetWidthRange(&minWidth, &maxWidth);
-            pInputCaps->GetHeightRange(&minHeight, &maxHeight);
-            if (minWidth <= m_iVideoWidth  && m_iVideoWidth <= maxWidth && minHeight <= m_iVideoHeight && m_iVideoHeight <= maxHeight)
-            {
-                m_pVideoDecoder->SetProperty(AMF_VIDEO_DECODER_REORDER_MODE, amf_int64(decoderMode));
-                m_pVideoDecoder->SetProperty(AMF_VIDEO_DECODER_EXTRADATA, amf::AMFVariant(pExtraData));
+        amf::AMFCapsPtr pCaps;
+        AMF_RESULT res = m_pVideoDecoder->GetCaps(&pCaps);
+        CHECK_AMF_ERROR_RETURN(res, L"failed to get decoder caps");
 
-                m_pVideoDecoder->SetProperty(AMF_TIMESTAMP_MODE, amf_int64(AMF_TS_DECODE)); // our sample H264 parser provides decode order timestamps- change depend on demuxer
-                m_eDecoderFormat = amf::AMF_SURFACE_NV12;
-                if (std::wstring(pDecoderID) == AMFVideoDecoderHW_H265_MAIN10)
-                {
-                    m_eDecoderFormat = amf::AMF_SURFACE_P010;
-                }
-                res = m_pVideoDecoder->Init(m_eDecoderFormat, m_iVideoWidth, m_iVideoHeight);
-                CHECK_AMF_ERROR_RETURN(res, L"m_pVideoDecoder->Init(" << m_iVideoWidth << m_iVideoHeight << L") failed " << pDecoderID);
-				if (std::wstring(pDecoderID) == AMFVideoDecoderHW_AV1) 
-				{
-					//Only up to above m_pVideoDecoder->Init(), got/updated actual eDecoderFormat, then also update m_eDecoderFormat here.
-					amf_int64 format = 0;
-					if (m_pVideoDecoder->GetProperty(L"AV1StreamFormat", &format) == AMF_OK)
-					{
-                        m_eDecoderFormat = (amf::AMF_SURFACE_FORMAT)format;
-					}
-				}
-                m_bCPUDecoder = false;
-            }
-            else
+        amf::AMFIOCapsPtr pInputCaps;
+        res = pCaps->GetInputCaps(&pInputCaps);
+        CHECK_AMF_ERROR_RETURN(res, L"failed to get decoder input caps");
+
+        // check resolution
+        amf_int32 minWidth = 0;
+        amf_int32 maxWidth = 0;
+        amf_int32 minHeight = 0;
+        amf_int32 maxHeight = 0;
+        pInputCaps->GetWidthRange(&minWidth, &maxWidth);
+        pInputCaps->GetHeightRange(&minHeight, &maxHeight);
+        if (minWidth <= m_iVideoWidth && m_iVideoWidth <= maxWidth && minHeight <= m_iVideoHeight && m_iVideoHeight <= maxHeight)
+        {
+            m_pVideoDecoder->SetProperty(AMF_VIDEO_DECODER_REORDER_MODE, amf_int64(decoderMode));
+            m_pVideoDecoder->SetProperty(AMF_VIDEO_DECODER_EXTRADATA, amf::AMFVariant(pExtraData));
+
+            m_pVideoDecoder->SetProperty(AMF_TIMESTAMP_MODE, amf_int64(AMF_TS_DECODE)); // our sample H264 parser provides decode order timestamps- change depend on demuxer
+            m_eDecoderFormat = amf::AMF_SURFACE_NV12;
+            if (std::wstring(pDecoderID) == AMFVideoDecoderHW_H265_MAIN10)
             {
-                m_pVideoDecoder = nullptr;
+                m_eDecoderFormat = amf::AMF_SURFACE_P010;
             }
+            res = m_pVideoDecoder->Init(m_eDecoderFormat, m_iVideoWidth, m_iVideoHeight);
+            CHECK_AMF_ERROR_RETURN(res, L"m_pVideoDecoder->Init(" << m_iVideoWidth << L", " << m_iVideoHeight << L") failed " << pDecoderID);
+		    if (std::wstring(pDecoderID) == AMFVideoDecoderHW_AV1) 
+		    {
+			    //Only up to above m_pVideoDecoder->Init(), got/updated actual eDecoderFormat, then also update m_eDecoderFormat here.
+			    amf_int64 format = 0;
+			    if (m_pVideoDecoder->GetProperty(L"AV1StreamFormat", &format) == AMF_OK)
+			    {
+                    m_eDecoderFormat = (amf::AMF_SURFACE_FORMAT)format;
+			    }
+		    }
+            m_bCPUDecoder = false;
+        }
+        else
+        {
+            // fall back to software decoder if resolution not supported
+            m_pVideoDecoder = nullptr;
         }
     }
+    
+    // use software encoder
+    //   - if specifically requested
+    //   - if resolution not supported
+    //   - if codec not supported
     if (m_pVideoDecoder == nullptr)
     {
-        res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_VIDEO_DECODER, &m_pVideoDecoder);
+        AMF_RESULT res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_VIDEO_DECODER, &m_pVideoDecoder);
         CHECK_AMF_ERROR_RETURN(res, L"LoadExternalComponent(" << FFMPEG_VIDEO_DECODER << L") failed");
         ++m_nFfmpegRefCount;
 
@@ -754,6 +794,12 @@ AMF_RESULT PlaybackPipelineBase::Stop()
         m_pVideoProcessor = NULL;
     }
 
+    if (m_pHQScaler != NULL)
+    {
+        m_pHQScaler->Terminate();
+        m_pHQScaler = NULL;
+    }
+
     if(m_pVideoPresenter != NULL)
     {
         m_pVideoPresenter->Terminate();
@@ -800,6 +846,26 @@ void PlaybackPipelineBase::OnParamChanged(const wchar_t* name)
     }
     UpdateVideoProcessorProperties(name);
 
+    // check if it's a scaler property (changing the mode from
+    // bilinear to bicubic or to fsr), make sure to change it
+    // HQ scaler is on only after CSC, so if video processor (CSC)
+    // is not present, we don't have to worry about this now
+    if (std::wstring(name) == std::wstring(PARAM_NAME_HQ_SCALER))
+    {
+        if (m_pHQScaler != nullptr)
+        {
+            amf_int64  hqScalerMode = -1;
+            AMF_RESULT res = GetParam(PARAM_NAME_HQ_SCALER, hqScalerMode);
+
+            if ((res == AMF_OK) && 
+                ((hqScalerMode == AMF_HQ_SCALER_ALGORITHM_BILINEAR) || 
+                 (hqScalerMode == AMF_HQ_SCALER_ALGORITHM_BICUBIC) ||
+                 (hqScalerMode == AMF_HQ_SCALER_ALGORITHM_FSR)) )
+            {
+                m_pHQScaler->SetProperty(AMF_HQ_SCALER_ALGORITHM, hqScalerMode);
+            }
+        }
+    }
 }
 
 void PlaybackPipelineBase::UpdateVideoProcessorProperties(const wchar_t* name)
@@ -1065,18 +1131,20 @@ void PlaybackPipelineBase::OnEof()
             }
             if(m_pVideoDecoder != NULL)
             {
-
                 m_pVideoDecoder->ReInit(m_iVideoWidth, m_iVideoHeight);
             }
             if(m_pVideoProcessor != NULL)
             {
                 m_pVideoProcessor->ReInit(m_iVideoWidth, m_iVideoHeight);
             }
+            if (m_pHQScaler != NULL)
+            {
+                m_pHQScaler->ReInit(m_iVideoWidth, m_iVideoHeight);
+            }
             if(m_pVideoPresenter != NULL)
             {
                 m_pVideoPresenter->Reset();
             }
-
             if(m_pAudioDecoder != NULL)
             {
                 m_pAudioDecoder->ReInit(0, 0);

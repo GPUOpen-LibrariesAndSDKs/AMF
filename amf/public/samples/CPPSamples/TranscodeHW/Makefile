@@ -33,7 +33,7 @@ target_type = exe
 pp_include_dirs = \
  $(amf_root) \
  $(VK_SDK_PATH)/x86_64/include
- 
+
 src_files = \
     public/samples/CPPSamples/TranscodeHW/TranscodeHW.cpp \
     $(public_common_dir)/AMFFactory.cpp \
@@ -68,26 +68,8 @@ src_files = \
     $(samples_common_dir)/VideoPresenterVulkan.cpp \
 
 
-shader_sources = \
+shader_file = \
     quad.frag \
     quad.vert
 
 include $(amf_root)/public/make/common_rules.mak
-
-# compile Vulkan shaders
-
-define shader_compile_rule_fn
-all: $$(bin_dir)/$1.spv
-
-$$(bin_dir)/$1.spv: $$(amf_root)/$$(samples_common_dir)/$1
-	$$(VK_SDK_PATH)/x86_64/bin/glslangValidator -V "$$<" -o "$$@"
-endef
-
-$(foreach shader_file,$(shader_sources),\
-    $(eval $(call shader_compile_rule_fn,$(shader_file)))\
-)
-
-clean: 
-	$(foreach clean_file,$(shader_sources),\
-		$(RM) $(bin_dir)/$(clean_file).spv\
-	)

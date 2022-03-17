@@ -331,6 +331,8 @@ AMF_RESULT RegisterEncoderParamsHEVC(ParametersStorage* pParams)
     // ------------- Encoder params usage---------------
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_USAGE, ParamEncoderUsage, L"Encoder usage type. Set many default parameters. (TRANSCODING, ULTRALOWLATENCY, LOWLATENCY, WEBCAM, HIGHQUALITY (or HQ), LOWLATENCYHIGHQUALITY (or LLHQ), default = N/A)", ParamConverterUsageHEVC);
     // ------------- Encoder params static---------------
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_INSTANCE_INDEX, ParamEncoderStatic, L" Index of VCN instance 0, 1 etc, default = 0", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_QUERY_TIMEOUT, ParamEncoderStatic, L" QueryOutput timeout in ms , default = 0", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_PROFILE, ParamEncoderStatic, L"HEVC profile (Main, default = Main", ParamConverterProfileHEVC);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_TIER, ParamEncoderStatic, L"HEVC tier (Main, High, default = Main", ParamConverterTierHEVC);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_PROFILE_LEVEL, ParamEncoderStatic, L"HEVC profile level (float or integer, default = based on HW", ParamConverterProfileLevelHEVC);
@@ -348,6 +350,7 @@ AMF_RESULT RegisterEncoderParamsHEVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_GOP_SIZE, ParamEncoderStatic, L"GOP Size (in frames, default= 60 )", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE, ParamEncoderStatic, L"insertion mode (none, gop, idr default = none", ParamConverterInsertionModeHEVC);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_SLICES_PER_FRAME, ParamEncoderStatic, L"Slices Per Frame (integer, default = 1)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_INTRA_REFRESH_NUM_CTBS_PER_SLOT, ParamEncoderDynamic, L"Intra Refresh CTBs Number Per Slot (in 64x64 CTB, default = depends on USAGE)", ParamConverterInt64);
 
     // color conversion
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_COLOR_BIT_DEPTH, ParamEncoderStatic, L"8 or 10 bit (integer, default = 8)", ParamConverterInt64);
@@ -398,7 +401,9 @@ AMF_RESULT RegisterEncoderParamsHEVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY, ParamEncoderDynamic, L"Scene Change Detection Sensitivity (LOW, MEDIUM, HIGH default = MEDIUM)", ParamConverterSceneChangeHEVC);
     pParams->SetParamDescription(AMF_PA_STATIC_SCENE_DETECTION_ENABLE, ParamEncoderDynamic, L"Static Scene Detection Enable (true, false default =  true)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY, ParamEncoderDynamic, L"Scene Change Detection Sensitivity (LOW, MEDIUM, HIGH default = HIGH)", ParamConverterStaticSceneHEVC);
+    pParams->SetParamDescription(AMF_PA_FRAME_SAD_ENABLE, ParamEncoderDynamic, L"Enable Frame SAD algorithm (true, false default = true", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_PA_ACTIVITY_TYPE, ParamEncoderDynamic, L"Activity Type (Y, YUV default = Y)", ParamConverterActivityTypeHEVC);
+    pParams->SetParamDescription(AMF_PA_LTR_ENABLE, ParamEncoderStatic, L"Auto LTR Enable (true, false default = false)", ParamConverterBoolean);
 
     pParams->SetParamDescription(AMF_PA_INITIAL_QP_AFTER_SCENE_CHANGE, ParamEncoderDynamic, L"QP After Scene Change (integer 0-51, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_PA_MAX_QP_BEFORE_FORCE_SKIP, ParamEncoderDynamic, L"Max QP Before Force Skip (integer 0-51, default = 35)", ParamConverterInt64);

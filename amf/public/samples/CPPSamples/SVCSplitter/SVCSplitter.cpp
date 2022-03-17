@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -162,8 +162,10 @@ AMF_RESULT SVCSplitter::Init(amf_int32 layerCount, const wchar_t *fileIn,const w
     m_OutputFiles.resize(layerCount);
 #if defined(SVC_TRACE_LEYERS)
     m_Indexes.resize(layerCount);
-    m_DroppedSize.resize(layerCount,0);
 #endif
+    m_DroppedSize.resize(layerCount, 0);
+    m_LayerSize.resize(layerCount, 0);
+    m_FramesInLayer.resize(layerCount, 0);
     return AMF_OK;
 }
 AMF_RESULT SVCSplitter::Terminate()
@@ -184,16 +186,16 @@ AMF_RESULT SVCSplitter::Terminate()
     m_pContext = NULL;
     g_AMFFactory.Terminate();
 
-#if defined(SVC_TRACE_LEYERS)
-    for( size_t i = 0; i < m_Indexes.size(); i++)
+    for( size_t i = 0; i < m_DroppedSize.size(); i++)
     {
-        printf("\nStream # %d: dropped size = %d :", (int)i , (int)m_DroppedSize[i]);
+        printf("\nStream layer #%d: frame count= %lld layer size %lld dropped size = %lld", (int)i , m_FramesInLayer[i], m_LayerSize[i], m_DroppedSize[i]);
+#if defined(SVC_TRACE_LEYERS)
         for( size_t j = 0; j < m_Indexes[i].size(); j++)
         {
             printf("%d ", (int)m_Indexes[i][j]);
         }
-    }
 #endif
+    }
     return AMF_OK;
 }
 AMF_RESULT SVCSplitter::Run()
@@ -236,7 +238,7 @@ AMF_RESULT SVCSplitter::Run()
         for( amf_int32 layerIndex = 0; layerIndex < (amf_int32)m_OutputFiles.size(); layerIndex++)
         {
 //            if((amf_int32)m_OutputFiles.size() - layerIndex - 1 >= indexTemporal)
-            if(layerIndex > indexTemporal)
+            if(layerIndex >= indexTemporal)
             {
                 if(m_OutputFiles[layerIndex] == NULL)
                 { // create new output_file
@@ -256,26 +258,26 @@ AMF_RESULT SVCSplitter::Run()
                     }
                     m_OutputFiles[layerIndex] = stream;
                 }
-                if(m_OutputFiles[layerIndex] == NULL) // shouldn't happen; just in case 
+                if(m_OutputFiles[layerIndex] == NULL) // shouldn't happen; just in case
                 {
-                    CHECK_AMF_ERROR_RETURN(AMF_FAIL, L"Internal error"); 
+                    CHECK_AMF_ERROR_RETURN(AMF_FAIL, L"Internal error");
                 }
 
                 amf_size written = 0;
                 m_OutputFiles[layerIndex]->Write(buffer->GetNative(), buffer->GetSize(), &written);
                 if(written != buffer->GetSize())
                 {
-                    CHECK_AMF_ERROR_RETURN(AMF_FAIL, L"Failed to write file"); 
+                    CHECK_AMF_ERROR_RETURN(AMF_FAIL, L"Failed to write file");
                 }
 #if defined(SVC_TRACE_LEYERS)
                 m_Indexes[layerIndex].push_back(inputFrameCount);
 #endif
+                m_LayerSize[layerIndex] += buffer->GetSize();
+                m_FramesInLayer[layerIndex]++;
             }
             else
             {
-#if defined(SVC_TRACE_LEYERS)
                 m_DroppedSize[layerIndex] += buffer->GetSize();
-#endif
             }
         }
         inputFrameCount++;
@@ -305,7 +307,7 @@ AMF_RESULT SVCSplitter::GetTemporalIndex(amf::AMFBuffer *buffer, amf_int32 &inde
             NaluHeader* pHdr = reinterpret_cast<NaluHeader*>(data+i);
             amf_uint8 naluType = pHdr->nal_unit_type;
             i++;
-// this is test code 
+// this is test code
 //            if(naluType == NALU_TYPE_IDR)
 //            {
 //                index = 0;
@@ -317,12 +319,12 @@ AMF_RESULT SVCSplitter::GetTemporalIndex(amf::AMFBuffer *buffer, amf_int32 &inde
                 NaluHeaderExt* pHdrExt = reinterpret_cast<NaluHeaderExt*>(data+i);
                 if (pHdrExt->reserved_three_2bits != 0x3)
                 {
-                    CHECK_AMF_ERROR_RETURN(AMF_INVALID_FORMAT, L"Fail: wrong Prefix syntax"); 
+                    CHECK_AMF_ERROR_RETURN(AMF_INVALID_FORMAT, L"Fail: wrong Prefix syntax");
                 }
                 index = pHdrExt->temporal_id;
                 return AMF_OK;
             }
-   
+
 
         }
         else
@@ -395,7 +397,7 @@ int _tmain(int argc, _TCHAR* argv[])
     }
     res = splitter.Run();
     splitter.Terminate();
-    if(res != AMF_OK)
+    if ((res != AMF_OK) && (res != AMF_EOF))
     {
         return 1;
     }

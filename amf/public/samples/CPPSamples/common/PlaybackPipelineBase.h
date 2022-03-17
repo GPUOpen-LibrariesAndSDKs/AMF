@@ -40,6 +40,7 @@
 #include "public/include/components/FFMPEGAudioConverter.h"
 #include "public/include/components/FFMPEGFileDemuxer.h"
 #include "public/include/components/FFMPEGVideoDecoder.h"
+#include "public/include/components/HQScaler.h"
 #include "BitStreamParser.h"
 #include "VideoPresenter.h"
 #include "AudioPresenter.h"
@@ -69,6 +70,7 @@ public:
     static const wchar_t* PARAM_NAME_LOWLATENCY;
     static const wchar_t* PARAM_NAME_FULLSCREEN;
     static const wchar_t* PARAM_NAME_SW_DECODER;
+    static const wchar_t* PARAM_NAME_HQ_SCALER;
 
     virtual AMF_RESULT Play();
     virtual AMF_RESULT Pause();
@@ -119,6 +121,7 @@ protected:
 
     amf::AMFComponentPtr    m_pVideoDecoder;
     amf::AMFComponentPtr    m_pVideoProcessor;
+    amf::AMFComponentPtr    m_pHQScaler;
     VideoPresenterPtr       m_pVideoPresenter;
 
     amf::AMFComponentPtr    m_pAudioDecoder;

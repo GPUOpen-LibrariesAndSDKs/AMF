@@ -36,7 +36,6 @@
 #endif
 #include <string>
 #include <vector>
-#include "public/include/core/VulkanAMF.h"
 #include "public/include/core/Context.h"
 #include "public/common/VulkanImportTable.h"
 

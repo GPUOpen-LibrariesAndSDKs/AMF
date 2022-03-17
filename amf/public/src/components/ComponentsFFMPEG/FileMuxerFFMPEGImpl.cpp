@@ -313,7 +313,9 @@ AMFFileMuxerFFMPEGImpl::AMFFileMuxerFFMPEGImpl(AMFContext* pContext)
     m_bTerminated(true),
     m_bForceEof(false),
     m_iViewFrameCount(0),
-    m_ptsStatTime(0)
+    m_ptsStatTime(0),
+    m_bPtsOffsetIsCalculated(false),
+    m_ptsOffset(0)
 {
     g_AMFFactory.Init();
 
@@ -354,6 +356,10 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*forma
     {
         (*it)->Init();
     }
+
+    m_bPtsOffsetIsCalculated = false;
+    m_ptsOffset = 0;
+
     return res;
 }
 //-------------------------------------------------------------------------------------------------
@@ -802,13 +808,53 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::WriteData(AMFData* pData, amf_i
 
         pkt.duration = av_rescale_q(duration, AMF_TIME_BASE_Q, ost->time_base);
 
+        amf_pts dts = pts;
+        if (ost->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+        {
+            if (pData->GetProperty(AMF_VIDEO_ENCODER_PRESENTATION_TIME_STAMP, &pts) == AMF_OK)
+            {
+                if (!m_bPtsOffsetIsCalculated && (pkt.flags & AV_PKT_FLAG_KEY != 0))
+                {
+                    // calculate offset for preventing PTS < DTS
+                    if (pts == dts)
+                    {
+                        m_ptsOffset = duration;
+                    }
+                    else if (pts > dts)
+                    {
+                        // PTS and DTS set by encoder are the same for the first frame
+                        // adjust PTS by the same offset applied to DTS by upstream application
+                        m_ptsOffset = duration - pts + dts;
+                    }
+
+                    m_bPtsOffsetIsCalculated = true;
+                }
+
+                pts += m_ptsOffset;
+
+                // PTS can be smaller than DTS when there are large gaps in input PTS
+                // in which case set PTS = DTS
+                if (pts < dts)
+                {
+                    pts = dts;
+                }
+            }
+        }
+
         pkt.pts=av_rescale_q(pts, AMF_TIME_BASE_Q, ost->time_base);
         if (ost->cur_dts == pkt.pts && ost->codec->codec_type == AVMEDIA_TYPE_AUDIO) // MM sometimes time_base doesn't have enough precision for the a buffer with small number of compressed samples producing the same dts. AVI muxder fails with this 
         {
             pkt.pts++;
         }
 
-        pkt.dts=pkt.pts;
+        if (dts != pts)
+        {
+            pkt.dts = av_rescale_q(dts, AMF_TIME_BASE_Q, ost->time_base);
+        }
+        else
+        {
+            pkt.dts = pkt.pts;
+        }
 
 //        amf_int64 ptsFFmpeg = pkt.pts;
         if (av_interleaved_write_frame(m_pOutputContext,&pkt)<0)

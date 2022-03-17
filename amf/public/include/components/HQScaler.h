@@ -9,8 +9,7 @@
 // 
 // MIT license 
 // 
-//
-// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,50 +30,35 @@
 // THE SOFTWARE.
 //
 
+#ifndef AMFHQScaler_h
+#define AMFHQScaler_h
+
 #pragma once
 
-#include "VideoRender.h"
-#include "../common/SwapChainVulkan.h"
+#define AMFHQScaler L"AMFHQScaler"
 
 
-class VideoRenderVulkan : public VideoRender, public SwapChainVulkan 
+// various types of algorithms supported by the high-quality scaler
+enum  AMF_HQ_SCALER_ALGORITHM_ENUM
 {
-public:
-    VideoRenderVulkan(amf_int width, amf_int height, bool bInterlaced, amf_int frames, amf::AMFContext* pContext);
-    virtual ~VideoRenderVulkan();
+    AMF_HQ_SCALER_ALGORITHM_BILINEAR = 0,
+    AMF_HQ_SCALER_ALGORITHM_BICUBIC = 1,
+    AMF_HQ_SCALER_ALGORITHM_FSR = 2,
 
-    virtual AMF_RESULT              Init(amf_handle hWnd, amf_handle hDisplay, bool bFullScreen);
-    virtual AMF_RESULT              Terminate();
-    virtual AMF_RESULT              Render(amf::AMFData** ppData);
-#if defined(_WIN32)
-    virtual amf::AMF_SURFACE_FORMAT GetFormat() { return amf::AMF_SURFACE_BGRA; }
-#elif defined(__linux)    
-    virtual amf::AMF_SURFACE_FORMAT GetFormat() { return amf::AMF_SURFACE_BGRA; }
-#endif
-protected:
-    AMF_RESULT CreatePipelineInput();
-    AMF_RESULT CreateDescriptorSetLayout();
-    AMF_RESULT CreatePipeline();
-    AMF_RESULT CreateCommands();
-    AMF_RESULT CreateVertexBuffers();
-    AMF_RESULT CreateDescriptorSetPool();
-    AMF_RESULT UpdateMVP();
-
-    float           m_fAnimation;
-
-
-    std::vector<VkCommandBuffer>	m_CommandBuffers;
-
-    VkDescriptorSetLayout			m_hUniformLayout;
-    VkPipelineLayout				m_hPipelineLayout;
-    VkPipeline						m_hPipeline;
-
-
-    amf::AMFVulkanBuffer            m_VertexBuffer;
-    amf::AMFVulkanBuffer            m_IndexBuffer;
-    amf::AMFVulkanBuffer            m_MVPBuffer;
-
-    VkDescriptorSet					m_hDescriptorSet;
-    VkDescriptorPool				m_hDescriptorPool;
 };
 
+
+// PA object properties
+#define AMF_HQ_SCALER_ALGORITHM         L"HQScalerAlgorithm"        // amf_int64(AMF_HQ_SCALER_ALGORITHM_ENUM) (Bi-linear, Bi-cubic, RCAS, Auto)"      - determines which scaling algorithm will be used
+                                                                    //                                                                                   auto will chose best option between algorithms available
+#define AMF_HQ_SCALER_ENGINE_TYPE       L"HQScalerEngineType"       // AMF_MEMORY_TYPE (DX11, DX12, OPENCL, VULKAN default : DX11)"                    - determines how the object is initialized and what kernels to use
+
+#define AMF_HQ_SCALER_OUTPUT_SIZE       L"HQSOutputSize"            // AMFSize                                                                         - output scaling width/hieight
+
+#define AMF_HQ_SCALER_KEEP_ASPECT_RATIO  L"KeepAspectRatio"         // bool (default=false) Keep aspect ratio if scaling. 
+#define AMF_HQ_SCALER_FILL               L"Fill"                    // bool (default=false) fill area out of ROI. 
+#define AMF_HQ_SCALER_FILL_COLOR         L"FillColor"               // AMFColor 
+#define AMF_HQ_SCALER_FROM_SRGB          L"FromSRGB"                   //  bool (default=true) Convert to SRGB. 
+
+
+#endif //#ifndef AMFHQScaler_h

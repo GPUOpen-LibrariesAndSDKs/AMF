@@ -31,6 +31,7 @@
 //
 #include "VideoPresenter.h"
 #include "public/include/components/VideoConverter.h"
+#include "public/include/components/HQScaler.h"
 #include "public/common/TraceAdapter.h"
 
 #define AMF_FACILITY L"VideoPresenter"
@@ -226,7 +227,7 @@ AMF_RESULT VideoPresenter::SetProcessor(amf::AMFComponent *processor)
 
 }
 
-void        VideoPresenter::UpdateProcessor()
+void  VideoPresenter::UpdateProcessor()
 {
     amf::AMFLock lock(&m_cs);
     if(m_pProcessor != NULL)
@@ -234,8 +235,21 @@ void        VideoPresenter::UpdateProcessor()
         AMFRect srcRect = {0, 0, m_InputFrameSize.width, m_InputFrameSize.height};
         AMFRect outputRect;
         CalcOutputRect(&srcRect, &m_rectClient, &outputRect);
-        m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, ::AMFConstructSize(m_rectClient.Width(),m_rectClient.Height()));
-        m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_RECT, outputRect);
+
+        // what we want to do here is check for the properties if they exist
+        // as the HQ scaler has different property names than CSC
+        const amf::AMFPropertyInfo* pParamInfo = nullptr;
+        if ((m_pProcessor->GetPropertyInfo(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, &pParamInfo) == AMF_OK) && pParamInfo)
+        {
+            m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, ::AMFConstructSize(m_rectClient.Width(),m_rectClient.Height()));
+            m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_RECT, outputRect);
+        }
+        
+        pParamInfo = nullptr;
+        if ((m_pProcessor->GetPropertyInfo(AMF_HQ_SCALER_OUTPUT_SIZE, &pParamInfo) == AMF_OK) && pParamInfo)
+        {
+            m_pProcessor->SetProperty(AMF_HQ_SCALER_OUTPUT_SIZE, ::AMFConstructSize(m_rectClient.Width(),m_rectClient.Height()));
+        }
     }
 }
 

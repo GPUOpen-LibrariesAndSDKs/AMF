@@ -110,6 +110,7 @@ void                UpdateMenuItems();
 void                PopulateMenus(HMENU hMenu);
 void                PopulateAdaptersMenu(HMENU hMenu);
 void                PopulateDisplaysMenu(HMENU hMenu);
+void                PopulateComponentsMenu(HMENU hMenu);
 
 void                ChangeFileLocation(HWND hWnd);
 void                GetDirectoryFileLocation(TCHAR* szDirectory, TCHAR* szFile, bool generic = false);
@@ -210,6 +211,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_ADAPTERID, kDefaultGPUIdx);
     s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_MONITORID, 0);
 
+    wchar_t *component = L"AMD";
+    s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_CAPTURE_COMPONENT, component);
+
 #if defined(_WIN32)
     if (parseCmdLineParameters(s_pPipeline))
 #else
@@ -290,7 +294,7 @@ void CreateStatusBar(HWND hwndParent, HINSTANCE hinst)
 }
 
 //-------------------------------------------------------------------------------------------------
-// Populate devices and displays menus
+// Populate devices, displays and components menus
 //-------------------------------------------------------------------------------------------------
 void PopulateMenus(HMENU hMenu)
 {
@@ -382,12 +386,15 @@ void PopulateMenus(HMENU hMenu)
 	{
         PopulateAdaptersMenu(hMenu);
         PopulateDisplaysMenu(hMenu);
+        PopulateComponentsMenu(hMenu);
 
 		// Remove placeholder separators (needed because GetSubMenu returns NULL if menu is initially empty)
-        HMENU  hDevices        = GetSubMenu(hMenu, 1);
-        HMENU  hCaptureSources = GetSubMenu(hMenu, 2);
+        HMENU  hDevices           = GetSubMenu(hMenu, 1);
+        HMENU  hCaptureSources    = GetSubMenu(hMenu, 2);
+        HMENU  hCaptureComponents = GetSubMenu(hMenu, 3);
         RemoveMenu(hDevices, 0, MF_BYPOSITION);
         RemoveMenu(hCaptureSources, 0, MF_BYPOSITION);
+        RemoveMenu(hCaptureComponents, 0, MF_BYPOSITION);
 
 		// Place default checkmarks at first item in each menu
 		UpdateMenuItems();
@@ -442,13 +449,33 @@ void  PopulateDisplaysMenu(HMENU hMenu)
 }
 
 //-------------------------------------------------------------------------------------------------
-// Update the menu for adapters/displays entries
+// Populate components menu
+//-------------------------------------------------------------------------------------------------
+void  PopulateComponentsMenu(HMENU hMenu)
+{
+    HMENU  hCaptureComponents = GetSubMenu(hMenu, 3);
+
+    if (AppendMenu(hCaptureComponents, MF_BYPOSITION, ID_CAPTURE_COMPONENT_START, L"AMD DirectCapture") == false)
+    {
+        LOG_ERROR(L"Could not insert AMD capture component menu item.");
+        return;
+    }
+    if (AppendMenu(hCaptureComponents, MF_BYPOSITION, ID_CAPTURE_COMPONENT_START + 1, L"Desktop Duplication") == false)
+    {
+        LOG_ERROR(L"Could not insert DD capture component menu item.");
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
+// Update the menu for adapters/displays/components entries
 //-------------------------------------------------------------------------------------------------
 void UpdateMenuItems()
 {
     int iSelectedDevice = 0, iSelectedCapture = 0;
+    std::wstring iSelectedComponent = L"";
     s_pPipeline->GetParam(DisplayDvrPipeline::PARAM_NAME_ADAPTERID, iSelectedDevice);
     s_pPipeline->GetParam(DisplayDvrPipeline::PARAM_NAME_MONITORID, iSelectedCapture);
+    s_pPipeline->GetParamWString(DisplayDvrPipeline::PARAM_NAME_CAPTURE_COMPONENT, iSelectedComponent);
 
     HMENU  hMenu = GetMenu(g_hDlg);
     HMENU  hDevices = GetSubMenu(hMenu, 1);
@@ -464,6 +491,18 @@ void UpdateMenuItems()
         const bool  checkItem = enableItem && (s_vDisplays[i].adapterIdx == iSelectedCapture);
         CheckMenuItem(hCaptureSources, ID_CAPTURE_SOURCE_START + i, MF_BYCOMMAND | (checkItem ? MF_CHECKED : MF_UNCHECKED));
         EnableMenuItem(hCaptureSources, ID_CAPTURE_SOURCE_START + i, enableItem ? MF_ENABLED : MF_DISABLED);
+    }
+
+    HMENU  hCaptureComponents = GetSubMenu(hMenu, 3);
+    if (iSelectedComponent == L"AMD")
+    {
+        CheckMenuItem(hCaptureComponents, ID_CAPTURE_COMPONENT_START, MF_BYCOMMAND | MF_CHECKED);
+        CheckMenuItem(hCaptureComponents, ID_CAPTURE_COMPONENT_START + 1, MF_BYCOMMAND | MF_UNCHECKED);
+    }
+    else
+    {
+        CheckMenuItem(hCaptureComponents, ID_CAPTURE_COMPONENT_START + 1, MF_BYCOMMAND | MF_CHECKED);
+        CheckMenuItem(hCaptureComponents, ID_CAPTURE_COMPONENT_START, MF_BYCOMMAND | MF_UNCHECKED);
     }
 
     s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_OPENCL_CONVERTER, s_bOCLConverter);
@@ -535,6 +574,20 @@ INT_PTR CALLBACK DialogProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_MONITORID, adapterIdx);
 			UpdateMenuItems();
 		}
+        // Checking/unchecking dynamically added capture components
+        else if (wmId >= ID_CAPTURE_COMPONENT_START && wmId <= ID_CAPTURE_COMPONENT_START + 2)
+        {
+            const int id = wmId - ID_CAPTURE_COMPONENT_START;
+            if (id == 0)
+            {
+                s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_CAPTURE_COMPONENT, L"AMD");
+            }
+            else
+            {
+                s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_CAPTURE_COMPONENT, L"DD");
+            }
+            UpdateMenuItems();
+        }
 		break;
 	case WM_TIMER:
 		UpdateFps(hWnd);

@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -44,6 +44,7 @@ SwapChainDX12::SwapChainDX12(amf::AMFContext* pContext) :
     m_rtvDescriptorSize(0),
     m_pSwapChain(nullptr),
     m_frameIndex(0),
+    m_format(DXGI_FORMAT_UNKNOWN),
     m_fenceValues{ 0 },
     m_fenceEvent(nullptr),
     m_eSwapChainImageFormat(0),
@@ -60,7 +61,7 @@ SwapChainDX12::~SwapChainDX12()
 AMF_RESULT SwapChainDX12::Init(amf_handle hWnd, amf_handle hDisplay, bool bFullScreen, amf_int32 width, amf_int32 height, amf_uint32 format)
 {
     AMF_RESULT res = AMF_OK;
-    
+
     AMF_RETURN_IF_FALSE(width != 0 && height != 0, AMF_FAIL, L"Bad width/height: width=%d height=%d", width, height);
     m_SwapChainExtent = AMFConstructSize(width, height);
 
@@ -79,15 +80,18 @@ AMF_RESULT SwapChainDX12::Terminate()
         return AMF_OK;
     }
 
+    WaitForGpu();
+
     m_SyncFences.clear();
 
     m_frameIndex = 0;
+    m_format = DXGI_FORMAT_UNKNOWN;
 
     m_rtvHeap = nullptr;
     m_rtvDescriptorSize = 0;
     m_cbvSrvHeap = nullptr;
     m_cbvSrvDescriptorSize = 0;
-    
+
     m_staticSampler = {};
     m_eSwapChainImageFormat = 0;
 
@@ -100,6 +104,7 @@ AMF_RESULT SwapChainDX12::Terminate()
     m_SwapChainExtent = {};
     m_fence = nullptr;
     CloseHandle(m_fenceEvent);
+    m_fenceEvent = NULL;
 
     DeleteFrameBuffers();
 
@@ -108,14 +113,14 @@ AMF_RESULT SwapChainDX12::Terminate()
         m_fenceValues[i] = 0;
         m_cmdAllocator[i] = nullptr;
     }
-    
+
     m_pDX12Device = nullptr;
     m_pContext = nullptr;
 
     m_graphicsQueue = nullptr;
     m_dxgiAdapter = nullptr;
     m_dxgiFactory = nullptr;
-    
+
     return AMF_OK;
 }
 
@@ -124,7 +129,7 @@ AMF_RESULT SwapChainDX12::LoadPipeline(amf_handle hWnd, amf_handle hDisplay, amf
     AMF_RETURN_IF_FALSE(m_pDX12Device != nullptr, AMF_FAIL, L"DX12 Device is not initialized.");
 
     m_format = (DXGI_FORMAT)format;
-    
+
     AMF_RESULT res = AMF_OK;
     HRESULT hr = S_OK;
 
@@ -164,7 +169,7 @@ AMF_RESULT SwapChainDX12::LoadPipeline(amf_handle hWnd, amf_handle hDisplay, amf
     swapChainDesc.Height = m_SwapChainExtent.height;
     swapChainDesc.Format = m_format;
     swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
     swapChainDesc.SampleDesc.Count = 1;
     swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
@@ -178,21 +183,21 @@ AMF_RESULT SwapChainDX12::LoadPipeline(amf_handle hWnd, amf_handle hDisplay, amf
             nullptr,
             &swapChain.p);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"CreateSwapChainForHwnd() failed to create a swap chain.");
-    
+
     // When tearing support is enabled we will handle ALT+Enter key presses in the
     // window message loop rather than let DXGI handle it by calling SetFullscreenState.
     //factory->MakeWindowAssociation(Win32Application::GetHwnd(), DXGI_MWA_NO_ALT_ENTER);
 
     hr = swapChain->QueryInterface(IID_PPV_ARGS(&m_pSwapChain.p));
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"Failed to query a extended swap chain interface.");
-    
+
     m_frameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 
     // Create descriptor heaps.
     {
         // Describe and create a render target view (RTV) descriptor heap.
         D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-        rtvHeapDesc.NumDescriptors = RtvDescriptorCount;
+        rtvHeapDesc.NumDescriptors = FrameCount + 1;
         rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
         rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
         hr = m_pDX12Device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap));
@@ -202,7 +207,7 @@ AMF_RESULT SwapChainDX12::LoadPipeline(amf_handle hWnd, amf_handle hDisplay, amf
 
         // Describe and create a constant buffer view (CBV) and shader resource view (SRV) descriptor heap.
         D3D12_DESCRIPTOR_HEAP_DESC cbvSrvHeapDesc = {};
-        cbvSrvHeapDesc.NumDescriptors = CbvSrvDescriptorCount; // One CBV per frame and one SRV for the intermediate render target.
+        cbvSrvHeapDesc.NumDescriptors = FrameCount + 1; // One CBV per frame and one SRV for the intermediate render target.
         cbvSrvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
         cbvSrvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
         hr = m_pDX12Device->CreateDescriptorHeap(&cbvSrvHeapDesc, IID_PPV_ARGS(&m_cbvSrvHeap));
@@ -230,7 +235,7 @@ AMF_RESULT SwapChainDX12::CreateFrameBuffers()
         }
         NAME_D3D12_OBJECT_N(backBuffer.rtvBuffer, i);
 
-        /// Create RTV for swapchain backbuffers 
+        /// Create RTV for swapchain backbuffers
         CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), i, m_rtvDescriptorSize);
         m_pDX12Device->CreateRenderTargetView(backBuffer.rtvBuffer, nullptr, rtvHandle);
 
@@ -261,7 +266,6 @@ AMF_RESULT SwapChainDX12::ResizeSwapChain(bool bFullScreen, amf_int32 width, amf
 
     hr = m_pSwapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SwapChain ResizeBuffers() failed.");
-    
     // Reset the frame index to the current back buffer index.
     m_frameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 
@@ -298,7 +302,7 @@ AMF_RESULT              SwapChainDX12::Present(amf_uint32 imageIndex)
     // Execute the command lists.
     ID3D12CommandList* ppCommandLists[] = { m_cmdListGraphics };
     m_graphicsQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-    
+
     for (std::vector<ATL::CComPtr<ID3D12Fence>>::iterator it = m_SyncFences.begin(); it != m_SyncFences.end(); it++)
     {
         ATL::CComPtr<ID3D12Fence> pFence = *it;
@@ -310,7 +314,7 @@ AMF_RESULT              SwapChainDX12::Present(amf_uint32 imageIndex)
 
         //AMFTraceWarning(AMF_FACILITY, L"Graphics Queue signal fence: %p, val: %d", pFence.p, (int)fenceValue);
     }
-    
+
     m_SyncFences.clear();
 
     // Present the frame.
@@ -331,7 +335,7 @@ AMF_RESULT              SwapChainDX12::Present(amf_uint32 imageIndex)
 }
 
 AMF_RESULT SwapChainDX12::TransitionResource(ID3D12Resource* surface, amf_int32 newState, bool bSync)
-{	
+{
     if (bSync)
     {
         SyncResource(surface);

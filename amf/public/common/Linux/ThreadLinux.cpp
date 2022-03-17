@@ -57,7 +57,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <dlfcn.h>
-#include <sys/time.h>	
+#include <sys/time.h>
 
 #if !defined(__APPLE__)
 #include <malloc.h>
@@ -360,7 +360,7 @@ int sem_timedwait1(sem_t* semaphore, const struct timespec* timeout)
 }
 #endif
 
-#if defined(__ANDROID__)
+#if defined(__ANDROID__) || defined(__APPLE__)
 int pthread_mutex_timedlock1(pthread_mutex_t* mutex, const struct timespec* timeout)
 {
     struct timeval timenow;
@@ -410,18 +410,10 @@ bool AMF_STD_CALL amf_wait_for_mutex(amf_handle hmutex, unsigned long timeout)
         wait_time.tv_nsec -= 1000000000;
     }
 
-#ifdef __APPLE__
-    int* tmpptr = NULL;
-    *tmpptr = 1;
-//    assert(false); // not supported
-    return false;
-
-#else
-#if defined(__ANDROID__)
+#if defined(__ANDROID__) || defined (__APPLE__)
     return pthread_mutex_timedlock1(mutex, &wait_time) == 0;
 #else
     return pthread_mutex_timedlock(mutex, &wait_time) == 0;
-#endif
 #endif
 }
 //----------------------------------------------------------------------------------------

@@ -39,6 +39,7 @@
 #include "public/include/components/VideoEncoderVCE.h"
 #include "public/include/components/VideoEncoderHEVC.h"
 #include "public/include/components/VideoConverter.h"
+#include "public/include/components/HQScaler.h"
 
 
 std::wstring AddIndexToPath(const std::wstring& path, amf_int32 index)
@@ -592,4 +593,25 @@ const wchar_t *StreamCodecIDtoDecoderID(AMF_STREAM_CODEC_ID_ENUM eCodec)
     case AMF_STREAM_CODEC_ID_AV1: return AMFVideoDecoderHW_AV1;
     }
     return L"";
+}
+
+AMF_RESULT ParamConverterHQScalerAlgorithm(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    amf_int64    paramValue = -1;
+    std::wstring uppValue   = toUpper(value);
+    if ((uppValue == L"BILINEAR") || (uppValue == L"0"))
+    {
+        paramValue = AMF_HQ_SCALER_ALGORITHM_BILINEAR;
+    }
+    else if ((uppValue == L"BICUBIC") || (uppValue == L"1"))
+    {
+        paramValue = AMF_HQ_SCALER_ALGORITHM_BICUBIC;
+    }
+    else if ((uppValue == L"FSR") || (uppValue == L"2"))
+    {
+        paramValue = AMF_HQ_SCALER_ALGORITHM_FSR;
+    }
+
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
 }

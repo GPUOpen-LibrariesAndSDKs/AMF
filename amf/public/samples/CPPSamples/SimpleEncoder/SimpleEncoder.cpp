@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -31,7 +31,7 @@
 // THE SOFTWARE.
 //
 
-// this sample encodes NV12 frames using AMF Encoder and writes them to H.264 elmentary stream 
+// this sample encodes NV12 frames using AMF Encoder and writes them to H.264 elmentary stream
 
 #include <stdio.h>
 #ifdef _WIN32
@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
 
     amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_CONSOLE, true);
     amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, true);
-    
+
     // initialize AMF
     amf::AMFContextPtr context;
     amf::AMFComponentPtr encoder;
@@ -171,13 +171,13 @@ int main(int argc, char* argv[])
         PrepareFillFromHost(context);
     }
 #endif
-    
+
     // component: encoder
     res = g_AMFFactory.GetFactory()->CreateComponent(context, pCodec, &encoder);
     AMF_RETURN_IF_FAILED(res, L"CreateComponent(%s) failed", pCodec);
 
     if(amf_wstring(pCodec) == amf_wstring(AMFVideoEncoderVCE_AVC))
-    { 
+    {
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_TRANSCODING);
         AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_TRANSCODING) failed");
 
@@ -226,7 +226,7 @@ int main(int argc, char* argv[])
 
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_COLOR_BIT_DEPTH, eDepth);
         AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_COLOR_BIT_DEPTH, %d) failed", eDepth);
-        
+
 
 #if defined(ENABLE_4K)
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_TIER, AMF_VIDEO_ENCODER_HEVC_TIER_HIGH);
@@ -251,14 +251,14 @@ int main(int argc, char* argv[])
             surfaceIn = NULL;
             res = context->AllocSurface(memoryTypeIn, formatIn, widthIn, heightIn, &surfaceIn);
             AMF_RETURN_IF_FAILED(res, L"AllocSurface() failed");
-            
+
             if(memoryTypeIn == amf::AMF_MEMORY_VULKAN)
             {
                 FillSurfaceVulkan(context, surfaceIn);
             }
 #ifdef _WIN32
             else if(memoryTypeIn  == amf::AMF_MEMORY_DX9)
-            { 
+            {
                 FillSurfaceDX9(context, surfaceIn);
             }
             else
@@ -374,7 +374,6 @@ static void FillSurfaceDX11(amf::AMFContext *context, amf::AMFSurface *surface)
 
     xPos+=2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
     yPos+=2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
-
     deviceContextDX11->Release();
 }
 #endif
@@ -676,7 +675,7 @@ static void FillSurfaceVulkan(amf::AMFContext *context, amf::AMFSurface *surface
             yPos = 0;
         }
 
-        for(int p = 0; p <2; p++)
+        for(int p = 0; p < pColor1->GetPlanesCount(); p++)
         {
             amf::AMFPlane *plane = pColor1->GetPlaneAt(p);
             amf_size origin1[3] = {0, 0 , 0};
@@ -700,7 +699,7 @@ static void FillSurfaceVulkan(amf::AMFContext *context, amf::AMFSurface *surface
 PollingThread::PollingThread(amf::AMFContext *context, amf::AMFComponent *encoder, const wchar_t *pFileName) : m_pContext(context), m_pEncoder(encoder)
 {
     std::wstring wStr(pFileName);
-    std::string str(wStr.begin(), wStr.end()); 
+    std::string str(wStr.begin(), wStr.end());
     m_pFile = std::ofstream(str, std::ios::binary);
 }
 PollingThread::~PollingThread()
@@ -753,7 +752,7 @@ void PollingThread::Run()
 
             amf::AMFBufferPtr buffer(data); // query for buffer interface
             m_pFile.write(reinterpret_cast<char*>(buffer->GetNative()), buffer->GetSize());
-            
+
             write_duration += amf_high_precision_clock() - poll_time;
         }
         else
@@ -761,9 +760,9 @@ void PollingThread::Run()
             amf_sleep(1);
         }
     }
-    printf("latency           = %.4fms\nencode  per frame = %.4fms\nwrite per frame   = %.4fms\n", 
+    printf("latency           = %.4fms\nencode  per frame = %.4fms\nwrite per frame   = %.4fms\n",
         double(latency_time)/MILLISEC_TIME,
-        double(encode_duration )/MILLISEC_TIME/frameCount, 
+        double(encode_duration )/MILLISEC_TIME/frameCount,
         double(write_duration)/MILLISEC_TIME/frameCount);
 
     m_pEncoder = NULL;

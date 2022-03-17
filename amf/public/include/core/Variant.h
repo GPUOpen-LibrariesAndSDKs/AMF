@@ -1052,7 +1052,7 @@ namespace amf
 
  #else
         char* old_locale = setlocale(LC_CTYPE, "en_US.UTF8");
-        int UnicodeBuffSize = mbstowcs(NULL, pUtf8Buff, 0);
+        size_t UnicodeBuffSize = mbstowcs(NULL, pUtf8Buff, 0);
         if(0 == UnicodeBuffSize)
         {
             return result;
@@ -1115,7 +1115,7 @@ namespace amf
 
 #else
         char* old_locale = setlocale(LC_CTYPE, "en_US.UTF8");
-        int Utf8BuffSize = wcstombs(NULL, pwBuff, 0);
+        size_t Utf8BuffSize = wcstombs(NULL, pwBuff, 0);
         if(0 == Utf8BuffSize)
         {
             return result;

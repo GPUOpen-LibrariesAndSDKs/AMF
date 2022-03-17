@@ -78,8 +78,8 @@ namespace amf
 
 	protected:
 		AMF_RESULT PollStream();
-		int WaveHeader(const WAVEFORMATEX *pWaveFormat, amf_int32 lenData, BYTE** ppData, amf_int32& sizeHeader);
-		int AmbisonicFormatConvert(const void* pSrc, void* pDst, amf_int32 numSamples, const WAVEFORMATEX *pWaveFormat);
+		AMF_RESULT WaveHeader(const WAVEFORMATEX *pWaveFormat, amf_int32 lenData, BYTE** ppData, amf_int32& sizeHeader);
+		AMF_RESULT AmbisonicFormatConvert(const void* pSrc, void* pDst, amf_int32 numSamples, const WAVEFORMATEX *pWaveFormat);
         AMF_RESULT  AMF_STD_CALL  SubmitInputPrivate(AMFData* pData);
 
 	protected:

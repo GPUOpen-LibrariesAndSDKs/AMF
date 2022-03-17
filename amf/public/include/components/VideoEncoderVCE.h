@@ -154,6 +154,8 @@ enum AMF_VIDEO_ENCODER_LTR_MODE_ENUM
 #define AMF_VIDEO_ENCODER_LTR_MODE                              L"LTRMode"                  // amf_int64(AMF_VIDEO_ENCODER_LTR_MODE_ENUM); default = AMF_VIDEO_ENCODER_LTR_MODE_RESET_UNUSED; remove/keep unused LTRs (not specified in property AMF_VIDEO_ENCODER_FORCE_LTR_REFERENCE_BITFIELD)
 #define AMF_VIDEO_ENCODER_SCANTYPE                              L"ScanType"                 // amf_int64(AMF_VIDEO_ENCODER_SCANTYPE_ENUM); default = AMF_VIDEO_ENCODER_SCANTYPE_PROGRESSIVE; indicates input stream type
 #define AMF_VIDEO_ENCODER_MAX_NUM_REFRAMES                      L"MaxNumRefFrames"          // amf_int64; Maximum number of reference frames
+#define AMF_VIDEO_ENCODER_MAX_CONSECUTIVE_BPICTURES             L"MaxConsecutiveBPictures"  // amf_int64; Maximum number of consecutive B Pictures
+#define AMF_VIDEO_ENCODER_ADAPTIVE_MINIGOP                      L"AdaptiveMiniGOP"          // bool; default = false; Disable/Enable Adaptive MiniGOP
 #define AMF_VIDEO_ENCODER_ASPECT_RATIO                          L"AspectRatio"              // AMFRatio; default = 1, 1
 #define AMF_VIDEO_ENCODER_FULL_RANGE_COLOR                      L"FullRangeColor"           // bool; default = false; inidicates that YUV input is (0,255)
 #define AMF_VIDEO_ENCODER_LOWLATENCY_MODE                       L"LowLatencyInternal"       // bool; default = false, enables low latency mode and POC mode 2 in the encoder
@@ -255,6 +257,8 @@ enum AMF_VIDEO_ENCODER_LTR_MODE_ENUM
 #define AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE                      L"OutputDataType"           // amf_int64(AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_ENUM); default = N/A
 #define AMF_VIDEO_ENCODER_OUTPUT_MARKED_LTR_INDEX               L"MarkedLTRIndex"           //amf_int64; default = -1; Marked LTR index
 #define AMF_VIDEO_ENCODER_OUTPUT_REFERENCED_LTR_INDEX_BITFIELD  L"ReferencedLTRIndexBitfield" // amf_int64; default = 0; referenced LTR bit-field
+#define AMF_VIDEO_ENCODER_OUTPUT_TEMPORAL_LAYER                 L"OutputTemporalLayer"      // amf_int64; Temporal layer
+#define AMF_VIDEO_ENCODER_PRESENTATION_TIME_STAMP               L"PresentationTimeStamp"    // amf_int64; Presentation time stamp (PTS)
 #define AMF_VIDEO_ENCODER_RECONSTRUCTED_PICTURE                 L"ReconstructedPicture"     // AMFInterface(AMFSurface); returns reconstructed picture as an AMFSurface attached to the output buffer as property AMF_VIDEO_ENCODER_RECONSTRUCTED_PICTURE of AMFInterface type
 #define AMF_VIDEO_ENCODER_STATISTIC_PSNR_Y                      L"PSNRY"                    // double; PSNR Y
 #define AMF_VIDEO_ENCODER_STATISTIC_PSNR_U                      L"PSNRU"                    // double; PSNR U

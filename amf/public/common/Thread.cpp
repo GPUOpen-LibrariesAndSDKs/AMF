@@ -198,9 +198,6 @@ namespace amf
         return amf_release_semaphore(m_hSemaphore, 1, &iOldCount);
     }
     //----------------------------------------------------------------------------
-
-    //----------------------------------------------------------------------------
-    //----------------------------------------------------------------------------
     AMFLock::AMFLock(AMFSyncBase* pBase, amf_ulong ulTimeout)
         : m_pBase(pBase),
         m_bLocked()
@@ -347,8 +344,9 @@ namespace amf
         AMFThread*      m_pOwner;
         uintptr_t       m_pThread;
         AMFEvent        m_StopEvent;
+        AMFCriticalSection m_Lock;
     public:
-        // this icalled by owner
+        // this is called by owner
         AMFThreadObj(AMFThread* owner);
         virtual ~AMFThreadObj();
 
@@ -412,7 +410,7 @@ namespace amf
         {
             return true;
         }
-
+        AMFLock lock(&m_Lock);
         m_pThread = _beginthread(AMFThreadProc, 0, (void* )this);
 
         return m_pThread != (uintptr_t)-1L;
@@ -432,11 +430,15 @@ namespace amf
     //----------------------------------------------------------------------------
     bool AMFThreadObj::WaitForStop()
     {
+        AMFLock lock(&m_Lock);
         if(m_pThread == (uintptr_t)-1L)
         {
             return true;
         }
-        return m_StopEvent.Lock();
+        bool stopped = m_StopEvent.Lock();
+        
+        m_pThread = (uintptr_t)-1L;
+        return stopped;
     }
     //----------------------------------------------------------------------------
     bool AMFThreadObj::StopRequested()
@@ -477,8 +479,7 @@ namespace amf
         pthread_t m_hThread;
         bool m_bStopRequested;
         bool m_bRunning;
-        pthread_mutex_t m_hMutex;
-        pthread_mutex_t m_hWaitForStopMutex;
+        AMFCriticalSection m_Lock;
 
         AMFThreadObj(const AMFThreadObj&);
         AMFThreadObj& operator=(const AMFThreadObj&);
@@ -488,22 +489,15 @@ namespace amf
 
     AMFThreadObj::AMFThreadObj(AMFThread* owner)
         : m_pOwner(owner),
-        m_hThread(0),
         m_bStopRequested(false),
-        m_bRunning(false),
-        m_hMutex(),
-        m_hWaitForStopMutex()
+        m_bRunning(false)
     {
-        pthread_mutex_init(&m_hMutex, 0);
-        pthread_mutex_init(&m_hWaitForStopMutex, 0);
     }
 
     AMFThreadObj::~AMFThreadObj()
     {
         RequestStop();
         WaitForStop();
-        pthread_mutex_destroy(&m_hMutex);
-        pthread_mutex_destroy(&m_hWaitForStopMutex);
     }
 
     void* AMF_CDECL_CALL AMFThreadObj::AMFThreadProc(void* pThis)
@@ -514,18 +508,9 @@ namespace amf
             return 0;
         }
 
-        pthread_mutex_lock(&pT->m_hMutex);
-        pT->m_bRunning = true;
-        pthread_mutex_unlock(&pT->m_hMutex);
-
         pT->Run();
         pT->Terminate();
-
-        pthread_mutex_lock(&pT->m_hMutex);
-        pT->m_bRunning = false;
         pT->m_bStopRequested = false;
-        pthread_mutex_unlock(&pT->m_hMutex);
-
         return 0;
     }
 
@@ -535,66 +520,54 @@ namespace amf
         if (IsRunning() == false)
         {
             WaitForStop();
-            result = (0 == pthread_create(&m_hThread, 0, AMFThreadProc, (void*)this));
+            
+            AMFLock lock(&m_Lock);
+            if (pthread_create(&m_hThread, 0, AMFThreadProc, (void*)this) == 0)
+            {
+                m_bRunning = true;
+            }
+            else
+            {
+                result = false;
+            }
         }
         return result;
     }
 
     bool AMFThreadObj::RequestStop()
     {
-    #if defined(__APPLE__)
-        if(m_hThread == nullptr)
-    #else
-        if(m_hThread == (uintptr_t)0L)
-    #endif
+        AMFLock lock(&m_Lock);
+        if (IsRunning() == false)
         {
             return true;
         }
       
-        pthread_mutex_lock(&m_hMutex);
         m_bStopRequested = true;
-        pthread_mutex_unlock(&m_hMutex);
         return true;
     }
 
     bool AMFThreadObj::WaitForStop()
     {
-        pthread_mutex_lock(&m_hWaitForStopMutex);
+        AMFLock lock(&m_Lock);
 
-    #if defined(__APPLE__)
-        if(m_hThread != nullptr)
-    #else
-        if(m_hThread != (uintptr_t)0L)
-    #endif
+        if (IsRunning() == true)
         {
-            pthread_mutex_lock(&m_hMutex);
-            pthread_t hThread = m_hThread;
-            m_hThread = 0;
-            pthread_mutex_unlock(&m_hMutex);
-
-            pthread_join(hThread, 0);
+            pthread_join(m_hThread, 0);
+            m_bRunning = false;
         }
             
         m_bStopRequested = false;
-
-        pthread_mutex_unlock(&m_hWaitForStopMutex);
         return true;
     }
 
     bool AMFThreadObj::StopRequested()
     {
-        pthread_mutex_lock(&m_hMutex);
-        bool bRet = m_bStopRequested;
-        pthread_mutex_unlock(&m_hMutex);
-        return bRet;
+        return m_bStopRequested;
     }
 
     bool AMFThreadObj::IsRunning()
     {
-        pthread_mutex_lock(&m_hMutex);
-        bool bRet = m_bRunning;
-        pthread_mutex_unlock(&m_hMutex);
-        return bRet;
+        return m_bRunning;
     }
 
     void ExitThread()

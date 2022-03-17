@@ -45,7 +45,7 @@ public:
     AMFFactoryHelper();
     virtual ~AMFFactoryHelper();
 
-    AMF_RESULT  Init();
+    AMF_RESULT  Init(const wchar_t* dllName = NULL);
     AMF_RESULT  Terminate();
 
     AMF_RESULT  LoadExternalComponent(amf::AMFContext* pContext, const wchar_t* dll, const char* function, void* reserved, amf::AMFComponent** ppComponent);

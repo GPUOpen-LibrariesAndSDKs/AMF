@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -56,10 +56,30 @@
 #include "../common/PipelineDefines.h"
 #include "public/include/core/Debug.h"
 
+static AMF_RESULT ParamConverterScaleType(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_VIDEO_CONVERTER_SCALE_ENUM paramValue;
+
+    std::wstring uppValue = toUpper(value);
+    if (uppValue == L"BILINEAR" || uppValue == L"0")
+    {
+        paramValue = AMF_VIDEO_CONVERTER_SCALE_BILINEAR;
+    }
+    else if (uppValue == L"BICUBIC" || uppValue == L"1") {
+        paramValue = AMF_VIDEO_CONVERTER_SCALE_BICUBIC;
+    }
+    else {
+        LOG_ERROR(L"AMF_VIDEO_CONVERTER_SCALE_ENUM hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+
 #if defined(_WIN32)
 class PreviewWindow
 {
-public: 
+public:
     PreviewWindow()
     :m_hWnd(0)
     {
@@ -99,12 +119,12 @@ public:
         int posX = 100;
         int posY = 100;
 
-        m_hWnd = CreateWindow( L"videorender", L"VIDEORENDER", 
+        m_hWnd = CreateWindow( L"videorender", L"VIDEORENDER",
             WS_OVERLAPPEDWINDOW | WS_CAPTION | WS_BORDER | WS_POPUP,
           posX, posY, width, height, NULL, NULL, hInstance, NULL);
 
         ::ShowWindow(m_hWnd, SW_NORMAL);
-    
+
         ::UpdateWindow(m_hWnd);
         ::ShowWindow(m_hWnd, SW_SHOW);
         return true;
@@ -119,7 +139,7 @@ public:
             {
                 TranslateMessage(&msg);
                 DispatchMessage(&msg);
-            } 
+            }
         }
     }
     amf_handle GetHwnd() const
@@ -137,7 +157,7 @@ private:
 #elif defined(__linux)
 class PreviewWindow
 {
-public: 
+public:
     PreviewWindow()
     :m_hWnd(0), m_pDisplay(nullptr), WM_DELETE_WINDOW(0)
     {
@@ -163,16 +183,16 @@ public:
 
         Window parentWnd = DefaultRootWindow(m_pDisplay);
 
-        m_hWnd = XCreateSimpleWindow(m_pDisplay, 
-        parentWnd, 
+        m_hWnd = XCreateSimpleWindow(m_pDisplay,
+        parentWnd,
         10, 10, width, height,
         1, BlackPixel(m_pDisplay, screen_num), WhitePixel(m_pDisplay, screen_num));
         XSelectInput(m_pDisplay, m_hWnd, ExposureMask | KeyPressMask | StructureNotifyMask);
         XMapWindow(m_pDisplay, m_hWnd);
         XStoreName(m_pDisplay, m_hWnd, "PlaybackHW");
-    
-        WM_DELETE_WINDOW = XInternAtom(m_pDisplay, "WM_DELETE_WINDOW", False); 
-        XSetWMProtocols(m_pDisplay, m_hWnd, &WM_DELETE_WINDOW, 1); 
+
+        WM_DELETE_WINDOW = XInternAtom(m_pDisplay, "WM_DELETE_WINDOW", False);
+        XSetWMProtocols(m_pDisplay, m_hWnd, &WM_DELETE_WINDOW, 1);
 
         return true;
     }
@@ -183,8 +203,8 @@ public:
         {
             XEvent e;
             bool bRun = true;
-            
-            while (XCheckMaskEvent(m_pDisplay,0xFFFFFF , &e)) 
+
+            while (XCheckMaskEvent(m_pDisplay,0xFFFFFF , &e))
             {
                 switch(e.type)
                 {
@@ -205,7 +225,7 @@ public:
                     }
                     break;
                 }
-            }            
+            }
         }
     }
     amf_handle GetHwnd() const
@@ -243,6 +263,7 @@ AMF_RESULT RegisterParams(ParametersStorage* pParams)
 
     pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_SCALE_WIDTH, ParamCommon, L"Frame width (integer, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_SCALE_HEIGHT, ParamCommon, L"Frame height (integer, default = 0)", ParamConverterInt64);
+    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_SCALE_TYPE, ParamCommon, L"Frame height (integer, default = 0)", ParamConverterScaleType);
 
     pParams->SetParamDescription(PARAM_NAME_ADAPTERID, ParamCommon, L"Index of GPU adapter (number, default = 0)", NULL);
 
@@ -297,7 +318,7 @@ int main(int argc, char* argv[])
     if (!parseCmdLineParameters(&params))
 #else
     if (!parseCmdLineParameters(&params, argc, argv))
-#endif        
+#endif
     {
         LOG_INFO(L"+++ Pre processor +++");
         ParametersStorage paramsPreProc;
@@ -349,7 +370,7 @@ int main(int argc, char* argv[])
     if (!parseCmdLineParameters(&params))
 #else
     if (!parseCmdLineParameters(&params, argc, argv))
-#endif        
+#endif
     {
         return -1;
     }
@@ -377,9 +398,9 @@ int main(int argc, char* argv[])
     for(amf_int32 i = 0 ; i < threadCount; i++)
     {
         TranscodePipeline *pipeline= new TranscodePipeline();
-        AMF_RESULT res = pipeline->Init(&params, 
-                i == 0 ? previewWindow.GetHwnd() : NULL, 
-                i == 0 ? previewWindow.GetDisplay() : NULL, 
+        AMF_RESULT res = pipeline->Init(&params,
+                i == 0 ? previewWindow.GetHwnd() : NULL,
+                i == 0 ? previewWindow.GetDisplay() : NULL,
                 threadCount ==1 ? -1 : counter);
         if(res == AMF_OK)
         {

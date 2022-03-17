@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -32,13 +32,8 @@
 
 #ifndef __VulkanAMF_h__
 #define __VulkanAMF_h__
-#pragma once 
+#pragma once
 #include "Platform.h"
-#ifdef _WIN32
-    #define VK_USE_PLATFORM_WIN32_KHR
-#elif defined(__linux)
-    #define VK_USE_PLATFORM_XLIB_KHR
-#endif
 
 #include "vulkan/vulkan.h"
 
@@ -49,17 +44,17 @@ namespace amf
     typedef struct AMFVulkanDevice
     {
         amf_size            cbSizeof;           // sizeof(AMFVulkanDevice)
-        void*               pNext;              // reserved for extensions 
+        void*               pNext;              // reserved for extensions
         VkInstance          hInstance;
-        VkPhysicalDevice    hPhysicalDevice;    
+        VkPhysicalDevice    hPhysicalDevice;
         VkDevice            hDevice;
     } AMFVulkanDevice;
 
     typedef struct AMFVulkanSync
     {
         amf_size            cbSizeof;           // sizeof(AMFVulkanSemaphore)
-        void*               pNext;              // reserved for extensions 
-        VkSemaphore         hSemaphore; 
+        void*               pNext;              // reserved for extensions
+        VkSemaphore         hSemaphore;
         bool                bSubmitted;         // if true - wait for hSemaphore. re-submit hSemaphore if not synced by other ways and set to true
         VkFence             hFence;             // To sync on CPU; can be nullptr. Submitted in vkQueueSubmit. If waited for hFence, null it, do not delete or reset.
     } AMFVulkanSync;
@@ -67,21 +62,21 @@ namespace amf
     typedef struct AMFVulkanBuffer
     {
         amf_size            cbSizeof;           // sizeof(AMFVulkanBuffer)
-        void*               pNext;              // reserved for extensions 
+        void*               pNext;              // reserved for extensions
         VkBuffer            hBuffer;
         VkDeviceMemory      hMemory;
         amf_int64           iSize;
         amf_int64           iAllocatedSize;     // for reuse
         amf_uint32          eAccessFlags;       // VkAccessFlagBits
         amf_uint32          eUsage;             // AMF_BUFFER_USAGE
-        amf_uint32          eAccess;            // AMF_MEMORY_CPU_ACCESS 
+        amf_uint32          eAccess;            // AMF_MEMORY_CPU_ACCESS
         AMFVulkanSync       Sync;
     } AMFVulkanBuffer;
 
     typedef struct AMFVulkanSurface
     {
         amf_size            cbSizeof;           // sizeof(AMFVulkanSurface)
-        void*               pNext;              // reserved for extensions 
+        void*               pNext;              // reserved for extensions
         // surface properties
         VkImage             hImage;
         VkDeviceMemory      hMemory;
@@ -98,7 +93,7 @@ namespace amf
     typedef struct AMFVulkanView
     {
         amf_size            cbSizeof;           // sizeof(AMFVulkanSurface)
-        void*               pNext;              // reserved for extensions 
+        void*               pNext;              // reserved for extensions
         // surface properties
         AMFVulkanSurface    *pSurface;
         VkImageView         hView;

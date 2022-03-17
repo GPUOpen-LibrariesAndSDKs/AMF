@@ -310,7 +310,9 @@ bool InitInstance(int nCmdShow)
 
 void UpdateMenuItems()
 {
-    HMENU hMenu = ::GetMenu(hMainWindow);
+    PipelineState currState = s_pPipeline->GetState();
+    HMENU         hMenu     = ::GetMenu(hMainWindow);
+
     amf::AMF_MEMORY_TYPE    presenterType = amf::AMF_MEMORY_DX11;
     {
         amf_int64 engineInt = amf::AMF_MEMORY_UNKNOWN;
@@ -327,11 +329,37 @@ void UpdateMenuItems()
         }
     }
 
-	CheckMenuItem(hMenu,ID_OPTIONS_PRESENTER_DX12,        MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_DX12 ? MF_CHECKED : MF_UNCHECKED));
-    CheckMenuItem(hMenu,ID_OPTIONS_PRESENTER_DX11,        MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_DX11 ? MF_CHECKED : MF_UNCHECKED));
-    CheckMenuItem(hMenu,ID_OPTIONS_PRESENTER_DX9,         MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_DX9 ? MF_CHECKED: MF_UNCHECKED));
-    CheckMenuItem(hMenu,ID_OPTIONS_PRESENTER_OPENGL,      MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_OPENGL ? MF_CHECKED: MF_UNCHECKED));
-    CheckMenuItem(hMenu,ID_OPTIONS_VIDEOPRESENTER_VULKAN, MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_VULKAN ? MF_CHECKED: MF_UNCHECKED));
+	CheckMenuItem(hMenu,ID_OPTIONS_PRESENTER_DX12,   MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_DX12   ? MF_CHECKED : MF_UNCHECKED));
+    CheckMenuItem(hMenu,ID_OPTIONS_PRESENTER_DX11,   MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_DX11   ? MF_CHECKED : MF_UNCHECKED));
+    CheckMenuItem(hMenu,ID_OPTIONS_PRESENTER_DX9,    MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_DX9    ? MF_CHECKED : MF_UNCHECKED));
+    CheckMenuItem(hMenu,ID_OPTIONS_PRESENTER_OPENGL, MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_OPENGL ? MF_CHECKED : MF_UNCHECKED));
+    CheckMenuItem(hMenu,ID_OPTIONS_PRESENTER_VULKAN, MF_BYCOMMAND| ( presenterType == amf::AMF_MEMORY_VULKAN ? MF_CHECKED : MF_UNCHECKED));
+
+	EnableMenuItem(hMenu,ID_OPTIONS_PRESENTER_DX12,   MF_BYCOMMAND| ( currState == PipelineStateRunning ? MF_DISABLED : MF_ENABLED));
+	EnableMenuItem(hMenu,ID_OPTIONS_PRESENTER_DX11,   MF_BYCOMMAND| ( currState == PipelineStateRunning ? MF_DISABLED : MF_ENABLED));
+	EnableMenuItem(hMenu,ID_OPTIONS_PRESENTER_DX9,    MF_BYCOMMAND| ( currState == PipelineStateRunning ? MF_DISABLED : MF_ENABLED));
+	EnableMenuItem(hMenu,ID_OPTIONS_PRESENTER_OPENGL, MF_BYCOMMAND| ( currState == PipelineStateRunning ? MF_DISABLED : MF_ENABLED));
+	EnableMenuItem(hMenu,ID_OPTIONS_PRESENTER_VULKAN, MF_BYCOMMAND| ( currState == PipelineStateRunning ? MF_DISABLED : MF_ENABLED));
+
+
+    amf_int64  hqScalerMode = -1;
+    s_pPipeline->GetParam(PlaybackPipeline::PARAM_NAME_HQ_SCALER, hqScalerMode);
+    const bool  isHQScalerBilinear = (hqScalerMode == AMF_HQ_SCALER_ALGORITHM_BILINEAR);
+    const bool  isHQScalerBicubic  = (hqScalerMode == AMF_HQ_SCALER_ALGORITHM_BICUBIC);
+    const bool  isHQScalerFSR      = (hqScalerMode == AMF_HQ_SCALER_ALGORITHM_FSR);
+    const bool  isHQScalerOFF      = !isHQScalerBilinear && !isHQScalerBicubic && !isHQScalerFSR;
+	CheckMenuItem(hMenu,ID_HQSCALER_BILINEAR, MF_BYCOMMAND| (isHQScalerBilinear ? MF_CHECKED : MF_UNCHECKED));
+    CheckMenuItem(hMenu,ID_HQSCALER_BICUBIC,  MF_BYCOMMAND| (isHQScalerBicubic  ? MF_CHECKED : MF_UNCHECKED));
+    CheckMenuItem(hMenu,ID_HQSCALER_FSR,      MF_BYCOMMAND| (isHQScalerFSR      ? MF_CHECKED : MF_UNCHECKED));
+    CheckMenuItem(hMenu,ID_HQSCALER_OFF,      MF_BYCOMMAND| (isHQScalerOFF      ? MF_CHECKED : MF_UNCHECKED));
+
+    // we should allow to change the HQ scaler mode on the fly...
+    // if it's not off (if it's off, it hasn't been inserted in the pipeline)
+	EnableMenuItem(hMenu,ID_HQSCALER_BILINEAR, MF_BYCOMMAND| ( ((currState == PipelineStateRunning) && isHQScalerOFF) ? MF_DISABLED : MF_ENABLED));
+	EnableMenuItem(hMenu,ID_HQSCALER_BICUBIC,  MF_BYCOMMAND| ( ((currState == PipelineStateRunning) && isHQScalerOFF) ? MF_DISABLED : MF_ENABLED));
+	EnableMenuItem(hMenu,ID_HQSCALER_FSR,      MF_BYCOMMAND| ( ((currState == PipelineStateRunning) && isHQScalerOFF) ? MF_DISABLED : MF_ENABLED));
+	EnableMenuItem(hMenu,ID_HQSCALER_OFF,      MF_BYCOMMAND| ( currState == PipelineStateRunning                      ? MF_DISABLED : MF_ENABLED));
+
  
     bool bFullScreen = false;
     s_pPipeline->GetParam(PlaybackPipeline::PARAM_NAME_FULLSCREEN, bFullScreen);
@@ -385,17 +413,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }else if(s_pPipeline->GetState() == PipelineStateRunning)
             {
                 s_pPipeline->Play();
+                UpdateMenuItems();
             }
 
             break;
         case ID_PLAYBACK_PAUSE:
             s_pPipeline->Pause();
+            UpdateMenuItems();
             break;
         case ID_PLAYBACK_STEP:
             s_pPipeline->Step();
+            UpdateMenuItems();
             break;
         case ID_PLAYBACK_STOP:
             s_pPipeline->Stop();
+            UpdateMenuItems();
             break;
 		case ID_OPTIONS_PRESENTER_DX12:
 			s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_DX12);
@@ -413,8 +445,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_OPENGL);
             UpdateMenuItems();
             break;
-        case ID_OPTIONS_VIDEOPRESENTER_VULKAN:
+        case ID_OPTIONS_PRESENTER_VULKAN:
             s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_VULKAN);
+            UpdateMenuItems();
+            break;
+        case ID_HQSCALER_OFF:
+            s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_HQ_SCALER, -1);
+            UpdateMenuItems();
+            break;
+        case ID_HQSCALER_BILINEAR:
+            s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_HQ_SCALER, AMF_HQ_SCALER_ALGORITHM_BILINEAR);
+            UpdateMenuItems();
+            break;
+        case ID_HQSCALER_BICUBIC:
+            s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_HQ_SCALER, AMF_HQ_SCALER_ALGORITHM_BICUBIC);
+            UpdateMenuItems();
+            break;
+        case ID_HQSCALER_FSR:
+            s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_HQ_SCALER, AMF_HQ_SCALER_ALGORITHM_FSR);
             UpdateMenuItems();
             break;
         case ID_OPTIONS_FULLSCREEN:
@@ -653,7 +701,7 @@ void CloseToolbar()
     }
 }
 //-------------------------------------------------------------------------------------------------
-void                StreamOpen(HWND hWnd)
+void  StreamOpen(HWND hWnd)
 {
     if(DialogBox((HINSTANCE)hInst, MAKEINTRESOURCE(IDD_OPEN_STREAM), hWnd, OpenStreamProc) == IDOK)
     {

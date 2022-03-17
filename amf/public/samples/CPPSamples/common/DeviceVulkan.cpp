@@ -31,7 +31,7 @@
 //
 
 #include "DeviceVulkan.h"
-#include "CmdLogger.h"
+#include "public/common/TraceAdapter.h"
 #include <set>
 
 //#define VK_NO_PROTOTYPES
@@ -39,6 +39,8 @@
     #define VK_USE_PLATFORM_WIN32_KHR
 #endif
 #include "vulkan/vulkan.h"
+
+#define AMF_FACILITY L"DeviceVulkan"
 
 DeviceVulkan::DeviceVulkan() :
 m_hQueueGraphics(NULL),
@@ -68,22 +70,15 @@ AMF_RESULT DeviceVulkan::Init(amf_uint32 adapterID, amf::AMFContext *pContext)
     pContext1->GetVulkanDeviceExtensions(&nCount, NULL);
     std::vector<const char*> deviceExtensions;
     if(nCount > 0)
-    { 
+    {
         deviceExtensions.resize(nCount);
         pContext1->GetVulkanDeviceExtensions(&nCount, deviceExtensions.data());
     }
-    // added fd extension
-#if defined(__linux)
-    deviceExtensions.push_back(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
-    deviceExtensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
-    deviceExtensions.push_back(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
-    deviceExtensions.push_back(VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME);
-#endif
    res = m_ImportTable.LoadFunctionsTable();
-   CHECK_RETURN(res == AMF_OK, res, L"LoadFunctionsTable() failed - check if the proper Vulkan SDK is installed");
+   AMF_RETURN_IF_FAILED(res, L"LoadFunctionsTable() failed - check if the proper Vulkan SDK is installed");
 
    res = CreateInstance();
-   CHECK_RETURN(res == AMF_OK, res, L"CreateInstance() failed");
+   AMF_RETURN_IF_FAILED(res, L"CreateInstance() failed");
 
 #if defined(_DEBUG) && defined(ENABLE_VALIDATION)
    bool bDebug = true;
@@ -91,14 +86,18 @@ AMF_RESULT DeviceVulkan::Init(amf_uint32 adapterID, amf::AMFContext *pContext)
    bool bDebug = false;
 #endif
    res = m_ImportTable.LoadInstanceFunctionsTableExt(m_VulkanDev.hInstance, bDebug);
-   CHECK_RETURN(res == AMF_OK, res, L"LoadInstanceFunctionsTableExt() failed - check if the proper Vulkan SDK is installed");
+   AMF_RETURN_IF_FAILED(res, L"LoadInstanceFunctionsTableExt() failed - check if the proper Vulkan SDK is installed");
 
 // load instance based functions
    res = CreateDeviceAndFindQueues(adapterID, deviceExtensions);
-   CHECK_RETURN(res == AMF_OK, res, L"CreateDeviceAndFindQueues() failed");
+   if(res == AMF_NO_DEVICE)
+   {
+       return res; // Adapter ID out of range
+   }
+   AMF_RETURN_IF_FAILED(res, L"CreateDeviceAndFindQueues() failed");
 
    res = m_ImportTable.LoadDeviceFunctionsTableExt(m_VulkanDev.hDevice);
-   CHECK_RETURN(res == AMF_OK, res, L"LoadDeviceFunctionsTableExt() failed - check if the proper Vulkan SDK is installed");
+   AMF_RETURN_IF_FAILED(res, L"LoadDeviceFunctionsTableExt() failed - check if the proper Vulkan SDK is installed");
 
    return AMF_OK;
 }
@@ -192,11 +191,12 @@ AMF_RESULT DeviceVulkan::CreateInstance()
 
     std::vector<const char*> instanceExtensions =
     {
+    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
 #if defined(_WIN32)
         VK_KHR_SURFACE_EXTENSION_NAME,
         VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
 #elif defined(__linux)
-        "VK_KHR_surface",
+        VK_KHR_SURFACE_EXTENSION_NAME,
         VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
         VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
         VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME,
@@ -238,9 +238,9 @@ AMF_RESULT DeviceVulkan::CreateInstance()
     applicationInfo.pEngineName         = "AMD Vulkan Sample Engine";
 
     instanceCreateInfo.pApplicationInfo = &applicationInfo;
-    
+
     vkres = GetVulkan()->vkCreateInstance(&instanceCreateInfo, nullptr, &m_VulkanDev.hInstance);
-    CHECK_RETURN(vkres == VK_SUCCESS, AMF_FAIL, L"CreateInstance() failed to vkCreateInstance, Error=" << (int)vkres);
+    AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS, AMF_FAIL, L"CreateInstance() failed to vkCreateInstance, Error=%d", (int)vkres);
 
     return AMF_OK;
 }
@@ -251,18 +251,22 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
     uint32_t physicalDeviceCount = 0;
 
     vkres = GetVulkan()->vkEnumeratePhysicalDevices(m_VulkanDev.hInstance, &physicalDeviceCount, nullptr);
-    CHECK_RETURN(vkres == VK_SUCCESS, AMF_FAIL, L"CreateDeviceAndQueues() failed to vkEnumeratePhysicalDevices, Error=%d" << (int)vkres);
+    AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS, AMF_FAIL, L"CreateDeviceAndQueues() failed to vkEnumeratePhysicalDevices, Error=%d", (int)vkres);
 
     std::vector<VkPhysicalDevice> physicalDevices{ physicalDeviceCount };
 
     vkres = GetVulkan()->vkEnumeratePhysicalDevices(m_VulkanDev.hInstance, &physicalDeviceCount,physicalDevices.data());
-    CHECK_RETURN(vkres == VK_SUCCESS, AMF_FAIL, L"CreateDeviceAndQueues() failed to vkEnumeratePhysicalDevices, Error=%d" << (int)vkres);
+    AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS, AMF_FAIL, L"CreateDeviceAndQueues() failed to vkEnumeratePhysicalDevices, Error=%d", (int)vkres);
 
     if(adapterID < 0)
     {
         adapterID = 0;
     }
-    CHECK_RETURN(adapterID < physicalDeviceCount, AMF_FAIL, L"Invalid Adapter ID");
+    if(adapterID >= physicalDeviceCount)
+    {
+        AMFTraceInfo(AMF_FACILITY, L"Invalid Adapter ID=%d", adapterID);
+        return AMF_NO_DEVICE;
+    }
 
     m_VulkanDev.hPhysicalDevice = physicalDevices[adapterID];
     std::vector<VkDeviceQueueCreateInfo> deviceQueueCreateInfoItems;
@@ -272,7 +276,7 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
 
     GetVulkan()->vkGetPhysicalDeviceQueueFamilyProperties(m_VulkanDev.hPhysicalDevice, &queueFamilyPropertyCount, nullptr);
 
-    CHECK_RETURN(vkres == VK_SUCCESS, AMF_FAIL, L"CreateDeviceAndQueues() queueFamilyPropertyCount = 0");
+    AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS, AMF_FAIL, L"CreateDeviceAndQueues() queueFamilyPropertyCount = 0");
 
     std::vector<VkQueueFamilyProperties> queueFamilyProperties{ queueFamilyPropertyCount };
 
@@ -350,8 +354,8 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
     deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t> (deviceExtensions.size());
 
     vkres = GetVulkan()->vkCreateDevice(m_VulkanDev.hPhysicalDevice, &deviceCreateInfo, nullptr, &m_VulkanDev.hDevice);
-    CHECK_RETURN(vkres == VK_SUCCESS, AMF_FAIL, L"CreateDeviceAndQueues() vkCreateDevice() failed, Error=%d" << (int)vkres);
-    CHECK_RETURN(m_VulkanDev.hDevice != nullptr, AMF_FAIL, L"CreateDeviceAndQueues() vkCreateDevice() returned nullptr");
+    AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS, AMF_FAIL, L"CreateDeviceAndQueues() vkCreateDevice() failed, Error=%d", (int)vkres);
+    AMF_RETURN_IF_FALSE(m_VulkanDev.hDevice != nullptr, AMF_FAIL, L"CreateDeviceAndQueues() vkCreateDevice() returned nullptr");
     
 	GetVulkan()->vkGetDeviceQueue(m_VulkanDev.hDevice, m_uQueueGraphicsFamilyIndex, uQueueGraphicsIndex, &m_hQueueGraphics);
 	GetVulkan()->vkGetDeviceQueue(m_VulkanDev.hDevice, m_uQueueComputeFamilyIndex, uQueueComputeIndex, &m_hQueueCompute);

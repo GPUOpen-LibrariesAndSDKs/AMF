@@ -182,10 +182,10 @@
   <ItemGroup>
     <CustomBuild Include="..\common\quad.frag">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"%VK_SDK_PATH%/Bin32/glslangvalidator.exe" -V "%(FullPath)" -o $(OutputPath)%(Filename)%(Extension).spv</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"%VK_SDK_PATH%/Bin32/glslangvalidator.exe" -V "%(FullPath)" -o $(OutputPath)%(Filename)%(Extension).spv</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"%VK_SDK_PATH%/Bin32/glslangvalidator.exe" -V "%(FullPath)" -o $(OutputPath)%(Filename)%(Extension).spv</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"%VK_SDK_PATH%/Bin32/glslangvalidator.exe" -V "%(FullPath)" -o $(OutputPath)%(Filename)%(Extension).spv</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"%VK_SDK_PATH%/Bin/glslangvalidator.exe" -V "%(FullPath)" -o $(OutputPath)%(Filename)%(Extension).spv</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"%VK_SDK_PATH%/Bin/glslangvalidator.exe" -V "%(FullPath)" -o $(OutputPath)%(Filename)%(Extension).spv</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"%VK_SDK_PATH%/Bin/glslangvalidator.exe" -V "%(FullPath)" -o $(OutputPath)%(Filename)%(Extension).spv</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"%VK_SDK_PATH%/Bin/glslangvalidator.exe" -V "%(FullPath)" -o $(OutputPath)%(Filename)%(Extension).spv</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compiling Vulkan shaders...</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compiling Vulkan shaders...</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compiling Vulkan shaders...</Message>
@@ -205,10 +205,10 @@
     </CustomBuild>
     <CustomBuild Include="..\common\quad.vert">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"%VK_SDK_PATH%/Bin32/glslangvalidator.exe" -V "%(FullPath)" -o $(OutputPath)%(Filename)%(Extension).spv</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"%VK_SDK_PATH%/Bin32/glslangvalidator.exe" -V "%(FullPath)" -o $(OutputPath)%(Filename)%(Extension).spv</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"%VK_SDK_PATH%/Bin32/glslangvalidator.exe" -V "%(FullPath)" -o $(OutputPath)%(Filename)%(Extension).spv</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"%VK_SDK_PATH%/Bin32/glslangvalidator.exe" -V "%(FullPath)" -o $(OutputPath)%(Filename)%(Extension).spv</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"%VK_SDK_PATH%/Bin/glslangvalidator.exe" -V "%(FullPath)" -o $(OutputPath)%(Filename)%(Extension).spv</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"%VK_SDK_PATH%/Bin/glslangvalidator.exe" -V "%(FullPath)" -o $(OutputPath)%(Filename)%(Extension).spv</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"%VK_SDK_PATH%/Bin/glslangvalidator.exe" -V "%(FullPath)" -o $(OutputPath)%(Filename)%(Extension).spv</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"%VK_SDK_PATH%/Bin/glslangvalidator.exe" -V "%(FullPath)" -o $(OutputPath)%(Filename)%(Extension).spv</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compiling Vulkan shaders...</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compiling Vulkan shaders...</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compiling Vulkan shaders...</Message>

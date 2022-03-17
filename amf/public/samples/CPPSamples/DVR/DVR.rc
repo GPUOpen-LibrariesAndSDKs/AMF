@@ -76,6 +76,10 @@ BEGIN
     BEGIN
         MENUITEM SEPARATOR
     END
+    POPUP "Capture Component"
+    BEGIN
+        MENUITEM SEPARATOR
+    END
     POPUP "&Help"
     BEGIN
         MENUITEM "&About ...",                  IDM_ABOUT
