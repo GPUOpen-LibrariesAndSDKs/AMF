@@ -12,13 +12,23 @@ AMF is a light-weight, portable multimedia framework that abstracts away most of
     * Windows&reg; 8.1 (AMF v1.4.0.0 and older)
     * Windows&reg; 10, or Windows&reg; 11
     * Windows Subsystem for Linux (DX12 Decoder and Converter Only)
-    * Visual Studio&reg; 2017 or Visual Studio&reg; 2019
+    * Visual Studio&reg; 2019
 * Linux
-    * AMF runtime is available in the Pro driver as an optional component. Driver and AMF component installation instructions are available on the [Wiki page](https://github.com/GPUOpen-LibrariesAndSDKs/AMF/wiki/Linux).
     * RHEL 8.4 / 7.9 
     * CentOS 8.4 / 7.9
     * Ubuntu 20.04.2 / 18.04.5 HWE
     * SLED/SLES 15 SP3
+* Driver and AMF component installation instructions are available on the [Wiki page](https://github.com/GPUOpen-LibrariesAndSDKs/AMF/wiki).
+    * The following table contains the driver versions in which the Linux pro driver started including the AMF runtime, otherwise, the AMF runtime is optional and has to be installed separately.
+    * All supported distros include the AMF runtime starting driver version 20.40.
+
+      | OS                        | AMF included starting version:    |
+      | -------------             |:-------------:                    |
+      | Ubuntu 18.04.1            | 18.30                             |
+      | SLE 15                    | 18.40                             |
+      | Ubuntu 20.04.0            | 20.20                             |
+      | \**All supported distros* | 20.40                             |
+
 * AMF SDK is backward compatible with all previous driver versions.
 * Version 1.4.24: AMD Radeon Software Adrenalin Edition 22.3.1 (21.50.02.01) or newer. Added new AMD Direct Capture mode, new HQscaler feature(Bilinear/Bicubic/FSR), new Vulkan HEVC encoder on Navi family, improvements on H264 Vulkan encoding.
 * Version 1.4.23: AMD Radeon Software Adrenalin Edition 21.12.1 (21.40.11.03) or newer. Added new Auto LTR encoder mode, additional encoder usage presets and encoder statistics/feedback.
