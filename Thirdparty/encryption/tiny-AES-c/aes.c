@@ -163,9 +163,9 @@ NOTE:   String length must be evenly divisible by 16byte (str_len % 16 == 0)
 // jcallan@github points out that declaring Multiply as a function 
 // reduces code size considerably with the Keil ARM compiler.
 // See this link for more information: https://github.com/kokke/tiny-AES-C/pull/3
-#ifndef MULTIPLY_AS_A_FUNCTION
-  #define MULTIPLY_AS_A_FUNCTION 0
-#endif
+//#ifndef MULTIPLY_AS_A_FUNCTION  	/*Multiply is removed*/
+//  #define MULTIPLY_AS_A_FUNCTION 0
+//#endif
 
 
 
@@ -394,17 +394,11 @@ static void AddRoundKey(uint32_t round, state_t* state, const uint8_t* RoundKey)
 // state matrix with values in an S-box.
 static void SubBytes(state_t* state)
 {
-#if 1
     unsigned int i;
     for (i = 0; i < 4; i++)
     {
          uint32_t* pLine = ((uint32_t*)state + i);
          uint32_t line = *pLine;
-
-         uint32_t byte0 = (line & MASK32_BYTE0) >> OFS32_BYTE0;
-         uint32_t byte1 = (line & MASK32_BYTE1) >> OFS32_BYTE1;
-         uint32_t byte2 = (line & MASK32_BYTE2) >> OFS32_BYTE2;
-         uint32_t byte3 = (line & MASK32_BYTE3) >> OFS32_BYTE3;
 
         *pLine = (getSBoxValue((line & MASK32_BYTE0) >> OFS32_BYTE0) << OFS32_BYTE0) | 
             (getSBoxValue((line & MASK32_BYTE1) >> OFS32_BYTE1) << OFS32_BYTE1) | 
@@ -412,18 +406,6 @@ static void SubBytes(state_t* state)
             (getSBoxValue((line & MASK32_BYTE3) >> OFS32_BYTE3) << OFS32_BYTE3);
     }
 
-#else
-    unsigned int i, j;
-    for (i = 0; i < 4; ++i)
-    {
-        for (j = 0; j < 4; ++j)
-        {
-            (*state)[j][i] = getSBoxValue((*state)[j][i]);
-            //(*state)[i][j] = getSBoxValue((*state)[i][j]);
-        }
-    }
-
-#endif
 
 }
 
@@ -505,6 +487,7 @@ static void ShiftRows(state_t* state)
 #endif
 }
 
+#if 0 /*removing because xtime has been redefined*/
 #ifndef _DEBUG
 static inline uint32_t xtime(uint32_t x)
 {
@@ -517,56 +500,40 @@ static inline uint64_t xtime64(uint64_t x)
 #else
 #define xtime(x) ((((x)<<1) ^ ((((x)>>7)) * 0x1b)) & 0xFF)
 #endif
-
-
-
-// MixColumns function mixes the columns of the state matrix
-static void MixColumns(state_t* state)
-{
-  unsigned int i;
-  for (i = 0; i < 4; ++i)
-  {  
-      
-#if 1
-    uint32_t* pLine = ((uint32_t*)state + i);
-     uint32_t line = *pLine;
-
-     uint32_t byte0 = (line & MASK32_BYTE0) >> OFS32_BYTE0;
-     uint32_t byte1 = (line & MASK32_BYTE1) >> OFS32_BYTE1;
-     uint32_t byte2 = (line & MASK32_BYTE2) >> OFS32_BYTE2;
-     uint32_t byte3 = (line & MASK32_BYTE3) >> OFS32_BYTE3;
-
-    uint32_t t = byte0;
-     uint32_t Tmp = byte0 ^ byte1 ^ byte2 ^ byte3;
-    byte0 ^= xtime(byte0 ^ byte1) ^ Tmp;
-    byte1 ^= xtime(byte1 ^ byte2) ^ Tmp;
-    byte2 ^= xtime(byte2 ^ byte3) ^ Tmp;
-    byte3 ^= xtime(byte3 ^ t) ^ Tmp;
-
-    *pLine = (byte0 << OFS32_BYTE0) | (byte1 << OFS32_BYTE1) | (byte2 << OFS32_BYTE2) | (byte3 << OFS32_BYTE3);
-#else
-      uint32_t Tm;
-      /* GK
-          
-    t   = (*state)[i][0];
-    Tmp = (*state)[i][0] ^ (*state)[i][1] ^ (*state)[i][2] ^ (*state)[i][3] ;
-    Tm  = (*state)[i][0] ^ (*state)[i][1] ; Tm = xtime(Tm);  (*state)[i][0] ^= Tm ^ Tmp ;
-    Tm  = (*state)[i][1] ^ (*state)[i][2] ; Tm = xtime(Tm);  (*state)[i][1] ^= Tm ^ Tmp ;
-    Tm  = (*state)[i][2] ^ (*state)[i][3] ; Tm = xtime(Tm);  (*state)[i][2] ^= Tm ^ Tmp ;
-    Tm  = (*state)[i][3] ^ t ;              Tm = xtime(Tm);  (*state)[i][3] ^= Tm ^ Tmp ;
-*/
-    // GK - slightly more optimal and simple
-    t = (*state)[i][0];
-    Tmp = (*state)[i][0] ^ (*state)[i][1] ^ (*state)[i][2] ^ (*state)[i][3];
-    Tm = xtime((*state)[i][0] ^ (*state)[i][1]); (*state)[i][0] ^= Tm ^ Tmp;
-    Tm = xtime((*state)[i][1] ^ (*state)[i][2]); (*state)[i][1] ^= Tm ^ Tmp;
-    Tm = xtime((*state)[i][2] ^ (*state)[i][3]); (*state)[i][2] ^= Tm ^ Tmp;
-    Tm = xtime((*state)[i][3] ^ t);              (*state)[i][3] ^= Tm ^ Tmp;
-    
 #endif
-  }
+
+/* xtime
+ * original xtime function operated on bytes, this optimized version performs the same
+ * calculation on all bytes in a dword simultaneously, reducing operations and memory accesses
+ */
+static inline uint32_t xtime(uint32_t x)
+{
+  return ((x&0x7f7f7f7f)<<1)^(((x&0x80808080)>>7)*0x1b);
+}
+static inline uint64_t xtime64(uint64_t x)
+{
+    return ((x << 1) ^ (((x >> 7)/* & 1*/) * 0x1b)) & 0xFF;
 }
 
+/* MixColumns
+ * replaced byte-wise operations with word-based operations
+ * eliminated repeated calculations
+ */
+static void MixColumns(state_t* state)
+{
+  unsigned int *sp = (unsigned int *) state;
+
+  for (int i=4;i;--i,sp++)
+    *sp = xtime((*sp) ^ (((*sp)>>8)|((*sp)<<24))) ^
+            (((*sp)<<8)|((*sp)>>24)) ^
+            (((*sp)<<16)|((*sp)>>16)) ^ (((*sp)<<24)|((*sp)>>8));
+}
+
+/*removed old Multiply function - now integrated into InvMixColumns */
+// Multiply is used to multiply numbers in the field GF(2^8)
+// Note: The last call to xtime() is unneeded, but often ends up generating a smaller binary
+//       The compiler seems to be able to vectorize the operation better this way.
+//       See https://github.com/kokke/tiny-AES-c/pull/34
 // Multiply is used to multiply numbers in the field GF(2^8)
 // Note: The last call to xtime() is unneeded, but often ends up generating a smaller binary
 //       The compiler seems to be able to vectorize the operation better this way.
@@ -575,37 +542,21 @@ static void MixColumns(state_t* state)
 #ifndef _DEBUG
 static inline uint32_t Multiply(uint32_t x, uint32_t y)
 {
-     uint32_t xtimeX = xtime(x);
-     uint32_t xtimeXX = xtime(xtimeX);
-     uint32_t xtimeXXX = xtime(xtimeXX);
-    
-  return ((~((y & 1)-1) & x) ^
-       (~((y>>1 & 1)-1) & xtimeX) ^
-       (~((y>>2 & 1)-1) & xtimeXX) ^
-       (~((y>>3 & 1)-1) & xtimeXXX) 
+    uint32_t xtimeX = xtime(x);
+    uint32_t xtimeXX = xtime(xtimeX);
+    uint32_t xtimeXXX = xtime(xtimeXX);
+
+    return ((~((y & 1)-1) & x) ^
+            (~((y>>1 & 1)-1) & xtimeX) ^
+            (~((y>>2 & 1)-1) & xtimeXX) ^
+            (~((y>>3 & 1)-1) & xtimeXXX)
 #if defined(_MSC_VER) && defined(_M_AMD64)
-      ^
+            ^
        (~((y>>4 & 1)-1) & xtime(xtimeXXX))
 #endif
-      ); /* this last call to xtime() can be omitted */
-  }
-
-static inline uint64_t Multiply64(uint64_t x, uint64_t y)
-{
-     uint64_t xtimeX = xtime64(x);
-     uint64_t xtimeXX = xtime64(xtimeX);
-     uint64_t xtimeXXX = xtime64(xtimeXX);
-
-    return ((~((y & 1) - 1) & x) ^
-        (~((y >> 1 & 1) - 1) & xtimeX) ^
-        (~((y >> 2 & 1) - 1) & xtimeXX) ^
-        (~((y >> 3 & 1) - 1) & xtimeXXX)
-#if defined(_MSC_VER) && defined(_M_AMD64)
-        ^
-        (~((y >> 4 & 1) - 1) & xtime64(xtimeXXX))
-#endif
-        ); /* this last call to xtime() can be omitted */
+    ); /* this last call to xtime() can be omitted */
 }
+
 #else
 #define Multiply(x, y)                                \
       ((~((y & 1)-1) & x) ^                              \
@@ -613,11 +564,6 @@ static inline uint64_t Multiply64(uint64_t x, uint64_t y)
       (~((y>>2 & 1)-1) & xtime(xtime(x))) ^                \
       (~((y>>3 & 1)-1) & xtime(xtime(xtime(x)))) )   \
 
-#define Multiply64(x, y)                                \
-      ((~((y & 1)-1) & x) ^                              \
-      (~((y>>1 & 1)-1) & xtime(x)) ^                       \
-      (~((y>>2 & 1)-1) & xtime(xtime(x))) ^                \
-      (~((y>>3 & 1)-1) & xtime(xtime(xtime(x)))) )   \
 
 #endif
 
@@ -625,68 +571,70 @@ static inline uint64_t Multiply64(uint64_t x, uint64_t y)
 // MixColumns function mixes the columns of the state matrix.
 // The method used to multiply may be difficult to understand for the inexperienced.
 // Please use the references to gain more information.
+/* InvMixColumns
+ * this a more optimal version which performs parallel computation on all bytes in
+ * a dword and applies the Multiply & xor and unrolls the multiple calls to Multiply
+ * for each 0x9,0xb,0xd and 0xe perturbation
+ */
 static void InvMixColumns(state_t* state)
 {
-  int i;
-#if (USE32_ARITHMETIC == 1)
-  for (i = 0; i < 4; ++i)
-  { 
-      uint32_t* pLine = ((uint32_t*)state + i);
-       uint32_t line = *pLine;
+#if !defined(_M_X64)    // This approach runs a bit faster on arm64-v8a and possibly others
+    for (int i = 0; i < 4; ++i)
+    {
+        uint32_t *pLine = ((uint32_t *) state + i);
+        uint32_t line = *pLine;
 
-       uint32_t byte0 = (line & MASK32_BYTE0) >> OFS32_BYTE0;
-       uint32_t byte1 = (line & MASK32_BYTE1) >> OFS32_BYTE1;
-       uint32_t byte2 = (line & MASK32_BYTE2) >> OFS32_BYTE2;
-       uint32_t byte3 = (line & MASK32_BYTE3) >> OFS32_BYTE3;
+        uint32_t byte0 = (line & MASK32_BYTE0) >> OFS32_BYTE0;
+        uint32_t byte1 = (line & MASK32_BYTE1) >> OFS32_BYTE1;
+        uint32_t byte2 = (line & MASK32_BYTE2) >> OFS32_BYTE2;
+        uint32_t byte3 = (line & MASK32_BYTE3) >> OFS32_BYTE3;
 
-      line = (Multiply(byte0, 0x0e) ^ Multiply(byte1, 0x0b) ^ Multiply(byte2, 0x0d) ^ Multiply(byte3, 0x09)) << OFS32_BYTE0;
-      line |= (Multiply(byte0, 0x09) ^ Multiply(byte1, 0x0e) ^ Multiply(byte2, 0x0b) ^ Multiply(byte3, 0x0d)) << OFS32_BYTE1;
-      line |= (Multiply(byte0, 0x0d) ^ Multiply(byte1, 0x09) ^ Multiply(byte2, 0x0e) ^ Multiply(byte3, 0x0b)) << OFS32_BYTE2;
-      line |= (Multiply(byte0, 0x0b) ^ Multiply(byte1, 0x0d) ^ Multiply(byte2, 0x09) ^ Multiply(byte3, 0x0e)) << OFS32_BYTE3;
+        line = (Multiply(byte0, 0x0e) ^ Multiply(byte1, 0x0b) ^ Multiply(byte2, 0x0d) ^
+                Multiply(byte3, 0x09)) << OFS32_BYTE0;
+        line |= (Multiply(byte0, 0x09) ^ Multiply(byte1, 0x0e) ^ Multiply(byte2, 0x0b) ^
+                 Multiply(byte3, 0x0d)) << OFS32_BYTE1;
+        line |= (Multiply(byte0, 0x0d) ^ Multiply(byte1, 0x09) ^ Multiply(byte2, 0x0e) ^
+                 Multiply(byte3, 0x0b)) << OFS32_BYTE2;
+        line |= (Multiply(byte0, 0x0b) ^ Multiply(byte1, 0x0d) ^ Multiply(byte2, 0x09) ^
+                 Multiply(byte3, 0x0e)) << OFS32_BYTE3;
 
-      *pLine = line;
+        *pLine = line;
+    }
+#else   //  This way is more efficient on the x64 Intel/AMD architecture
+    uint32_t *sp=(uint32_t*)state;
+    uint32_t xtimeX;
+    uint32_t xtimeXX;
+    uint32_t xtimeXXX;
+    uint32_t xtime_x9;
+    uint32_t xtime_xb;
+    uint32_t xtime_xd;
+    uint32_t xtime_xe;
+    //*sp++ = i;
 
+    for (int i=4; i; --i, sp++) 
+    {
+        uint32_t spVal = *sp;
+        xtimeX = xtime(spVal);
+        xtimeXX = xtime(xtimeX);
+        xtimeXXX = xtime(xtimeXX);
 
-/* GK
-    a = (*state)[i][0];
-    b = (*state)[i][1];
-    c = (*state)[i][2];
-    d = (*state)[i][3];
+        xtime_x9 = xtimeXXX ^ spVal;
+        xtime_xb = xtimeXXX ^ xtimeX ^ spVal;
+        xtime_xd = xtimeXXX ^ xtimeXX ^ spVal;
+        xtime_xe = xtimeXXX ^ xtimeXX ^ xtimeX;
 
-    (*state)[i][0] = Multiply(a, 0x0e) ^ Multiply(b, 0x0b) ^ Multiply(c, 0x0d) ^ Multiply(d, 0x09);
-    (*state)[i][1] = Multiply(a, 0x09) ^ Multiply(b, 0x0e) ^ Multiply(c, 0x0b) ^ Multiply(d, 0x0d);
-    (*state)[i][2] = Multiply(a, 0x0d) ^ Multiply(b, 0x09) ^ Multiply(c, 0x0e) ^ Multiply(d, 0x0b);
-    (*state)[i][3] = Multiply(a, 0x0b) ^ Multiply(b, 0x0d) ^ Multiply(c, 0x09) ^ Multiply(d, 0x0e);
-*/
-  }
-#else
-  for (i = 0; i < 2; ++i)
-  {
-      uint64_t* pDoubleLine = ((uint64_t*)state + i);
-       uint64_t doubleLine = *pDoubleLine;
+        uint32_t xtime_xb_r8 =  xtime_xb >> 8;
+        uint32_t xtime_xd_r16 = xtime_xd >> 16;
+        uint32_t xtime_x9_l8 =  xtime_x9 << 8;
+        uint32_t xtime_xd_l16 = xtime_xd << 16;
 
-       uint64_t byte0 = (doubleLine & MASK64_BYTE0) >> OFS64_BYTE0;
-       uint64_t byte1 = (doubleLine & MASK64_BYTE1) >> OFS64_BYTE1;
-       uint64_t byte2 = (doubleLine & MASK64_BYTE2) >> OFS64_BYTE2;
-       uint64_t byte3 = (doubleLine & MASK64_BYTE3) >> OFS64_BYTE3;
-
-      uint64_t result = (Multiply64(byte0, 0x0e) ^ Multiply64(byte1, 0x0b) ^ Multiply64(byte2, 0x0d) ^ Multiply64(byte3, 0x09)) << OFS64_BYTE0;
-      result |= (Multiply64(byte0, 0x09) ^ Multiply64(byte1, 0x0e) ^ Multiply64(byte2, 0x0b) ^ Multiply64(byte3, 0x0d)) << OFS64_BYTE1;
-      result |= (Multiply64(byte0, 0x0d) ^ Multiply64(byte1, 0x09) ^ Multiply64(byte2, 0x0e) ^ Multiply64(byte3, 0x0b)) << OFS64_BYTE2;
-      result |= (Multiply64(byte0, 0x0b) ^ Multiply64(byte1, 0x0d) ^ Multiply64(byte2, 0x09) ^ Multiply64(byte3, 0x0e)) << OFS64_BYTE3;
-
-      byte0 = (doubleLine & MASK64_BYTE4) >> OFS64_BYTE4;
-      byte1 = (doubleLine & MASK64_BYTE5) >> OFS64_BYTE5;
-      byte2 = (doubleLine & MASK64_BYTE6) >> OFS64_BYTE6;
-      byte3 = (doubleLine & MASK64_BYTE7) >> OFS64_BYTE7;
-
-      result |= (Multiply64(byte0, 0x0e) ^ Multiply64(byte1, 0x0b) ^ Multiply64(byte2, 0x0d) ^ Multiply64(byte3, 0x09)) << OFS64_BYTE4;
-      result |= (Multiply64(byte0, 0x09) ^ Multiply64(byte1, 0x0e) ^ Multiply64(byte2, 0x0b) ^ Multiply64(byte3, 0x0d)) << OFS64_BYTE5;
-      result |= (Multiply64(byte0, 0x0d) ^ Multiply64(byte1, 0x09) ^ Multiply64(byte2, 0x0e) ^ Multiply64(byte3, 0x0b)) << OFS64_BYTE6;
-      result |= (Multiply64(byte0, 0x0b) ^ Multiply64(byte1, 0x0d) ^ Multiply64(byte2, 0x09) ^ Multiply64(byte3, 0x0e)) << OFS64_BYTE7;
-
-      *pDoubleLine = result;
-  }
+        //this next assignment incorporates all of the Multiply calls, eliminating the repeated re-calculations
+        *sp =
+        /* byte 0:*/ (((xtime_xe         ^ xtime_xb_r8  ^ xtime_xd_r16 ^ (xtime_x9 >> 24)) & 0x000000ff) |
+        /* byte 1:*/  ((xtime_x9_l8      ^ xtime_xe     ^ xtime_xb_r8  ^ xtime_xd_r16    ) & 0x0000ff00) |
+        /* byte 2:*/  ((xtime_xd_l16     ^ xtime_x9_l8  ^ xtime_xe     ^ xtime_xb_r8     ) & 0x00ff0000) |
+        /* byte 3:*/  (((xtime_xb << 24) ^ xtime_xd_l16 ^ xtime_x9_l8  ^ xtime_xe        ) & 0xff000000));
+    }
 #endif
 }
 
