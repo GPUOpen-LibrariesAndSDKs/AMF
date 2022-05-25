@@ -566,12 +566,12 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
 				    }
 				    else
 				    {
-					    LOG_ERROR(L"Error while selecting instace number " << selectedInstance);
+					    LOG_ERROR(L"Error while selecting instance number " << selectedInstance);
 				    }
 			    }
 			    else
 			    {
-				    LOG_ERROR(L"Error while enabling Multi Instace Mode");
+				    LOG_ERROR(L"Error while enabling Multi-instance Mode");
 			    }
 		    }
 	    }
@@ -610,12 +610,12 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
 
     m_pStreamWriter = PipelineElementPtr(new StreamWriter(m_pStreamOut));
 
-#define ASYNC_CONNECT 0 // full a-sync
-//#define ASYNC_CONNECT 1 // full sync
-//#define ASYNC_CONNECT 2 // siltter test
+#define ASYNC_CONNECT 0 // fully asynchronous
+//#define ASYNC_CONNECT 1 // fully synchronous
+//#define ASYNC_CONNECT 2 // splitter test
 #if ASYNC_CONNECT == 0
     //---------------------------------------------------------------------------------------------
-    // Connect pipeline a-sync
+    // Connect pipeline asynchronously
 
     Connect(m_pVideoRender, 4);
     if(m_pConverter != NULL)
@@ -628,7 +628,7 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
 //    Connect(m_pDummyWriter, 5);
 #elif ASYNC_CONNECT == 1
     //---------------------------------------------------------------------------------------------
-    // Connect pipeline sync - all components run in the same thread - slow - this code is for demo only
+    // Connect pipeline synchronously - all components run in the same thread - slow - this code is for demo only
 
     Connect(m_pVideoRender, 4, true);
     if(m_pConverter != NULL)
