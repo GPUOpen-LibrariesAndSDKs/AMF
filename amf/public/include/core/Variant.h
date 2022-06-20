@@ -1201,21 +1201,21 @@ namespace amf
     {
         res = AMF_OK;
         char buff[0xFF];
-        sprintf(buff, "%d,%d", value.num, value.den);
+        sprintf(buff, "%u,%u", value.num, value.den);
         return buff;
     }
     static AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertRatioToString(const AMFRatio& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         char buff[0xFF];
-        sprintf(buff, "%d,%d", value.num, value.den);
+        sprintf(buff, "%u,%u", value.num, value.den);
         return buff;
     }
     static AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertColorToString(const AMFColor& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         char buff[0xFF];
-        sprintf(buff, "%d,%d,%d,%d", value.r, value.g, value.b, value.a);
+        sprintf(buff, "%u,%u,%u,%u", value.r, value.g, value.b, value.a);
         return buff;
     }
 
@@ -1346,7 +1346,7 @@ namespace amf
         int readElements = 0;
         if(value.size() > 0)
         {
-            readElements = sscanf(value.c_str(), "%d,%d", &tmp.num, &tmp.den);
+            readElements = sscanf(value.c_str(), "%u,%u", &tmp.num, &tmp.den);
         }
         if(readElements)
         {
@@ -1362,7 +1362,7 @@ namespace amf
         int readElements = 0;
         if(value.size() > 0)
         {
-            readElements = sscanf(value.c_str(), "%d,%d", &tmp.num, &tmp.den);
+            readElements = sscanf(value.c_str(), "%u,%u", &tmp.num, &tmp.den);
         }
         if(readElements)
         {
