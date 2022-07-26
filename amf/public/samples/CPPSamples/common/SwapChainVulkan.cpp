@@ -188,7 +188,15 @@ AMF_RESULT SwapChainVulkan::CreateSwapChain(amf_handle hWnd, amf_handle hDisplay
 
     res = GetVulkan()->vkCreateWin32SurfaceKHR(pVulkanDev->hInstance, &surfaceCreateInfo, nullptr, &m_hSurfaceKHR);
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkCreateWin32SurfaceKHR() failed with error=" << res);
-    
+
+#elif defined(__ANDROID__)
+    VkAndroidSurfaceCreateInfoKHR surfaceCreateInfo = {};
+    surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
+    surfaceCreateInfo.pNext = nullptr;
+    surfaceCreateInfo.flags = 0;
+    surfaceCreateInfo.window = (struct ANativeWindow*)hWnd;
+
+    res = GetVulkan()->vkCreateAndroidSurfaceKHR(pVulkanDev->hInstance, &surfaceCreateInfo, nullptr, &m_hSurfaceKHR);
 #elif defined(__linux)
 
     VkXlibSurfaceCreateInfoKHR surfaceCreateInfo = {};

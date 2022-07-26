@@ -186,6 +186,8 @@ int main(int argc, char* argv[])
     case amf::AMF_MEMORY_VULKAN:
         res = amf::AMFContext1Ptr(context)->InitVulkan(NULL); // can be Vulkan device
         break;
+    default:
+        break;
     }
 
 	BitStreamType bsType = GetStreamType(fileNameIn.c_str());
@@ -240,8 +242,6 @@ int main(int argc, char* argv[])
 
 		res = encoder->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, bitRateOut);
 		AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, %" LPRId64 L") failed", bitRateOut);
-		res = encoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(widthIn, heightIn));
-		AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, %dx%d) failed", widthIn, heightIn);
 		res = encoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, ::AMFConstructRate(frameRateIn, 1));
 		AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, %dx%d) failed", frameRateIn, 1);
 
@@ -270,8 +270,6 @@ int main(int argc, char* argv[])
 
 		res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE, bitRateOut);
 		AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE, %" LPRId64 L") failed", bitRateOut);
-		res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE, ::AMFConstructSize(widthIn, heightIn));
-		AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE, %dx%d) failed", widthIn, heightIn);
 		res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, ::AMFConstructRate(frameRateIn, 1));
 		AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, %dx%d) failed", frameRateIn, 1);
 
@@ -423,6 +421,8 @@ static void WaitDecoder(amf::AMFContext *context, amf::AMFSurface *surface)
             // release temp objects
             outputSurface->Convert(amf::AMF_MEMORY_HOST);
         }
+        break;
+    default:
         break;
     }
 }

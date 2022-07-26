@@ -194,6 +194,7 @@ namespace amf
         AMFCurrentTimePtr		m_pCurrentTime;
         bool                    m_bPtsOffsetIsCalculated;
         amf_pts                 m_ptsOffset;
+        bool                    m_isUsageTrim;
     };
 
  //   typedef AMFInterfacePtr_T<AMFFileMuxerFFMPEGImpl>    AMFFileMuxerFFMPEGPtr;

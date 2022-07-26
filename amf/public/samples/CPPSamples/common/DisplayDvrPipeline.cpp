@@ -428,8 +428,6 @@ AMF_RESULT DisplayDvrPipeline::InitVideo(amf::AMF_MEMORY_TYPE engineMemoryType, 
 
     PushParamsToPropertyStorage(this, ParamEncoderDynamic, m_pEncoder);
 
-//    res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(3840, 2160));
-
     if (bLowLatency)
     {
         m_pEncoder->SetProperty(m_szEncoderID == AMFVideoEncoderVCE_AVC ? AMF_VIDEO_ENCODER_LOWLATENCY_MODE : AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE, true);

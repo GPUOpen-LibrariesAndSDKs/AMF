@@ -127,6 +127,8 @@ AMF_RESULT VideoPresenterVulkan::Init(amf_int32 width, amf_int32 height, amf::AM
     res = CreateCommandBuffer();
     CHECK_AMF_ERROR_RETURN(res, L"CreateCommandBuffer() failed");
 
+    CheckForResize();
+
     if(m_bResizeSwapChain == false)
     {
         m_rectClient = GetClientRect();
@@ -713,8 +715,8 @@ AMF_RESULT VideoPresenterVulkan::Present(amf::AMFSurface* pSurface)
     }
     if( (err = pSurface->Convert(GetMemoryType())) != AMF_OK)
     {
-        err;
     }
+
     amf_uint32 imageIndex = 0;
 
 

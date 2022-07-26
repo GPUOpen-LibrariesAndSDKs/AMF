@@ -167,6 +167,9 @@ cxx_flags = \
    -fvisibility=hidden \
    -fPIC
 
+ifdef AMF_STDCXX_STATIC
+    cxx_flags += -static-libgcc -static-libstdc++
+endif
 
 # In the long run, we should fix this warning
 cxx_flags += -Wno-unused-result
@@ -179,7 +182,10 @@ else
     cxx_flags += \
 	-fno-math-errno -fno-threadsafe-statics -fmerge-all-constants\
 	-O3 -fno-strict-aliasing -fno-delete-null-pointer-checks \
-	-fno-strict-overflow -flto -fuse-linker-plugin
+	-fno-strict-overflow -flto
+    ifndef NDK_PATH
+        cxx_flags += -fuse-linker-plugin
+    endif
 endif
 
 uname_p := $(shell uname -p)
@@ -196,9 +202,20 @@ linker_flags = \
 
 linker_libs = \
   dl \
-  m \
-  X11 \
-  GL
+  m
+
+ifndef NDK_PATH
+    linker_libs += \
+      X11 \
+      GL
+else
+    CXX = $(NDK_PATH)/bin/$(NDK_PREFIX)clang++
+    CC = $(NDK_PATH)/bin/$(NDK_PREFIX)clang
+    LNK = $(NDK_PATH)/bin/$(NDK_PREFIX)clang++
+    pp_defines += AMF_ANDROID_ENCODER
+    linker_libs += log
+    cxx_flags += -Wno-inconsistent-missing-override
+endif
 
 build_info_vars = \
     amf_root target_name custom_target host_bits build_type exe_target_file target_type CXX LNK

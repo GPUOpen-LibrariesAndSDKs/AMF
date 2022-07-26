@@ -357,24 +357,24 @@ bool QueryEncoderForCodecHEVC(const wchar_t *componentID, amf::AMFContext* pCont
 void QueryDecoderCaps(amf::AMFContext* pContext)
 {
     std::wcout << L"Querying video decoder capabilities...\n";
+
+#ifdef _WIN32
     QueryDecoderForCodec(AMFVideoDecoderUVD_MJPEG, pContext);
     QueryDecoderForCodec(AMFVideoDecoderUVD_MPEG2, pContext);
     QueryDecoderForCodec(AMFVideoDecoderUVD_MPEG4, pContext);
+#endif
     QueryDecoderForCodec(AMFVideoDecoderUVD_H264_AVC, pContext);
     QueryDecoderForCodec(AMFVideoDecoderHW_H265_HEVC, pContext);
     QueryDecoderForCodec(AMFVideoDecoderHW_H265_MAIN10, pContext);
-    
 }
 
-bool QueryEncoderCaps(amf::AMFContext* pContext)
+void QueryEncoderCaps(amf::AMFContext* pContext)
 {
     std::wcout << L"Querying video encoder capabilities...\n";
     
     QueryEncoderForCodecAVC(AMFVideoEncoderVCE_AVC, pContext);
     QueryEncoderForCodecAVC(AMFVideoEncoderVCE_SVC, pContext);
     QueryEncoderForCodecHEVC(AMFVideoEncoder_HEVC, pContext);
-
-    return  true;
 }
 
 bool QueryConverterCaps(amf::AMFContext* pContext)

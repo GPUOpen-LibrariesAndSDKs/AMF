@@ -56,6 +56,8 @@ static bool PicGetStride(amf::AMF_SURFACE_FORMAT eFormat, amf_int32 width, amf_i
             stride =  width * 2;
             break;
         case amf::AMF_SURFACE_P010:
+        case amf::AMF_SURFACE_P012:
+        case amf::AMF_SURFACE_P016:
             stride =  (width%2 ? width+1 : width) * 2;
             break;
         case amf::AMF_SURFACE_YUV420P:
@@ -96,6 +98,8 @@ static bool PicGetFrameSize(amf::AMF_SURFACE_FORMAT format, amf_int32 width, amf
         case amf::AMF_SURFACE_YV12:
         case amf::AMF_SURFACE_NV12:
         case amf::AMF_SURFACE_P010:
+        case amf::AMF_SURFACE_P012:
+        case amf::AMF_SURFACE_P016:
             size = stride*height + stride/2*height/2*2; // 2 planes
             break;
         case amf::AMF_SURFACE_YUY2:
@@ -283,9 +287,9 @@ AMF_RESULT RawStreamReader::Init(ParametersStorage* pParams, amf::AMFContext* pC
         return AMF_FAIL;
     }
 
-    if (m_format != amf::AMF_SURFACE_YUV420P && m_format != amf::AMF_SURFACE_BGRA && m_format != amf::AMF_SURFACE_RGBA && 
-        m_format != amf::AMF_SURFACE_NV12 && m_format != amf::AMF_SURFACE_P010 && m_format != amf::AMF_SURFACE_RGBA_F16 &&
-        m_format != amf::AMF_SURFACE_R10G10B10A2 &&
+    if (m_format != amf::AMF_SURFACE_YUV420P && m_format != amf::AMF_SURFACE_BGRA && m_format != amf::AMF_SURFACE_RGBA &&
+        m_format != amf::AMF_SURFACE_NV12 && m_format != amf::AMF_SURFACE_P010 && m_format != amf::AMF_SURFACE_P012 &&
+        m_format != amf::AMF_SURFACE_P016 && m_format != amf::AMF_SURFACE_RGBA_F16 && m_format != amf::AMF_SURFACE_R10G10B10A2 &&
         m_format != amf::AMF_SURFACE_YUY2 && m_format != amf::AMF_SURFACE_UYVY
         )
     {
@@ -420,6 +424,8 @@ AMF_RESULT RawStreamReader::ReadNextFrame(int dstStride, int dstHeight, int vali
         break;
     case amf::AMF_SURFACE_NV12:
     case amf::AMF_SURFACE_P010:
+    case amf::AMF_SURFACE_P012:
+    case amf::AMF_SURFACE_P016:
         NV12PicCopy(m_frame.GetData(), m_stride, m_height, pDstBits, dstStride, valignment);
         break;
     default:
@@ -540,6 +546,12 @@ void RawStreamReader::ParseRawFileFormat(const std::wstring path, amf_int32 &wid
         format = GetFormatFromString(ext.c_str());
     }
 }
+
+void RawStreamReader::RestartReader()
+{
+    m_pDataStream->Seek(amf::AMF_SEEK_BEGIN, 0, NULL);
+    m_framesCountRead = 0;
+}
 //----------------------------------------------------------------------------------------------
 amf::AMF_SURFACE_FORMAT AMF_STD_CALL GetFormatFromString(const wchar_t* str)
 {
@@ -572,6 +584,14 @@ amf::AMF_SURFACE_FORMAT AMF_STD_CALL GetFormatFromString(const wchar_t* str)
     else if (std_string == L"p010")
     {
         ret = amf::AMF_SURFACE_P010;
+    }
+    else if (std_string == L"p012")
+    {
+        ret = amf::AMF_SURFACE_P012;
+    }
+    else if (std_string == L"p016")
+    {
+        ret = amf::AMF_SURFACE_P016;
     }
     else if (std_string == L"rgbaf16")
     {

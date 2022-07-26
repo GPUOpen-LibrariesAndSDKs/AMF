@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -48,7 +48,7 @@ DeviceDX12::DeviceDX12()
 {
     m_hDXGI_DLL = ::LoadLibraryW(L"Dxgi.dll");
     m_hDX12_DLL = ::LoadLibraryW(L"D3D12.dll");
-    
+
     memset(m_adaptersIndexes, 0, sizeof(m_adaptersIndexes));
 }
 
@@ -129,7 +129,7 @@ AMF_RESULT DeviceDX12::Init(amf_uint32 adapterID, bool onlyWithOutputs)
     char strDevice[100];
     _snprintf_s(strDevice, 100, "%X", desc.DeviceId);
 
-    LOG_INFO("DX11 : Chosen Device " << adapterID <<": Device ID: " << strDevice << " [" << desc.Description << "]");
+    LOG_INFO("DX12 : Chosen Device " << adapterID <<": Device ID: " << strDevice << " [" << desc.Description << "]");
 
     ATL::CComPtr<IDXGIOutput> pOutput;
     if(SUCCEEDED(pAdapter->EnumOutputs(0, &pOutput)))
@@ -148,7 +148,7 @@ AMF_RESULT DeviceDX12::Init(amf_uint32 adapterID, bool onlyWithOutputs)
     CHECK_RETURN(fun_D3D12CreateDevice != nullptr, AMF_NOT_SUPPORTED, L"D3D12CreateDevice() is not available");
 
 
-	for (UINT adapterIndex = 0; DXGI_ERROR_NOT_FOUND != pFactory->EnumAdapters1(adapterIndex, &adapter); ++adapterIndex)
+	for (UINT adapterIndex = adapterID; DXGI_ERROR_NOT_FOUND != pFactory->EnumAdapters1(adapterIndex, &adapter); ++adapterIndex)
 	{
 		DXGI_ADAPTER_DESC1 desc;
 		adapter->GetDesc1(&desc);
@@ -252,6 +252,23 @@ void DeviceDX12::EnumerateAdapters(bool onlyWithOutputs)
         m_adaptersIndexes[m_adaptersCount] = count;
         m_adaptersCount++;
         count++;
+
+
+        int i = 0;
+        pOutput = nullptr;
+        while (pAdapter->EnumOutputs(i, &pOutput) != DXGI_ERROR_NOT_FOUND)
+        {
+            DXGI_OUTPUT_DESC desc = {};
+            pOutput->GetDesc(&desc);
+            LOG_INFO("               Output " << i << ": " << desc.DeviceName << " ["
+                << desc.DesktopCoordinates.left << " "
+                << desc.DesktopCoordinates.top << " "
+                << desc.DesktopCoordinates.right << " "
+                << desc.DesktopCoordinates.bottom
+                << "]");
+            i++;
+            pOutput = nullptr;
+        }
     }
 #endif//#if !defined(METRO_APP)
 

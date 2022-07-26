@@ -70,8 +70,10 @@ AMFDataStreamZCamVideo::AMFDataStreamZCamVideo(SOCKET& mySocket, const char* pAd
     m_pDataBuf(NULL),
     m_dataLen(0),
     m_dataStartPos(0),
-    m_curPos(0)
+    m_curPos(0),
+    m_framCount(0)
 {
+    ::memset(m_message, 0, sizeof(m_message));
 }
 //-------------------------------------------------------------------------------------------------
 AMFDataStreamZCamVideo::~AMFDataStreamZCamVideo()
@@ -280,13 +282,15 @@ AMF_RESULT AMFDataStreamZCamVideo::Init()
 }
 //-------------------------------------------------------------------------------------------------
 AMFDataStreamZCamImpl::AMFDataStreamZCamImpl() :
-m_framCount(0),
-m_framCountLog(0),
-m_activeCamera(0),
-m_startCamera(0),
-m_endCamera(CountCamera),
-m_bFirstCapture(true)
+    m_framCount(0),
+    m_framCountLog(0),
+    m_activeCamera(0),
+    m_startCamera(0),
+    m_endCamera(CountCamera),
+    m_bFirstCapture(true)
 {
+    ::memset(m_message, 0, sizeof(m_message));
+
     // Initialize Winsock
     WSADATA wsaData;
     WORD winsockVer = MAKEWORD(2, 2);

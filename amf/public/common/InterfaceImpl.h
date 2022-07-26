@@ -107,6 +107,9 @@ namespace amf
     protected:
         amf_long m_refCount;
         virtual ~AMFInterfaceBase()
+#if __GNUC__ == 11 //WORKAROUND for gcc-11 bug
+        __attribute__ ((noinline))
+#endif
         {}
     public:
         AMFInterfaceBase() : m_refCount(0)

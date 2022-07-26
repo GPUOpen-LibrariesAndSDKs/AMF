@@ -218,6 +218,9 @@ AMFWASAPISourceImpl::AMFWASAPISourceImpl() :
     m_capture(),
     m_renderClient(),
     m_render(),
+    m_frameSize(0),
+    m_sampleCount(0),
+    m_duration(0),
     m_eof(false),
     m_silenceStarted(false),
     m_LastNumOfSamples(0),
@@ -225,6 +228,8 @@ AMFWASAPISourceImpl::AMFWASAPISourceImpl() :
     m_hrCoInitializeResult(S_FALSE)
 #endif
 {
+    ::memset(&m_waveFormat, 0, sizeof(m_waveFormat));
+
 #ifdef WIN32
     m_hrCoInitializeResult = CoInitialize(nullptr);
 #endif

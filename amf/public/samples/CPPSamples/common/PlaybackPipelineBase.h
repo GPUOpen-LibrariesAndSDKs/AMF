@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -46,6 +46,7 @@
 #include "AudioPresenter.h"
 #include "ParametersStorage.h"
 #include "Pipeline.h"
+#include "PipelineElement.h"
 
 class PlaybackPipelineBase : public Pipeline, public ParametersStorage
 {
@@ -71,6 +72,11 @@ public:
     static const wchar_t* PARAM_NAME_FULLSCREEN;
     static const wchar_t* PARAM_NAME_SW_DECODER;
     static const wchar_t* PARAM_NAME_HQ_SCALER;
+    static const wchar_t* PARAM_NAME_PIP;
+    static const wchar_t* PARAM_NAME_PIP_ZOOM_FACTOR;
+    static const wchar_t* PARAM_NAME_PIP_FOCUS_X;
+    static const wchar_t* PARAM_NAME_PIP_FOCUS_Y;
+    static const wchar_t* PARAM_NAME_SIDE_BY_SIDE;
 
     virtual AMF_RESULT Play();
     virtual AMF_RESULT Pause();
@@ -83,9 +89,10 @@ public:
 
     virtual AMF_RESULT GetDuration(amf_pts& pts) const;
 	virtual AMF_RESULT GetCurrentPts(amf_pts& pts) const;
-    
+
     virtual double     GetProgressSize() const;
     virtual double     GetProgressPosition() const;
+    AMFSize            GetVideoSize() { return AMFSize{ m_iVideoWidth, m_iVideoHeight }; };
 
 	virtual AMF_RESULT Seek(amf_pts pts);
 
@@ -105,12 +112,12 @@ protected:
 
     virtual void        OnParamChanged(const wchar_t* name);
     virtual AMF_RESULT  InitVideoProcessor();
-    virtual AMF_RESULT  InitVideoDecoder(const wchar_t *pDecoderID, amf_int64 codecID, amf_int64 bitrate, AMFRate frameRate, amf::AMFBuffer* pExtraData);
+    virtual AMF_RESULT  InitVideoDecoder(const wchar_t *pDecoderID, amf_int64 codecID, amf::AMF_SURFACE_FORMAT surfaceFormat, amf_int64 bitrate, AMFRate frameRate, amf::AMFBuffer* pExtraData);
     virtual AMF_RESULT  InitAudio(amf::AMFOutput* pOutput);
     virtual AMF_RESULT  InitVideo(amf::AMFOutput* pOutput, amf::AMF_MEMORY_TYPE presenterEngine);
 	virtual AMF_RESULT  InitVideoPipeline(amf_uint32 iVideoStreamIndex, PipelineElementPtr pVideoSourceStream);
 	virtual AMF_RESULT  InitAudioPipeline(amf_uint32 iAudioStreamIndex, PipelineElementPtr pAudioSourceStream);
-    
+
     amf::AMFContextPtr      m_pContext;
 
     amf::AMFComponentExPtr  m_pDemuxerVideo;
@@ -121,9 +128,11 @@ protected:
 
     amf::AMFComponentPtr    m_pVideoDecoder;
     amf::AMFComponentPtr    m_pVideoProcessor;
-    amf::AMFComponentPtr    m_pHQScaler;
+    amf::AMFComponentPtr    m_pHQScaler2;
+    amf::AMFComponentPtr    m_pScaler;
     VideoPresenterPtr       m_pVideoPresenter;
-
+    SplitterPtr             m_pSplitter;
+    CombinerPtr             m_pCombiner;
     amf::AMFComponentPtr    m_pAudioDecoder;
     amf::AMFComponentPtr    m_pAudioConverter;
     AudioPresenterPtr       m_pAudioPresenter;
@@ -138,5 +147,5 @@ protected:
     bool                    m_bURL;
     amf::AMF_SURFACE_FORMAT m_eDecoderFormat;
     bool                    m_bCPUDecoder;
-
+    bool                    m_bEnableSideBySide;
 };

@@ -42,15 +42,25 @@ using namespace amf;
 
 typedef std::unique_ptr<XFixesCursorImage, decltype(&XFree)> XFixesCursorImagePtr;
 
-AMFCursorCaptureLinux::AMFCursorCaptureLinux(AMFContext* pContext) :
-    m_pContext(pContext),
-    m_cursorAtom(0)
+AMFCursorCaptureLinux::AMFCursorCaptureLinux(AMFContext* pContext) : m_pContext(pContext)
 {
     XInitThreads();
     m_pDisplay = XDisplay::Ptr(new XDisplay);
     if (m_pDisplay->IsValid() == false)
     {
         AMFTraceWarning(AMF_FACILITY, L"Couldn't connect to XDisplay");
+    }
+    else
+    {
+        XDisplayPtr display(m_pDisplay);
+        int error;
+        if (XFixesQueryExtension(display, &m_iXfixesEventBase, &error) == false)
+        {
+            AMFTraceWarning(AMF_FACILITY, L"XFixes not available on display.");
+            m_pDisplay = nullptr;
+        }
+        Window root = DefaultRootWindow((Display*)display);
+        XFixesSelectCursorInput(display, root, XFixesDisplayCursorNotifyMask);
     }
 }
 
@@ -63,10 +73,10 @@ AMF_RESULT AMF_STD_CALL AMFCursorCaptureLinux::AcquireCursor(AMFSurface** pSurfa
     AMFLock lock(&m_Sect);
     *pSurface = NULL;
 
-    // hide cursor if display is not available
-    if (m_pDisplay->IsValid() == false)
+    // hide cursor if display or xfixes is not available
+    if (m_pDisplay == nullptr || m_pDisplay->IsValid() == false)
     {
-        if (m_cursorAtom == 1)
+        if (m_bFirstCursor == true)
         {
             return AMF_REPEAT;
         }
@@ -74,11 +84,17 @@ AMF_RESULT AMF_STD_CALL AMFCursorCaptureLinux::AcquireCursor(AMFSurface** pSurfa
         AMF_RESULT res = m_pContext->AllocSurface(AMF_MEMORY_HOST, AMF_SURFACE_ARGB, 1, 1, pSurface);
         AMF_RETURN_IF_FAILED(res, L"AllocSurface failed");
 
-        m_cursorAtom = 1;
+        m_bFirstCursor = true;
         return AMF_OK;
     }
 
     XDisplayPtr display(m_pDisplay);
+
+    XEvent event;
+    if (m_bFirstCursor == true && XCheckTypedEvent(display, m_iXfixesEventBase + XFixesCursorNotify, &event) == false)
+    {
+        return AMF_REPEAT;
+    }
 
     //this is a unique_ptr with custom XFree deleter so we don't have to worry about calling XFree ourselves
     XFixesCursorImagePtr cursor = XFixesCursorImagePtr(XFixesGetCursorImage(display), &XFree);
@@ -88,12 +104,6 @@ AMF_RESULT AMF_STD_CALL AMFCursorCaptureLinux::AcquireCursor(AMFSurface** pSurfa
         AMFTraceInfo(AMF_FACILITY, L"XFixesGetCursorImage - returned nullptr");
         return AMF_OK;
     }
-
-    if (m_cursorAtom == cursor->atom)
-    {
-        return AMF_REPEAT;
-    }
-    m_cursorAtom = cursor->atom;
 
     AMFTraceInfo(AMF_FACILITY, L"w: %d, h: %d, atom: %d", cursor->width, cursor->height, cursor->atom);
 
@@ -120,6 +130,8 @@ AMF_RESULT AMF_STD_CALL AMFCursorCaptureLinux::AcquireCursor(AMFSurface** pSurfa
 
     (*pSurface)->SetProperty(L"Hotspot", hotspot);
 
+    m_bFirstCursor = true;
+
     return AMF_OK;
 }
 
@@ -127,7 +139,7 @@ AMF_RESULT AMF_STD_CALL AMFCursorCaptureLinux::Reset()
 {
     AMFLock lock(&m_Sect);
 
-    m_cursorAtom = 0;
+    m_bFirstCursor = false;
 
     return AMF_OK;
 }

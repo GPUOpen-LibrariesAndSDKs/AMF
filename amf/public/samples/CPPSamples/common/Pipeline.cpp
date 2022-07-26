@@ -211,6 +211,17 @@ AMF_RESULT Pipeline::Connect(PipelineElementPtr pElement, amf_int32 slot, Pipeli
     m_state = PipelineStateReady;
     return AMF_OK;
 }
+PipelineElementPtr Pipeline::GetLastElement()
+{
+    PipelineElementPtr res;
+
+    if (!m_connectors.empty())
+    {
+        res = m_connectors.back()->m_pElement;
+    }
+
+    return res;
+}
 AMF_RESULT Pipeline::SetStatSlot(PipelineElementPtr pElement, amf_int32 slot)
 {
     PipelineConnectorPtr connector;
@@ -320,9 +331,12 @@ void Pipeline::DisplayResult()
 
         messageStream << L" Frames processed: " << frameCount;
 
+        messageStream.precision(4);
+
         double encodeTime = double(stopTime - startTime) / 10000. / frameCount;
         messageStream << L" Frame process time: " << encodeTime << L"ms" ;
     
+        messageStream.precision(1);
 
         messageStream <<L" FPS: " << double(frameCount) / ( double(stopTime - startTime) / double(AMF_SECOND) );
 

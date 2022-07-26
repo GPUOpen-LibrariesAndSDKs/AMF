@@ -35,9 +35,9 @@
 // Used by VCEEncoderD3D.rc
 //
 #define AMF_VERSION_MAJOR               1
-#define AMF_VERSION_MINOR               1
+#define AMF_VERSION_MINOR               4
+#define AMF_VERSION_RELEASE             26
 #define AMF_VERSION_BUILD               1
-#define AMF_VERSION_RELEASE             20
 
 // Next default values for new objects
 // 

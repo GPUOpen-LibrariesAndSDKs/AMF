@@ -87,8 +87,7 @@ const char DX11_FullScreenQuad[] =
 "PS_INPUT VS( VS_INPUT input )                                                           \n"
 "{                                                                                       \n"
 "    PS_INPUT output = (PS_INPUT)0;                                                      \n"
-"    output.Pos = mul( input.Pos, View );                                                \n"
-"//    output.Pos = mul( output.Pos, Projection );                                       \n"
+"    output.Pos = mul(View, float4(input.Pos.xyz, 1));                                   \n"
 "    output.Tex = input.Tex;                                                             \n"
 "                                                                                        \n"
 "    return output;                                                                      \n"
@@ -154,7 +153,6 @@ AMF_RESULT VideoPresenterDX11::Present(amf::AMFSurface* pSurface)
     }
     if( (err = pSurface->Convert(GetMemoryType())) != AMF_OK)
     {
-        err;
     }
 
     ApplyCSC(pSurface);
@@ -238,7 +236,13 @@ AMF_RESULT VideoPresenterDX11::Present(amf::AMFSurface* pSurface)
 
 
     amf::AMFLock lock(&m_sect);
-    
+
+    CComPtr<ID3D11DeviceContext> spContext;
+    m_pDevice->GetImmediateContext(&spContext);
+    spContext->OMSetRenderTargets(1, &m_pRenderTargetView_L.p, NULL);
+
+    CustomDraw();
+
     HRESULT hr = S_OK;
     for(int i=0;i<100;i++)
     {
@@ -262,10 +266,10 @@ AMF_RESULT VideoPresenterDX11::Present(amf::AMFSurface* pSurface)
 
 AMF_RESULT VideoPresenterDX11::BitBlt(amf::AMF_FRAME_TYPE eFrameType, ID3D11Texture2D* pSrcSurface, AMFRect* pSrcRect, ID3D11Texture2D* pDstSurface, AMFRect* pDstRect)
 {
-    if (GetInputFormat() == amf::AMF_SURFACE_NV12)
-    {
-        return BitBltCopy(pSrcSurface, pSrcRect, pDstSurface, pDstRect);
-    }
+    //if (GetInputFormat() == amf::AMF_SURFACE_NV12)
+    //{
+    //    return BitBltCopy(pSrcSurface, pSrcRect, pDstSurface, pDstRect);
+    //}
     return BitBltRender(eFrameType, pSrcSurface, pSrcRect, pDstSurface, pDstRect);
 }
 
@@ -760,7 +764,7 @@ AMF_RESULT VideoPresenterDX11::CreatePresentationSwapChain(amf::AMFSurface* pSur
             {
                 return AMF_FAIL;
             }
-            if (SUCCEEDED(hr) && m_bFullScreen)
+            if (SUCCEEDED(hr))
             {
                 hr = m_pSwapChain1->SetFullscreenState(m_bFullScreen ? TRUE : FALSE, NULL);
             }
@@ -793,6 +797,7 @@ AMF_RESULT VideoPresenterDX11::CreatePresentationSwapChain(amf::AMFSurface* pSur
             }
         }
         
+
     }
     m_pSwapChain = m_pSwapChain1;
     if(m_pSwapChain1 == nullptr && m_pSwapChainVideo == nullptr)
@@ -825,6 +830,7 @@ AMF_RESULT VideoPresenterDX11::CreatePresentationSwapChain(amf::AMFSurface* pSur
     }
 
     ResizeSwapChain();
+
     return err;
 }
 AMF_RESULT VideoPresenterDX11::CompileShaders()
@@ -891,15 +897,13 @@ AMF_RESULT VideoPresenterDX11::PrepareStates()
 
     hr = m_pDevice->CreateBuffer( &bd, NULL, &m_pVertexBuffer );
 
-    // Initialize the view matrix
-    XMMATRIX worldViewProjection=XMMatrixIdentity();
     bd.Usage = D3D11_USAGE_DEFAULT;
     bd.ByteWidth = sizeof(CBNeverChanges);
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.CPUAccessFlags = 0;
 
     D3D11_SUBRESOURCE_DATA InitData={0};
-    InitData.pSysMem = &worldViewProjection;
+    InitData.pSysMem = &m_mSrcToScreenMatrix;
 
     hr = m_pDevice->CreateBuffer( &bd, &InitData, &m_pCBChangesOnResize );
 
@@ -1135,7 +1139,6 @@ AMF_RESULT VideoPresenterDX11::ResizeSwapChain()
 }
 AMF_RESULT VideoPresenterDX11::UpdateVertices(AMFRect *srcRect, AMFSize *srcSize, AMFRect *dstRect, AMFSize *dstSize)
 {
-
     if(*srcRect == m_sourceVertexRect  &&  *dstRect == m_destVertexRect)
     {
         return AMF_OK;   
@@ -1143,58 +1146,98 @@ AMF_RESULT VideoPresenterDX11::UpdateVertices(AMFRect *srcRect, AMFSize *srcSize
     m_sourceVertexRect = *srcRect;
     m_destVertexRect = *dstRect;
 
+    FLOAT srcCenterX = (FLOAT)(srcRect->left + srcRect->right) / 2.f;
+    FLOAT srcCenterY = (FLOAT)(srcRect->top + srcRect->bottom) / 2.f;
 
-    HRESULT hr=S_OK;
+    FLOAT srcWidth = (FLOAT)srcRect->Width() / srcSize->width;
+    FLOAT srcHeight = (FLOAT)srcRect->Height() / srcSize->height;
+
+    FLOAT leftSrcTex = srcCenterX / srcRect->Width() - srcWidth / 2;
+    FLOAT rightSrcTex = leftSrcTex + srcWidth;
+    FLOAT topSrcTex = srcCenterY / srcRect->Height() - srcHeight / 2;
+    FLOAT bottomSrcTex = topSrcTex + srcHeight;
+
+    FLOAT leftSrc = (FLOAT)srcRect->left;
+    FLOAT rightSrc = (FLOAT)srcRect->right;
+    FLOAT topSrc = (FLOAT)srcRect->top;
+    FLOAT bottomSrc = (FLOAT)srcRect->bottom;
 
     SimpleVertex vertices[4];
 
-    // stretch video rect to back buffer
-    FLOAT  w=2.f;
-    FLOAT  h=2.f;
+    srcWidth = (FLOAT)srcRect->Width();
+    srcHeight = (FLOAT)srcRect->Height();
 
-    w *= m_fScale;
-    h *= m_fScale;
+    if (m_iOrientation % 2 == 1)
+    {
+        std::swap(srcWidth, srcHeight);
+        std::swap(rightSrcTex, leftSrcTex);
+        std::swap(bottomSrcTex, topSrcTex);
+    }
 
-    w *= (float)dstRect->Width() / dstSize->width;
-    h *= (float)dstRect->Height() / dstSize->height;
+    vertices[0].position = XMFLOAT3(leftSrc, bottomSrc, 0.0f);
+    vertices[0].texture = XMFLOAT2(leftSrcTex, topSrcTex);
 
-    FLOAT centerX = m_fOffsetX * 2.f / dstRect->Width();
-    FLOAT centerY = - m_fOffsetY * 2.f/ dstRect->Height();
+    vertices[1].position = XMFLOAT3(rightSrc, bottomSrc, 0.0f);
+    vertices[1].texture = XMFLOAT2(rightSrcTex, topSrcTex);
 
-    FLOAT leftDst = centerX - w / 2;
-    FLOAT rightDst = leftDst + w;
-    FLOAT topDst = centerY - h / 2;
-    FLOAT bottomDst = topDst + h;
-
-    centerX = (FLOAT)(srcRect->left + srcRect->right) / 2.f / srcRect->Width();
-    centerY = (FLOAT)(srcRect->top + srcRect->bottom) / 2.f / srcRect->Height();
-
-    w = (FLOAT)srcRect->Width() / srcSize->width;
-    h = (FLOAT)srcRect->Height() / srcSize->height;
-
-    FLOAT leftSrc = centerX - w/2;
-    FLOAT rightSrc = leftSrc + w;
-    FLOAT topSrc = centerY - h/2;
-    FLOAT bottomSrc = topSrc + h;
-
-    vertices[0].position = XMFLOAT3(leftDst, bottomDst, 0.0f);
-    vertices[0].texture = XMFLOAT2(leftSrc, topSrc);
-
-    vertices[1].position = XMFLOAT3(rightDst, bottomDst, 0.0f);
-    vertices[1].texture = XMFLOAT2(rightSrc, topSrc);
-
-    vertices[2].position = XMFLOAT3(leftDst, topDst, 0.0f);
-    vertices[2].texture = XMFLOAT2(leftSrc, bottomSrc);
+    vertices[2].position = XMFLOAT3(leftSrc, topSrc, 0.0f);
+    vertices[2].texture = XMFLOAT2(leftSrcTex, bottomSrcTex);
 
     // Second triangle.
-    vertices[3].position = XMFLOAT3(rightDst, topDst, 0.0f);
-    vertices[3].texture = XMFLOAT2(rightSrc, bottomSrc);
+    vertices[3].position = XMFLOAT3(rightSrc, topSrc, 0.0f);
+    vertices[3].texture = XMFLOAT2(rightSrcTex, bottomSrcTex);
+
+    FLOAT clientCenterX = (FLOAT)(m_rectClient.left + m_rectClient.right) / 2.f;
+    FLOAT clientCenterY = (FLOAT)(m_rectClient.top + m_rectClient.bottom) / 2.f;
+
+
+    FLOAT scaleX = (FLOAT)m_rectClient.Width() / (FLOAT)srcWidth;
+    FLOAT scaleY = (FLOAT)m_rectClient.Height() / (FLOAT)srcHeight;
+    FLOAT scaleMin = AMF_MIN(scaleX, scaleY);
+
+    XMMATRIX srcToClientMatrix = XMMatrixTranslation(-srcCenterX, -srcCenterY, 0.0f)
+        * XMMatrixRotationZ(::XMConvertToRadians(90.0f * m_iOrientation))
+        * XMMatrixScaling(scaleMin, scaleMin, 1.0f)
+        * XMMatrixTranslation(clientCenterX, clientCenterY, 0.0f);
+    XMStoreFloat4x4(&m_mSrcToClientMatrix, srcToClientMatrix);
+
+    XMMATRIX screenMatrix = XMMatrixScaling(1.0f / dstSize->width, 1.0f / dstSize->height, 1.0f)
+        * XMMatrixTranslation(-0.5f, -0.5f, 1.0f)
+        * XMMatrixScaling(2.0f, 2.0f, 1.0f);
+
+    XMStoreFloat4x4(&m_mSrcToScreenMatrix, srcToClientMatrix * screenMatrix);
 
     CComPtr<ID3D11DeviceContext> spContext;
     m_pDevice->GetImmediateContext( &spContext );
     spContext->UpdateSubresource( m_pVertexBuffer, 0, NULL, vertices, 0, 0 );
-
+    spContext->UpdateSubresource(m_pCBChangesOnResize, 0, NULL, &m_mSrcToScreenMatrix, 0, 0);
+    
     return AMF_OK;
+}
+
+AMFPoint VideoPresenterDX11::MapClientToSource(const AMFPoint& point)
+{
+    if (m_pProcessor == nullptr)
+    {
+        XMVECTOR pt = XMVectorSet((FLOAT)point.x, (FLOAT)point.y, 0.0f, 1.0f);
+        XMMATRIX inverse = XMMatrixInverse(nullptr, XMLoadFloat4x4(&m_mSrcToClientMatrix));
+        pt = XMVector4Transform(pt, inverse);
+
+        return AMFConstructPoint((amf_int32)XMVectorGetX(pt), (amf_int32)XMVectorGetY(pt));
+    }
+    return point;
+}
+
+AMFPoint VideoPresenterDX11::MapSourceToClient(const AMFPoint& point)
+{
+    if (m_pProcessor == nullptr)
+    {
+        XMVECTOR pt = XMVectorSet((FLOAT)point.x, (FLOAT)point.y, 0.0f, 1.0f);
+        pt = XMVector4Transform(pt, XMLoadFloat4x4(&m_mSrcToClientMatrix));
+
+        return AMFConstructPoint((amf_int32)XMVectorGetX(pt), (amf_int32)XMVectorGetY(pt));
+    }
+    return point;
 }
 
 AMF_RESULT AMF_STD_CALL VideoPresenterDX11::AllocSurface(amf::AMF_MEMORY_TYPE type, amf::AMF_SURFACE_FORMAT format,
@@ -1509,6 +1552,11 @@ void        VideoPresenterDX11::UpdateProcessor()
 #endif
     }
 }
+
+void VideoPresenterDX11::CustomDraw()
+{
+}
+
 AMF_RESULT VideoPresenterDX11::ApplyCSC(amf::AMFSurface* pSurface)
 {
 #if defined(NTDDI_WIN10_RS2)

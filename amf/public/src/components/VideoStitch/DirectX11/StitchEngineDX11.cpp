@@ -69,6 +69,7 @@ StitchEngineBase(pContext),
     m_bWireRender(false),
     m_eOutputMode(AMF_VIDEO_STITCH_OUTPUT_MODE_PREVIEW)
 {
+    ::memset(&m_CameraOrienation, 0, sizeof(m_CameraOrienation));
 }
 //-------------------------------------------------------------------------------------------------
 StitchEngineDX11::~StitchEngineDX11()

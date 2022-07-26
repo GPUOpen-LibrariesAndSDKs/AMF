@@ -1,14 +1,11 @@
-// 
-// Notice Regarding Standards.  AMD does not provide a license or sublicense to
+//// Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
 // AVC/H.264; HEVC/H.265; AAC decode/FFMPEG; AAC encode/FFMPEG; VC-1; and MP3
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//// MIT license////
 // Copyright (c) 2017 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -29,32 +26,45 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#include "public/include/core/Context.h"
-#include "public/common/InterfaceImpl.h"
-#include "public/common/PropertyStorageImpl.h"
-#include "public/common/ByteArray.h"
-#include "public/common/Linux/XDisplay.h"
-#include "public/include/components/CursorCapture.h"
-#include <X11/Xlib.h>
+
+#pragma once
+
+#include <memory>
+#include <sys/types.h>
+#include <unistd.h>
+#include "PulseAudioSimpleAPISource.h"
+#include "../../../common/AMFSTL.h"
+#include "../../../common/InterfaceImpl.h"
+#include "../../../include/core/Context.h"
+#include "../../../include/components/AudioCapture.h"
 
 namespace amf
 {
-    class AMFCursorCaptureLinux : public AMFInterfaceImpl<AMFCursorCapture>
+    //-------------------------------------------------------------------------------------------------
+    // this class allows a root user to use pulseaudio by forking a subprocess that drops permissions
+    class AMFPulseAudioSimpleAPISourceFacade : public AMFPulseAudioSimpleAPISourceImpl
     {
     public:
-        AMFCursorCaptureLinux(AMFContext* pContext);
-        ~AMFCursorCaptureLinux();
+        AMFPulseAudioSimpleAPISourceFacade();
+        virtual ~AMFPulseAudioSimpleAPISourceFacade();
 
-        virtual AMF_RESULT AMF_STD_CALL AcquireCursor(amf::AMFSurface** pSurface) override;
-        virtual AMF_RESULT AMF_STD_CALL Reset() override;
+        virtual AMF_RESULT Init(bool captureMic) override;
+        virtual AMF_RESULT Terminate() override;
+
+        virtual AMF_RESULT CaptureAudio(AMFAudioBufferPtr& pAudioBuffer, AMFContextPtr& pContext, amf_uint32& capturedSampleCount, amf_pts& latencyPts) override;
     private:
-        AMFContextPtr           m_pContext;
-        AMFCriticalSection      m_Sect;
+        AMF_RESULT Run(bool captureMic);
 
-        XDisplay::Ptr           m_pDisplay;
-        bool                    m_bFirstCursor = false;
-        int                     m_iXfixesEventBase = 0;
+        AMF_RESULT Receive(int socket, void* data, size_t size);
+        AMF_RESULT Send(int socket, const void* data, size_t size);
+        AMF_RESULT ReceiveStringList(int socket, PASourceList& list);
+        AMF_RESULT SendStringList(int socket, const PASourceList& list);
+
+        mutable AMFCriticalSection               m_sync;
+        pid_t m_iChildPid = 0;
+        bool m_isRoot     = false;
+        int m_iSockets[2] = {};
     };
+    typedef std::shared_ptr<AMFPulseAudioSimpleAPISourceFacade>    AMFPulseAudioSimpleAPISourceFacadePtr;
 
-    typedef AMFInterfacePtr_T<AMFCursorCaptureLinux>    AMFCursorCaptureLinuxPtr;
 }

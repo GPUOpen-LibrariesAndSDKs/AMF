@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -38,12 +38,14 @@
 #include "public/include/core/Trace.h"
 #include "public/common/TraceAdapter.h"
 #include "public/include/components/ColorSpace.h"
+#include "public/include/components/VideoDecoderUVD.h"
 
 #define AMF_FACILITY L"AMFVideoDecoderFFMPEGImpl"
 
 extern "C"
 {
 #include "libavutil/imgutils.h"
+#include "libavutil/mastering_display_metadata.h"
 }
 
 using namespace amf;
@@ -117,7 +119,7 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT form
         Terminate();
         AMF_RETURN_IF_FALSE(false, AMF_CODEC_NOT_SUPPORTED, L"FFmpeg codec %d is not supported", (int)codecID);
     }
-    
+
     // allocate the codec context
     m_pCodecContext = avcodec_alloc_context3(codec);
 
@@ -127,7 +129,7 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT form
     AMF_RETURN_IF_FAILED(GetProperty(VIDEO_DECODER_EXTRA_DATA, &val));
     if (!val.Empty() && val.pInterface)
     {
-        // NOTE: the buffer ptr. shouldn't disappear as the 
+        // NOTE: the buffer ptr. shouldn't disappear as the
         //       property holds it in the end
         pExtraData = AMFBufferPtr(val.pInterface);
         m_pCodecContext->extradata = (uint8_t*)pExtraData->GetNative();
@@ -313,7 +315,7 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::SubmitInput(AMFData* pData)
         AMF_RETURN_IF_FAILED(err, L"SubmitInput() - Convert(AMF_MEMORY_HOST) failed");
         m_videoFrameSubmitCount++;
     }
-                
+
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
@@ -421,7 +423,7 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
     //// we want 10-bit MSB format: DDDDDDDD DD000000
     ////if (Is10BitYUV(picture.format))
     //// can't do this - modifying picture data directly messes up the decoder big time
-    //if (PIX_FMT_YUV420P10LE == picture.format) 
+    //if (PIX_FMT_YUV420P10LE == picture.format)
     //{
     //    const amf_uint8 numPlanes = 3;
 
@@ -441,11 +443,16 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
     //}
 
     bool bIsPlanar = (m_eFormat == AMF_SURFACE_RGBA) ? false : true;
+    amf_int32 paddedLSB = (m_eFormat == AMF_SURFACE_P010) ? 6 :
+                          (m_eFormat == AMF_SURFACE_P012) ? 4 :
+                          (m_eFormat == AMF_SURFACE_P016) ? 0 : 0;
     int iThreadCount = 2;
     {
         AMFPlanePtr plane = pSurfaceOut->GetPlane(AMF_PLANE_Y);
 
-        if (plane->GetHeight() > 2160 && m_eFormat != AMF_SURFACE_P010)
+        if (plane->GetHeight() > 2160 && m_eFormat != AMF_SURFACE_P010 &&
+                                         m_eFormat != AMF_SURFACE_P012 &&
+                                         m_eFormat != AMF_SURFACE_P016)
         {
             if (m_CopyPipeline.m_ThreadPool.size() == 0)
             {
@@ -478,13 +485,13 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
             }
             if (m_CopyPipeline.m_endEvent.Lock(1000) == false)
             {
-                // timout 
+                // timout
                 int a = 1;
             }
         }
         else
         {
-            if (picture.format == AV_PIX_FMT_YUV422P10LE)  //ProRes 10bit 4:2:2 from BM camera 
+            if (picture.format == AV_PIX_FMT_YUV422P10LE)  //ProRes 10bit 4:2:2 from BM camera
             {
                 amf_uint16 *pTmpMemY210 = static_cast<amf_uint16*>(plane->GetNative());
                 amf_uint16 *pTmpMemInY = (amf_uint16*)(picture.data[0]);
@@ -510,14 +517,16 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
             }
             else if (plane->GetHPitch() == picture.linesize[0])
             {
-                if (m_eFormat == AMF_SURFACE_P010)
+                if (m_eFormat == AMF_SURFACE_P010 ||
+                    m_eFormat == AMF_SURFACE_P012 ||
+                    m_eFormat == AMF_SURFACE_P016)
                 {
                     amf_uint16 *pTmp16Src = (amf_uint16 *)picture.data[0];
                     amf_uint16 *pTmp16Dest = (amf_uint16 *)(plane->GetNative());
 
                     for (amf_int32 wordIdx = 0; wordIdx < (plane->GetHPitch() * plane->GetHeight()) >> 1; wordIdx++)
                     {
-                        pTmp16Dest[wordIdx] = pTmp16Src[wordIdx] << 6;
+                        pTmp16Dest[wordIdx] = pTmp16Src[wordIdx] << paddedLSB;
                     }
                 }
                 else
@@ -531,8 +540,6 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
                 amf_uint8 *pTmpMemIn = picture.data[0];
                 amf_size to_copy = AMF_MIN(plane->GetHPitch(), std::abs(picture.linesize[0]));
                 amf_size linesToCopy = plane->GetHeight();
-
-                bool is10BitCodec = m_eFormat == AMF_SURFACE_P010;
 
                 if ((picture.format == AV_PIX_FMT_RGBA64LE) || //RGB -->RGBA
                     (picture.format == AV_PIX_FMT_RGB48LE)  || //RGB -->RGBA
@@ -569,17 +576,20 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
                 {
                     while (linesToCopy > 0)
                     {
-                        if (is10BitCodec)
+                        if (m_eFormat == AMF_SURFACE_P010 ||
+                            m_eFormat == AMF_SURFACE_P012 ||
+                            m_eFormat == AMF_SURFACE_P016)
                         {
-                            // FFMPEG outputs in 10-bit LSB format: 000000DD DDDDDDDD
-                            // we want 10-bit MSB format: DDDDDDDD DD000000
-
+                            // FFMPEG outputs in LSB format but we want MSB
+                            // 10-bit example:
+                            //     (LSB)         :  000000DD DDDDDDDD
+                            //     we want (MSB) :  DDDDDDDD DD000000
                             amf_uint16 *pTmp16Src = (amf_uint16 *)pTmpMemIn;
                             amf_uint16 *pTmp16Dest = (amf_uint16 *)pTmpMemOut;
 
                             for (amf_size lineIdx = 0; lineIdx < to_copy >> 1; lineIdx++)
                             {
-                                pTmp16Dest[lineIdx] = pTmp16Src[lineIdx] << 6;
+                                pTmp16Dest[lineIdx] = pTmp16Src[lineIdx] << paddedLSB;
                             }
                         }
                         else
@@ -600,7 +610,9 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
     {
         AMFPlanePtr plane = pSurfaceOut->GetPlane(AMF_PLANE_UV);
 
-        if (plane->GetHeight() > 2160 / 2 && m_eFormat != AMF_SURFACE_P010)
+        if (plane->GetHeight() > 2160 / 2 && m_eFormat != AMF_SURFACE_P010 &&
+                                             m_eFormat != AMF_SURFACE_P012 &&
+                                             m_eFormat != AMF_SURFACE_P016)
         {
             if (m_CopyPipeline.m_ThreadPool.size() == 0)
             {
@@ -634,7 +646,7 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
             }
             if (m_CopyPipeline.m_endEvent.Lock(1000) == false)
             {
-                // timout 
+                // timout
                 int a = 1;
             }
         }
@@ -647,8 +659,6 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
             amf_size uHeight = plane->GetHeight();
             amf_size uWidth = plane->GetWidth();
 
-            bool is10BitCodec = m_eFormat == AMF_SURFACE_P010;
-
             // need to pack uv plane properly for 16-bit colour
 
             if (plane->GetPixelSizeInBytes() == 4)
@@ -660,11 +670,13 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
                     amf_uint16 *pLineMemIn2 = (amf_uint16*)pTmpMemIn[1];
                     for (amf_size x = 0; x < uWidth; x++)
                     {
-                        // FFMPEG outputs in 10-bit LSB format: 000000DD DDDDDDDD
-                        // we want 10-bit MSB format: DDDDDDDD DD000000
+                        // FFMPEG outputs in LSB format but we want MSB
+                        // 10-bit example:
+                        //     (LSB)         :  000000DD DDDDDDDD
+                        //     we want (MSB) :  DDDDDDDD DD000000
 
-                        *pLineMemOut++ = (is10BitCodec) ? *pLineMemIn1++ << 6 : *pLineMemIn1++;
-                        *pLineMemOut++ = (is10BitCodec) ? *pLineMemIn2++ << 6 : *pLineMemIn2++;
+                        *pLineMemOut++ = *pLineMemIn1++ << paddedLSB;
+                        *pLineMemOut++ = *pLineMemIn2++ << paddedLSB;
                     }
                     pTmpMemOut += iOutStride;
                     pTmpMemIn[0] += picture.linesize[1];
@@ -708,6 +720,182 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
         // unsupported???
         //AMF_FRAME_FIELD_SINGLE_EVEN                = 3,
         //AMF_FRAME_FIELD_SINGLE_ODD                = 4,
+    }
+
+    AMFBufferPtr pMetadata;
+    const AVFrameSideData* sd = av_frame_get_side_data(&picture, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
+    if (sd != nullptr)
+    {
+        AVMasteringDisplayMetadata* metadata = (AVMasteringDisplayMetadata*)sd->data;
+        if (metadata != nullptr)
+        {
+            if (metadata->max_luminance.num != 0 && metadata->has_luminance)
+            {
+                m_pContext->AllocBuffer(AMF_MEMORY_HOST, sizeof(metadata), &pMetadata);
+                AMFHDRMetadata* metadataAMF = (AMFHDRMetadata*)pMetadata->GetNative();
+
+                metadataAMF->redPrimary[0] = amf_uint16(50000.f * float(metadata->display_primaries[0][0].num) / metadata->display_primaries[0][0].den);
+                metadataAMF->redPrimary[1] = amf_uint16(50000.f * float(metadata->display_primaries[0][1].num) / metadata->display_primaries[0][1].den);
+
+                metadataAMF->greenPrimary[0] = amf_uint16(50000.f * float(metadata->display_primaries[1][0].num) / metadata->display_primaries[1][0].den);
+                metadataAMF->greenPrimary[1] = amf_uint16(50000.f * float(metadata->display_primaries[1][1].num) / metadata->display_primaries[1][1].den);
+
+                metadataAMF->bluePrimary[0] = amf_uint16(50000.f * float(metadata->display_primaries[2][0].num) / metadata->display_primaries[2][0].den);
+                metadataAMF->bluePrimary[1] = amf_uint16(50000.f * float(metadata->display_primaries[2][1].num) / metadata->display_primaries[2][1].den);
+
+                metadataAMF->whitePoint[0] = amf_uint16(50000.f * float(metadata->white_point[0].num) / metadata->white_point[0].den);
+                metadataAMF->whitePoint[1] = amf_uint16(50000.f * float(metadata->white_point[1].num) / metadata->white_point[1].den);
+
+                metadataAMF->maxMasteringLuminance = amf_uint16(10000.f * float(metadata->max_luminance.num) / metadata->max_luminance.den);
+                metadataAMF->minMasteringLuminance = amf_uint16(10000.f * float(metadata->min_luminance.num) / metadata->min_luminance.den);
+
+                pSurfaceOut->SetProperty(AMF_VIDEO_DECODER_HDR_METADATA, AMFVariant((AMFInterface*)pMetadata));
+            }
+        }
+    }
+    if (pMetadata == nullptr)
+    {
+        amf_int64 eColorPrimariesAMF = AMF_COLOR_PRIMARIES_UNDEFINED;
+        switch (picture.color_primaries)
+        {
+        case AVCOL_PRI_RESERVED0:
+            eColorPrimariesAMF = AMF_COLOR_PRIMARIES_UNDEFINED;
+            break;
+        case AVCOL_PRI_BT709:
+            eColorPrimariesAMF = AMF_COLOR_PRIMARIES_BT709;
+            break;
+        case AVCOL_PRI_UNSPECIFIED:
+            eColorPrimariesAMF = AMF_COLOR_PRIMARIES_UNSPECIFIED;
+            break;
+        case AVCOL_PRI_RESERVED:
+            eColorPrimariesAMF = AMF_COLOR_PRIMARIES_RESERVED;
+            break;
+        case AVCOL_PRI_BT470M:
+            eColorPrimariesAMF = AMF_COLOR_PRIMARIES_BT470M;
+            break;
+        case AVCOL_PRI_BT470BG:
+            eColorPrimariesAMF = AMF_COLOR_PRIMARIES_BT470BG;
+            break;
+        case AVCOL_PRI_SMPTE170M:
+            eColorPrimariesAMF = AMF_COLOR_PRIMARIES_SMPTE170M;
+            break;
+        case AVCOL_PRI_SMPTE240M:
+            eColorPrimariesAMF = AMF_COLOR_PRIMARIES_SMPTE240M;
+            break;
+        case AVCOL_PRI_FILM:
+            eColorPrimariesAMF = AMF_COLOR_PRIMARIES_FILM;
+            break;
+        case AVCOL_PRI_BT2020:
+            eColorPrimariesAMF = AMF_COLOR_PRIMARIES_BT2020;
+            break;
+        case AVCOL_PRI_SMPTE428:
+            eColorPrimariesAMF = AMF_COLOR_PRIMARIES_SMPTE428;
+            break;
+            case AVCOL_PRI_SMPTE431:
+                eColorPrimariesAMF = AMF_COLOR_PRIMARIES_SMPTE431;
+                break;
+            case AVCOL_PRI_SMPTE432:
+                eColorPrimariesAMF = AMF_COLOR_PRIMARIES_SMPTE432;
+                break;
+            case AVCOL_PRI_JEDEC_P22:
+                eColorPrimariesAMF = AMF_COLOR_PRIMARIES_JEDEC_P22;
+                break;
+            case AVCOL_PRI_NB:
+                break;
+        }
+        if (eColorPrimariesAMF != AMF_COLOR_PRIMARIES_UNDEFINED)
+        {
+            pSurfaceOut->SetProperty(AMF_VIDEO_COLOR_PRIMARIES, eColorPrimariesAMF);
+        }
+        amf_int64 eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED;
+        switch (picture.color_trc)
+        {
+        case AVCOL_TRC_RESERVED0:
+            eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED;
+            break;
+        case AVCOL_TRC_BT709:
+            eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_BT709;
+            break;
+        case AVCOL_TRC_UNSPECIFIED:
+            eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNSPECIFIED;
+            break;
+        case AVCOL_TRC_RESERVED:
+            eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_RESERVED;
+            break;
+        case AVCOL_TRC_GAMMA22:
+            eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_GAMMA22;
+            break;
+        case AVCOL_TRC_GAMMA28:
+            eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_GAMMA28;
+            break;
+        case AVCOL_TRC_SMPTE170M:
+            eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE170M;
+            break;
+        case AVCOL_TRC_SMPTE240M:
+            eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE240M;
+            break;
+        case AVCOL_TRC_LINEAR:
+            eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_LINEAR;
+            break;
+        case AVCOL_TRC_LOG:
+            eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_LOG;
+            break;
+        case AVCOL_TRC_LOG_SQRT:
+            eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_LOG_SQRT;
+            break;
+        case AVCOL_TRC_IEC61966_2_4:
+            eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_IEC61966_2_4;
+            break;
+        case AVCOL_TRC_BT1361_ECG:
+            eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_BT1361_ECG;
+            break;
+        case AVCOL_TRC_IEC61966_2_1:
+            eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_IEC61966_2_1;
+            break;
+        case AVCOL_TRC_BT2020_10:
+            eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_BT2020_10;
+            break;
+        case AVCOL_TRC_BT2020_12:
+            eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_BT2020_12;
+            break;
+        case AVCOL_TRC_SMPTE2084:
+            eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE2084;
+            break;
+        case AVCOL_TRC_SMPTE428:
+            eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE428;
+            break;
+        case AVCOL_TRC_ARIB_STD_B67:
+            eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_ARIB_STD_B67;
+            break;
+        case AVCOL_TRC_NB:
+            eColorTransferAMF = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED;
+            break;
+        }
+        if (eColorTransferAMF != AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED)
+        {
+            pSurfaceOut->SetProperty(AMF_VIDEO_COLOR_TRANSFER_CHARACTERISTIC, eColorTransferAMF);
+        }
+
+        amf_int64 eColorRangeAMF = AMF_COLOR_RANGE_UNDEFINED;
+        switch (picture.color_range)
+        {
+        case AVCOL_RANGE_UNSPECIFIED:
+            eColorRangeAMF = AMF_COLOR_RANGE_UNDEFINED;
+            break;
+        case AVCOL_RANGE_MPEG:
+            eColorRangeAMF = AMF_COLOR_RANGE_STUDIO;
+            break;
+        case AVCOL_RANGE_JPEG:
+            eColorRangeAMF = AMF_COLOR_RANGE_FULL;
+            break;
+        case AVCOL_RANGE_NB:
+            eColorRangeAMF = AMF_COLOR_RANGE_UNDEFINED;
+            break;
+        }
+        if (eColorRangeAMF != AMF_COLOR_RANGE_UNDEFINED)
+        {
+            pSurfaceOut->SetProperty(AMF_VIDEO_COLOR_RANGE, eColorRangeAMF);
+        }
     }
 
     pSurfaceOut->SetFrameType(eFrameType);

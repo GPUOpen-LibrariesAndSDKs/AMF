@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -77,7 +77,7 @@ public:
 
     virtual double              GetFPS() const { return m_dLastFPS; }
     virtual amf_int64           GetFramesDropped() const {return m_iFramesDropped; }
-    virtual bool                SupportAllocator() const { return true; }
+    virtual bool                SupportAllocator() const { return false; }
     virtual void                DoActualWait(bool bDoWait) {m_bDoWait = bDoWait;}
     virtual void                SetFullScreen(bool bFullScreen) { m_bFullScreen = bFullScreen; }
     virtual bool                GetFullScreen() { return m_bFullScreen; }
@@ -85,12 +85,16 @@ public:
 	virtual void                SetWaitForVSync(bool bDoWait) { m_bWaitForVSync = bDoWait; }
 	virtual	AMFRate				GetDisplayRefreshRate() { return AMFConstructRate(60, 0); }
 
+    virtual AMFRect             GetSourceRect();
+    virtual AMFPoint            MapClientToSource(const AMFPoint& point) { return point; }
+    virtual AMFPoint            MapSourceToClient(const AMFPoint& point) { return point; }
+
     virtual AMF_RESULT          Resume();
     AMF_RESULT Pause() { m_state = ModePaused; return AMF_OK; }
     AMF_RESULT Step() { m_state = ModeStep; return AMF_OK;}
     Mode       GetMode() const { return m_state;}
 
-    virtual AMF_RESULT SetProcessor(amf::AMFComponent* pProcessor);
+    virtual AMF_RESULT SetProcessor(amf::AMFComponent* pProcessor, amf::AMFComponent* pHQScaler = nullptr);
 
     // amf::AMFInterface interface
     virtual amf_long AMF_STD_CALL Acquire() { return 1; }
@@ -104,6 +108,9 @@ public:
 
     // amf::AMFSurfaceObserver interface
     virtual void AMF_STD_CALL OnSurfaceDataRelease(amf::AMFSurface* pSurface) {}
+
+    virtual void SetOrientation(int orientation) { m_iOrientation = orientation; }
+    virtual int GetOrientation() { return m_iOrientation; }
 
 	// Get frame width and height
     amf_int32 GetFrameWidth() const     { return m_InputFrameSize.width; }
@@ -120,6 +127,12 @@ public:
     virtual void AMF_STD_CALL  CheckForResize() {} // call from UI thread (for VulkanPresenter on Linux)
 
     virtual void AMF_STD_CALL SetDropThreshold(amf_pts ptsDropThreshold) { m_ptsDropThreshold = ptsDropThreshold; }
+
+    virtual void                SetEnablePIP(bool bEnablePIP) { m_bEnablePIP = bEnablePIP; }
+    virtual bool                GetEnablePIP() { return m_bEnablePIP; }
+    virtual void                SetPIPZoomFactor(amf_float fPIPZoomFactor) { m_fPIPZoomFactor = fPIPZoomFactor; }
+    virtual void                SetPIPFocusPositions(AMFFloatPoint2D fPIPFocusPos) { m_fPIPFocusPos = fPIPFocusPos; }
+
 protected:
     VideoPresenter();
     virtual AMF_RESULT Freeze();
@@ -143,9 +156,9 @@ protected:
     double                              m_dLastFPS;
     int                                 m_instance;
     amf::AMFComponentPtr                m_pProcessor;
+    amf::AMFComponentPtr                m_pHQScaler;
     Mode                                m_state;
     AMFRect                             m_rectClient;
-    
     amf_pts                             m_currentTime;
     bool                                m_bDoWait;
     amf_pts                             m_ptsDropThreshold;
@@ -155,4 +168,10 @@ protected:
     AMFRect                             m_destVertexRect;
     bool                                m_bFullScreen;
 	bool								m_bWaitForVSync;
+
+    bool                                m_bEnablePIP;
+    float                               m_fPIPZoomFactor;
+    AMFFloatPoint2D                     m_fPIPFocusPos;
+
+    int                                 m_iOrientation;
 };

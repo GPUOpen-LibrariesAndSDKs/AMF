@@ -61,6 +61,7 @@ public:
     AMF_RESULT Connect(PipelineElementPtr pElement, amf_int32 queueSize, ConnectionThreading eThreading = CT_ThreadQueue);
     AMF_RESULT Connect(PipelineElementPtr pElement, amf_int32 slot, PipelineElementPtr upstreamElement, amf_int32 upstreamSlot, amf_int32 queueSize, ConnectionThreading eThreading = CT_ThreadQueue);
     AMF_RESULT SetStatSlot(PipelineElementPtr pElement, amf_int32 slot);
+    PipelineElementPtr GetLastElement();
 
     virtual AMF_RESULT      Start();
     virtual AMF_RESULT      Stop();

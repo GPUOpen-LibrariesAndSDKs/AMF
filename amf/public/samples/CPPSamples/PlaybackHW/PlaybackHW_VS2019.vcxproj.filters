@@ -227,7 +227,11 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\common\quad.frag" />
-    <CustomBuild Include="..\common\quad.vert" />
+    <CustomBuild Include="..\common\quad.frag">
+      <Filter>common</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\common\quad.vert">
+      <Filter>common</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

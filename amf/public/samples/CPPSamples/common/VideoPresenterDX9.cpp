@@ -34,7 +34,8 @@
 VideoPresenterDX9::VideoPresenterDX9(amf_handle hwnd, amf::AMFContext* pContext) :
     BackBufferPresenter(hwnd, pContext),
     m_uiAvailableBackBuffer(0),
-    m_uiBackBufferCount(4)
+    m_uiBackBufferCount(4),
+    m_bResizeSwapChain(false)
 {
 
 }

@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -161,7 +161,7 @@ const sFormatMap[] =
 //
 
 //-------------------------------------------------------------------------------------------------
-AMFFileMuxerFFMPEGImpl::AMFInputMuxerImpl::AMFInputMuxerImpl(AMFFileMuxerFFMPEGImpl* pHost) 
+AMFFileMuxerFFMPEGImpl::AMFInputMuxerImpl::AMFInputMuxerImpl(AMFFileMuxerFFMPEGImpl* pHost)
     : m_pHost(pHost),
       m_iIndex(-1),
       m_bEnabled(true),
@@ -191,7 +191,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AMFInputMuxerImpl::SubmitInput(
         {
             m_ptsLast = pData->GetPts() + m_ptsShift;
             pData->SetPts(m_ptsLast);
-            
+
         }
         return m_pHost->WriteData(pData, m_iIndex);
 
@@ -315,7 +315,8 @@ AMFFileMuxerFFMPEGImpl::AMFFileMuxerFFMPEGImpl(AMFContext* pContext)
     m_iViewFrameCount(0),
     m_ptsStatTime(0),
     m_bPtsOffsetIsCalculated(false),
-    m_ptsOffset(0)
+    m_ptsOffset(0),
+    m_isUsageTrim(false)
 {
     g_AMFFactory.Init();
 
@@ -325,7 +326,9 @@ AMFFileMuxerFFMPEGImpl::AMFFileMuxerFFMPEGImpl(AMFContext* pContext)
         AMFPropertyInfoBool(FFMPEG_MUXER_ENABLE_VIDEO, L"Enable video stream", true, true),
         AMFPropertyInfoBool(FFMPEG_MUXER_ENABLE_AUDIO, L"Enable audio stream", false, true),
         AMFPropertyInfoBool(FFMPEG_MUXER_LISTEN, L"Listen", false, false),
-        AMFPropertyInfoInterface(FFMPEG_MUXER_CURRENT_TIME_INTERFACE, L"Interface object for getting current time", NULL, false),
+        AMFPropertyInfoBool(FFMPEG_MUXER_USAGE_IS_TRIM, L"is the usage of the muxer to trim a video by remux", false, true),
+        AMFPropertyInfoInterface(FFMPEG_MUXER_CURRENT_TIME_INTERFACE, L"Interface object for getting current time", NULL, false)
+        
 
     AMFPrimitivePropertyInfoMapEnd
 
@@ -347,6 +350,8 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*forma
     AMFInterfacePtr pTmp;
     GetProperty(FFMPEG_MUXER_CURRENT_TIME_INTERFACE, &pTmp);
     m_pCurrentTime = (AMFCurrentTimePtr)pTmp.GetPtr();
+
+    GetProperty(FFMPEG_MUXER_USAGE_IS_TRIM, &m_isUsageTrim);
 
     Close();
     AMF_RESULT res = Open();
@@ -462,9 +467,9 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
     {
         amf_free(m_pOutputContext->streams);
     }
-    m_pOutputContext->streams = (AVStream**) amf_alloc(m_pOutputContext->nb_streams * sizeof(AVStream*)); 
+    m_pOutputContext->streams = (AVStream**) amf_alloc(m_pOutputContext->nb_streams * sizeof(AVStream*));
 
-    for (unsigned int ind=0; ind < m_pOutputContext->nb_streams; ind++) 
+    for (unsigned int ind=0; ind < m_pOutputContext->nb_streams; ind++)
     {
         AVStream *ist = 0;
         ist = (AVStream*)av_mallocz(sizeof(AVStream));
@@ -492,7 +497,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
         ist->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
         ist->codecpar = avcodec_parameters_alloc();
 
-              
+
 
         AMFInputMuxerImplPtr  spInput    = m_InputStreams[ind];
         amf_int64             streamType = AMF_STREAM_UNKNOWN;
@@ -503,7 +508,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
         case AMF_STREAM_VIDEO:   ist->id=AVMEDIA_TYPE_VIDEO; break;
         case AMF_STREAM_AUDIO:   ist->id=AVMEDIA_TYPE_AUDIO; break;
         case AMF_STREAM_DATA:    ist->id=AVMEDIA_TYPE_DATA; break;
-        case AMF_STREAM_UNKNOWN: 
+        case AMF_STREAM_UNKNOWN:
         default:            ist->id=AVMEDIA_TYPE_UNKNOWN; break;
         }
 
@@ -531,7 +536,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
         AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_EXTRA_DATA, &val));
         if (!val.Empty() && val.pInterface)
         {
-            // NOTE: the buffer ptr. shouldn't disappear as the 
+            // NOTE: the buffer ptr. shouldn't disappear as the
             //       property holds it in the end
             AMFBufferPtr pBuffer = AMFBufferPtr(val.pInterface);
             ist->codec->extradata = (uint8_t*) pBuffer->GetNative();
@@ -550,9 +555,9 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
             AMFRate  frameRate;
             AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_VIDEO_FRAME_RATE, &frameRate));
 
-            // default pts settings is MPEG like 
+            // default pts settings is MPEG like
             avpriv_set_pts_info(ist, 33, 1, 90000);
-// this is set in the line above 
+// this is set in the line above
             ist->time_base.num = frameRate.den;
             ist->time_base.den = frameRate.num;
 
@@ -616,7 +621,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::FreeContext()
 {
     if(m_pOutputContext!=NULL)
     {
-        for(unsigned int j=0;j<m_pOutputContext->nb_streams;j++) 
+        for(unsigned int j=0;j<m_pOutputContext->nb_streams;j++)
         {
             av_free(m_pOutputContext->streams[j]->internal->avctx);
             av_free(m_pOutputContext->streams[j]->codec);
@@ -626,7 +631,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::FreeContext()
 
         if(m_pOutputContext->streams)
         {
-            amf_free( m_pOutputContext->streams );        
+            amf_free( m_pOutputContext->streams );
         }
 
         m_pOutputContext->nb_streams=0;
@@ -691,13 +696,13 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::Open()
     {
         return AMF_FILE_NOT_OPEN;
     }
-    
+
     m_pOutputContext->oformat = file_oformat;
 
     int iret = 0;
     AVDictionary *options = NULL;
     if(bListen)
-    { 
+    {
         iret = av_dict_set(&options, "listen", "1", 0);
     }
     if(bRtmpLive)
@@ -767,7 +772,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::WriteData(AMFData* pData, amf_i
         m_bForceEof = false;
         AVStream *ost = m_pOutputContext->streams[iIndex];
 
-        // fill packet 
+        // fill packet
         AVPacket  pkt = {};
         av_init_packet(&pkt);
 
@@ -783,6 +788,16 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::WriteData(AMFData* pData, amf_i
         pkt.data = static_cast<uint8_t*>(pInBuffer->GetNative());
         pkt.size = (int)uiMemSizeIn;
         pkt.stream_index = iIndex;
+
+        if (m_isUsageTrim)
+        {
+            amf_int64 flags = 0;
+            if (AMF_OK == pData->GetProperty(L"FFMPEG:flags", &flags))
+            {
+                pkt.flags = flags;
+            }
+                
+        }
 
         // Try to determine the output video frame type
         amf_int64 outputDataType = -1;
@@ -813,7 +828,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::WriteData(AMFData* pData, amf_i
         {
             if (pData->GetProperty(AMF_VIDEO_ENCODER_PRESENTATION_TIME_STAMP, &pts) == AMF_OK)
             {
-                if (!m_bPtsOffsetIsCalculated && (pkt.flags & AV_PKT_FLAG_KEY != 0))
+                if (!m_bPtsOffsetIsCalculated && ((pkt.flags & AV_PKT_FLAG_KEY) != 0))
                 {
                     // calculate offset for preventing PTS < DTS
                     if (pts == dts)
@@ -842,7 +857,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::WriteData(AMFData* pData, amf_i
         }
 
         pkt.pts=av_rescale_q(pts, AMF_TIME_BASE_Q, ost->time_base);
-        if (ost->cur_dts == pkt.pts && ost->codec->codec_type == AVMEDIA_TYPE_AUDIO) // MM sometimes time_base doesn't have enough precision for the a buffer with small number of compressed samples producing the same dts. AVI muxder fails with this 
+        if (ost->cur_dts == pkt.pts && ost->codec->codec_type == AVMEDIA_TYPE_AUDIO) // MM sometimes time_base doesn't have enough precision for the a buffer with small number of compressed samples producing the same dts. AVI muxder fails with this
         {
             pkt.pts++;
         }
@@ -866,7 +881,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::WriteData(AMFData* pData, amf_i
         {
             m_ptsStatTime += m_pCurrentTime->Get() - pData->GetPts();
 
-            m_iViewFrameCount++;            
+            m_iViewFrameCount++;
             if((m_iViewFrameCount % 100) == 0)
             {
 //                AMFTraceWarning(AMF_FACILITY, L" Averate Latency=%5.2f", m_ptsStatTime / 100. / 10000.);

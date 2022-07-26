@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -73,7 +73,7 @@ const float VideoPresenterDX12::ClearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 VideoPresenterDX12::VideoPresenterDX12(amf_handle hwnd, amf::AMFContext* pContext) :
     BackBufferPresenter(hwnd, pContext),
-    SwapChainDX12(pContext), 
+    SwapChainDX12(pContext),
     m_CurrentViewport{0},
     m_rectClientResize{0},
     m_fScale(1.0f),
@@ -115,6 +115,8 @@ AMF_RESULT VideoPresenterDX12::Init(amf_int32 width, amf_int32 height, amf::AMFS
     res = PrepareStates();
     CHECK_AMF_ERROR_RETURN(res, L"PrepareStates() failed");
 
+    ResizeSwapChain();
+
     return AMF_OK;
 }
 
@@ -136,7 +138,7 @@ AMF_RESULT VideoPresenterDX12::Present(amf::AMFSurface* pSurface)
     {
         res;
     }
-    
+
     UINT imageIndex = 0;
 
     ApplyCSC(pSurface);
@@ -150,7 +152,7 @@ AMF_RESULT VideoPresenterDX12::Present(amf::AMFSurface* pSurface)
         {
             return AMF_INVALID_POINTER;
         }
-        
+
         AMFRect rectClient;
         rectClient = GetClientRect();
         ResetCommandBuffer();
@@ -182,7 +184,7 @@ AMF_RESULT VideoPresenterDX12::Present(amf::AMFSurface* pSurface)
 
     amf::AMFLock lock(&m_sect);
     SwapChainDX12::Present(m_frameIndex);
-    
+
     if(m_bRenderToBackBuffer)
     {
         m_uiAvailableBackBuffer--;
@@ -214,7 +216,7 @@ AMF_RESULT VideoPresenterDX12::BitBltRender(amf::AMF_FRAME_TYPE eFrameType, ID3D
 
     AMF_RESULT err = AMF_OK;
     HRESULT hr = S_OK;
-    
+
     BackBuffer& backBuffer = m_BackBuffers[m_frameIndex];
 
     D3D12_RESOURCE_DESC srcDesc = pSrcSurface->GetDesc();
@@ -251,7 +253,7 @@ AMF_RESULT VideoPresenterDX12::BitBltRender(amf::AMF_FRAME_TYPE eFrameType, ID3D
         }
 
         m_cmdListGraphics->SetGraphicsRootSignature(m_rootSignature);
-        
+
         /// Descriptor Heap
         {
             ID3D12DescriptorHeap* ppHeaps[] = { m_cbvSrvHeap.p };
@@ -279,9 +281,31 @@ AMF_RESULT VideoPresenterDX12::BitBltRender(amf::AMF_FRAME_TYPE eFrameType, ID3D
             D3D12_RECT rect = CD3DX12_RECT(pDstRect->left, pDstRect->top, pDstRect->right, pDstRect->bottom);
             m_cmdListGraphics->RSSetScissorRects(1, &rect);
         }
-        
+
         // Draw Quad vertex count 4, instance count 1
         m_cmdListGraphics->DrawInstanced(4, 1, 0, 0);
+
+        // PIP window
+        if (m_bEnablePIP)
+        {
+            m_cmdListGraphics->SetGraphicsRootSignature(m_rootSignatureNN);
+            m_cmdListGraphics->SetPipelineState(m_graphicsPipelineStateNN);
+
+            D3D12_VIEWPORT pipViewport = m_CurrentViewport;
+            CD3DX12_RECT pipScissor = CD3DX12_RECT(pDstRect->left, pDstRect->top, pDstRect->right, pDstRect->bottom);
+
+            pipViewport.Width = m_CurrentViewport.Width * c_pipSize;
+            pipViewport.Height = m_CurrentViewport.Height * c_pipSize;
+            pipScissor.right = static_cast<LONG>(pipScissor.right * c_pipSize);
+            pipScissor.bottom = static_cast<LONG>(pipScissor.bottom * c_pipSize);
+
+            m_cmdListGraphics->RSSetViewports(1, &pipViewport);
+            m_cmdListGraphics->RSSetScissorRects(1, &pipScissor);
+            m_cmdListGraphics->IASetVertexBuffers(0, 1, &m_PIPVertexBufferView);
+
+            // Draw Quad vertex count 4, instance count 1
+            m_cmdListGraphics->DrawInstanced(4, 1, 0, 0);
+        }
 
         TransitionResource(pSrcSurface, D3D12_RESOURCE_STATE_COMMON, false);
 
@@ -291,7 +315,7 @@ AMF_RESULT VideoPresenterDX12::BitBltRender(amf::AMF_FRAME_TYPE eFrameType, ID3D
 }
 
 AMF_RESULT VideoPresenterDX12::Terminate()
-{	
+{
     m_hwnd = nullptr;
 
     m_pVertexShader = nullptr;
@@ -304,6 +328,10 @@ AMF_RESULT VideoPresenterDX12::Terminate()
     m_vertexBufferView = {};
     m_CurrentViewport = {};
 
+    m_pPIPVertexBuffer = nullptr;
+    m_pPIPVertexBufferUpload = nullptr;
+    m_PIPVertexBufferView = {};
+
     m_fScale = 1.0f;
     m_fPixelAspectRatio = 1.0f;
     m_fOffsetX = 0.f;
@@ -311,9 +339,9 @@ AMF_RESULT VideoPresenterDX12::Terminate()
 
     m_uiAvailableBackBuffer = 0;
     m_uiBackBufferCount = 0;
-    
+
     m_rectClientResize = {};
-   
+
     SwapChainDX12::Terminate();
     return VideoPresenter::Terminate();
 }
@@ -339,7 +367,7 @@ AMF_RESULT VideoPresenterDX12::CompileShaders()
     {
         CD3DX12_DESCRIPTOR_RANGE1 ranges[1] = {};
         ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE);
-        
+
         CD3DX12_ROOT_PARAMETER1 rootParameters[GraphicsRootParametersCount] = {};
         rootParameters[GraphicsRootSRVTable].InitAsDescriptorTable(_countof(ranges), &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL);
         rootParameters[GraphicsRootCBV].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
@@ -373,6 +401,29 @@ AMF_RESULT VideoPresenterDX12::CompileShaders()
         CHECK_HRESULT_ERROR_RETURN(hr, L"D3DX12SerializeVersionedRootSignature() failed.");
 
         hr = m_pDX12Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature));
+        CHECK_HRESULT_ERROR_RETURN(hr, L"CreateRootSignature() failed.");
+
+        // Create static samplers for point sampling.
+        CD3DX12_STATIC_SAMPLER_DESC samplerNN(0, D3D12_FILTER_MIN_MAG_MIP_POINT);
+        samplerNN.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+        samplerNN.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        samplerNN.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        samplerNN.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        samplerNN.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+
+        //CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
+        rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, 1, &samplerNN, rootSignatureFlags);
+
+        CComPtr<ID3DBlob> pSignatureNN;
+        hr = D3DX12SerializeVersionedRootSignature(&rootSignatureDesc, featureData.HighestVersion, &pSignatureNN, &error);
+        if (error)
+        {
+            amf_string message = reinterpret_cast<const char*>(error->GetBufferPointer());
+            amf_wstring wMessage = amf_from_multibyte_to_unicode(message);
+        }
+        CHECK_HRESULT_ERROR_RETURN(hr, L"D3DX12SerializeVersionedRootSignature() failed.");
+
+        hr = m_pDX12Device->CreateRootSignature(0, pSignatureNN->GetBufferPointer(), pSignatureNN->GetBufferSize(), IID_PPV_ARGS(&m_rootSignatureNN));
         CHECK_HRESULT_ERROR_RETURN(hr, L"CreateRootSignature() failed.");
     }
 
@@ -417,6 +468,11 @@ AMF_RESULT VideoPresenterDX12::CompileShaders()
 
         hr = m_pDX12Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_graphicsPipelineState));
         CHECK_HRESULT_ERROR_RETURN(hr, L"CreateGraphicsPipelineState() failed.");
+
+        // Create graphics pipeline state with point sampling (nearest neighbor) sampler.
+        psoDesc.pRootSignature = m_rootSignatureNN;
+        hr = m_pDX12Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_graphicsPipelineStateNN));
+        CHECK_HRESULT_ERROR_RETURN(hr, L"CreateGraphicsPipelineState() failed.");
     }
 
     return AMF_OK;
@@ -428,7 +484,7 @@ AMF_RESULT VideoPresenterDX12::PrepareStates()
     CHECK_RETURN(m_cmdListGraphics != nullptr, AMF_FAIL, L"DX12 graphics command list is not initialized.");
 
     HRESULT hr = S_OK;
-    
+
     // Create vertex buffer & view
     {
         const CD3DX12_RESOURCE_DESC vertexDesc = CD3DX12_RESOURCE_DESC::Buffer(
@@ -442,7 +498,7 @@ AMF_RESULT VideoPresenterDX12::PrepareStates()
             D3D12_RESOURCE_STATE_COPY_DEST,
             nullptr,
             IID_PPV_ARGS(&m_pVertexBuffer));
-        
+
         D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COPY_DEST;
         m_pVertexBuffer->SetPrivateData(AMFResourceStateGUID, sizeof(D3D12_RESOURCE_STATES), &initialState);
 
@@ -460,7 +516,13 @@ AMF_RESULT VideoPresenterDX12::PrepareStates()
         m_vertexBufferView.StrideInBytes = sizeof(SimpleVertex);
         m_vertexBufferView.SizeInBytes = (UINT)vertexDesc.Width;
     }
-    
+
+    // Create PIP vertex buffer and view
+    if (m_bEnablePIP)
+    {
+        PreparePIPStates();
+    }
+
     // Initialize the view matrix
     {
         XMMATRIX worldViewProjection = XMMatrixIdentity();
@@ -504,7 +566,7 @@ AMF_RESULT VideoPresenterDX12::PrepareStates()
         ResetCommandBuffer();
 
         m_cmdListGraphics->CopyBufferRegion(m_pCBChangesOnResize, 0, cbUpload, 0, cbDesc.Width);
-    
+
         D3D12_RESOURCE_BARRIER barriers[] = {
          CD3DX12_RESOURCE_BARRIER::Transition(m_pCBChangesOnResize, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER),
         };
@@ -521,10 +583,45 @@ AMF_RESULT VideoPresenterDX12::PrepareStates()
     return AMF_OK;
 }
 
+AMF_RESULT VideoPresenterDX12::PreparePIPStates()
+{
+    HRESULT hr = S_OK;
+
+    const CD3DX12_RESOURCE_DESC vertexDesc = CD3DX12_RESOURCE_DESC::Buffer(
+        sizeof(SimpleVertex) * IndicesCount
+    );
+
+    hr = m_pDX12Device->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+        D3D12_HEAP_FLAG_NONE,
+        &vertexDesc,
+        D3D12_RESOURCE_STATE_COPY_DEST,
+        nullptr,
+        IID_PPV_ARGS(&m_pPIPVertexBuffer));
+
+    D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COPY_DEST;
+    m_pPIPVertexBuffer->SetPrivateData(AMFResourceStateGUID, sizeof(D3D12_RESOURCE_STATES), &initialState);
+
+    hr = m_pDX12Device->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+        D3D12_HEAP_FLAG_NONE,
+        &vertexDesc,
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr,
+        IID_PPV_ARGS(&m_pPIPVertexBufferUpload));
+
+    // Initialize the vertex buffer views.
+    m_PIPVertexBufferView.BufferLocation = m_pPIPVertexBuffer->GetGPUVirtualAddress();
+    m_PIPVertexBufferView.StrideInBytes = sizeof(SimpleVertex);
+    m_PIPVertexBufferView.SizeInBytes = (UINT)vertexDesc.Width;
+
+    return AMF_OK;
+}
+
 AMF_RESULT   VideoPresenterDX12::CheckForResize(bool bForce, bool *bResized)
 {
     CHECK_RETURN(m_pSwapChain != nullptr, AMF_FAIL, L"DX12 SwapChain is not initialized.");
-    
+
     *bResized = false;
     AMF_RESULT err=AMF_OK;
     HRESULT hr = S_OK;
@@ -593,7 +690,7 @@ AMF_RESULT VideoPresenterDX12::ResizeSwapChain()
     amf_int height=clientRect.bottom-clientRect.top;
 
     AMF_RESULT res = SwapChainDX12::ResizeSwapChain(m_eInputFormat, width, height);
-    
+
     m_rectClient = clientRect;
     return res;
 }
@@ -604,9 +701,9 @@ AMF_RESULT VideoPresenterDX12::UpdateVertices(AMFRect *srcRect, AMFSize *srcSize
     CHECK_RETURN(m_pDX12Device != nullptr, AMF_FAIL, L"DX12 Device is not initialized.");
     CHECK_RETURN(m_cmdListGraphics != nullptr, AMF_FAIL, L"DX12 graphics command list is not initialized.");
 
-    if(*srcRect == m_sourceVertexRect  &&  *dstRect == m_destVertexRect)
+    if(!m_bEnablePIP && *srcRect == m_sourceVertexRect  &&  *dstRect == m_destVertexRect)
     {
-        return AMF_OK;   
+        return AMF_OK;
     }
     m_sourceVertexRect = *srcRect;
     m_destVertexRect = *dstRect;
@@ -664,9 +761,81 @@ AMF_RESULT VideoPresenterDX12::UpdateVertices(AMFRect *srcRect, AMFSize *srcSize
     m_pVertexBufferUpload->Unmap(0, nullptr);
 
     TransitionResource(m_pVertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST);
-    
+
     m_cmdListGraphics->CopyBufferRegion(m_pVertexBuffer, 0, m_pVertexBufferUpload, 0, sizeof(vertices));
-        
+
+    // PIP vertex data
+    if (m_bEnablePIP)
+    {
+        UpdatePIPVertices(srcRect, srcSize, dstRect, dstSize);
+    }
+
+    return AMF_OK;
+}
+
+AMF_RESULT VideoPresenterDX12::UpdatePIPVertices(AMFRect* srcRect, AMFSize* srcSize, AMFRect* dstRect, AMFSize* dstSize)
+{
+    if (m_pPIPVertexBuffer == nullptr || m_pPIPVertexBufferUpload == nullptr)
+    {
+        PreparePIPStates();
+    }
+
+    HRESULT hr = S_OK;
+    SimpleVertex vertices[IndicesCount];
+
+    memset(vertices, 0, sizeof(vertices));
+
+    // stretch video rect to back buffer
+    FLOAT  w=2.f;
+    FLOAT  h=2.f;
+
+    w *= m_fScale;
+    h *= m_fScale;
+
+    w *= (float)dstRect->Width() / dstSize->width;
+    h *= (float)dstRect->Height() / dstSize->height;
+
+    FLOAT centerX = m_fOffsetX * 2.f / dstRect->Width();
+    FLOAT centerY = -m_fOffsetY * 2.f / dstRect->Height();
+
+    FLOAT leftDst = centerX - w / 2;
+    FLOAT rightDst = leftDst + w * 1;
+    FLOAT topDst = centerY - h / 2;
+    FLOAT bottomDst = topDst + h * 1;
+
+    centerX = (FLOAT)(srcRect->left + srcRect->right) / 2.f / srcRect->Width();
+    centerY = (FLOAT)(srcRect->top + srcRect->bottom) / 2.f / srcRect->Height();
+
+    w = (FLOAT)srcRect->Width() / srcSize->width;
+    h = (FLOAT)srcRect->Height() / srcSize->height;
+
+    FLOAT leftSrc = m_fPIPFocusPos.x + centerX - w / 2;
+    FLOAT rightSrc = leftSrc + w * m_fPIPZoomFactor * c_pipSize;
+    FLOAT topSrc = m_fPIPFocusPos.y + centerY - h / 2;
+    FLOAT bottomSrc = topSrc + h * m_fPIPZoomFactor * c_pipSize;
+
+    vertices[0].position = XMFLOAT3(leftDst, bottomDst, 0.0f);
+    vertices[0].texture = XMFLOAT2(leftSrc, topSrc);
+
+    vertices[1].position = XMFLOAT3(rightDst, bottomDst, 0.0f);
+    vertices[1].texture = XMFLOAT2(rightSrc, topSrc);
+
+    vertices[2].position = XMFLOAT3(leftDst, topDst, 0.0f);
+    vertices[2].texture = XMFLOAT2(leftSrc, bottomSrc);
+
+    vertices[3].position = XMFLOAT3(rightDst, topDst, 0.0f);
+    vertices[3].texture = XMFLOAT2(rightSrc, bottomSrc);
+
+    UINT8* pVertexData = NULL;
+    CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
+    hr = m_pPIPVertexBufferUpload->Map(0, &readRange, reinterpret_cast<void**>(&pVertexData));
+    memcpy(pVertexData, vertices, sizeof(vertices));
+    m_pPIPVertexBufferUpload->Unmap(0, nullptr);
+
+    TransitionResource(m_pPIPVertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST);
+
+    m_cmdListGraphics->CopyBufferRegion(m_pPIPVertexBuffer, 0, m_pPIPVertexBufferUpload, 0, sizeof(vertices));
+
     return AMF_OK;
 }
 
@@ -714,9 +883,9 @@ AMF_RESULT VideoPresenterDX12::CreateCommandBuffer()
 
     // Create synchronization objects and wait until assets have been uploaded to the GPU.
     {
-        hr = m_pDX12Device->CreateFence(m_fenceValues[m_frameIndex], D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence));
+        hr = m_pDX12Device->CreateFence(m_fenceValue, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(&m_fence));
         NAME_D3D12_OBJECT(m_fence);
-        m_fenceValues[m_frameIndex]++;
+        m_fenceValue++;
 
         // Create an event handle to use for frame synchronization.
         m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
@@ -749,7 +918,7 @@ void        VideoPresenterDX12::UpdateProcessor()
             {
                 pSwapChain3->CheckColorSpaceSupport((DXGI_COLOR_SPACE_TYPE)i, &supported[i]);
             }
-            if(GetInputFormat() == amf::AMF_SURFACE_RGBA_F16 && 
+            if(GetInputFormat() == amf::AMF_SURFACE_RGBA_F16 &&
                 (supported[DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709] & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT))
             {
 
@@ -767,7 +936,7 @@ void        VideoPresenterDX12::UpdateProcessor()
 
         UINT adapterIndex = 0;
         for(;;adapterIndex++)
-        { 
+        {
             ATL::CComPtr<IDXGIOutput> spDXGIOutput;
             m_dxgiAdapter->EnumOutputs(adapterIndex, &spDXGIOutput);
             if(spDXGIOutput == NULL)

@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,10 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -79,7 +80,7 @@ AMF_RESULT AMFFactoryHelper::Init(const wchar_t* dllName)
     const wchar_t* dllName_ = dllName == NULL ? AMF_DLL_NAME : dllName;
 #if defined (_WIN32) || defined (__APPLE__)
     m_hDLLHandle = amf_load_library(dllName_);
-#else 
+#else
     m_hDLLHandle = amf_load_library1(dllName_, false); //load with local flags
 #endif
     if(m_hDLLHandle == NULL)
@@ -125,10 +126,10 @@ AMF_RESULT AMFFactoryHelper::Init(const wchar_t* dllName)
 AMF_RESULT AMFFactoryHelper::Terminate()
 {
     if(m_hDLLHandle != NULL)
-    { 
+    {
         amf_atomic_dec(&m_iRefCount);
         if(m_iRefCount == 0)
-        { 
+        {
             amf_free_library(m_hDLLHandle);
             m_hDLLHandle = NULL;
             m_pFactory= NULL;
@@ -165,14 +166,14 @@ AMF_RESULT  AMFFactoryHelper::LoadExternalComponent(amf::AMFContext* pContext, c
 {
     // check passed in parameters
     if (!pContext || !dll || !function)
-    { 
+    {
         return AMF_INVALID_ARG;
     }
 
     // check if DLL has already been loaded
     amf_handle  hDll = NULL;
     for (std::vector<ComponentHolder>::iterator it = m_extComponents.begin(); it != m_extComponents.end(); ++it)
-    { 
+    {
 #if defined(_WIN32)
          if (wcsicmp(it->m_DLL.c_str(), dll) == 0) // ignore case on Windows
 #elif defined(__linux) // Linux
@@ -189,7 +190,7 @@ AMF_RESULT  AMFFactoryHelper::LoadExternalComponent(amf::AMFContext* pContext, c
             return AMF_UNEXPECTED;
         }
     }
-    // DLL wasn't loaded before so load it now and 
+    // DLL wasn't loaded before so load it now and
     // add it to the internal list
     if (hDll == NULL)
     {
@@ -208,7 +209,7 @@ AMF_RESULT  AMFFactoryHelper::LoadExternalComponent(amf::AMFContext* pContext, c
 
         // since LoadLibrary succeeded add the information
         // into the internal list so we can properly free
-        // the DLL later on, even if we fail to get the 
+        // the DLL later on, even if we fail to get the
         // required information from it...
         component.m_hDLLHandle = hDll;
         amf_atomic_inc(&component.m_iRefCount);
@@ -227,11 +228,11 @@ AMF_RESULT  AMFFactoryHelper::LoadExternalComponent(amf::AMFContext* pContext, c
 AMF_RESULT  AMFFactoryHelper::UnLoadExternalComponent(const wchar_t* dll)
 {
     if (!dll)
-    { 
+    {
         return AMF_INVALID_ARG;
     }
     for (std::vector<ComponentHolder>::iterator it = m_extComponents.begin(); it != m_extComponents.end(); ++it)
-    { 
+    {
 #if defined(_WIN32)
          if (wcsicmp(it->m_DLL.c_str(), dll) == 0) // ignore case on Windows
 #elif defined(__linux) // Linux
@@ -244,7 +245,7 @@ AMF_RESULT  AMFFactoryHelper::UnLoadExternalComponent(const wchar_t* dll)
             }
             amf_atomic_dec(&it->m_iRefCount);
             if (it->m_iRefCount == 0)
-            { 
+            {
                 amf_free_library(it->m_hDLLHandle);
                 m_extComponents.erase(it);
             }

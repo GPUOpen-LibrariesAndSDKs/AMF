@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -31,7 +31,7 @@
 // THE SOFTWARE.
 //
 
-// this sample encodes NV12 frames using AMF Encoder and writes them to H.264 elmentary stream 
+// this sample encodes NV12 frames using AMF Encoder and writes them to H.264 elmentary stream
 
 #include <stdio.h>
 #ifdef _WIN32
@@ -61,9 +61,13 @@ static const wchar_t* pCodec = AMFVideoEncoderVCE_AVC;
 
 static AMF_COLOR_BIT_DEPTH_ENUM eDepth = AMF_COLOR_BIT_DEPTH_8;
 static amf_int32 frameCount = 500;
+static amf_bool frameCountPassedIn = false;
 static amf_int32 preRender = 0;
 static amf_int32 vcnInstance = -1;
 static bool bMaximumSpeed = true;
+static float fFrameRate = 30.f;
+static bool bRealTime = false;
+
 
 #ifdef _WIN32
 amf::AMF_MEMORY_TYPE    memoryTypeIn = amf::AMF_MEMORY_DX11;
@@ -93,6 +97,7 @@ amf::AMFSurfacePtr pColor2;
 static const wchar_t*  PARAM_NAME_WORKALGORITHM = L"ALGORITHM";
 static const wchar_t*  PARAM_NAME_PRERENDER     = L"PRERENDER";
 static const wchar_t*  PARAM_NAME_VCN_INSTANCE  = L"VCNINSTANCE";
+static const wchar_t*  PARAM_NAME_REALTIME      = L"REALTIME";
 
 
 AMF_RESULT RegisterParams(ParametersStorage* pParams)
@@ -110,6 +115,7 @@ AMF_RESULT RegisterParams(ParametersStorage* pParams)
     pParams->SetParamDescription(PARAM_NAME_INPUT, ParamCommon, L"Input file name", NULL);
     pParams->SetParamDescription(PARAM_NAME_INPUT_WIDTH, ParamCommon, L"Input file width", ParamConverterInt64);
     pParams->SetParamDescription(PARAM_NAME_INPUT_HEIGHT, ParamCommon, L"Input file height", ParamConverterInt64);
+    pParams->SetParamDescription(PARAM_NAME_REALTIME, ParamCommon, L"Bool, Keep real-time framerate, default false", ParamConverterBoolean);
 
     return AMF_OK;
 }
@@ -118,7 +124,7 @@ AMF_RESULT RegisterParams(ParametersStorage* pParams)
 AMF_RESULT ReadParams(ParametersStorage* params)
 #else
 AMF_RESULT ReadParams(ParametersStorage* params, int argc, char* argv[])
-#endif        
+#endif
 {
     // register all parameters first
     RegisterParams(params);
@@ -129,7 +135,7 @@ AMF_RESULT ReadParams(ParametersStorage* params, int argc, char* argv[])
     if (!parseCmdLineParameters(params))
 #else
     if (!parseCmdLineParameters(params, argc, argv))
-#endif        
+#endif
     {
         LOG_INFO(L"+++ standard +++");
         ParametersStorage paramsCommon;
@@ -176,21 +182,24 @@ AMF_RESULT ReadParams(ParametersStorage* params, int argc, char* argv[])
     if (!parseCmdLineParameters(params))
 #else
     if (!parseCmdLineParameters(params, argc, argv))
-#endif        
+#endif
     {
         return AMF_FAIL;
     }
 
 
     // load paramters
-    params->GetParam(PARAM_NAME_INPUT_FRAMES, frameCount);
-    if (params->GetParam(PARAM_NAME_INPUT_HEIGHT, NULL) == AMF_OK && 
-        params->GetParam(PARAM_NAME_INPUT_WIDTH, NULL) == AMF_OK) 
+    if (params->GetParam(PARAM_NAME_INPUT_FRAMES, frameCount) == AMF_OK)
+    {
+        frameCountPassedIn = true;
+    }
+    if (params->GetParam(PARAM_NAME_INPUT_HEIGHT, NULL) == AMF_OK &&
+        params->GetParam(PARAM_NAME_INPUT_WIDTH, NULL) == AMF_OK)
     {
         params->GetParam(PARAM_NAME_INPUT_WIDTH, widthIn);
         params->GetParam(PARAM_NAME_INPUT_HEIGHT, heightIn);
     }
-    else 
+    else
     {
         params->GetParam(PARAM_NAME_OUTPUT_WIDTH, widthIn);
         params->GetParam(PARAM_NAME_OUTPUT_HEIGHT, heightIn);
@@ -202,6 +211,8 @@ AMF_RESULT ReadParams(ParametersStorage* params, int argc, char* argv[])
     workAlgorithm = amf::amf_string_to_upper(workAlgorithm);
     params->GetParamWString(PARAM_NAME_OUTPUT, fileNameOut);
 
+    params->GetParam(PARAM_NAME_REALTIME, bRealTime);
+
     if (codec == amf_wstring(AMFVideoEncoder_HEVC))
     {
         amf_int64 colorDepth;
@@ -209,6 +220,20 @@ AMF_RESULT ReadParams(ParametersStorage* params, int argc, char* argv[])
         {
             eDepth = colorDepth == 10 ? AMF_COLOR_BIT_DEPTH_10 : AMF_COLOR_BIT_DEPTH_8;
         }
+        AMFRate fps = {};
+        if (params->GetParam(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, fps) == AMF_OK)
+        {
+            fFrameRate = float(fps.num) / fps.den;
+        }
+    }
+    else
+    {
+        AMFRate fps = {};
+        if (params->GetParam(AMF_VIDEO_ENCODER_FRAMERATE, fps) == AMF_OK)
+        {
+            fFrameRate = float(fps.num) / fps.den;
+        }
+
     }
 
     if (params->GetParam(PARAM_NAME_ENGINE, memoryIn) == AMF_OK)
@@ -280,7 +305,7 @@ AMF_RESULT SetEncoderDefaults(ParametersStorage* pParams, amf::AMFComponent* enc
         AMF_RETURN_IF_FAILED(PushParamsToPropertyStorage(pParams, ParamEncoderStatic, encoder));
         AMF_RETURN_IF_FAILED(PushParamsToPropertyStorage(pParams, ParamEncoderDynamic, encoder));
 
-        // if we requested to run a specific VCN instance, check 
+        // if we requested to run a specific VCN instance, check
         // if it's available, otherwise we can't run the test...
         if (vcnInstance != -1)
         {
@@ -305,8 +330,6 @@ AMF_RESULT SetEncoderDefaults(ParametersStorage* pParams, amf::AMFComponent* enc
             AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED) failed");
         }
 
-        res = encoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(widthIn, heightIn));
-        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, %dx%d) failed", widthIn, heightIn);
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_LOWLATENCY_MODE, true);
         AMF_RETURN_IF_FAILED(res, L"encoder->SetProperty(AMF_VIDEO_ENCODER_LOWLATENCY_MODE, true) failed");
 
@@ -326,7 +349,7 @@ AMF_RESULT SetEncoderDefaults(ParametersStorage* pParams, amf::AMFComponent* enc
         AMF_RETURN_IF_FAILED(PushParamsToPropertyStorage(pParams, ParamEncoderStatic, encoder));
         AMF_RETURN_IF_FAILED(PushParamsToPropertyStorage(pParams, ParamEncoderDynamic, encoder));
 
-        // if we requested to run a specific VCN instance, check 
+        // if we requested to run a specific VCN instance, check
         // if it's available, otherwise we can't run the test...
         if (vcnInstance != -1)
         {
@@ -348,9 +371,6 @@ AMF_RESULT SetEncoderDefaults(ParametersStorage* pParams, amf::AMFComponent* enc
             AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET, AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED)");
         }
 
-        res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE, ::AMFConstructSize(widthIn, heightIn));
-        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE, %dx%d) failed", widthIn, heightIn);
-
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE, true);
         AMF_RETURN_IF_FAILED(res, L"encoder->SetProperty(AMF_VIDEO_ENCODER_LOWLATENCY_MODE, true) failed");
 
@@ -361,18 +381,20 @@ AMF_RESULT SetEncoderDefaults(ParametersStorage* pParams, amf::AMFComponent* enc
 }
 
 
-static void printTime(amf_pts latency_time, amf_pts write_duration, amf_pts first_frame, amf_pts min_latency, amf_pts max_latency)
+static void printTime(amf_pts total_time, amf_pts latency_time, amf_pts write_duration, amf_pts first_frame, amf_pts min_latency, amf_pts max_latency)
 {
-    printf("Total: frames = %i Time = %.4fms\n" \
-        "First,Min,Max: latency = %.4fms, %.4fms, %.4fms\n" \
-        "Average: latency = %.4fms\n",
+    fprintf(stderr, "Total  : Frames = %i Duration = %.2fms FPS = %.2fframes\n" \
+           "Latency: First,Min,Max = %.2fms, %.2fms, %.2fms\n" \
+           "Latency: Average = %.2fms\n",
         frameCount,
-        double(latency_time) / MILLISEC_TIME,
+        double(total_time) / MILLISEC_TIME,
+        double(AMF_SECOND) * double(frameCount) / double(total_time),
         double(first_frame) / MILLISEC_TIME,
         double(min_latency) / MILLISEC_TIME,
         double(max_latency) / MILLISEC_TIME,
         double(latency_time) / MILLISEC_TIME / frameCount
     );
+    fflush(stderr);
 }
 
 
@@ -391,11 +413,11 @@ public:
 
 PollingThread::PollingThread(amf::AMFContext * context, amf::AMFComponent * encoder, const wchar_t* pFileName, bool writeToFile) : m_pContext(context), m_pEncoder(encoder)
 {
-#ifdef _WIN32    
-    m_pFile = std::ofstream(pFileName, std::ios::binary);
+#ifdef _WIN32
+    m_pFile.open(pFileName, std::ios::binary);
 #else
-    m_pFile = std::ofstream( amf::amf_from_unicode_to_utf8(pFileName).c_str(), std::ios::binary);
-#endif    
+    m_pFile.open( amf::amf_from_unicode_to_utf8(pFileName).c_str(), std::ios::binary);
+#endif
     isWritingToFile = writeToFile;
 }
 PollingThread::~PollingThread()
@@ -409,6 +431,7 @@ void PollingThread::Run()
 {
     RequestStop();
 
+    amf_pts begin_time = amf_high_precision_clock();
     amf_pts latency_time = 0;
     amf_pts write_duration = 0;
     amf_pts last_poll_time = 0;
@@ -465,11 +488,19 @@ void PollingThread::Run()
             amf_sleep(1);
         }
     }
-
-    printTime(latency_time, write_duration, first_frame, min_latency, max_latency);
+    amf_pts end_time = amf_high_precision_clock();
+    printTime(end_time - begin_time, latency_time, write_duration, first_frame, min_latency, max_latency);
 
     m_pEncoder = NULL;
     m_pContext = NULL;
+}
+
+void CheckAndRestartReader(RawStreamReader *pRawStreamReader)
+{
+    if ((frameCountPassedIn == true) && (pRawStreamReader->GetPosition() == 1.0))
+    {
+        pRawStreamReader->RestartReader();
+    }
 }
 
 #if defined(_WIN32)
@@ -483,7 +514,7 @@ int main(int argc, char* argv[])
     AMF_RESULT res = ReadParams(&params);
 #else
     AMF_RESULT res = ReadParams(&params, argc, argv);
-#endif        
+#endif
     if (res != AMF_OK)
     {
         wprintf(L"Command line arguments couldn't be parsed");
@@ -570,7 +601,12 @@ int main(int argc, char* argv[])
         amf::AMFSurfacePtr  surfacePreRender;
         if (pipelineElPtr != NULL)
         {
-            ReadSurface(pipelineElPtr, &surfacePreRender, memoryTypeIn);
+            CheckAndRestartReader(fileReader.get());
+            res = ReadSurface(pipelineElPtr, &surfacePreRender, memoryTypeIn);
+            if (res == AMF_EOF)
+            {
+                break;
+            }
         }
         else
         {
@@ -596,8 +632,14 @@ int main(int argc, char* argv[])
             {
                 if (pipelineElPtr != NULL)
                 {
-                    ReadSurface(pipelineElPtr, &surfaceIn, memoryTypeIn);
-                } 
+                    CheckAndRestartReader(fileReader.get());
+                    res = ReadSurface(pipelineElPtr, &surfaceIn, memoryTypeIn);
+                    if (res == AMF_EOF)
+                    {
+                        frameCount = submitted;
+                        continue;
+                    }
+                }
                 else
                 {
                     FillSurface(context, &surfaceIn, false);
@@ -647,16 +689,19 @@ int main(int argc, char* argv[])
         amf_pts   max_latency = 0;
         amf_pts   latency_time = 0;
         amf_pts   write_duration = 0;
+        amf::AMFPreciseWaiter waiter;
 
         // output file, if we have one
-#ifdef _WIN32    
-        std::ofstream  m_pFile = std::ofstream(fileNameOut.c_str(), std::ios::binary);
+#ifdef _WIN32
+        std::ofstream  logFile(fileNameOut.c_str(), std::ios::binary);
 #else
-        std::ofstream  m_pFile = std::ofstream( amf::amf_from_unicode_to_utf8(fileNameOut.c_str()).c_str(), std::ios::binary);
-#endif    
-
+        std::ofstream  logFile( amf::amf_from_unicode_to_utf8(fileNameOut.c_str()).c_str(), std::ios::binary);
+#endif
+        amf_pts begin_time = amf_high_precision_clock();
         while (submitted < frameCount)
         {
+            amf_pts begin_frame = amf_high_precision_clock();
+
             if (preRenderedSurf.empty() == false)
             {
                 surfaceIn = preRenderedSurf[submitted % preRenderedSurf.size()];
@@ -665,7 +710,13 @@ int main(int argc, char* argv[])
             {
                 if (pipelineElPtr != NULL)
                 {
-                    ReadSurface(pipelineElPtr, &surfaceIn, memoryTypeIn);
+                    CheckAndRestartReader(fileReader.get());
+                    res = ReadSurface(pipelineElPtr, &surfaceIn, memoryTypeIn);
+                    if (res == AMF_EOF)
+                    {
+                        frameCount = submitted;
+                        continue;
+                    }
                 }
                 else
                 {
@@ -676,7 +727,7 @@ int main(int argc, char* argv[])
             // encode
             amf_pts start_time = amf_high_precision_clock();
 
-            // we're doing frame-in/frame-out so the input 
+            // we're doing frame-in/frame-out so the input
             // should never be full
             res = encoder->SubmitInput(surfaceIn);
             AMF_RETURN_IF_FAILED(res, L"SubmitInput() failed");
@@ -711,12 +762,21 @@ int main(int argc, char* argv[])
             if ((data != NULL) && (writeToFileMode == true))
             {
                 amf::AMFBufferPtr buffer(data); // query for buffer interface
-                m_pFile.write(reinterpret_cast<char*>(buffer->GetNative()), buffer->GetSize());
+                logFile.write(reinterpret_cast<char*>(buffer->GetNative()), buffer->GetSize());
                 write_duration += amf_high_precision_clock() - poll_time;
             }
+            if (bRealTime)
+            {
+                amf_pts end_frame = amf_high_precision_clock();
+                amf_pts time_to_sleep = amf_pts(AMF_SECOND / fFrameRate) - (end_frame - begin_frame);
+                if (time_to_sleep > 0)
+                {
+                    waiter.Wait(time_to_sleep);
+                }
+            }
         }
-
-        printTime(latency_time, write_duration, first_frame, min_latency, max_latency);
+        amf_pts end_time = amf_high_precision_clock();
+        printTime(end_time - begin_time, latency_time, write_duration, first_frame, min_latency, max_latency);
     }
 
     // clear any pre-rendered frames

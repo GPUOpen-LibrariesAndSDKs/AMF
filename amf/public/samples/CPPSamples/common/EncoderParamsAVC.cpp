@@ -207,6 +207,10 @@ static AMF_RESULT ParamConverterRateControlAVC(const std::wstring& value, amf::A
         paramValue = AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_LATENCY_CONSTRAINED_VBR;
 	} else if(uppValue == L"QVBR" || uppValue == L"4") {
 		paramValue = AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_QUALITY_VBR;
+    } else if (uppValue == L"HQVBR" || uppValue == L"5") {
+        paramValue = AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_HIGH_QUALITY_VBR;
+    } else if (uppValue == L"HQCBR" || uppValue == L"6") {
+        paramValue = AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_HIGH_QUALITY_CBR;
     } else {
         LOG_ERROR(L"AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD hasn't \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
@@ -366,6 +370,45 @@ static AMF_RESULT ParamConverterCAQStrengthAVC(const std::wstring& value, amf::A
     return AMF_OK;
 }
 
+static AMF_RESULT ParamConverterPAQModeAVC(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_PA_PAQ_MODE_ENUM paramValue;
+
+    std::wstring uppValue = toUpper(value);
+    if (uppValue == L"NONE" || uppValue == L"0")
+    {
+        paramValue = AMF_PA_PAQ_MODE_NONE;
+    }
+    else if (uppValue == L"CAQ" || uppValue == L"1") {
+        paramValue = AMF_PA_PAQ_MODE_CAQ;
+    }
+    else {
+        LOG_ERROR(L"AMF_PA_PAQ_MODE_ENUM hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+
+static AMF_RESULT ParamConverterTAQModeAVC(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_PA_TAQ_MODE_ENUM paramValue;
+
+    std::wstring uppValue = toUpper(value);
+    if (uppValue == L"NONE" || uppValue == L"0")
+    {
+        paramValue = AMF_PA_TAQ_MODE_NONE;
+    }
+    else if (uppValue == L"ONE" || uppValue == L"1") {
+        paramValue = AMF_PA_TAQ_MODE_1;
+    }
+    else {
+        LOG_ERROR(L"AMF_PA_TAQ_MODE_ENUM hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
 
 AMF_RESULT RegisterEncoderParamsAVC(ParametersStorage* pParams)
 {
@@ -445,7 +488,7 @@ AMF_RESULT RegisterEncoderParamsAVC(ParametersStorage* pParams)
 
     pParams->SetParamDescription(AMF_PA_SCENE_CHANGE_DETECTION_ENABLE, ParamEncoderDynamic, L"Scene Change Detection Enable (true, false default =  true)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY, ParamEncoderDynamic, L"Scene Change Detection Sensitivity (LOW, MEDIUM, HIGH default = MEDIUM)", ParamConverterSceneChangeAVC);
-    pParams->SetParamDescription(AMF_PA_STATIC_SCENE_DETECTION_ENABLE, ParamEncoderDynamic, L"Static Scene Detection Enable (true, false default =  true)", ParamConverterBoolean);
+    pParams->SetParamDescription(AMF_PA_STATIC_SCENE_DETECTION_ENABLE, ParamEncoderDynamic, L"Static Scene Detection Enable (true, false default =  false)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY, ParamEncoderDynamic, L"Scene Change Detection Sensitivity (LOW, MEDIUM, HIGH default = HIGH)", ParamConverterStaticSceneAVC);
     pParams->SetParamDescription(AMF_PA_FRAME_SAD_ENABLE, ParamEncoderDynamic, L"Enable Frame SAD algorithm (true, false default = true", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_PA_ACTIVITY_TYPE, ParamEncoderDynamic, L"Activity Type (Y, YUV default = Y)", ParamConverterActivityTypeAVC);
@@ -454,6 +497,11 @@ AMF_RESULT RegisterEncoderParamsAVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_PA_INITIAL_QP_AFTER_SCENE_CHANGE, ParamEncoderDynamic, L"QP After Scene Change (integer 0-51, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_PA_MAX_QP_BEFORE_FORCE_SKIP, ParamEncoderDynamic, L"Max QP Before Force Skip (integer 0-51, default = 35)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_PA_CAQ_STRENGTH, ParamEncoderDynamic, L"CAQ Strength (LOW, MEDIUM, HIGH default = MEDIUM)", ParamConverterCAQStrengthAVC);
+    pParams->SetParamDescription(AMF_PA_PAQ_MODE, ParamEncoderDynamic, L"PAQ Mode (NONE, CAQ, default = NONE)", ParamConverterPAQModeAVC);
+    pParams->SetParamDescription(AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE, ParamEncoderDynamic, L"High Motion Quality Boost Mode (NONE, AUTO, default = NONE)", ParamConverterHighMotionQualityBoostMode);
+
+    pParams->SetParamDescription(AMF_PA_LOOKAHEAD_BUFFER_DEPTH, ParamEncoderDynamic, L"PA Buffer size (integer 0 - MAX_LOOKAHEAD_DEPTH, default = 0)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_PA_TAQ_MODE, ParamEncoderDynamic, L"TAQ Mode (NONE, 1, default = NONE)", ParamConverterTAQModeAVC);
 
     return AMF_OK;
 }

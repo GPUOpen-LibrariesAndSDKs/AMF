@@ -104,6 +104,7 @@ namespace amf
         amf_uint32                               m_SCount = 0;
 
         AMFCurrentTimePtr                        m_pCurrentTime = nullptr;
+        bool                                     m_captureMic = false;
 
 
         amf_int32                                m_iQueueSize = 10;

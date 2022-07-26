@@ -66,8 +66,16 @@ VideoRenderOpenGL::VideoRenderOpenGL(amf_int width, amf_int height, bool bInterl
     m_hWnd(NULL),
     m_hContextOGL(0),
     m_frameBufferName(0),
-    m_depthStencilName(0)
-
+    m_depthStencilName(0),
+    m_glBindFramebufferEXT(0),
+    m_glFramebufferTexture2DEXT(0),
+    m_glGenFramebuffersEXT(0),
+    m_glDeleteFramebuffersEXT(0),
+    m_glGenRenderbuffersEXT(0),
+    m_glBindRenderbufferEXT(0),
+    m_glRenderbufferStorageEXT(0),
+    m_glFramebufferRenderbufferEXT(0),
+    m_glDeleteRenderbuffersEXT(0)
 {
 }
 

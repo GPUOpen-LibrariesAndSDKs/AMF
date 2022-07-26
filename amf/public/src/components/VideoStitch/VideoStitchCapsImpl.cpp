@@ -124,7 +124,6 @@ AMFVideoStitchInputCapsImpl::AMFVideoStitchInputCapsImpl(AMFContext* pContext)
 //-------------------------------------------------------------------------------------------------
 AMFVideoStitchOutputCapsImpl::AMFVideoStitchOutputCapsImpl(AMFContext* pContext)
 {
-    pContext;
     SetResolution(32, D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION, 32, D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION);
     SetVertAlign(2);
 

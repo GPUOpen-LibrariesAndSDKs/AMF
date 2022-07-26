@@ -190,7 +190,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
             return AMF_NOT_SUPPORTED;
     }
 
-	AMFTraceInfo(AMF_FACILITY, L"AudioDecoder:IN codec=%d format=%d rate=%d channels=%d layout=%d frame-size=%d",
+	AMFTraceInfo(AMF_FACILITY, L"AudioDecoder:IN codec=%lld format=%d rate=%d channels=%d layout=%lld frame-size=%d",
 		codecID, m_pCodecContext->sample_fmt, m_pCodecContext->sample_rate, m_pCodecContext->channels,
 		m_pCodecContext->channel_layout, m_pCodecContext->frame_size);
 
@@ -246,7 +246,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
         AMFTraceDebug(AMF_FACILITY, L"AMFAudioDecoderFFMPEG::InitContext() - Completed", m_pCodecContext->codec_id);
     }
 
-	AMFTraceInfo(AMF_FACILITY, L"AudioDecoder:OUT codec=%d format=%d rate=%d channels=%d layout=%d",
+	AMFTraceInfo(AMF_FACILITY, L"AudioDecoder:OUT codec=%lld format=%lld rate=%d channels=%d layout=%d",
 		codecID, sampleFormat, m_pCodecContext->sample_rate, m_pCodecContext->channels,
 		m_pCodecContext->channel_layout);
 

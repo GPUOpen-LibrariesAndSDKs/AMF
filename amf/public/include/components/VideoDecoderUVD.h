@@ -108,6 +108,7 @@ enum AMF_TIMESTAMP_MODE_ENUM
 #define AMF_VIDEO_DECODER_OUTPUT_COLOR_PRIMARIES                L"OutputColorPrimaries"       // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013   7.1 See ColorSpace.h for enum 
 #define AMF_VIDEO_DECODER_OUTPUT_HDR_METADATA                   L"OutHDRMetadata"           // AMFBuffer containing AMFHDRMetadata; default NULL
 
+#define AMF_VIDEO_DECODER_LOW_LATENCY                           L"LowLatencyDecode"         // amf_bool; default = false; true = low latency decode, false = regular decode
 
 #if defined(__ANDROID__)
 #define AMF_VIDEO_DECODER_NATIVEWINDOW                  L"AndroidNativeWindow"  // amf_int64; default = 0; pointer to native window

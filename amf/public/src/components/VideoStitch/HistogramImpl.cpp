@@ -124,7 +124,9 @@ static void FilterData(amf_int32 *data,amf_int32 *dataPrev,  amf_int32 count, am
 static void FilterDataInplace(amf_int32 *data, amf_int32 count);
 
 //-------------------------------------------------------------------------------------------------
-HistogramImpl::HistogramImpl() : m_iFrameCount(0)
+HistogramImpl::HistogramImpl()
+  : m_iFrameCount(0)
+  , m_bUseDX11NativeBuffer(false)
 {
 }
 //-------------------------------------------------------------------------------------------------

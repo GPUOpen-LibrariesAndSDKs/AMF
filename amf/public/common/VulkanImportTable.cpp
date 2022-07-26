@@ -212,6 +212,9 @@ VulkanImportTable::VulkanImportTable() :
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
     vkCreateXlibSurfaceKHR(nullptr),
 #endif
+#if defined(VK_USE_PLATFORM_ANDROID_KHR)
+    vkCreateAndroidSurfaceKHR(nullptr),
+#endif
     vkCreateDebugReportCallbackEXT(nullptr),
     vkDebugReportMessageEXT(nullptr),
     vkDestroyDebugReportCallbackEXT(nullptr)
@@ -235,6 +238,8 @@ AMF_RESULT VulkanImportTable::LoadFunctionsTable()
     }
 #if defined(_WIN32)
     m_hVulkanDll = amf_load_library(L"vulkan-1.dll");
+#elif defined(__ANDROID__)
+    m_hVulkanDll = amf_load_library1(L"libvulkan.so", true);
 #elif defined(__linux__)
     m_hVulkanDll = amf_load_library1(L"libvulkan.so.1", true);
 #endif
@@ -395,6 +400,9 @@ AMF_RESULT VulkanImportTable::LoadFunctionsTable()
 #endif
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkCreateXlibSurfaceKHR);
+#endif
+#if defined(VK_USE_PLATFORM_ANDROID_KHR)
+    GET_DLL_ENTRYPOINT(m_hVulkanDll, vkCreateAndroidSurfaceKHR);
 #endif
     return AMF_OK;
 }

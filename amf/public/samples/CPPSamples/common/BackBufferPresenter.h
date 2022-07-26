@@ -46,7 +46,7 @@ public:
     virtual void SetRenderToBackBuffer(bool bRenderToBackBuffer) { m_bRenderToBackBuffer = bRenderToBackBuffer; }
     
     // VideoPresenter interface
-    AMF_RESULT SetProcessor(amf::AMFComponent* pProcessor) override;
+    AMF_RESULT SetProcessor(amf::AMFComponent* pProcessor, amf::AMFComponent* pHQScaler = NULL) override;
 
 protected:
     BackBufferPresenter(amf_handle hwnd, amf::AMFContext* pContext, amf_handle hDisplay = 0);

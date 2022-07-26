@@ -479,6 +479,7 @@ namespace amf
         pthread_t m_hThread;
         bool m_bStopRequested;
         bool m_bRunning;
+        bool m_bInternalRunning; //used to detect thread auto-exit case and make join in Start
         AMFCriticalSection m_Lock;
 
         AMFThreadObj(const AMFThreadObj&);
@@ -490,7 +491,8 @@ namespace amf
     AMFThreadObj::AMFThreadObj(AMFThread* owner)
         : m_pOwner(owner),
         m_bStopRequested(false),
-        m_bRunning(false)
+        m_bRunning(false),
+        m_bInternalRunning(false)
     {
     }
 
@@ -511,20 +513,29 @@ namespace amf
         pT->Run();
         pT->Terminate();
         pT->m_bStopRequested = false;
+        pT->m_bInternalRunning = false;
         return 0;
     }
 
     bool AMFThreadObj::Start()
     {
         bool result = true;
+        if(m_bRunning == true && m_bInternalRunning == false)
+        {
+            pthread_join(m_hThread, 0);
+            m_bRunning = false;
+            m_bStopRequested = false;
+        }
+
         if (IsRunning() == false)
         {
             WaitForStop();
-            
+
             AMFLock lock(&m_Lock);
             if (pthread_create(&m_hThread, 0, AMFThreadProc, (void*)this) == 0)
             {
                 m_bRunning = true;
+                m_bInternalRunning = true;
             }
             else
             {
@@ -567,7 +578,7 @@ namespace amf
 
     bool AMFThreadObj::IsRunning()
     {
-        return m_bRunning;
+        return m_bRunning && m_bInternalRunning;
     }
 
     void ExitThread()
@@ -606,7 +617,7 @@ namespace amf
     {
         return m_thread->StopRequested();
     }
-    bool AMFThread::IsRunning()
+    bool AMFThread::IsRunning() const
     {
         return m_thread->IsRunning();
     }

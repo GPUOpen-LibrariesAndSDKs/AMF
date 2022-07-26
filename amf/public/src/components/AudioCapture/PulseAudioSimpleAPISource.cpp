@@ -39,11 +39,58 @@ using namespace amf;
 
 // Callback functions will need a main loop pointer to terminate the mainloop.
 // This struct also enable callback function to return AMF_RESULT and string messages.
-typedef struct {
-    pa_mainloop*                m_pPaMainLoop = nullptr;
-    AMF_RESULT                  m_Result = AMF_OK;
-    std::string                 m_Message;
-} PACallbackData;
+class PACallbackData {
+    bool                                m_GetSourceListDone = false;
+    bool                                m_GetSinkListDone = false;
+    bool                                m_GetDisplaySourceDone = false;
+        // Any read/write to above fields need to be protected by m_sync.
+    mutable AMFCriticalSection          m_sync;
+
+public:
+
+    AMFPulseAudioSimpleAPISourceImpl*   m_APIPtr = nullptr;
+    pa_mainloop*                        m_pPaMainLoop = nullptr;
+    AMF_RESULT                          m_Result = AMF_OK;
+
+    void QuitIfAllDone()
+    {
+        AMFLock lock(&m_sync);
+        if (true == m_GetSourceListDone && true == m_GetSinkListDone && true == m_GetDisplaySourceDone
+            && nullptr != m_pPaMainLoop)
+        {
+            pa_mainloop_quit(m_pPaMainLoop, 0);
+        }
+    }
+
+    void QuitWithError(AMF_RESULT result)
+    {
+        AMFLock lock(&m_sync);
+        m_Result = result;
+        if (nullptr != m_pPaMainLoop)
+        {
+            pa_mainloop_quit(m_pPaMainLoop, -1);
+        }
+    }
+
+    void SetSourceListDone()
+    {
+        AMFLock lock(&m_sync);
+        m_GetSourceListDone = true;
+    }
+
+    void SetSinkListDone()
+    {
+        AMFLock lock(&m_sync);
+        m_GetSinkListDone = true;
+    }
+
+    void SetDisplaySourceDone()
+    {
+        AMFLock lock(&m_sync);
+        m_GetDisplaySourceDone = true;
+    }
+
+};
 
 
 typedef std::unique_ptr<pa_mainloop, decltype(&pa_mainloop_free)>    PAMainLoopPtr;
@@ -67,16 +114,63 @@ const char* PaContextStateToStr(pa_context_state_t state)
 }
 
 //-------------------------------------------------------------------------------------------------
-void GetPASinkInfoCallback(pa_context* c,const pa_sink_info*i, int eol, void* userdata)
+void GetSinkListCallback(pa_context* c,const pa_sink_info*i, int eol, void* userdata)
 {
     PACallbackData* cbData = (PACallbackData*)userdata;
+
     if(eol)
     {
-        pa_mainloop_quit(cbData->m_pPaMainLoop,0);
+        cbData->SetSinkListDone();
+        cbData->QuitIfAllDone();
         return;
     }
-    cbData->m_Result = AMF_OK;
-    cbData->m_Message = i->monitor_source_name;
+
+    // Record the sink name.
+    amf_string sinkName = i->name;
+    cbData->m_APIPtr->AddToSinkList(sinkName);
+
+    // Record the monitor source.
+    amf_string sourceName = i->monitor_source_name;
+    cbData->m_APIPtr->AddToSinkMonitorList(sourceName);
+}
+
+//-------------------------------------------------------------------------------------------------
+void GetSourceListCallback(pa_context* c, const pa_source_info* i, int eol, void* userdata)
+{
+    PACallbackData* cbData = (PACallbackData*)userdata;
+
+    // If reached end of line, set the doen flag and quit if all done.
+    if(eol)
+    {
+        cbData->SetSourceListDone();
+        cbData->QuitIfAllDone();
+        return;
+    }
+
+    // Record the source name if it's not a monitor of a sink.
+    if (NULL == i->monitor_of_sink_name)
+    {
+        amf_string sourceName = i->name;
+        cbData->m_APIPtr->AddToSourceList(sourceName);
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
+void GetDisplaySourceCallback(pa_context* c, const pa_sink_info* i, int eol, void* userdata)
+{
+    PACallbackData* cbData = (PACallbackData*)userdata;
+
+    // If reached end of line, set the done flag and quit if all done.
+    if(eol)
+    {
+        cbData->SetDisplaySourceDone();
+        cbData->QuitIfAllDone();
+        return;
+    }
+
+    // Record the default sink's monitor's name.
+    amf_string sourceName = i->monitor_source_name;
+    cbData->m_APIPtr->SetDefaultSinkMonitor(sourceName);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -85,22 +179,40 @@ void GetPAServerInfoCallback(pa_context*c,const pa_server_info *i, void* userdat
     PACallbackData* cbData = (PACallbackData*)userdata;
 
     // Check if it doesn't have a default sink.
-    if(i->default_sink_name == nullptr){
-        pa_mainloop_quit(cbData->m_pPaMainLoop,-1);
-        cbData->m_Result = AMF_FAIL;
-        AMFTraceError(AMF_FACILITY, L"AMFPulseAudioSimpleAPISourceImpl::GetPAServerInfoCallback(): Cannot find a default sink!");
+    if(i->default_sink_name == nullptr && i->default_source_name == nullptr)
+    {
+        cbData->QuitWithError(AMF_FAIL);
+        AMFTraceError(AMF_FACILITY, L"AMFPulseAudioSimpleAPISourceImpl::GetPAServerInfoCallback(): Cannot find a default sink nor a default source!");
         return;
     }
 
-    PAOperationPtr op = PAOperationPtr(pa_context_get_sink_info_by_name(c, i->default_sink_name, GetPASinkInfoCallback,userdata), &pa_operation_unref);
+    // Record default source and sink.
+    amf_string defaultSrc = i->default_source_name;
+    cbData->m_APIPtr->SetDefaultSource(defaultSrc);
 
     // Get default sink info
+    PAOperationPtr op = PAOperationPtr(pa_context_get_sink_info_by_name(c, i->default_sink_name, GetDisplaySourceCallback,userdata), &pa_operation_unref);
     if (nullptr == op)
     {
         // Terminate the main loop, give it a negative return code.
-        pa_mainloop_quit(cbData->m_pPaMainLoop,-1);
-        cbData->m_Result = AMF_FAIL;
+        cbData->QuitWithError(AMF_FAIL);
         AMFTraceError(AMF_FACILITY, L"AMFPulseAudioSimpleAPISourceImpl::GetPAServerInfoCallback(): pa_context_get_sink_info_by_name() failed!");
+        return;
+    }
+
+    // Get all sink info.
+    op = PAOperationPtr(pa_context_get_sink_info_list(c, GetSinkListCallback, userdata), &pa_operation_unref);
+    // Only prints warning and do not terminate the main loop.
+    if (nullptr == op)
+    {
+        AMFTraceWarning(AMF_FACILITY, L"AMFPulseAudioSimpleAPISourceImpl::GetPAServerInfoCallback(): pa_contgext_get_sink_info_list() failed!");
+    }
+
+    // Get all source info.
+    op = PAOperationPtr(pa_context_get_source_info_list(c, GetSourceListCallback, userdata), &pa_operation_unref);
+    if (nullptr == op)
+    {
+        AMFTraceWarning(AMF_FACILITY, L"AMFPulseAudioSimpleAPISourceImpl::GetPAServerInfoCallback(): pa_contgext_get_source_info_list() failed!");
     }
 }
 
@@ -119,24 +231,15 @@ void PAContextStateCallback(pa_context *c, void *userdata)
             if (nullptr == op)
             {
                 // If operation is NULL, terminate the main loop, give it a negative return code.
-                pa_mainloop_quit(cbData->m_pPaMainLoop,-1);
-                cbData->m_Result = AMF_FAIL;
                 AMFTraceError(AMF_FACILITY, L"AMFPulseAudioSimpleAPISourceImpl::PAContextStateCallback(): pa_context_get_server_info() failed!");
+                cbData->QuitWithError(AMF_FAIL);
             }
             break;
         }
         case PA_CONTEXT_FAILED:
         {
-            cbData->m_Result = AMF_FAIL;
             AMFTraceError(AMF_FACILITY, L"AMFPulseAudioSimpleAPISourceImpl::PAContextStateCallback(): Failed to connect!\n");
-            pa_mainloop_quit(cbData->m_pPaMainLoop,-1);
-            break;
-        }
-        case PA_CONTEXT_TERMINATED:
-        {
-            AMFTraceDebug(AMF_FACILITY,L"PAContextStateCallback(): PA_CONTEXT_TERMINATED.");
-            // Theoratically this quit is not needed. But just incase the loop doesn't quit.
-            pa_mainloop_quit(cbData->m_pPaMainLoop,-1);
+            cbData->QuitWithError(AMF_FAIL);
             break;
         }
 
@@ -163,11 +266,14 @@ AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::InitDeviceNames()
 
     // Init a PACallbackData to carry necessary info to and from layers of callbacks.
     PACallbackData callbackData;
+    // Set the API pointer field to this.
+    callbackData.m_APIPtr = this;
     callbackData.m_pPaMainLoop = paMainLoop.get();
+
 
     // Set state callback, when context is ready, the callback sets the
     // server info callback and ask for server info, server info callback
-    // retreives default sink(we expect it to be monintor or headphone)
+    // retreives default sink(we expect it to be monitor or headphone)
     // then uses the sink to get corresponding loopback output (the source, what we want to capture).
     // When connection failed, callbackData.m_Result will be AMF_FAIL.
     pa_context_set_state_callback(paContext.get(), PAContextStateCallback,(void*)(&callbackData));
@@ -200,7 +306,6 @@ AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::InitDeviceNames()
 
     // Need to add a trace error here.
     AMF_RETURN_IF_FAILED(res,L"AMFPulseAudioSimpleAPISourceImpl::InitDeviceNames() failed, main loop returned with %d", mlReturnCode);
-    m_DefaultSrc = callbackData.m_Message;
     return res;
 }
 
@@ -220,16 +325,16 @@ AMFPulseAudioSimpleAPISourceImpl::~AMFPulseAudioSimpleAPISourceImpl()
 }
 
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::Init()
+AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::Init(bool captureMic)
 {
 
     AMF_RESULT res = AMF_OK;
 
     // First we need to get a list of sources, including mic and displays.
-    // Use the default monintor for now. Need a proper way to get the correct source.
+    // Use the default monitor for now. Need a proper way to get the correct source.
     // i.e. mic vs desktop monitor.
     res = InitDeviceNames();
-    AMF_RETURN_IF_FAILED(res,L"AMFPulseAudioSimpleAPISourceImpl::Init() failed. Cannot init m_DefaultSrc with device names.");
+    AMF_RETURN_IF_FAILED(res,L"AMFPulseAudioSimpleAPISourceImpl::Init() failed. Cannot init with default device names.");
 
     // Setup the PaSample Spec
     pa_sample_spec paSampleSS;
@@ -237,9 +342,15 @@ AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::Init()
     paSampleSS.channels = m_ChannelCount;
     paSampleSS.rate = m_SampleRate;
 
+    // Setup the buffer attribute.
+    pa_buffer_attr bufferAttr;
+    bufferAttr.fragsize = m_SampleCount * sizeof(short) * m_ChannelCount;
+    bufferAttr.maxlength = bufferAttr.fragsize * 2;
+
     // Create the new pa_simple
-    m_pPaSimple = pa_simple_new(NULL, "AudioCaptureImplLinux", PA_STREAM_RECORD, m_DefaultSrc.c_str(),
-        "AudioCaptureImplLinux",& paSampleSS, NULL, NULL,NULL);
+    amf_string srcDevice = (true == captureMic)? m_DefaultSource:m_DefaultSinkMonitor;
+    m_pPaSimple = pa_simple_new(NULL, "AudioCaptureImplLinux", PA_STREAM_RECORD, srcDevice.c_str(),
+        "AudioCaptureImplLinux",& paSampleSS, NULL, &bufferAttr, NULL);
 
     if (m_pPaSimple == NULL)
     {
@@ -272,29 +383,61 @@ AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::CaptureAudio(AMFAudioBufferPtr& pAu
     res = pContext->AllocAudioBuffer(AMF_MEMORY_HOST, AMFAF_S16, m_SampleCount, m_SampleRate, m_ChannelCount, &pAudioBuffer);
     if (AMF_OK == res && pAudioBuffer != nullptr)
     {
-        // An amf_string to hold error message.
-        amf_string errorMsg;
         // FI succesfully got audio buffer, alloc memory and pass captured data to it.
         pDst = (short*)pAudioBuffer->GetNative();
-
-        // Capture audio and save directly into Audio Buffer.
-        amf_int32 paReadErr = 0;
-        amf_int32 paReadReturn = 0;
-
-        // Capture 1/90 second.
-        paReadReturn = pa_simple_read(m_pPaSimple, pDst, sizeof(short)*m_SampleCount*m_ChannelCount, &paReadErr);
-        errorMsg = pa_strerror(paReadErr);
-        AMF_RETURN_IF_FALSE(paReadReturn == 0, AMF_FAIL, L"pa_simple_read returned error: (%S)", amf_from_utf8_to_unicode(errorMsg).c_str());
-        capturedSampleCount = m_SampleCount;
-
-        // Get Latency.
-        pa_usec_t latency = pa_simple_get_latency(m_pPaSimple,&paReadErr);
-        errorMsg = pa_strerror(paReadErr);
-        AMF_RETURN_IF_FALSE(latency != pa_usec_t(-1), AMF_FAIL, L"pa_simple_get_latency() failed: (%S)", amf_from_utf8_to_unicode(errorMsg).c_str());
-
-        // Convert mciro second to pts. Because AMF_MICROSECOND is not defined, we use the following formula.
-        // pts / AMF_MILISECOND * 1000 = microseconds -> pts = microseconds * AMF_MILLISECOND / 1000
-        latencyPts = latency * AMF_MILLISECOND/1000;
+        res = CaptureAudioRaw(pDst, m_SampleCount, capturedSampleCount, latencyPts);
     }
     return res;
+}
+
+AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::CaptureAudioRaw(short* dest, amf_uint32 sampleCount, amf_uint32& capturedSampleCount, amf_pts& latencyPts)
+{
+    // Capture audio and save directly into Audio Buffer.
+    amf_int32 paReadErr = 0;
+    amf_int32 paReadReturn = 0;
+
+    // Capture 1/90 second.
+    paReadReturn = pa_simple_read(m_pPaSimple, dest, sizeof(short)*sampleCount*m_ChannelCount, &paReadErr);
+    AMF_RETURN_IF_FALSE(paReadReturn == 0, AMF_FAIL, L"pa_simple_read returned error: (%S)", pa_strerror(paReadErr));
+    capturedSampleCount = sampleCount;
+
+    // Get Latency.
+    pa_usec_t latency = pa_simple_get_latency(m_pPaSimple,&paReadErr);
+    AMF_RETURN_IF_FALSE(latency != pa_usec_t(-1), AMF_FAIL, L"pa_simple_get_latency() failed: (%S)", pa_strerror(paReadErr));
+
+    latencyPts = latency * AMF_MICROSECOND;
+    return AMF_OK;
+}
+
+//-------------------------------------------------------------------------------------------------
+void AMFPulseAudioSimpleAPISourceImpl::AddToSourceList(amf_string& srcName)
+{
+    // So far only one callback function call this in a serial manner. No need to protect with lock.
+    m_SrcList.emplace_back(srcName);
+}
+
+//-------------------------------------------------------------------------------------------------
+void AMFPulseAudioSimpleAPISourceImpl::AddToSinkMonitorList(amf_string& srcName)
+{
+    // So far only one callback function call this in a serial manner. No need to protect with lock.
+    m_SinkMonitorList.emplace_back(srcName);
+}
+
+//-------------------------------------------------------------------------------------------------
+void AMFPulseAudioSimpleAPISourceImpl::AddToSinkList(amf_string& sinkName)
+{
+    // So far only one callback function call this in a serial manner. No need to protect with lock.
+    m_SinkList.emplace_back(sinkName);
+}
+
+//-------------------------------------------------------------------------------------------------
+void AMFPulseAudioSimpleAPISourceImpl::SetDefaultSource(amf_string& deviceName)
+{
+    m_DefaultSource = deviceName;
+}
+
+//-------------------------------------------------------------------------------------------------
+void AMFPulseAudioSimpleAPISourceImpl::SetDefaultSinkMonitor(amf_string& deviceName)
+{
+    m_DefaultSinkMonitor = deviceName;
 }

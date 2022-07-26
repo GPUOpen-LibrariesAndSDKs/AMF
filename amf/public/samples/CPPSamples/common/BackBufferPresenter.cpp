@@ -94,10 +94,10 @@ BackBufferPresenter::Create(
 }
 
 AMF_RESULT
-BackBufferPresenter::SetProcessor(amf::AMFComponent* pProcessor)
+BackBufferPresenter::SetProcessor(amf::AMFComponent* pProcessor, amf::AMFComponent* pHQScaler)
 {
     amf::AMFLock lock(&m_cs);
-    AMF_RESULT res = VideoPresenter::SetProcessor(pProcessor);
+    AMF_RESULT res = VideoPresenter::SetProcessor(pProcessor, pHQScaler);
 
     if (res == AMF_OK)
     {

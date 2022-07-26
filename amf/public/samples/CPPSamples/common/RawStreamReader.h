@@ -58,6 +58,7 @@ public:
 
 
     static void  ParseRawFileFormat(const std::wstring path, amf_int32 &width, amf_int32 &height, amf::AMF_SURFACE_FORMAT& format);
+    void RestartReader();
 
 private:
     virtual AMF_RESULT SubmitInput(amf::AMFData* pData);

@@ -35,7 +35,8 @@ void ReadOneImage(std::string &text, StitchTemplate &t);
 int ReadOneValueInt(std::string &text, std::string::size_type  &pos);
 
 StitchPipeline::StitchPipeline() :
-m_outputMode(AMF_VIDEO_STITCH_OUTPUT_MODE_ENUM::AMF_VIDEO_STITCH_OUTPUT_MODE_PREVIEW)
+    m_hwnd(NULL),
+    m_outputMode(AMF_VIDEO_STITCH_OUTPUT_MODE_ENUM::AMF_VIDEO_STITCH_OUTPUT_MODE_PREVIEW)
 {
 }
 

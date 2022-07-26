@@ -378,9 +378,12 @@ StitchPipelineBase::StitchPipelineBase() :
     m_pStitchElement(NULL),
     m_bVideoPresenterDirectConnect(true),
 	m_nFfmpegRefCount(0),
+    m_stateCameras(0),
     m_mediaInitilized(false),
     m_cameraInitilized(false),
-    m_ConnectThread(this)
+    m_streamAudioPinIndex(0),
+    m_ConnectThread(this),
+    m_bIsConnected(false)
 {
     g_AMFFactory.Init();
     m_sizeInput = { 0 };

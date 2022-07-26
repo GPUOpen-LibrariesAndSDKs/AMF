@@ -48,6 +48,9 @@ VideoPresenter::VideoPresenter() :
     m_FpsStatStartTime(0),
     m_iFramesDropped(0),
     m_dLastFPS(0),
+    m_instance(0),
+    m_pProcessor(NULL),
+    m_pHQScaler(NULL),
     m_currentTime(0),
     m_bDoWait(true),
     m_pAVSync(NULL),
@@ -57,7 +60,10 @@ VideoPresenter::VideoPresenter() :
     m_InputFrameSize(AMFConstructSize(0, 0)),
     m_ptsDropThreshold(DROP_THRESHOLD),
     m_bFullScreen(false),
-	m_bWaitForVSync(false)
+	m_bWaitForVSync(false),
+    m_bEnablePIP(false),
+    m_fPIPZoomFactor(0.1f),
+    m_fPIPFocusPos({ 0.45f, 0.45f })
 {
     amf_increase_timer_precision();
 }
@@ -87,7 +93,7 @@ AMF_RESULT VideoPresenter::Init(amf_int32 width, amf_int32 height, amf::AMFSurfa
 
 AMF_RESULT VideoPresenter::Terminate()
 {
-    SetProcessor(NULL);
+    SetProcessor(NULL, NULL);
     return AMF_OK;
 }
 
@@ -209,7 +215,7 @@ bool VideoPresenter::WaitForPTS(amf_pts pts, bool bRealWait)
     return bRet;
 }
 
-AMF_RESULT VideoPresenter::SetProcessor(amf::AMFComponent *processor)
+AMF_RESULT VideoPresenter::SetProcessor(amf::AMFComponent *processor, amf::AMFComponent* pHQScaler)
 {
     amf::AMFLock lock(&m_cs);
     if(m_pProcessor != NULL)
@@ -217,40 +223,72 @@ AMF_RESULT VideoPresenter::SetProcessor(amf::AMFComponent *processor)
         m_pProcessor->SetOutputDataAllocatorCB(NULL);
     }
 
-    m_pProcessor = processor;
-    if(m_pProcessor != NULL)
+    if (m_pHQScaler != NULL)
     {
-        m_pProcessor->SetOutputDataAllocatorCB(this);
+        m_pHQScaler->SetOutputDataAllocatorCB(NULL);
     }
+
+    m_pProcessor = processor;
+    m_pHQScaler = pHQScaler;
+
+    if (SupportAllocator())
+    {
+        amf::AMFComponent* pAllocatorUser = (m_pHQScaler != NULL) ? m_pHQScaler : m_pProcessor;
+        if (pAllocatorUser != nullptr)
+        {
+            pAllocatorUser->SetOutputDataAllocatorCB(this);
+        }
+    }
+
     UpdateProcessor();
     return AMF_OK;
-
 }
 
 void  VideoPresenter::UpdateProcessor()
 {
     amf::AMFLock lock(&m_cs);
-    if(m_pProcessor != NULL)
+
+    if (m_pProcessor != NULL || m_pHQScaler != NULL)
     {
-        AMFRect srcRect = {0, 0, m_InputFrameSize.width, m_InputFrameSize.height};
+        AMFRect srcRect = { 0, 0, m_InputFrameSize.width, m_InputFrameSize.height };
         AMFRect outputRect;
         CalcOutputRect(&srcRect, &m_rectClient, &outputRect);
 
-        // what we want to do here is check for the properties if they exist
-        // as the HQ scaler has different property names than CSC
-        const amf::AMFPropertyInfo* pParamInfo = nullptr;
-        if ((m_pProcessor->GetPropertyInfo(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, &pParamInfo) == AMF_OK) && pParamInfo)
+        if (m_pProcessor != NULL && (m_pHQScaler == NULL))
         {
-            m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, ::AMFConstructSize(m_rectClient.Width(),m_rectClient.Height()));
-            m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_RECT, outputRect);
+            // what we want to do here is check for the properties if they exist
+            // as the HQ scaler has different property names than CSC
+            const amf::AMFPropertyInfo* pParamInfo = nullptr;
+            if ((m_pProcessor->GetPropertyInfo(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, &pParamInfo) == AMF_OK) && pParamInfo)
+            {
+                m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, ::AMFConstructSize(m_rectClient.Width(), m_rectClient.Height()));
+                m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_RECT, outputRect);
+            }
         }
-        
-        pParamInfo = nullptr;
-        if ((m_pProcessor->GetPropertyInfo(AMF_HQ_SCALER_OUTPUT_SIZE, &pParamInfo) == AMF_OK) && pParamInfo)
+
+        if (m_pHQScaler != NULL)
         {
-            m_pProcessor->SetProperty(AMF_HQ_SCALER_OUTPUT_SIZE, ::AMFConstructSize(m_rectClient.Width(),m_rectClient.Height()));
+            const amf::AMFPropertyInfo* pParamInfo = nullptr;
+            if ((m_pHQScaler->GetPropertyInfo(AMF_HQ_SCALER_OUTPUT_SIZE, &pParamInfo) == AMF_OK) && pParamInfo)
+            {
+                m_pHQScaler->SetProperty(AMF_HQ_SCALER_OUTPUT_SIZE, ::AMFConstructSize(m_rectClient.Width(), m_rectClient.Height()));
+            }
         }
     }
+}
+
+AMFRect VideoPresenter::GetSourceRect()
+{
+    AMFRect out = {};
+    if (m_pProcessor == nullptr)
+    {
+        out = m_sourceVertexRect;
+    }
+    else
+    {
+        m_pProcessor->GetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, &out);
+    }
+    return out;
 }
 
 AMF_RESULT VideoPresenter::Freeze()

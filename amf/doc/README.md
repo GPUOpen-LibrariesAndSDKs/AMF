@@ -30,7 +30,8 @@ AMF is a light-weight, portable multimedia framework that abstracts away most of
       | \**All supported distros* | 20.40                             |
 
 * AMF SDK is backward compatible with all previous driver versions.
-* Version 1.4.24: AMD Radeon Software Adrenalin Edition 22.3.1 (21.50.02.01) or newer. Added new AMD Direct Capture mode, new HQscaler feature(Bilinear/Bicubic/FSR), new Vulkan HEVC encoder on Navi family, improvements on H264 Vulkan encoding.
+* Version 1.4.26: AMD Radeon Software Adrenalin Edition 22.7.1 (22.20.15.01) or newer. Added new PAQ, TAQ, and high motion quality boost modes for PreAnalysis. New HQScaler sharpness, low latency decoder and temporal SVC encoder options. 
+* Version 1.4.24: AMD Radeon Software Adrenalin Edition 22.3.1 (21.50.02.01) or newer. Added new AMD Direct Capture mode, new HQScaler feature(Bilinear/Bicubic/FSR), new Vulkan HEVC encoder on Navi family, improvements on H264 Vulkan encoding.
 * Version 1.4.23: AMD Radeon Software Adrenalin Edition 21.12.1 (21.40.11.03) or newer. Added new Auto LTR encoder mode, additional encoder usage presets and encoder statistics/feedback.
 * Version 1.4.21: AMD Radeon Software Adrenalin Edition 21.10.1 (21.30.25.01) or newer. Added PSNR/SSIM score feedback, new QVBR rate control mode and LTR mode for encoders, added HDR support for HEVC encoder and color converter, new EncoderLatency sample app.
 * Version 1.4.18: AMD Radeon Software Adrenalin Edition 20.11.2 or newer. Added Pre-Encode filter within Pre-Processing component in 1.4.18.

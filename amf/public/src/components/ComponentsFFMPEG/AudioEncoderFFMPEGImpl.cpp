@@ -332,10 +332,11 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::SubmitInput(AMFData* pData)
         return AMF_EOF;
     }
 
-    // if we requested to drain, we shouldn't accept any more input
+    // flush if submitting input to draining encoder
     if (m_bEof)
     {
-        return AMF_EOF;
+        m_bEof = false;
+        Flush();
     }
 
     // update the first frame pts offset
@@ -506,7 +507,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::QueryOutput(AMFData** ppData
         pckt = 1;
         ret = avcodec_encode_audio2(m_pCodecContext, &avPacket, NULL, &pckt);
         if (!pckt)
-        { 
+        {
             m_bDrained = true;
         }
         else

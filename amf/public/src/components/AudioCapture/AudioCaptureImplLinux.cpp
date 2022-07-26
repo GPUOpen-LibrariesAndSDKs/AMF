@@ -35,6 +35,7 @@
 #include <vector>
 
 #include "AudioCaptureImplLinux.h"
+#include "PulseAudioSimpleAPISourceFacade.h"
 
 #include "../../../include/core/Context.h"
 #include "../../../include/core/Trace.h"
@@ -114,6 +115,9 @@ AMF_RESULT AMF_STD_CALL  AMFAudioCaptureImpl::Init(AMF_SURFACE_FORMAT /*format*/
     GetProperty(AUDIOCAPTURE_DEVICE_ACTIVE, &deviceActive);
     m_deviceActive = (amf_int32)deviceActive;
 
+    // Determine if we are capturing display or mic, true is mic.
+    GetProperty(AUDIOCAPTURE_SOURCE, &m_captureMic);
+
     // Get the current time interface property if it has been set.
     AMFInterfacePtr pTmp;
     GetProperty(AUDIOCAPTURE_CURRENT_TIME_INTERFACE, &pTmp);
@@ -124,16 +128,11 @@ AMF_RESULT AMF_STD_CALL  AMFAudioCaptureImpl::Init(AMF_SURFACE_FORMAT /*format*/
     AMF_RETURN_IF_FALSE(NULL == m_pAMFDataStreamAudio, AMF_FAIL, L"Audio stream already initialized");
 
     // Init audio stream.
-    m_pAMFDataStreamAudio = std::make_shared<AMFPulseAudioSimpleAPISourceImpl>();
+    m_pAMFDataStreamAudio = AMFPulseAudioSimpleAPISourceImplPtr(new AMFPulseAudioSimpleAPISourceFacade);
     AMF_RETURN_IF_INVALID_POINTER(m_pAMFDataStreamAudio);
 
-    res = m_pAMFDataStreamAudio->Init();
+    res = m_pAMFDataStreamAudio->Init(m_captureMic);
     AMF_RETURN_IF_FAILED(res,L"Audio stream Init() failed");
-
-    // Automatcially get a list of device names seperated by tabs.
-    // Currently only gets the default display name.
-    amf_string device_name = m_pAMFDataStreamAudio->GetDeviceNames();
-
 
     SetProperty(AUDIOCAPTURE_CODEC, AV_CODEC_ID_PCM_F32LE);
     SetProperty(AUDIOCAPTURE_SAMPLERATE, m_pAMFDataStreamAudio->GetSampleRate());
@@ -150,8 +149,17 @@ AMF_RESULT AMF_STD_CALL  AMFAudioCaptureImpl::Init(AMF_SURFACE_FORMAT /*format*/
     // Set Device name and count
     if (m_deviceActive < 0)
     {
-        SetProperty(AUDIOCAPTURE_DEVICE_NAME, device_name.c_str());
-        SetProperty(AUDIOCAPTURE_DEVICE_COUNT, 1); // stick with 1 for now
+        std::vector<amf_string> srcList = m_pAMFDataStreamAudio->GetSourceList(m_captureMic);
+
+        // Produce a \t seperated string fro device list
+        amf_string nameList("");
+        for (size_t idx = 0; idx < srcList.size(); idx ++)
+        {
+            nameList += (idx == 0)? srcList[idx] : "\t" + srcList[idx];
+        }
+
+        SetProperty(AUDIOCAPTURE_DEVICE_NAME, nameList.c_str());
+        SetProperty(AUDIOCAPTURE_DEVICE_COUNT, srcList.size());
     } else
     {
         m_audioPollingThread.Start();

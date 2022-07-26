@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -94,9 +94,9 @@ namespace amf
         }
         inline VectorPOD& operator+=(const VectorPOD& other)
         {
-            x +=other.x; 
-            y +=other.y; 
-            z +=other.z; 
+            x +=other.x;
+            y +=other.y;
+            z +=other.z;
             w +=other.w;
             return *this;
         }
@@ -121,9 +121,9 @@ namespace amf
         }
         inline VectorPOD operator*=(const VectorPOD& other)
         {
-            x*=other.x; 
-            y*=other.y; 
-            z*=other.z; 
+            x*=other.x;
+            y*=other.y;
+            z*=other.z;
             w*=other.w;
             return *this;
         }
@@ -188,14 +188,14 @@ namespace amf
             Result.z = sqrtf(z);
             Result.w = sqrtf(w);
             return Result;
-        }	
+        }
         inline VectorPOD Length3()  const
         {
             VectorPOD Result;
             Result = LengthSq3();
             Result = Result.Sqrt();
             return Result;
-        }	
+        }
         inline VectorPOD Length4()  const
         {
             VectorPOD Result;
@@ -212,11 +212,11 @@ namespace amf
             fLength = vResult.x;
 
             // Prevent divide by zero
-            if (fLength > 0) 
+            if (fLength > 0)
             {
                 fLength = 1.0f / fLength;
             }
-            
+
             vResult.x = x * fLength;
             vResult.y = y * fLength;
             vResult.z = z * fLength;
@@ -228,12 +228,12 @@ namespace amf
         {
             VectorPOD vResult;
             vResult.Assign(
-                (y * vec.z) - (z * vec.y), 
-                (z * vec.x) - (x * vec.z), 
-                (x * vec.y) - (y * vec.x), 
+                (y * vec.z) - (z * vec.y),
+                (z * vec.x) - (x * vec.z),
+                (x * vec.y) - (y * vec.x),
                 0.0f);
             return vResult;
-        }	
+        }
         inline VectorPOD Negate() const
         {
             VectorPOD Result;
@@ -310,16 +310,16 @@ namespace amf
     public:
         Vector()
         {
-            x = 0; 
-            y = 0; 
-            z = 0; 
+            x = 0;
+            y = 0;
+            z = 0;
             w = 0;
         }
         Vector(float _x, float _y, float _z, float _w )
         {
             x = _x;
-            y = _y; 
-            z = _z; 
+            y = _y;
+            z = _z;
             w = _w;
         }
         Vector(const VectorPOD& other)
@@ -553,9 +553,9 @@ namespace amf
         Matrix(float i0, float i1, float i2, float i3, float i4, float i5, float i6, float i7,
                float i8, float i9, float i10, float i11, float i12, float i13, float i14, float i15)
                 {
-                    k[0] = i0;   k[1] = i1;   k[2] = i2;   k[3] = i3; 
-                    k[4] = i4;   k[5] = i5;   k[6] = i6;   k[7] = i7; 
-                    k[8] = i8;   k[9] = i9;   k[10] = i10; k[11] = i11; 
+                    k[0] = i0;   k[1] = i1;   k[2] = i2;   k[3] = i3;
+                    k[4] = i4;   k[5] = i5;   k[6] = i6;   k[7] = i7;
+                    k[8] = i8;   k[9] = i9;   k[10] = i10; k[11] = i11;
                     k[12] = i12; k[13] = i13; k[14] = i14; k[15] = i15;
                 }
 
@@ -585,7 +585,7 @@ namespace amf
             return *this;
         }
 
-        inline bool operator==(const Matrix& other) const 
+        inline bool operator==(const Matrix& other) const
         {
             return memcmp(this, &other, sizeof(*this)) == 0;
         }
@@ -594,7 +594,7 @@ namespace amf
             return memcmp(this, &other, sizeof(*this)) != 0;
         }
 
-        inline Vector operator*(const Vector& v)
+        inline Vector operator*(const Vector& v) const
         {
             Vector Z(v.z, v.z, v.z, v.z);
             Vector Y(v.y, v.y, v.y, v.y);
@@ -1063,7 +1063,7 @@ namespace amf
             Set(orientation, position);
         }
         Pose(const amf::Quaternion& orientation, const amf::Vector& position,
-            const amf::Vector& orientationVelocity, const amf::Vector& positionVelocity) 
+            const amf::Vector& orientationVelocity, const amf::Vector& positionVelocity)
         {
             Set(orientation, position, orientationVelocity, positionVelocity);
         }
@@ -1113,32 +1113,32 @@ namespace amf
 
         inline void   SetOrientation(const amf::Quaternion& orienation)
         {
-            m_Orientation = orienation; 
+            m_Orientation = orienation;
             m_ValidityFlags |= PF_ORIENTATION;
         }
         inline void       SetPosition(const amf::Vector& position)
-        { 
-            m_Position = position; 
+        {
+            m_Position = position;
             m_ValidityFlags |= PF_POSITION;
         }
         inline void       SetOrientationVelocity(const amf::Vector& orientationVelocity)
-        { 
+        {
             m_OrientationVelocity = orientationVelocity;
             m_ValidityFlags |= PF_ORIENTATION_VELOCITY;
         }
         inline void       SetPositionVelocity(const amf::Vector& positionVelocity)
-        { 
-            m_PositionVelocity = positionVelocity; 
+        {
+            m_PositionVelocity = positionVelocity;
             m_ValidityFlags |= PF_POSITION_VELOCITY;
         }
         inline void       SetOrientationAcceleration(const amf::Vector& orientationAcceleration)
-        { 
-            m_OrientationAcceleration = orientationAcceleration; 
+        {
+            m_OrientationAcceleration = orientationAcceleration;
             m_ValidityFlags |= PF_ORIENTATION_ACCELERATION;
         }
         inline void       SetPositionAcceleration(const amf::Vector& positionAcceleration)
-        { 
-            m_PositionAcceleration = positionAcceleration; 
+        {
+            m_PositionAcceleration = positionAcceleration;
             m_ValidityFlags |= PF_POSITION_ACCELERATION;
         }
 
@@ -1151,7 +1151,7 @@ namespace amf
         amf::Vector                     m_PositionAcceleration;
         ValidityFlags                   m_ValidityFlags;
     };
-    
+
 	//-------------------------------------------------------------------------------------------------
 	template <typename T>
 	class AlphaFilter
@@ -1163,7 +1163,7 @@ namespace amf
 		{
 		}
 
-		T Apply(T value) 
+		T Apply(T value)
 		{
 			m_FilteredValue = m_FilteredValue + m_Alpha * (value - m_FilteredValue);
 			return m_FilteredValue;
@@ -1173,7 +1173,7 @@ namespace amf
 		T m_Alpha;
 		T m_FilteredValue;
 	};
-	
+
 	//-------------------------------------------------------------------------------------------------
 	template <typename T>
 	class AlphaBetaFilter
@@ -1203,13 +1203,13 @@ namespace amf
 		inline T GetVelocity() const { return m_Velocity; }
 
 	private:
-		T	m_Alpha, 
+		T	m_Alpha,
 			m_Beta;
 		T	m_Value,
 			m_PrevValue,
 			m_Velocity;
 	};
-	
+
 	//-------------------------------------------------------------------------------------------------
 	template <typename T>
 	class ThresholdFilter

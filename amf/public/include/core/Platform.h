@@ -72,7 +72,7 @@
 //     #error Need to define AMF_ALIGN
  #endif
 
-#if defined(__linux) || (__clang__)
+#if defined(__linux) || defined(__ANDROID__)
 typedef signed int HRESULT;
 #define SUCCEEDED(hr) (((HRESULT)(hr)) >= 0)
 #define FAILED(hr) (((HRESULT)(hr)) < 0)
@@ -184,9 +184,11 @@ typedef amf_uint32              amf_flags;
 
 #define AMF_SECOND          10000000L    // 1 second in 100 nanoseconds
 #define AMF_MILLISECOND		(AMF_SECOND / 1000)
+#define AMF_MICROSECOND     (AMF_MILLISECOND / 1000)
 
 #define AMF_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define AMF_MAX(a, b) ((a) > (b) ? (a) : (b))
+#define AMF_CLAMP(x, a, b) (AMF_MIN(AMF_MAX(x, a), b))
 
 #define AMF_BITS_PER_BYTE 8
 

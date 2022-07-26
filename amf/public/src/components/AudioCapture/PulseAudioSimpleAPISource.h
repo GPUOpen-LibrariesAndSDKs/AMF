@@ -30,6 +30,7 @@
 #pragma once
 
 #include <memory>
+#include <map>
 #include <pulse/simple.h>
 #include <pulse/error.h>
 #include <pulse/pulseaudio.h>
@@ -43,18 +44,27 @@ namespace amf
     //-------------------------------------------------------------------------------------------------
     class AMFPulseAudioSimpleAPISourceImpl
     {
+    protected:
+        typedef std::vector<amf_string> PASourceList;
+
         pa_simple*                      m_pPaSimple = nullptr;
         // Hard code these info for now. By default we use signed 16 bits, stereo, little endian,
         // and 44100 sample rate(to avoid pulse audio server to resample)
-        amf_uint32                      m_SampleRate = 44100;
-        amf_uint32                      m_ChannelCount = 2;
-        amf_uint32                      m_SampleCount = 128;
-        amf_uint64                      m_Format = AMFAF_S16;
-        amf_uint32                      m_BlockAlign = 2; // Bytes per sample, 2 bytes by default.
-        amf_uint32                      m_FrameSize = 2;
-        amf_string                      m_DefaultSrc = "";
+        // if they become non-const in the future, communication with the subprocess must be added
+        // to AMFPulseAudioSimpleAPISourceFacade
+        const amf_uint32                m_SampleRate = 44100;
+        const amf_uint32                m_ChannelCount = 2;
+        const amf_uint32                m_SampleCount = 128;
+        const amf_uint64                m_Format = AMFAF_S16;
+        const amf_uint32                m_BlockAlign = 2; // Bytes per sample, 2 bytes by default.
+        const amf_uint32                m_FrameSize = 2;
+        amf_string                      m_DefaultSinkMonitor = "";
+        amf_string                      m_DefaultSource = "";
+        PASourceList                    m_SrcList;
+        PASourceList                    m_SinkMonitorList;
+        PASourceList                    m_SinkList;
 
-        // Get the device names from pulse audio async api, and sets the m_DefaultSrc.
+        // Get the device names from pulse audio async api, and sets the m_DisplaySrc, m_MicSrc
         // This is only called within Init.
         // TODO: get a list of mic and displays.
         AMF_RESULT InitDeviceNames();
@@ -63,28 +73,36 @@ namespace amf
         virtual ~AMFPulseAudioSimpleAPISourceImpl();
 
         // Setup and teardown.
-        AMF_RESULT Init();
-        AMF_RESULT Terminate();
+        virtual AMF_RESULT Init(bool captureMic);
+        virtual AMF_RESULT Terminate();
 
         // PulseAudio simple API does not support async calls. Read will block until specified
         // amount of data has been read into the buffer.
         // With those constraints, currently we always capture 490 samples (corresponds to 1/90 ms)
         // so capturedSampleCount will always be 490.
         // CaptureAudio allocates pAudioBuffer and directly capture data into it.
-        AMF_RESULT CaptureAudio(AMFAudioBufferPtr& pAudioBuffer, AMFContextPtr& pContext, amf_uint32& capturedSampleCount, amf_pts& latencyPts);
+        virtual AMF_RESULT CaptureAudio(AMFAudioBufferPtr& pAudoBuffer, AMFContextPtr& pContext, amf_uint32& capturedSampleCount, amf_pts& latencyPts);
+        AMF_RESULT CaptureAudioRaw(short* dest, amf_uint32 sampleCount, amf_uint32& capturedSampleCount, amf_pts& latencyPts);
 
+        void AddToSourceList(amf_string& srcName);
+        void AddToSinkMonitorList(amf_string& srcName);
+        void AddToSinkList(amf_string& sinkName);
+        void SetDefaultSource(amf_string& deviceName);
+        void SetDefaultSinkMonitor(amf_string& devcieName);
 
         // Getters.
 
         // Returns a tab seperated string of device names, containing mic and displays.
         // Currently only contains default display.
-        amf_string GetDeviceNames()     { return m_DefaultSrc;   }
-        amf_uint32 GetSampleRate()      { return m_SampleRate;   }
-        amf_uint32 GetSampleCount()     { return m_SampleCount;  }
-        amf_uint32 GetChannelCount()    { return m_ChannelCount; }
-        amf_uint64 GetFormat()          { return m_Format;       }
-        amf_uint32 GetBlockAlign()      { return m_BlockAlign;   }
-        amf_uint32 GetFrameSize()       { return m_FrameSize;    }
+        amf_string GetDeviceNames()                  { return m_SrcList[0];   }
+        amf_uint32 GetSampleRate()                   { return m_SampleRate;   }
+        amf_uint32 GetSampleCount()                  { return m_SampleCount;  }
+        amf_uint32 GetChannelCount()                 { return m_ChannelCount; }
+        amf_uint64 GetFormat()                       { return m_Format;       }
+        amf_uint32 GetBlockAlign()                   { return m_BlockAlign;   }
+        amf_uint32 GetFrameSize()                    { return m_FrameSize;    }
+        PASourceList GetSinkList()                   { return m_SinkList;     }
+        PASourceList GetSourceList(bool captureMic)  { return (true == captureMic)? m_SrcList : m_SinkMonitorList; }
     };
     typedef std::shared_ptr<AMFPulseAudioSimpleAPISourceImpl>    AMFPulseAudioSimpleAPISourceImplPtr;
 }

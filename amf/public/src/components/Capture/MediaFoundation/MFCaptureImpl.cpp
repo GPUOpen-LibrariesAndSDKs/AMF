@@ -233,7 +233,8 @@ AMFMFCaptureImpl::AMFOutputBase::AMFOutputBase(AMFMFCaptureImpl* pHost, IMFActiv
     m_pHost(pHost),
     m_pActivate(pActivate),
     m_iSelectedIndex(-1),
-    m_PollingThread(this)
+    m_PollingThread(this),
+    m_bEof(false)
 {
 }
 //-------------------------------------------------------------------------------------------------

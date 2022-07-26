@@ -197,7 +197,11 @@ AMF_RESULT DeviceVulkan::CreateInstance()
         VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
 #elif defined(__linux)
         VK_KHR_SURFACE_EXTENSION_NAME,
+#if defined(__ANDROID__)
+        VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
+#else
         VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
+#endif
         VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
         VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME,
 #endif
@@ -354,6 +358,33 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
     deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t> (deviceExtensions.size());
 
     vkres = GetVulkan()->vkCreateDevice(m_VulkanDev.hPhysicalDevice, &deviceCreateInfo, nullptr, &m_VulkanDev.hDevice);
+    if (vkres == VK_ERROR_EXTENSION_NOT_PRESENT)
+    {
+        // if we fail because the extension is not supported, it could be that
+        // we are on a Navi24, which doesn't support encoder, so try to remove
+        // all encoders from the list and try to create the device again...
+        std::vector<const char*>  cleanDeviceExtensions;
+        for (unsigned int i = 0; i < deviceExtensions.size(); i++)
+        {
+            const char* pDevExtension = deviceExtensions[i];
+            if ((pDevExtension != nullptr) &&
+                (strstr(pDevExtension, "VK_AMD_video_encode") == nullptr))
+            {
+                cleanDeviceExtensions.push_back(pDevExtension);
+            }
+        }
+
+        // swap the information with the cleaned up extensions
+        deviceExtensions.swap(cleanDeviceExtensions);
+
+        // update creation information
+        deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
+        deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t> (deviceExtensions.size());
+
+        // try create the device again.
+        vkres = GetVulkan()->vkCreateDevice(m_VulkanDev.hPhysicalDevice, &deviceCreateInfo, nullptr, &m_VulkanDev.hDevice);
+    }
+
     AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS, AMF_FAIL, L"CreateDeviceAndQueues() vkCreateDevice() failed, Error=%d", (int)vkres);
     AMF_RETURN_IF_FALSE(m_VulkanDev.hDevice != nullptr, AMF_FAIL, L"CreateDeviceAndQueues() vkCreateDevice() returned nullptr");
     

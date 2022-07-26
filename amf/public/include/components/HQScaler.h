@@ -60,5 +60,6 @@ enum  AMF_HQ_SCALER_ALGORITHM_ENUM
 #define AMF_HQ_SCALER_FILL_COLOR         L"FillColor"               // AMFColor 
 #define AMF_HQ_SCALER_FROM_SRGB          L"FromSRGB"                   //  bool (default=true) Convert to SRGB. 
 
+#define AMF_HQ_SCALER_SHARPNESS          L"HQScalerSharpness"   // Float in the range of [0.0, 2.0]
 
 #endif //#ifndef AMFHQScaler_h

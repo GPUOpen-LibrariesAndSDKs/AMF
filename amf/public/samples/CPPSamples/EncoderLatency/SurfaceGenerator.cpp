@@ -433,6 +433,8 @@ void PrepareFillFromHost(amf::AMFContext* context)
         FillP010SurfaceWithColor(pColor2, 255, 0, 0);
         FillP010SurfaceWithColor(pColor1, 0, 0, 255);
         break;
+    default:
+        break;
     }
     pColor1->Convert(memoryTypeIn);
     pColor2->Convert(memoryTypeIn);
@@ -480,6 +482,11 @@ AMF_RESULT FillSurface(amf::AMFContextPtr context, amf::AMFSurface** surfaceIn, 
 
 AMF_RESULT ReadSurface(PipelineElementPtr pipelineElPtr, amf::AMFSurface** surface, amf::AMF_MEMORY_TYPE memoryType)
 {
-    AMF_RETURN_IF_FAILED(pipelineElPtr->QueryOutput((amf::AMFData**)surface));
+    AMF_RESULT res = pipelineElPtr->QueryOutput((amf::AMFData**)surface);
+    if (res == AMF_EOF)
+    {
+        return res;
+    }
+    AMF_RETURN_IF_FAILED(res);
     return (surface && *surface) ? (*surface)->Convert(memoryType) : AMF_FAIL;
 }

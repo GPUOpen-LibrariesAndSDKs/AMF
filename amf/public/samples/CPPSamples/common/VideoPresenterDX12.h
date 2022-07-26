@@ -62,7 +62,9 @@ private:
 	AMF_RESULT                      CreateCommandBuffer();
 	AMF_RESULT                      ResetCommandBuffer();
 	AMF_RESULT                      PrepareStates();
+    AMF_RESULT                      PreparePIPStates();
 	AMF_RESULT                      UpdateVertices(AMFRect *srcRect, AMFSize *srcSize, AMFRect *dstRect, AMFSize *dstSize);
+    AMF_RESULT                      UpdatePIPVertices(AMFRect* srcRect, AMFSize* srcSize, AMFRect* dstRect, AMFSize* dstSize);
 	AMF_RESULT                      CheckForResize(bool bForce, bool *bResized);
 	AMF_RESULT                      ResizeSwapChain();
 	AMF_RESULT                      BitBlt(amf::AMF_FRAME_TYPE eFrameType, ID3D12Resource* pSrcSurface, AMFRect* pSrcRect, ID3D12Resource* pDstSurface, AMFRect* pDstRect);
@@ -82,6 +84,11 @@ private:
 	D3D12_VERTEX_BUFFER_VIEW        m_vertexBufferView;
 	D3D12_VIEWPORT                  m_CurrentViewport;
 
+    const float                     c_pipSize = 0.3f;   // Relative size of the picture-in-picture window
+    ATL::CComPtr<ID3D12Resource>    m_pPIPVertexBuffer;
+    ATL::CComPtr<ID3D12Resource>    m_pPIPVertexBufferUpload;
+    D3D12_VERTEX_BUFFER_VIEW        m_PIPVertexBufferView;
+
     float                           m_fScale;
     float                           m_fPixelAspectRatio;
     float                           m_fOffsetX;
@@ -96,4 +103,5 @@ private:
 
 	bool                            m_bFirstFrame;
 	static const float              ClearColor[4];
+
 };

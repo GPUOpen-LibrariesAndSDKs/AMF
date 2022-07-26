@@ -114,6 +114,8 @@ m_hWnd(NULL),
 m_timerID(0),
 m_mouseDown(false)
 {
+    ::memset(m_title, 0, sizeof(m_title));
+    ::memset(m_windowClass, 0, sizeof(m_windowClass));
     m_mousePos.x = 0;
     m_mousePos.y = 0;
 }
@@ -618,13 +620,21 @@ INT_PTR CaptureVideo::About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 
 //------------------------------------------------------------------------------------------------------------
 SingleWindowPlayback::SingleWindowPlayback() :
-m_hClientWindow(NULL),
-m_eMemoryType(amf::AMF_MEMORY_DX11),
-m_bLoop(true),
-m_bChromaKey(false),
-m_bStop(false),
-m_eModeVideoSource(VIDEO_SOURCE_MODE_FILE),
-m_iSelectedDevice(-1)
+    m_hClientWindow(NULL),
+    m_eMemoryType(amf::AMF_MEMORY_DX11),
+    m_bLoop(true),
+    m_bChromaKey(false),
+    m_bChromaKeyBK(false),
+    m_bChromaKeySpill(false),
+    m_iChromaKeyColorAdj(0),
+    m_bChromaKeyDebug(false),
+    m_bChromaKeyScaling(false),
+    m_bChromaKeyRGBAFP16(false),
+    m_bChromaKey10BitLive(false),
+    m_bChromaKeyAlphaFromSrc(false),
+    m_bStop(false),
+    m_eModeVideoSource(VIDEO_SOURCE_MODE_FILE),
+    m_iSelectedDevice(-1)
 {
 
 }

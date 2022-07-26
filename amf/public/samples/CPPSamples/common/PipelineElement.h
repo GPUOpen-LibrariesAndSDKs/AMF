@@ -289,7 +289,7 @@ public:
             LOG_ERROR(L"Bad slot=" << slot );
             return AMF_INVALID_ARG;
         }
-         AMF_RESULT res = m_bEof ? AMF_EOF : AMF_REPEAT;
+        AMF_RESULT res = m_bEof ? AMF_EOF : AMF_REPEAT;
         for(std::list<Data>::iterator it = m_Queue.begin(); it != m_Queue.end(); it++)
         {
             if(!it->slots[slot])
@@ -329,22 +329,20 @@ public:
                 break;
             }
         }
-        return res;     
+        return res;
     }
-    virtual AMF_RESULT Drain(amf_int32 inputSlot) 
-    { 
-        inputSlot;
-
+    virtual AMF_RESULT Drain(amf_int32 /*inputSlot*/)
+    {
         amf::AMFLock lock(&m_cs);
         m_bEof = true;
-        return AMF_OK; 
+        return AMF_OK;
     }
-    virtual AMF_RESULT Flush() 
-    { 
+    virtual AMF_RESULT Flush()
+    {
         amf::AMFLock lock(&m_cs);
-        m_Queue.clear(); 
+        m_Queue.clear();
         m_bEof = false;
-        return AMF_OK; 
+        return AMF_OK;
     }
 
 protected:
@@ -356,6 +354,146 @@ protected:
 };
 //-------------------------------------------------------------------------------------------------
 typedef std::shared_ptr<Splitter> SplitterPtr;
+//-------------------------------------------------------------------------------------------------
+class Combiner : public PipelineElement
+{
+public:
+    Combiner(amf::AMFContextPtr context)
+        : m_pContext(context)
+        , m_pData()
+        , m_bEof(false)
+    {
+    }
+    virtual ~Combiner()
+    {
+    }
+    virtual amf_int32 GetInputSlotCount() const { return 2; }
+    virtual amf_int32 GetOutputSlotCount() const { return 1; }
+    virtual AMF_RESULT SubmitInput(amf::AMFData* pData)
+    {
+        amf::AMFLock lock(&m_cs);
+        if (m_bFrozen)
+        {
+            return AMF_INPUT_FULL;
+        }
+
+        m_pData = pData;
+
+        return AMF_OK;
+    }
+    virtual AMF_RESULT QueryOutput(amf::AMFData** ppData, amf_int32 slot)
+    {
+        amf::AMFLock lock(&m_cs);
+        if (m_bEof)
+        {
+            return AMF_EOF;
+        }
+        if (m_pData == NULL)
+        {
+            return AMF_INVALID_ARG;
+        }
+        if (m_bFrozen)
+        {
+            return AMF_OK;
+        }
+
+        if (slot >= 2)
+        {
+            LOG_ERROR(L"Bad slot=" << slot);
+            return AMF_INVALID_ARG;
+        }
+
+        AMF_RESULT result = AMF_OK;
+        amf::AMFSurfacePtr pInSurface(m_pData);
+        amf::AMFSurfacePtr  pOutSurface;
+        result = AllocOutputSurface(pInSurface, &pOutSurface);
+
+        if (result != AMF_OK)
+        {
+            return result;
+        }
+
+        result = Combine(slot, pInSurface, pOutSurface);
+
+        if (result != AMF_OK)
+        {
+            return result;
+        }
+
+        pOutSurface->Acquire();
+        *ppData = pOutSurface;
+
+        return AMF_OK;
+    }
+    virtual AMF_RESULT Drain(amf_int32 /*inputSlot*/)
+    {
+        amf::AMFLock lock(&m_cs);
+        m_bEof = true;
+        return AMF_OK;
+    }
+    virtual AMF_RESULT Flush()
+    {
+        amf::AMFLock lock(&m_cs);
+        m_bEof = false;
+        return AMF_OK;
+    }
+private:
+    virtual  AMF_RESULT AllocOutputSurface(amf::AMFSurface* pInSurface, amf::AMFSurface** ppSurface)
+    {
+        amf_pts pts = pInSurface->GetPts();
+        amf_pts duration = pInSurface->GetDuration();
+        amf::AMF_FRAME_TYPE type = pInSurface->GetFrameType();
+        amf::AMF_MEMORY_TYPE eMemType = pInSurface->GetMemoryType();
+        amf::AMF_SURFACE_FORMAT eSurfaceType = pInSurface->GetFormat();
+        amf_int32 inWidth = pInSurface->GetPlaneAt(0)->GetWidth();
+        amf_int32 inHeight = pInSurface->GetPlaneAt(0)->GetHeight();
+
+        amf::AMFSurfacePtr pSurface;
+        AMF_RESULT result = AMF_OK;
+        result = m_pContext->AllocSurface(eMemType, eSurfaceType, inWidth, inHeight, &pSurface);
+
+        if (result != AMF_OK)
+        {
+            return result;
+        }
+
+        pSurface->SetPts(pts);
+        pSurface->SetDuration(duration);
+        pSurface->SetFrameType(type);
+        *ppSurface = pSurface.Detach();
+
+        return AMF_OK;
+    }
+
+    AMF_RESULT Combine(amf_int32 iSlot, amf::AMFSurface* pSrcSurface, amf::AMFSurface* pDstSurface)
+    {
+        amf_int32 inWidth = pSrcSurface->GetPlaneAt(0)->GetWidth();
+        amf_int32 inHeight = pSrcSurface->GetPlaneAt(0)->GetHeight();
+
+        // TODO: Adjust split ratio on keyboard shortcuts.
+        double split = 0.40;
+
+        amf_int32 dstX = static_cast<amf_int32>((double)inWidth * (split));
+        amf_int32 dstWidth = inWidth - dstX;
+
+        AMF_RESULT res = AMF_OK;
+
+        if (iSlot == 0) {
+            res = pSrcSurface->CopySurfaceRegion(pDstSurface, 0, 0, 0, 0, static_cast<amf_int32>(inWidth * (split)), inHeight);
+        } else {
+            res = pSrcSurface->CopySurfaceRegion(pDstSurface, dstX, 0, 0, 0, dstWidth, inHeight);
+        }
+
+        return res;
+    }
+
+protected:
+    amf::AMFContextPtr  m_pContext;
+    amf::AMFDataPtr     m_pData;
+    bool                m_bEof;
+};
+//-------------------------------------------------------------------------------------------------
+typedef std::shared_ptr<Combiner> CombinerPtr;
 //-------------------------------------------------------------------------------------------------
 class AMFComponentElement : public PipelineElement
 {
@@ -426,9 +564,8 @@ public:
         }
         return res;
     }
-    virtual AMF_RESULT Drain(amf_int32 inputSlot) 
+    virtual AMF_RESULT Drain(amf_int32 /*inputSlot*/)
     {
-        inputSlot;
         return m_pComponent->Drain(); 
     }
     virtual AMF_RESULT Flush()

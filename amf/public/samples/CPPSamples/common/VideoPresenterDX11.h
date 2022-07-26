@@ -71,9 +71,14 @@ public:
             amf_int32 width, amf_int32 height, amf_int32 hPitch, amf_int32 vPitch, amf::AMFSurface** ppSurface);
     // amf::AMFSurfaceObserver interface
     virtual void AMF_STD_CALL OnSurfaceDataRelease(amf::AMFSurface* pSurface);
+
+    virtual AMFPoint MapClientToSource(const AMFPoint& point) override;
+    virtual AMFPoint MapSourceToClient(const AMFPoint& point) override;
 protected:
     virtual void        UpdateProcessor();
-
+    CComPtr<ID3D11Device>   m_pDevice;
+    virtual void CustomDraw();
+    virtual AMF_RESULT ResizeSwapChain();
 
 private:
     AMF_RESULT BitBlt(amf::AMF_FRAME_TYPE eFrameType, ID3D11Texture2D* pSrcSurface, AMFRect* pSrcRect, ID3D11Texture2D* pDstSurface, AMFRect* pDstRect);
@@ -82,7 +87,6 @@ private:
     AMF_RESULT CompileShaders();
     AMF_RESULT PrepareStates();
     AMF_RESULT CheckForResize(bool bForce, bool *bResized);
-    AMF_RESULT ResizeSwapChain();
     AMF_RESULT UpdateVertices(AMFRect *srcRect, AMFSize *srcSize, AMFRect *dstRect, AMFSize *dstSize);
     AMF_RESULT DrawFrame(ID3D11Texture2D* pSrcSurface, bool bLeft);
     AMF_RESULT CopySurface(amf::AMF_FRAME_TYPE eFrameType, ID3D11Texture2D* pSrcSurface, AMFRect* pSrcRect);
@@ -91,9 +95,7 @@ private:
 
     AMF_RESULT ApplyCSC(amf::AMFSurface* pSurface);
 
-
     amf::AMF_SURFACE_FORMAT             m_eInputFormat;
-    CComPtr<ID3D11Device>               m_pDevice;
     CComQIPtr<IDXGISwapChain>           m_pSwapChain;
     CComPtr<IDXGISwapChain1>            m_pSwapChain1;
     CComPtr<IDXGIDecodeSwapChain>       m_pSwapChainVideo;
@@ -113,6 +115,8 @@ private:
     CComPtr<ID3D11RasterizerState>      m_pRasterizerState;
     CComPtr<ID3D11BlendState>           m_pBlendState;
     D3D11_VIEWPORT                      m_CurrentViewport;
+    XMFLOAT4X4                          m_mSrcToClientMatrix;
+    XMFLOAT4X4                          m_mSrcToScreenMatrix;
 
     CComPtr<ID3D11RenderTargetView>     m_pRenderTargetView_L;
     CComPtr<ID3D11RenderTargetView>     m_pRenderTargetView_R;

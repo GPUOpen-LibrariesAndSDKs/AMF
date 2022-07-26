@@ -314,7 +314,7 @@ namespace amf
         virtual bool RequestStop();
         virtual bool WaitForStop();
         virtual bool StopRequested();
-        virtual bool IsRunning();
+        virtual bool IsRunning() const;
 
         // this is executed in the thread and overloaded by implementor
         virtual void Run() = 0;

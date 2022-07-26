@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -52,7 +52,7 @@ public:
     virtual AMF_RESULT       Present(amf_uint32 index);
 
 protected:
-	
+
 	AMF_RESULT LoadPipeline(amf_handle hWnd, amf_handle hDisplay, amf_uint32 format);
 	AMF_RESULT ResizeSwapChain(bool bFullScreen, amf_int32 width, amf_int32 height);
 	AMF_RESULT CreateFrameBuffers();
@@ -97,9 +97,9 @@ protected:
 
 	UINT				m_width;
 	UINT				m_height;
-    DXGI_FORMAT         m_format; 
+    DXGI_FORMAT         m_format;
     UINT				m_frameIndex;
-   
+
 	ATL::CComPtr<IDXGIFactory4>          m_dxgiFactory;
 	ATL::CComPtr<IDXGIAdapter>           m_dxgiAdapter;
 	ATL::CComPtr<ID3D12CommandQueue>     m_graphicsQueue;
@@ -114,12 +114,16 @@ protected:
 
 	ATL::CComPtr<ID3D12RootSignature> m_rootSignature;
 	ATL::CComPtr<ID3D12PipelineState> m_graphicsPipelineState;
-	
+
+	ATL::CComPtr<ID3D12RootSignature> m_rootSignatureNN;
+	ATL::CComPtr<ID3D12PipelineState> m_graphicsPipelineStateNN;
+
+
 	D3D12_STATIC_SAMPLER_DESC m_staticSampler;
 
     amf_int32                       m_eSwapChainImageFormat;
 	ATL::CComPtr<IDXGISwapChain3>   m_pSwapChain;
- 
+
     typedef struct _BackBuffer
     {
 		ATL::CComPtr<ID3D12Resource> rtvBuffer;
@@ -128,13 +132,13 @@ protected:
 	std::vector<ATL::CComPtr<ID3D12Fence>>  m_SyncFences;
 
 	ATL::CComPtr<ID3D12Fence>       m_fence;
-	UINT64                          m_fenceValues[FrameCount];
+	UINT64                          m_fenceValue;
     AMFSize                         m_SwapChainExtent;
 	HANDLE							m_fenceEvent;
 
 	GUID  AMFResourceStateGUID = { 0x452da9bf, 0x4ad7, 0x47a5, { 0xa6, 0x9b, 0x96, 0xd3, 0x23, 0x76, 0xf2, 0xf3 } };
 	GUID  AMFFenceGUID = { 0x910a7928, 0x57bd, 0x4b04,{ 0x91, 0xa3, 0xe7, 0xb8, 0x4, 0x12, 0xcd, 0xa5 } };
-    GUID  AMFFenceValueGUID = { 0x62a693d3, 0xbb4a, 0x46c9,{ 0xa5, 0x4, 0x9a, 0x8e, 0x97, 0xbf, 0xf0, 0x56 } };  
+    GUID  AMFFenceValueGUID = { 0x62a693d3, 0xbb4a, 0x46c9,{ 0xa5, 0x4, 0x9a, 0x8e, 0x97, 0xbf, 0xf0, 0x56 } };
 };
 
 namespace {

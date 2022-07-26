@@ -1123,9 +1123,6 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamRe
 
     PushParamsToPropertyStorage(pParams, ParamEncoderStatic, m_pEncoder);
 
-//    m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(scaleWidth, scaleHeight));
-
-
     PushParamsToPropertyStorage(pParams, ParamEncoderDynamic, m_pEncoder);
 
     res = m_pEncoder->Init(amf::AMF_SURFACE_NV12, scaleWidth, scaleHeight);

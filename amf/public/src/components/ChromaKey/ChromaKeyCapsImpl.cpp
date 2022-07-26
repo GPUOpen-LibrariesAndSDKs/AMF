@@ -126,7 +126,6 @@ AMFChromaKeyInputCapsImpl::AMFChromaKeyInputCapsImpl(AMFContext* pContext)
 //-------------------------------------------------------------------------------------------------
 AMFChromaKeyOutputCapsImpl::AMFChromaKeyOutputCapsImpl(AMFContext* pContext)
 {
-    pContext;
     SetResolution(32, 4096, 32, 4096);
     SetVertAlign(2);
 

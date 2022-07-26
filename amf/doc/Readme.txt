@@ -30,10 +30,18 @@
 New features are available in 
 Driver: Radeon Software Adrenalin 2019 Edition; 19.7.1 Software: 19.30 and later 
 
+1.4.26.0 (26.07.2022) version
+--------------------------
+   - New perceptual (PAQ) and temporal (TAQ) adaptive quantization modes for PreAnalysis
+   - New high motion quality boost mode for PreAnalysis
+   - New sharpness option for HQScaler
+   - New low latency decoding option
+   - New temporal SVC encoding options
+
 1.4.24.0 (17.03.2022) version
 --------------------------
    - New AMD Direct Capture component and updated DVR sample app
-   - New HQ Scaler ( Bilinear / Bicubic / FSR )
+   - New HQScaler ( Bilinear / Bicubic / FSR )
    - Vulkan support for PreAnalysis component
    - Vulkan support for HEVC Encoder ( Navi+ )
    - Support for temporal layer query for AVC and HEVC Encoder

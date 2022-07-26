@@ -191,8 +191,6 @@ int main(int argc, char* argv[])
 
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, bitRateIn);
         AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, %" LPRId64 L") failed", bitRateIn);
-        res = encoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(widthIn, heightIn));
-        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, %dx%d) failed", widthIn, heightIn);
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, ::AMFConstructRate(frameRateIn, 1));
         AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, %dx%d) failed", frameRateIn, 1);
 
@@ -219,8 +217,6 @@ int main(int argc, char* argv[])
 
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE, bitRateIn);
         AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE, %" LPRId64 L") failed", bitRateIn);
-        res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE, ::AMFConstructSize(widthIn, heightIn));
-        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE, %dx%d) failed", widthIn, heightIn);
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, ::AMFConstructRate(frameRateIn, 1));
         AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, %dx%d) failed", frameRateIn, 1);
 
@@ -656,6 +652,8 @@ static void PrepareFillFromHost(amf::AMFContext *context)
         FillRGBA_F16SurfaceWithColor(pColor2, 255, 0, 0);
         FillRGBA_F16SurfaceWithColor(pColor1, 0, 0, 255);
         break;
+    default:
+        break;
     }
     pColor1->Convert(memoryTypeIn);
     pColor2->Convert(memoryTypeIn);
@@ -700,7 +698,7 @@ PollingThread::PollingThread(amf::AMFContext *context, amf::AMFComponent *encode
 {
     std::wstring wStr(pFileName);
     std::string str(wStr.begin(), wStr.end());
-    m_pFile = std::ofstream(str, std::ios::binary);
+    m_pFile.open(str, std::ios::binary);
 }
 PollingThread::~PollingThread()
 {

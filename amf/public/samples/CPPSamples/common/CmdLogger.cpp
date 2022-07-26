@@ -96,6 +96,8 @@ void ChangeTextColor(AMFLogLevel level) {
     case AMFLogLevelError:
       wprintf(L"\033[01;36m");  // light cyan
       break;
+    default:
+      break;
   }
 }
 #else

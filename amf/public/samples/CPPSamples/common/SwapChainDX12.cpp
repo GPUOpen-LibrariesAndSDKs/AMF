@@ -45,7 +45,7 @@ SwapChainDX12::SwapChainDX12(amf::AMFContext* pContext) :
     m_pSwapChain(nullptr),
     m_frameIndex(0),
     m_format(DXGI_FORMAT_UNKNOWN),
-    m_fenceValues{ 0 },
+    m_fenceValue(0),
     m_fenceEvent(nullptr),
     m_eSwapChainImageFormat(0),
     m_cbvSrvDescriptorSize(0),
@@ -108,9 +108,9 @@ AMF_RESULT SwapChainDX12::Terminate()
 
     DeleteFrameBuffers();
 
+    m_fenceValue = 0;
     for (int i = 0; i < FrameCount; i++)
     {
-        m_fenceValues[i] = 0;
         m_cmdAllocator[i] = nullptr;
     }
 
@@ -157,6 +157,7 @@ AMF_RESULT SwapChainDX12::LoadPipeline(amf_handle hWnd, amf_handle hDisplay, amf
 
     hr = m_pDX12Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_graphicsQueue.p));
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"CreateSwapChain() failed to retrieve a dxgi device from dx12 device.");
+    NAME_D3D12_OBJECT(m_graphicsQueue);
 
     // Describe and create the swap chain.
     // The resolution of the swap chain buffers will match the resolution of the window, enabling the
@@ -250,8 +251,6 @@ AMF_RESULT SwapChainDX12::DeleteFrameBuffers()
     for (int i = 0; i < FrameCount; i++)
     {
         m_BackBuffers[i].rtvBuffer.Release();
-
-        m_fenceValues[i] = m_fenceValues[m_frameIndex];
     }
     return AMF_OK;
 }
@@ -288,15 +287,8 @@ AMF_RESULT              SwapChainDX12::Present(amf_uint32 imageIndex)
         UINT64 fenceValue = 0;
         UINT dataSize = sizeof(fenceValue);
         pFence->GetPrivateData(AMFFenceValueGUID, &dataSize, &fenceValue);
-
-        if (fenceValue != 0)
-        {
-            m_graphicsQueue->Wait(pFence, fenceValue);
-            m_graphicsQueue->Signal(pFence, 0);
-
-            //UINT64 val = pFence->GetCompletedValue();
-            //AMFTraceWarning(AMF_FACILITY, L"Graphics Queue wait for fence: %p, wait val: %d, cur val: %d", pFence.p, (int)fenceValue, val);
-        }
+        m_graphicsQueue->Wait(pFence, fenceValue);
+//        AMFTraceWarning(AMF_FACILITY, L"Graphics Queue wait for fence: %p, val: %d", pFence.p, (int)fenceValue);
     }
 
     // Execute the command lists.
@@ -307,12 +299,13 @@ AMF_RESULT              SwapChainDX12::Present(amf_uint32 imageIndex)
     {
         ATL::CComPtr<ID3D12Fence> pFence = *it;
 
-        UINT64 fenceValue = 1;
+        UINT64 fenceValue = 0;
         UINT dataSize = sizeof(fenceValue);
+        pFence->GetPrivateData(AMFFenceValueGUID, &dataSize, &fenceValue);
+        fenceValue++;
         m_graphicsQueue->Signal(pFence, fenceValue);
         pFence->SetPrivateData(AMFFenceValueGUID, sizeof(fenceValue), &fenceValue);
-
-        //AMFTraceWarning(AMF_FACILITY, L"Graphics Queue signal fence: %p, val: %d", pFence.p, (int)fenceValue);
+//        AMFTraceWarning(AMF_FACILITY, L"Graphics Queue signals for fence: %p, val: %d", pFence.p, (int)fenceValue);
     }
 
     m_SyncFences.clear();
@@ -399,17 +392,17 @@ AMF_RESULT SwapChainDX12::WaitForGpu()
     HRESULT hr = S_OK;
 
     // Schedule a Signal command in the queue.
-    hr = m_graphicsQueue->Signal(m_fence, m_fenceValues[m_frameIndex]);
+    hr = m_graphicsQueue->Signal(m_fence, m_fenceValue);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"Graphics queue DX12 Signal() failed.");
 
     // Wait until the fence has been processed.
-    hr = m_fence->SetEventOnCompletion(m_fenceValues[m_frameIndex], m_fenceEvent);
+    hr = m_fence->SetEventOnCompletion(m_fenceValue, m_fenceEvent);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetEventOnCompletion() failed.");
 
     WaitForSingleObjectEx(m_fenceEvent, 1000000000LL, FALSE);
 
     // Increment the fence value for the current frame.
-    m_fenceValues[m_frameIndex]++;
+    m_fenceValue++;
 
     return AMF_OK;
 }
@@ -420,22 +413,21 @@ AMF_RESULT SwapChainDX12::MoveToNextFrame()
     HRESULT hr = S_OK;
 
     // Schedule a Signal command in the queue.
-    const UINT64 currentFenceValue = m_fenceValues[m_frameIndex];
-    hr = m_graphicsQueue->Signal(m_fence, currentFenceValue);
+    hr = m_graphicsQueue->Signal(m_fence, m_fenceValue);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"Graphics queue DX12 Signal() failed.");
 
     // Update the frame index.
     m_frameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 
     // If the next frame is not ready to be rendered yet, wait until it is ready.
-    if (m_fence->GetCompletedValue() < m_fenceValues[m_frameIndex])
+    if (m_fence->GetCompletedValue() < m_fenceValue)
     {
-        m_fence->SetEventOnCompletion(m_fenceValues[m_frameIndex], m_fenceEvent);
+        m_fence->SetEventOnCompletion(m_fenceValue, m_fenceEvent);
         WaitForSingleObjectEx(m_fenceEvent, 1000000000LL, FALSE);
     }
 
     // Set the fence value for the next frame.
-    m_fenceValues[m_frameIndex] = currentFenceValue + 1;
+    m_fenceValue++;
 
     return AMF_OK;
 }

@@ -40,6 +40,8 @@
 #define VK_NO_PROTOTYPES
 #ifdef _WIN32
     #define VK_USE_PLATFORM_WIN32_KHR
+#elif defined(__ANDROID__)
+    #define VK_USE_PLATFORM_ANDROID_KHR
 #elif defined(__linux)
     #define VK_USE_PLATFORM_XLIB_KHR
 #endif
@@ -223,6 +225,9 @@ struct VulkanImportTable
 #endif
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
     PFN_vkCreateXlibSurfaceKHR  vkCreateXlibSurfaceKHR;
+#endif
+#if defined(VK_USE_PLATFORM_ANDROID_KHR)
+    PFN_vkCreateAndroidSurfaceKHR  vkCreateAndroidSurfaceKHR;
 #endif
 
     PFN_vkCreateDebugReportCallbackEXT  vkCreateDebugReportCallbackEXT;

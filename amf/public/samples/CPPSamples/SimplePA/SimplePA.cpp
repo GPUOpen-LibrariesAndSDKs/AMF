@@ -392,7 +392,7 @@ PollingThread::PollingThread(amf::AMFContext *context, amf::AMFComponent *pre_an
 {
 	std::wstring wStr(pFileName);
 	std::string str(wStr.begin(), wStr.end());
-	m_pFile = std::ofstream(str, std::ios::binary);
+	m_pFile.open(str, std::ios::binary);
 }
 PollingThread::~PollingThread()
 {

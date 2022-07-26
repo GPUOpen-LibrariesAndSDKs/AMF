@@ -151,6 +151,8 @@ int main(int argc, char* argv[])
     case amf::AMF_MEMORY_VULKAN:
         res = amf::AMFContext1Ptr(context)->InitVulkan(NULL); // can be Vulkan device
         break;
+    default:
+        break;
     }
 
 	BitStreamType bsType = GetStreamType(fileNameIn);
@@ -229,6 +231,8 @@ int main(int argc, char* argv[])
         pCompute->FinishQueue();
         //        outputSurface->Convert(amf::AMF_MEMORY_HOST);
     }
+    default:
+        break;
     }
 
     // cleanup in this order
@@ -318,6 +322,8 @@ static void WaitDecoder(amf::AMFContext *context, amf::AMFSurface *surface)
 //        outputSurface->Convert(amf::AMF_MEMORY_HOST);
     }
     break;
+    default:
+        break;
     }
 }
 

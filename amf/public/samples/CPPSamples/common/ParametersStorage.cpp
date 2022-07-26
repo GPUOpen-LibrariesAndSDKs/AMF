@@ -306,6 +306,10 @@ AMF_RESULT ParamConverterFormat(const std::wstring& value, amf::AMFVariant& valu
         paramValue =  amf::AMF_SURFACE_YUY2;
     } else if(uppValue == L"P010" || uppValue == L"10") {
         paramValue =  amf::AMF_SURFACE_P010;
+    } else if (uppValue == L"P012" || uppValue == L"12") {
+        paramValue = amf::AMF_SURFACE_P012;
+    }else if (uppValue == L"P016" || uppValue == L"16") {
+        paramValue = amf::AMF_SURFACE_P016;
     } else if(uppValue == L"RGBAF16" || uppValue == L"RGBA_F16" || uppValue == L"11") {
         paramValue =  amf::AMF_SURFACE_RGBA_F16;
     } else if(uppValue == L"UYVY" || uppValue == L"12") {
@@ -612,6 +616,28 @@ AMF_RESULT ParamConverterHQScalerAlgorithm(const std::wstring& value, amf::AMFVa
         paramValue = AMF_HQ_SCALER_ALGORITHM_FSR;
     }
 
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+
+AMF_RESULT ParamConverterHighMotionQualityBoostMode(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_ENUM paramValue;
+
+    std::wstring uppValue = toUpper(value);
+    if (uppValue == L"NONE" || uppValue == L"0")
+    {
+        paramValue = AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_NONE;
+    }
+    else if (uppValue == L"AUTO" || uppValue == L"1")
+    {
+        paramValue = AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_AUTO;
+    }
+    else
+    {
+        LOG_ERROR(L"AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_ENUM hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
     valueOut = amf_int64(paramValue);
     return AMF_OK;
 }
