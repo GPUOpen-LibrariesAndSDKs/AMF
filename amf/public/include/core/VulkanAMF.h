@@ -81,7 +81,7 @@ namespace amf
         VkImage             hImage;             // vulkan native image for which the surface is created
         VkDeviceMemory      hMemory;            // memory for hImage, can be nullptr
         amf_int64           iSize;              // memory size
-        amf_uint32          eFormat;            // VkFormat; other properties (iWidth, iHeight) are asserted based on this
+        amf_uint32          eFormat;            // VkFormat
         amf_int32           iWidth;             // image width
         amf_int32           iHeight;            // image height
         amf_uint32          eCurrentLayout;     // VkImageLayout
