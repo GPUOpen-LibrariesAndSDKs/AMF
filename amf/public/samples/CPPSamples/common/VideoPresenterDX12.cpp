@@ -808,11 +808,10 @@ AMF_RESULT VideoPresenterDX12::UpdatePIPVertices(AMFRect* srcRect, AMFSize* srcS
 
     w = (FLOAT)srcRect->Width() / srcSize->width;
     h = (FLOAT)srcRect->Height() / srcSize->height;
-
     FLOAT leftSrc = m_fPIPFocusPos.x + centerX - w / 2;
-    FLOAT rightSrc = leftSrc + w * m_fPIPZoomFactor * c_pipSize;
+    FLOAT rightSrc = leftSrc + w * c_pipSize / m_iPIPZoomFactor;
     FLOAT topSrc = m_fPIPFocusPos.y + centerY - h / 2;
-    FLOAT bottomSrc = topSrc + h * m_fPIPZoomFactor * c_pipSize;
+    FLOAT bottomSrc = topSrc + h * c_pipSize / m_iPIPZoomFactor;
 
     vertices[0].position = XMFLOAT3(leftDst, bottomDst, 0.0f);
     vertices[0].texture = XMFLOAT2(leftSrc, topSrc);

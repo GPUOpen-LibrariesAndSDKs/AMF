@@ -205,6 +205,7 @@
     <ClCompile Include="..\common\DeviceDX11.cpp" />
     <ClCompile Include="..\common\DeviceDX9.cpp" />
     <ClCompile Include="..\common\DeviceVulkan.cpp" />
+    <ClCompile Include="..\common\EncoderParamsAV1.cpp" />
     <ClCompile Include="..\common\EncoderParamsAVC.cpp" />
     <ClCompile Include="..\common\EncoderParamsHEVC.cpp" />
     <ClCompile Include="..\common\ParametersStorage.cpp" />
@@ -241,6 +242,7 @@
     <ClInclude Include="..\common\DeviceDX11.h" />
     <ClInclude Include="..\common\DeviceDX9.h" />
     <ClInclude Include="..\common\DeviceVulkan.h" />
+    <ClInclude Include="..\common\EncoderParamsAV1.h" />
     <ClInclude Include="..\common\EncoderParamsAVC.h" />
     <ClInclude Include="..\common\EncoderParamsHEVC.h" />
     <ClInclude Include="..\common\ParametersStorage.h" />

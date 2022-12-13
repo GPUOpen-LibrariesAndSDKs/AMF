@@ -99,9 +99,12 @@
       <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="..\common\PreProcessingParams.cpp">
-	  <Filter>common</Filter>
+      <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="..\common\BitStreamParserIVF.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\EncoderParamsAV1.cpp">
       <Filter>common</Filter>
     </ClCompile>
   </ItemGroup>
@@ -220,9 +223,12 @@
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\common\PreProcessingParams.h">
-	  <Filter>common</Filter>
+      <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\common\BitStreamParserIVF.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\EncoderParamsAV1.h">
       <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>

@@ -58,6 +58,7 @@ extern "C"
 #include "public/include/components/VideoDecoderUVD.h"
 #include "public/include/components/VideoEncoderVCE.h"
 #include "public/include/components/VideoEncoderHEVC.h"
+#include "public/include/components/VideoEncoderAV1.h"
 #include "public/include/core/Context.h"
 #include "public/include/core/Trace.h"
 #include "public/common/TraceAdapter.h"
@@ -816,7 +817,13 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::WriteData(AMFData* pData, amf_i
                 pkt.flags |= AV_PKT_FLAG_KEY;
             }
         }
-
+        else if (AMF_OK == pData->GetProperty(AMF_VIDEO_ENCODER_AV1_OUTPUT_FRAME_TYPE, &outputDataType))
+        {
+            if (outputDataType == AMF_VIDEO_ENCODER_AV1_OUTPUT_FRAME_TYPE_KEY)
+            {
+                pkt.flags |= AV_PKT_FLAG_KEY;
+            }
+        }
         // resample pts
         amf_pts pts = pData->GetPts();
         amf_pts duration = pData->GetDuration();
@@ -870,7 +877,8 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::WriteData(AMFData* pData, amf_i
         {
             pkt.dts = pkt.pts;
         }
-
+        //pkt.pts = AV_NOPTS_VALUE;
+        //pkt.dts = AV_NOPTS_VALUE;
 //        amf_int64 ptsFFmpeg = pkt.pts;
         if (av_interleaved_write_frame(m_pOutputContext,&pkt)<0)
         {

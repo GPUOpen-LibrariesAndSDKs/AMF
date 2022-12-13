@@ -117,6 +117,20 @@ $(foreach shader_file,$(vulkan_shader_sources),\
 )
 custom_target += $(vulkan_shader_headers)
 
+data_file_headers =
+# header-ify data files
+define data_file_header_rule_fn
+  $1.h: $1
+		$(FILE_TO_HEADER) "$$<" "$$(basename $$(^F))"
+
+  data_file_headers += $1.h
+endef
+
+$(foreach data_file,$(data_files),\
+  $(eval $(call data_file_header_rule_fn,$(data_file)))\
+)
+custom_target += $(data_file_headers)
+
 # Define a macro that creates rules for each source file, then call
 # it for each one
 define compile_source_rule_fn

@@ -174,6 +174,10 @@ AMF_RESULT AudioPresenterWin::InitDevice()
 
     IMMDevice *pDevice = NULL;
     hr= pDeviceEnumerator->GetDefaultAudioEndpoint(eRender,eMultimedia,&pDevice);
+    if (E_NOTFOUND == hr)
+    {
+        return AMF_NO_DEVICE;
+    }
     CHECK_HR(hr);
     m_pDevice=pDevice;
 
@@ -411,6 +415,7 @@ AMF_RESULT AudioPresenterWin::Present(AMFAudioBuffer *buffer,amf_pts &sleeptime)
         if(errPush != AMF_OK)
         {
             AMFTraceWarning(AMF_FACILITY, L"PushBuffer() failed");
+            return ReactivateDevice();
         }
         amf_size uiBufMemSize=pLastBuffer->GetSize();
         if(m_uiLastBufferDataOffset>=uiBufMemSize)
@@ -649,6 +654,41 @@ AMF_RESULT AudioPresenterWin::Flush()
     Reset();
     AudioPresenter::Flush();
     return AMF_OK;
+}
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT AudioPresenterWin::ReactivateDevice()
+{
+    amf::AMFLock lock(&m_cs);
+    AMF_RESULT err = AMF_OK;
+
+    // Activate an IAudioClient object on our preferred endpoint and retrieve the mix format for that endpoint.
+    IAudioClient* pAudioClient = NULL;
+    HRESULT hr = ((IMMDevice*)m_pDevice)->Activate(__uuidof(IAudioClient), CLSCTX_INPROC_SERVER, NULL, reinterpret_cast<void**>(&pAudioClient));
+    if (S_OK == hr)
+    {
+        if (m_pRenderClient != NULL) {
+            AMF_SAFE_RELEASE((IAudioRenderClient*&)m_pRenderClient);
+        }
+        m_pRenderClient = NULL;
+        if (m_pAudioClient != NULL) {
+            AMF_SAFE_RELEASE((IAudioClient*&)m_pAudioClient);
+        }
+        m_pAudioClient = pAudioClient;
+
+        InitClient();
+
+        Flush();
+
+        AMFTraceInfo(AMF_FACILITY, L"Audio Device reactivated");
+
+        err = AMF_OK;
+    }
+    else
+    {
+        err = AMF_FAIL;
+    }
+
+    return err;
 }
 //-------------------------------------------------------------------------------------------------
 #endif //#if defined(_WIN32)

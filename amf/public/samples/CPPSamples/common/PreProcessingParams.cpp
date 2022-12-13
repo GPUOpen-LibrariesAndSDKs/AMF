@@ -51,5 +51,9 @@ AMF_RESULT RegisterPreProcessingParams(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_PP_ADAPTIVE_FILTER_STRENGTH, ParamCommon, L"Edge Detect filter strength (0 - 10: the lower the bitrate, the bigger the 'strength')", ParamConverterInt64);
     pParams->SetParamDescription(AMF_PP_ADAPTIVE_FILTER_SENSITIVITY, ParamCommon, L"Edge Detect filter sensitivity (0 - 10: the lower the bitrate, the bigger the 'sensitivity')", ParamConverterInt64);
 
+    // Adaptive pre-filter parameters
+    pParams->SetParamDescription(AMF_PP_TARGET_BITRATE, ParamCommon, L"Target bitrate utilized in the adaptive filter algorithm, (default: 2000000)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_PP_FRAME_RATE, ParamCommon, L"Frame rate utilized in the adaptive filter algorithm, (default: 30, 1)", ParamConverterRate);
+    pParams->SetParamDescription(AMF_PP_ADAPTIVE_FILTER_ENABLE, ParamCommon, L"Enable the adaptive filter mechanism (default: false)", ParamConverterBoolean);
     return AMF_OK;
 }

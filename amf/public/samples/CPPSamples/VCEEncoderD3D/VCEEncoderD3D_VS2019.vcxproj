@@ -107,7 +107,7 @@
       </Command>
     </CustomBuild>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProgramFiles)\Windows Kits\10\bin\$(TargetPlatformVersion)\$(PlatformShortName)\d3dcompiler_47.dll" $(OutDir)</Command>
+      <Command>xcopy /Y "$(WindowsSdkDir)\bin\$(TargetPlatformVersion)\$(PlatformShortName)\d3dcompiler_47.dll" $(OutDir)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -134,7 +134,7 @@
       <AdditionalDependencies>opengl32.lib;DXGI.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProgramFiles)\Windows Kits\10\bin\$(TargetPlatformVersion)\$(PlatformShortName)\d3dcompiler_47.dll" $(OutDir)</Command>
+      <Command>xcopy /Y "$(WindowsSdkDir)\bin\$(TargetPlatformVersion)\$(PlatformShortName)\d3dcompiler_47.dll" $(OutDir)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -156,7 +156,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProgramFiles)\Windows Kits\10\bin\$(TargetPlatformVersion)\$(PlatformShortName)\d3dcompiler_47.dll" $(OutDir)</Command>
+      <Command>xcopy /Y "$(WindowsSdkDir)\bin\$(TargetPlatformVersion)\$(PlatformShortName)\d3dcompiler_47.dll" $(OutDir)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -181,7 +181,7 @@
       <ImportLibrary>$(SolutionDir)..\..\bin\lib\vs2019x$(PlatformArchitecture)$(Configuration)\$(TargetName).lib</ImportLibrary>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProgramFiles)\Windows Kits\10\bin\$(TargetPlatformVersion)\$(PlatformShortName)\d3dcompiler_47.dll" $(OutDir)</Command>
+      <Command>xcopy /Y "$(WindowsSdkDir)\bin\$(TargetPlatformVersion)\$(PlatformShortName)\d3dcompiler_47.dll" $(OutDir)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -200,6 +200,7 @@
     <ClInclude Include="..\common\DeviceOpenCL.h" />
     <ClInclude Include="..\common\DeviceOpenGL.h" />
     <ClInclude Include="..\common\DeviceVulkan.h" />
+    <ClInclude Include="..\common\EncoderParamsAV1.h" />
     <ClInclude Include="..\common\EncoderParamsAVC.h" />
     <ClInclude Include="..\common\EncoderParamsHEVC.h" />
     <ClInclude Include="..\common\OpenCLLoader.h" />
@@ -251,6 +252,7 @@
     <ClCompile Include="..\common\DeviceOpenCL.cpp" />
     <ClCompile Include="..\common\DeviceOpenGL.cpp" />
     <ClCompile Include="..\common\DeviceVulkan.cpp" />
+    <ClCompile Include="..\common\EncoderParamsAV1.cpp" />
     <ClCompile Include="..\common\EncoderParamsAVC.cpp" />
     <ClCompile Include="..\common\EncoderParamsHEVC.cpp" />
     <ClCompile Include="..\common\OpenCLLoader.cpp" />

@@ -43,7 +43,7 @@
 extern "C"
 {
 	// Function called from application code to create the component
-	AMF_RESULT AMF_CDECL_CALL AMFCreateComponentDisplayCapture(amf::AMFContext* pContext, void* reserved, amf::AMFComponent** ppComponent)
+	AMF_RESULT AMF_CDECL_CALL AMFCreateComponentDisplayCapture(amf::AMFContext* pContext, void* /*reserved*/, amf::AMFComponent** ppComponent)
 	{
 		*ppComponent = new amf::AMFInterfaceMultiImpl< amf::AMFDisplayCaptureImpl, amf::AMFComponent, amf::AMFContext* >(pContext);
 		(*ppComponent)->Acquire();
@@ -231,7 +231,7 @@ AMF_RESULT AMF_STD_CALL  AMFDisplayCaptureImpl::Flush()
 }
 
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL  AMFDisplayCaptureImpl::SubmitInput(AMFData* pData)
+AMF_RESULT AMF_STD_CALL  AMFDisplayCaptureImpl::SubmitInput(AMFData* /*pData*/)
 {
 	AMFLock lock(&m_sync);
 
@@ -314,7 +314,7 @@ AMF_RESULT AMF_STD_CALL  AMFDisplayCaptureImpl::QueryOutput(AMFData** ppData)
 }
 
 //-------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL AMFDisplayCaptureImpl::GetCaps(AMFCaps** ppCaps)
+AMF_RESULT AMF_STD_CALL AMFDisplayCaptureImpl::GetCaps(AMFCaps** /*ppCaps*/)
 {
 	AMFLock lock(&m_sync);
 	///////////TODO:///////////////////////////////
@@ -322,7 +322,7 @@ AMF_RESULT AMF_STD_CALL AMFDisplayCaptureImpl::GetCaps(AMFCaps** ppCaps)
 }
 
 //-------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL AMFDisplayCaptureImpl::Optimize(AMFComponentOptimizationCallback* pCallback)
+AMF_RESULT AMF_STD_CALL AMFDisplayCaptureImpl::Optimize(AMFComponentOptimizationCallback* /*pCallback*/)
 {
 	///////////TODO:///////////////////////////////
 	return AMF_NOT_IMPLEMENTED;

@@ -366,6 +366,8 @@ namespace amf
         }
 
 #if (__cplusplus == 201103L) || defined(__GXX_EXPERIMENTAL_CXX0X) || (_MSC_VER >= 1600)
+#pragma warning (push)
+#pragma warning (disable : 26439) //This kind of function may not throw. Declare it 'noexcept'.
         String(String&& p_other) : m_Str(NULL)
         {
             operator=(p_other);
@@ -498,6 +500,7 @@ namespace amf
             p_other.m_Str = NULL;    //    Transfer the ownership
             return *this;
         }
+#pragma warning (pop)
 #endif
         wchar_t& operator[](size_t index)
         {

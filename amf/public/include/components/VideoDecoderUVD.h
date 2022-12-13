@@ -53,6 +53,7 @@
 #define AMFVideoDecoderHW_VP9                        L"AMFVideoDecoderHW_VP9"
 #define AMFVideoDecoderHW_VP9_10BIT                  L"AMFVideoDecoderHW_VP9_10BIT"
 #define AMFVideoDecoderHW_AV1                        L"AMFVideoDecoderHW_AV1"
+#define AMFVideoDecoderHW_AV1_12BIT                  L"AMFVideoDecoderHW_AV1_12BIT"
 
 enum AMF_VIDEO_DECODER_MODE_ENUM
 {
@@ -118,6 +119,5 @@ enum AMF_TIMESTAMP_MODE_ENUM
 #if defined(__APPLE__)
 #define AMF_VIDEO_DECODER_NATIVEWINDOW                  L"AppleNativeWindow"  // amf_int64; default = 0; pointer to native window
 #endif //__APPLE__
-
 
 #endif //#ifndef AMF_VideoDecoderUVD_h

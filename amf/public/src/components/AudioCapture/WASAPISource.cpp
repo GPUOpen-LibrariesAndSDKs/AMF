@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2017 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -298,7 +298,7 @@ AMF_RESULT AMFWASAPISourceImpl::InitCaptureMicrophone(amf_int32 activeDevice, am
 	{
 		return CreateDeviceList();
 	}
-    
+
     AMF_RETURN_IF_FAILED(CreateEnumerator());
 
 	ATL::CComPtr<IMMDeviceCollection> pCollection;
@@ -370,7 +370,7 @@ AMF_RESULT AMFWASAPISourceImpl::InitCaptureMicrophone(amf_int32 activeDevice, am
 
 	hr = m_client->Start();
 	AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"Start() failed");
-    
+
     wchar_t *id;
     m_device->GetId(&id);
     if (nullptr != id)
@@ -378,7 +378,7 @@ AMF_RESULT AMFWASAPISourceImpl::InitCaptureMicrophone(amf_int32 activeDevice, am
         m_notification.SetDeviceID(id);
         CoTaskMemFree(id);
     }
-    
+
     m_enumerator->RegisterEndpointNotificationCallback(&m_notification);
 
 	return AMF_OK;
@@ -394,7 +394,7 @@ static amf_wstring WaveFormatToString(const WAVEFORMATEX* format)
 		L", samples per sec: " << format->nSamplesPerSec <<
 		L", block align: " << format->nBlockAlign <<
 		L", avg bytes/sec: " << format->nAvgBytesPerSec;
-	
+
 	str = stream.str().c_str();
 	return str;
 }
@@ -549,9 +549,7 @@ AMF_RESULT AMFWASAPISourceImpl::CreateDeviceList()
 
 AMF_RESULT amf::AMFWASAPISourceImpl::CreateEnumerator()
 {
-    HRESULT hr = CoInitialize(nullptr);
-    AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"CoInitialize() failed");
-    hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&m_enumerator);
+    HRESULT hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&m_enumerator);
     AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"CoCreateInstance() failed");
 
     return AMF_OK;
@@ -600,7 +598,7 @@ ULONG STDMETHODCALLTYPE AudioDeviceNotification::Release(void)
     return 1;
 }
 
-HRESULT STDMETHODCALLTYPE AudioDeviceNotification::OnDeviceStateChanged(LPCWSTR pwstrDeviceId, DWORD dwNewState)
+HRESULT STDMETHODCALLTYPE AudioDeviceNotification::OnDeviceStateChanged(LPCWSTR pwstrDeviceId, DWORD /*dwNewState*/)
 {
     if (0 == wcscmp(pwstrDeviceId, m_deviceId.c_str())
         || m_deviceId.empty())
@@ -609,11 +607,11 @@ HRESULT STDMETHODCALLTYPE AudioDeviceNotification::OnDeviceStateChanged(LPCWSTR 
 
         m_lastEvent = amf_high_precision_clock();
     }
-    
+
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE AudioDeviceNotification::OnDeviceAdded(LPCWSTR pwstrDeviceId)
+HRESULT STDMETHODCALLTYPE AudioDeviceNotification::OnDeviceAdded(LPCWSTR /*pwstrDeviceId*/)
 {
     // does not affect capture
     return S_OK;
@@ -630,7 +628,7 @@ HRESULT STDMETHODCALLTYPE AudioDeviceNotification::OnDeviceRemoved(LPCWSTR pwstr
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE AudioDeviceNotification::OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR pwstrDefaultDeviceId)
+HRESULT STDMETHODCALLTYPE AudioDeviceNotification::OnDefaultDeviceChanged(EDataFlow /*flow*/, ERole /*role*/, LPCWSTR pwstrDefaultDeviceId)
 {
     // match if new default is not our device
     if (m_deviceId.empty() || (pwstrDefaultDeviceId != nullptr && 0 != wcscmp(pwstrDefaultDeviceId, m_deviceId.c_str())))
@@ -641,7 +639,7 @@ HRESULT STDMETHODCALLTYPE AudioDeviceNotification::OnDefaultDeviceChanged(EDataF
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE AudioDeviceNotification::OnPropertyValueChanged(LPCWSTR pwstrDeviceId, const PROPERTYKEY key)
+HRESULT STDMETHODCALLTYPE AudioDeviceNotification::OnPropertyValueChanged(LPCWSTR /*pwstrDeviceId*/, const PROPERTYKEY /*key*/)
 {
     // property changes are ignored
     return S_OK;

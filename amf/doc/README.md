@@ -16,7 +16,7 @@ AMF is a light-weight, portable multimedia framework that abstracts away most of
 * Linux
     * RHEL 8.4 / 7.9 
     * CentOS 8.4 / 7.9
-    * Ubuntu 20.04.2 / 18.04.5 HWE
+    * Ubuntu 22.04 / 20.04.2
     * SLED/SLES 15 SP3
 * Driver and AMF component installation instructions are available on the [Wiki page](https://github.com/GPUOpen-LibrariesAndSDKs/AMF/wiki).
     * The following table contains the driver versions in which the Linux pro driver started including the AMF runtime, otherwise, the AMF runtime is optional and has to be installed separately.
@@ -24,12 +24,12 @@ AMF is a light-weight, portable multimedia framework that abstracts away most of
 
       | OS                        | AMF included starting version:    |
       | -------------             |:-------------:                    |
-      | Ubuntu 18.04.1            | 18.30                             |
       | SLE 15                    | 18.40                             |
       | Ubuntu 20.04.0            | 20.20                             |
       | \**All supported distros* | 20.40                             |
 
 * AMF SDK is backward compatible with all previous driver versions.
+* Version 1.4.28: AMD Radeon Software Adrenalin Edition 22.12.1 (22.40.00.24) or newer. Added AV1 encoding support and 12-bit AV1 decoding. New VQEnhancer component. New AVC / HEVC encoder rate control methods.
 * Version 1.4.26: AMD Radeon Software Adrenalin Edition 22.7.1 (22.20.15.01) or newer. Added new PAQ, TAQ, and high motion quality boost modes for PreAnalysis. New HQScaler sharpness, low latency decoder and temporal SVC encoder options. 
 * Version 1.4.24: AMD Radeon Software Adrenalin Edition 22.3.1 (21.50.02.01) or newer. Added new AMD Direct Capture mode, new HQScaler feature(Bilinear/Bicubic/FSR), new Vulkan HEVC encoder on Navi family, improvements on H264 Vulkan encoding.
 * Version 1.4.23: AMD Radeon Software Adrenalin Edition 21.12.1 (21.40.11.03) or newer. Added new Auto LTR encoder mode, additional encoder usage presets and encoder statistics/feedback.

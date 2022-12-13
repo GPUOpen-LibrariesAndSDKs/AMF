@@ -213,6 +213,7 @@
     </ClCompile>
     <ClCompile Include="..\common\CmdLineParser.cpp" />
     <ClCompile Include="..\common\CmdLogger.cpp" />
+    <ClCompile Include="..\common\EncoderParamsAV1.cpp" />
     <ClCompile Include="..\common\EncoderParamsAVC.cpp" />
     <ClCompile Include="..\common\EncoderParamsHEVC.cpp" />
     <ClCompile Include="..\common\ParametersStorage.cpp" />
@@ -229,6 +230,7 @@
     <ClInclude Include="..\..\..\common\TraceAdapter.h" />
     <ClInclude Include="..\common\CmdLineParser.h" />
     <ClInclude Include="..\common\CmdLogger.h" />
+    <ClInclude Include="..\common\EncoderParamsAV1.h" />
     <ClInclude Include="..\common\EncoderParamsAVC.h" />
     <ClInclude Include="..\common\EncoderParamsHEVC.h" />
     <ClInclude Include="..\common\ParametersStorage.h" />

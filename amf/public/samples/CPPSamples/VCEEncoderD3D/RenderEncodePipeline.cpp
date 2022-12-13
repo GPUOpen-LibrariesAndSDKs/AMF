@@ -257,7 +257,7 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
     pParams->GetParam(PARAM_NAME_ADAPTERID, adapterID);
 
 #if defined(_WIN32)
-    std::wstring renderType = L"DX9";
+    std::wstring renderType = L"DX11";
 #elif defined(__linux)
     std::wstring renderType = L"VULKAN";
 #endif    

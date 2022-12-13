@@ -37,6 +37,7 @@
 #include "public/include/components/VideoConverter.h"
 #include "public/include/components/VideoEncoderVCE.h"
 #include "public/include/components/VideoEncoderHEVC.h"
+#include "public/include/components/VideoEncoderAV1.h"
 #include "public/include/components/PreProcessing.h"
 
 #if defined(_WIN32)
@@ -52,6 +53,7 @@
 #include "ParametersStorage.h"
 #include "EncoderParamsAVC.h"
 #include "EncoderParamsHEVC.h"
+#include "EncoderParamsAV1.h"
 #include "PreProcessingParams.h"
 #include "BackBufferPresenter.h"
 #include "RawStreamReader.h"

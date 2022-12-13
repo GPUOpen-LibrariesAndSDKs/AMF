@@ -345,9 +345,8 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::QueryOutput(AMFData** ppDa
     //if there are no more samples, we have drained
     if (iSamplesOut == 0 && m_bEof == true)
     {
-        m_bEof = false;
         m_bDrained = true;
-        return AMF_OK;
+        return AMF_EOF;
     }
 
     amf_int64 new_size       = (amf_int64) iSamplesOut * m_outChannels * iSampleSizeOut;

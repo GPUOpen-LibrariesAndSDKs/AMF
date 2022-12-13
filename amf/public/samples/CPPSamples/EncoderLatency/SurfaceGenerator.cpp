@@ -77,7 +77,7 @@ void FillSurfaceDX11(amf::AMFContext* context, amf::AMFSurface* surface)
 }
 #endif
 
-static void FillNV12SurfaceWithColor(amf::AMFSurface* surface, amf_uint8 Y, amf_uint8 U, amf_uint8 V)
+void FillNV12SurfaceWithColor(amf::AMFSurface* surface, amf_uint8 Y, amf_uint8 U, amf_uint8 V)
 {
     amf::AMFPlane* pPlaneY = surface->GetPlaneAt(0);
     amf::AMFPlane* pPlaneUV = surface->GetPlaneAt(1);
@@ -111,7 +111,7 @@ static void FillNV12SurfaceWithColor(amf::AMFSurface* surface, amf_uint8 Y, amf_
     }
 }
 
-static void FillRGBASurfaceWithColor(amf::AMFSurface* surface, amf_uint8 R, amf_uint8 G, amf_uint8 B)
+void FillRGBASurfaceWithColor(amf::AMFSurface* surface, amf_uint8 R, amf_uint8 G, amf_uint8 B)
 {
     amf::AMFPlane* pPlane = surface->GetPlaneAt(0);
 
@@ -134,7 +134,7 @@ static void FillRGBASurfaceWithColor(amf::AMFSurface* surface, amf_uint8 R, amf_
     }
 }
 
-static void FillBGRASurfaceWithColor(amf::AMFSurface* surface, amf_uint8 R, amf_uint8 G, amf_uint8 B)
+void FillBGRASurfaceWithColor(amf::AMFSurface* surface, amf_uint8 R, amf_uint8 G, amf_uint8 B)
 {
     amf::AMFPlane* pPlane = surface->GetPlaneAt(0);
 
@@ -277,7 +277,7 @@ void AMFHalfFloat::GenerateHalfFloatConversionTables()
 amf_uint16 AMFHalfFloat::m_basetable[512];
 amf_uint8 AMFHalfFloat::m_shifttable[512];
 
-static void FillRGBA_F16SurfaceWithColor(amf::AMFSurface* surface, amf_uint8 R, amf_uint8 G, amf_uint8 B)
+void FillRGBA_F16SurfaceWithColor(amf::AMFSurface* surface, amf_uint8 R, amf_uint8 G, amf_uint8 B)
 {
     amf::AMFPlane* pPlane = surface->GetPlaneAt(0);
 
@@ -305,7 +305,7 @@ static void FillRGBA_F16SurfaceWithColor(amf::AMFSurface* surface, amf_uint8 R, 
     }
 }
 
-static void FillR10G10B10A2SurfaceWithColor(amf::AMFSurface* surface, amf_uint8 R, amf_uint8 G, amf_uint8 B)
+void FillR10G10B10A2SurfaceWithColor(amf::AMFSurface* surface, amf_uint8 R, amf_uint8 G, amf_uint8 B)
 {
     amf::AMFPlane* pPlane = surface->GetPlaneAt(0);
 
@@ -332,7 +332,7 @@ static void FillR10G10B10A2SurfaceWithColor(amf::AMFSurface* surface, amf_uint8 
     }
 }
 
-static void FillP010SurfaceWithColor(amf::AMFSurface* surface, amf_uint8 Y, amf_uint8 U, amf_uint8 V)
+void FillP010SurfaceWithColor(amf::AMFSurface* surface, amf_uint8 Y, amf_uint8 U, amf_uint8 V)
 {
     amf::AMFPlane* pPlaneY = surface->GetPlaneAt(0);
     amf::AMFPlane* pPlaneUV = surface->GetPlaneAt(1);

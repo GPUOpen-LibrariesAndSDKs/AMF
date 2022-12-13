@@ -157,12 +157,29 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
 
     // initialize the codec context from the component properties
     AMF_RETURN_IF_FAILED(GetProperty(AUDIO_ENCODER_IN_AUDIO_CHANNELS, &m_iChannelCount));
-    m_pCodecContext->channels = m_iChannelCount;
     AMF_RETURN_IF_FAILED(GetProperty(AUDIO_ENCODER_IN_AUDIO_CHANNEL_LAYOUT, &m_pCodecContext->channel_layout));
     AMF_RETURN_IF_FAILED(GetProperty(AUDIO_ENCODER_IN_AUDIO_SAMPLE_RATE, &m_iSampleRate));
-    m_pCodecContext->sample_rate = m_iSampleRate;
     AMF_RETURN_IF_FAILED(GetProperty(AUDIO_ENCODER_OUT_AUDIO_BIT_RATE, &m_pCodecContext->bit_rate));
     AMF_RETURN_IF_FAILED(GetProperty(AUDIO_ENCODER_IN_AUDIO_BLOCK_ALIGN, &m_pCodecContext->block_align));
+
+    //choose closest sample rate to requested
+    int bestSampleRate = 0;
+
+    for (const int* sampleRate = codec->supported_samplerates; sampleRate != nullptr && *sampleRate != 0; sampleRate++)
+    {
+        if (abs(*sampleRate - m_iSampleRate) < abs(bestSampleRate - m_iSampleRate))
+        {
+            bestSampleRate = *sampleRate;
+        }
+    }
+    if (m_iSampleRate != bestSampleRate && bestSampleRate != 0)
+    {
+        AMFTraceWarning(AMF_FACILITY, L"Codec didn't have sample rate %d Hz, using %d Hz instead", m_iSampleRate, bestSampleRate);
+        m_iSampleRate = bestSampleRate;
+    }
+
+    m_pCodecContext->channels = m_iChannelCount;
+    m_pCodecContext->sample_rate = m_iSampleRate;
 
 
     // figure out the surface format conversion
@@ -207,7 +224,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
     if (avcodec_open2(m_pCodecContext, codec, NULL) < 0 || m_pCodecContext->codec == 0)
     {
         Terminate();
-        return AMF_DECODER_NOT_PRESENT;
+        return AMF_ENCODER_NOT_PRESENT;
     }
     // allocate required buffers
     if (m_pCompressedBuffer==NULL)
@@ -551,6 +568,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::QueryOutput(AMFData** ppData
             m_audioFrameQueryCount++;
 
             m_iSamplesInPackaet = 0;
+            return AMF_OK;
         }
     }
 

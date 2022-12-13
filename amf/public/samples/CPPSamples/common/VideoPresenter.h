@@ -99,15 +99,15 @@ public:
     // amf::AMFInterface interface
     virtual amf_long AMF_STD_CALL Acquire() { return 1; }
     virtual amf_long AMF_STD_CALL Release() { return 1; }
-    virtual AMF_RESULT AMF_STD_CALL QueryInterface(const amf::AMFGuid& interfaceID, void** ppInterface) { return AMF_NOT_IMPLEMENTED; }
+    virtual AMF_RESULT AMF_STD_CALL QueryInterface(const amf::AMFGuid& /*interfaceID*/, void** /*ppInterface*/) { return AMF_NOT_IMPLEMENTED; }
 
     // amf::AMFDataAllocatorCB interface
-    virtual AMF_RESULT AMF_STD_CALL AllocBuffer(amf::AMF_MEMORY_TYPE type, amf_size size, amf::AMFBuffer** ppBuffer) { return AMF_NOT_IMPLEMENTED; }
-    virtual AMF_RESULT AMF_STD_CALL AllocSurface(amf::AMF_MEMORY_TYPE type, amf::AMF_SURFACE_FORMAT format,
-            amf_int32 width, amf_int32 height, amf_int32 hPitch, amf_int32 vPitch, amf::AMFSurface** ppSurface) {return AMF_NOT_IMPLEMENTED; }
+    virtual AMF_RESULT AMF_STD_CALL AllocBuffer(amf::AMF_MEMORY_TYPE /*type*/, amf_size /*size*/, amf::AMFBuffer** /*ppBuffer*/) { return AMF_NOT_IMPLEMENTED; }
+    virtual AMF_RESULT AMF_STD_CALL AllocSurface(amf::AMF_MEMORY_TYPE /*type*/, amf::AMF_SURFACE_FORMAT /*format*/,
+            amf_int32 /*width*/, amf_int32 /*height*/, amf_int32 /*hPitch*/, amf_int32 /*vPitch*/, amf::AMFSurface** /*ppSurface*/) { return AMF_NOT_IMPLEMENTED; }
 
     // amf::AMFSurfaceObserver interface
-    virtual void AMF_STD_CALL OnSurfaceDataRelease(amf::AMFSurface* pSurface) {}
+    virtual void AMF_STD_CALL OnSurfaceDataRelease(amf::AMFSurface* /*pSurface*/) {}
 
     virtual void SetOrientation(int orientation) { m_iOrientation = orientation; }
     virtual int GetOrientation() { return m_iOrientation; }
@@ -130,7 +130,7 @@ public:
 
     virtual void                SetEnablePIP(bool bEnablePIP) { m_bEnablePIP = bEnablePIP; }
     virtual bool                GetEnablePIP() { return m_bEnablePIP; }
-    virtual void                SetPIPZoomFactor(amf_float fPIPZoomFactor) { m_fPIPZoomFactor = fPIPZoomFactor; }
+    virtual void                SetPIPZoomFactor(amf_int iPIPZoomFactor) { m_iPIPZoomFactor = iPIPZoomFactor; }
     virtual void                SetPIPFocusPositions(AMFFloatPoint2D fPIPFocusPos) { m_fPIPFocusPos = fPIPFocusPos; }
 
 protected:
@@ -170,7 +170,7 @@ protected:
 	bool								m_bWaitForVSync;
 
     bool                                m_bEnablePIP;
-    float                               m_fPIPZoomFactor;
+    amf_int32                           m_iPIPZoomFactor;
     AMFFloatPoint2D                     m_fPIPFocusPos;
 
     int                                 m_iOrientation;

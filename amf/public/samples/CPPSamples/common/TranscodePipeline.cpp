@@ -243,7 +243,7 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     res= pParams->GetParamWString(PARAM_NAME_OUTPUT, outputPath);
     CHECK_AMF_ERROR_RETURN(res, L"Output Path");
 #if defined(_WIN32)
-    std::wstring engineStr = L"DX9";
+    std::wstring engineStr = L"DX11";
 #else
     std::wstring engineStr = L"VULKAN";
 #endif
@@ -327,10 +327,17 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
 		break;
 #endif
     case amf::AMF_MEMORY_VULKAN:
-//        res = m_deviceVulkan.Init(adapterID, m_pContext);
+    {
+        amf_int64 computeQueue = 0;
+        if (AMF_OK == pParams->GetParam(PARAM_NAME_COMPUTE_QUEUE, computeQueue))
+        {
+            amf::AMFContext1Ptr(m_pContext)->SetProperty(AMF_CONTEXT_VULKAN_COMPUTE_QUEUE, computeQueue);
+        }
+        //        res = m_deviceVulkan.Init(adapterID, m_pContext);
         res = amf::AMFContext1Ptr(m_pContext)->InitVulkan(NULL);
         CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitVulkan() failed");
         break;
+    }
     }
 
 
@@ -525,6 +532,23 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
 
                     AMFRate frameRate;
                     m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_FRAMERATE, &frameRate);
+                    pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_RATE, frameRate);
+                }
+                else if (m_EncoderID == AMFVideoEncoder_AV1)
+                {
+                    pInput->SetProperty(AMF_STREAM_CODEC_ID, AMF_STREAM_CODEC_ID_AV1);
+                    m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_AV1_TARGET_BITRATE, &bitrate);
+                    pInput->SetProperty(AMF_STREAM_BIT_RATE, bitrate);
+                    amf::AMFInterfacePtr pExtraData;
+                    m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_AV1_EXTRA_DATA, &pExtraData);
+                    pInput->SetProperty(AMF_STREAM_EXTRA_DATA, pExtraData);
+
+                    AMFSize frameSize;
+                    m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_AV1_FRAMESIZE, &frameSize);
+                    pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, frameSize);
+
+                    AMFRate frameRate;
+                    m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_AV1_FRAMERATE, &frameRate);
                     pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_RATE, frameRate);
                 }
                 else
@@ -828,6 +852,10 @@ AMF_RESULT  TranscodePipeline::InitVideoDecoder(const wchar_t *pDecoderID, amf_i
                         m_eDecoderFormat = (amf::AMF_SURFACE_FORMAT)format;
 					}
 				}
+                else if (std::wstring(pDecoderID) == AMFVideoDecoderHW_AV1_12BIT)
+                {
+                    m_eDecoderFormat = amf::AMF_SURFACE_P012;
+                }
                 //m_bCPUDecoder = false;
             }
             else
@@ -869,6 +897,10 @@ AMF_RESULT  TranscodePipeline::InitVideoDecoder(const wchar_t *pDecoderID, amf_i
 			{
 				codecID = AMF_STREAM_CODEC_ID_AV1;
 			}
+            else if (std::wstring(pDecoderID) == AMFVideoDecoderHW_AV1_12BIT)
+            {
+                codecID = AMF_STREAM_CODEC_ID_AV1_12BIT;
+            }
         }
         m_pDecoder->SetProperty(VIDEO_DECODER_CODEC_ID, codecID);
         m_pDecoder->SetProperty(VIDEO_DECODER_BITRATE, 0);
@@ -934,6 +966,14 @@ AMF_RESULT  TranscodePipeline::InitPreProcessFilter(ParametersStorage* pParams)
     {
         m_pPreProcFilter->SetProperty(AMF_PP_ADAPTIVE_FILTER_SENSITIVITY, tor);
         CHECK_AMF_ERROR_RETURN(res, L"AMFPreProcessing failed to set tor");
+    }
+
+    // Set adaptive filter enable
+    bool adaptiveFilterEnable = false;
+    if (pParams->GetParam(AMF_PP_ADAPTIVE_FILTER_ENABLE, adaptiveFilterEnable) == AMF_OK)
+    {
+        res = m_pPreProcFilter->SetProperty(AMF_PP_ADAPTIVE_FILTER_ENABLE, adaptiveFilterEnable);
+        CHECK_AMF_ERROR_RETURN(res, L"AMFPreProcessing failed to set adaptive filter enable");
     }
 
     return AMF_OK;
@@ -1047,8 +1087,22 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamRe
     if (preProcfilterEnable)
     {
         InitPreProcessFilter(pParams);
-
         res = m_pPreProcFilter->Init(amf::AMF_SURFACE_NV12, scaleWidth, scaleHeight);
+
+        // Set bitrate and framerate of adaptive filter if they're passed as parameters
+        amf_int64 targetBitrate = 2000000;
+        if (pParams->GetParam(AMF_PP_TARGET_BITRATE, targetBitrate) == AMF_OK)
+        {
+            res = m_pPreProcFilter->SetProperty(AMF_PP_TARGET_BITRATE, targetBitrate);
+            CHECK_AMF_ERROR_RETURN(res, L"AMFPreProcessing failed to set target bitrate for the adaptive filter mechanism");
+        }
+        AMFRate frameRate = AMFConstructRate(30, 1);
+        if (pParams->GetParam(AMF_PP_FRAME_RATE, frameRate) == AMF_OK)
+        {
+            res = m_pPreProcFilter->SetProperty(AMF_PP_FRAME_RATE, frameRate);
+            CHECK_AMF_ERROR_RETURN(res, L"AMFPreProcessing failed to set frame rate for the adaptive filter mechanism");
+        }
+
         CHECK_AMF_ERROR_RETURN(res, L"m_pPreProcFilter->Init() failed");
     }
 
@@ -1107,6 +1161,20 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamRe
             m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_PRE_ANALYSIS_ENABLE, enablePA);
         }
     }
+    else if (m_EncoderID == AMFVideoEncoder_AV1)
+    {
+        amf::AMFVariant  enablePA;
+        if (pParams->GetParam(AMF_VIDEO_ENCODER_AV1_PRE_ANALYSIS_ENABLE, enablePA) == AMF_OK)
+        {
+            amf::AMFVariant  rateControlMode;
+            if (pParams->GetParam(AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD, rateControlMode) == AMF_OK)
+            {
+                m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD, rateControlMode);
+            }
+
+            m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_AV1_PRE_ANALYSIS_ENABLE, enablePA);
+        }
+    }
 
 	// override some usage parameters
 	if (frameRate.den != 0 && frameRate.num != 0)
@@ -1115,10 +1183,14 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamRe
 		{
 			m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, frameRate);
 		}
-		else
+		else if (m_EncoderID == AMFVideoEncoder_HEVC)
 		{
 			m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, frameRate);
 		}
+        else
+        {
+            m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_AV1_FRAMERATE, frameRate);
+        }
 	}
 
     PushParamsToPropertyStorage(pParams, ParamEncoderStatic, m_pEncoder);

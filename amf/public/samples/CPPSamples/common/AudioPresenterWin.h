@@ -90,6 +90,7 @@ protected:
     AMF_RESULT                  SelectFormat();
     AMF_RESULT                  InitClient();
     AMF_RESULT                  PushBuffer(amf::AMFAudioBufferPtr &buffer, amf_size &uiBufferDataOffset); // uiBufferDataOffset - in/out
+    AMF_RESULT                  ReactivateDevice();
 
     amf::amf_vector<amf::AMFAudioBufferPtr>  m_UnusedBuffers;
 

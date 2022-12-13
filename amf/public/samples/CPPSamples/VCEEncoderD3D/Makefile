@@ -51,6 +51,7 @@ src_files = \
     $(samples_common_dir)/DeviceVulkan.cpp \
     $(samples_common_dir)/EncoderParamsAVC.cpp \
     $(samples_common_dir)/EncoderParamsHEVC.cpp \
+    $(samples_common_dir)/EncoderParamsAV1.cpp \
     $(samples_common_dir)/ParametersStorage.cpp \
     $(samples_common_dir)/Pipeline.cpp \
     $(samples_common_dir)/SwapChainVulkan.cpp \

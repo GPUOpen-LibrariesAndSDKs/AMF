@@ -62,7 +62,7 @@ VideoPresenter::VideoPresenter() :
     m_bFullScreen(false),
 	m_bWaitForVSync(false),
     m_bEnablePIP(false),
-    m_fPIPZoomFactor(0.1f),
+    m_iPIPZoomFactor(4),
     m_fPIPFocusPos({ 0.45f, 0.45f })
 {
     amf_increase_timer_precision();
@@ -266,14 +266,15 @@ void  VideoPresenter::UpdateProcessor()
             }
         }
 
-        if (m_pHQScaler != NULL)
-        {
-            const amf::AMFPropertyInfo* pParamInfo = nullptr;
-            if ((m_pHQScaler->GetPropertyInfo(AMF_HQ_SCALER_OUTPUT_SIZE, &pParamInfo) == AMF_OK) && pParamInfo)
-            {
-                m_pHQScaler->SetProperty(AMF_HQ_SCALER_OUTPUT_SIZE, ::AMFConstructSize(m_rectClient.Width(), m_rectClient.Height()));
-            }
-        }
+        // Need to comment this out for now because it sets the HQScaler resolution to the window size instead of using the scaling ratio
+        //if (m_pHQScaler != NULL)
+        //{
+        //    const amf::AMFPropertyInfo* pParamInfo = nullptr;
+        //    if ((m_pHQScaler->GetPropertyInfo(AMF_HQ_SCALER_OUTPUT_SIZE, &pParamInfo) == AMF_OK) && pParamInfo)
+        //    {
+        //        m_pHQScaler->SetProperty(AMF_HQ_SCALER_OUTPUT_SIZE, ::AMFConstructSize(m_rectClient.Width(), m_rectClient.Height()));
+        //    }
+        //}
     }
 }
 

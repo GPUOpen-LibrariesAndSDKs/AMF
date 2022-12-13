@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2017 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -235,15 +235,15 @@ public:
 			}
 			m_framesSubmitted++;
 		}
-		return res; 
+		return res;
 	}
     virtual AMF_RESULT QueryOutput(amf::AMFData** ppData)
     {
         AMF_RESULT res = AMFComponentElement::QueryOutput(ppData);
         if(res == AMF_OK && *ppData != nullptr)
         {
-            amf_pts capturePts = (*ppData)->GetPts();
-            amf_pts encodedPts = m_pDisplayDvrPipeline->m_pCurrentTime->Get();
+			amf_pts capturePts = (*ppData)->GetPts();
+			amf_pts encodedPts = m_pDisplayDvrPipeline->m_pCurrentTime->Get();
             // AMFTraceInfo(L"Latency", L"latency = %5.2f", (encodedPts - capturePts) / 10000. );
         }
         else
@@ -306,7 +306,7 @@ amf_pts DisplayDvrPipeline::GetCurrentPts()
 }
 
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT DisplayDvrPipeline::InitContext(const std::wstring& engineStr, amf::AMF_MEMORY_TYPE engineMemoryType, amf_uint32 adapterID)
+AMF_RESULT DisplayDvrPipeline::InitContext(const std::wstring& /*engineStr*/, amf::AMF_MEMORY_TYPE engineMemoryType, amf_uint32 adapterID)
 {
 	AMF_RESULT res = AMF_OK;
 
@@ -389,11 +389,12 @@ AMF_RESULT DisplayDvrPipeline::InitVideo(amf::AMF_MEMORY_TYPE engineMemoryType, 
 	res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFVideoConverter, &m_pConverter);
 	CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFVideoConverter << L") failed");
 
-	m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_MEMORY_TYPE, 
+	m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_COMPUTE_DEVICE,
 		(m_useOpenCLConverter) ? amf::AMF_MEMORY_OPENCL : engineMemoryType);
+	m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_MEMORY_TYPE, engineMemoryType);
 	m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, amf::AMF_SURFACE_NV12);
 	m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, AMFConstructSize(scaleWidth, scaleHeight));
-	
+
 	m_pConverter->Init(m_converterSurfaceFormat, videoWidth, videoHeight);
 
 	// Init encoder
@@ -416,8 +417,21 @@ AMF_RESULT DisplayDvrPipeline::InitVideo(amf::AMF_MEMORY_TYPE engineMemoryType, 
 	CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << m_szEncoderID << L") failed");
 
 	AMFRate frameRate = { kFrameRate, 1 };
-	res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, frameRate);
-	CHECK_AMF_ERROR_RETURN(res, L"Failed to set video encoder frame rate");
+	if (m_szEncoderID == AMFVideoEncoderVCE_AVC || m_szEncoderID == AMFVideoEncoderVCE_SVC)
+	{
+		res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, frameRate);
+		CHECK_AMF_ERROR_RETURN(res, L"Failed to set video encoder frame rate");
+	}
+	else if (m_szEncoderID == AMFVideoEncoder_AV1)
+	{
+		res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_AV1_FRAMERATE, frameRate);
+		CHECK_AMF_ERROR_RETURN(res, L"Failed to set video encoder frame rate");
+	}
+	else
+	{
+		res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, frameRate);
+		CHECK_AMF_ERROR_RETURN(res, L"Failed to set video encoder frame rate");
+	}
 
 
     // Usage is preset that will set many parameters
@@ -430,7 +444,18 @@ AMF_RESULT DisplayDvrPipeline::InitVideo(amf::AMF_MEMORY_TYPE engineMemoryType, 
 
     if (bLowLatency)
     {
-        m_pEncoder->SetProperty(m_szEncoderID == AMFVideoEncoderVCE_AVC ? AMF_VIDEO_ENCODER_LOWLATENCY_MODE : AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE, true);
+		if (m_szEncoderID == AMFVideoEncoderVCE_AVC || m_szEncoderID == AMFVideoEncoderVCE_SVC)
+		{
+			m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_LOWLATENCY_MODE, true);
+		}
+		else if (m_szEncoderID == AMFVideoEncoder_AV1)
+		{
+			m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE, AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE_LOWEST_LATENCY);
+		}
+		else
+		{
+			m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE, true);
+		}
     }
 
 	res = m_pEncoder->Init(amf::AMF_SURFACE_NV12, videoWidth, videoHeight);
@@ -589,6 +614,23 @@ AMF_RESULT DisplayDvrPipeline::InitMuxer(
 				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_FRAMERATE, &frameRate);
 				pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_RATE, frameRate);
 			}
+			else if (m_szEncoderID == AMFVideoEncoder_AV1)
+			{
+				pInput->SetProperty(AMF_STREAM_CODEC_ID, AMF_STREAM_CODEC_ID_AV1);
+				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_AV1_TARGET_BITRATE, &bitrate);
+				pInput->SetProperty(AMF_STREAM_BIT_RATE, bitrate);
+				amf::AMFInterfacePtr pExtraData;
+				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_AV1_EXTRA_DATA, &pExtraData);
+				pInput->SetProperty(AMF_STREAM_EXTRA_DATA, pExtraData);
+
+				AMFSize frameSize;
+				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_AV1_FRAMESIZE, &frameSize);
+				pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, frameSize);
+
+				AMFRate frameRate;
+				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_AV1_FRAMERATE, &frameRate);
+				pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_RATE, frameRate);
+			}
 			else
 			{
 				pInput->SetProperty(AMF_STREAM_CODEC_ID, AMF_STREAM_CODEC_ID_H265_HEVC);
@@ -702,7 +744,7 @@ AMF_RESULT DisplayDvrPipeline::Init()
 	}
 
 	//---------------------------------------------------------------------------------------------
-	// Init audio except the muxer. If audio fails to init then we still allow video to 
+	// Init audio except the muxer. If audio fails to init then we still allow video to
 	// be captured.
 	res = InitAudio();
 	if (AMF_OK == res)
@@ -884,7 +926,7 @@ AMF_RESULT DisplayDvrPipeline::SwitchConverterFormat(amf::AMF_SURFACE_FORMAT for
 		// Init the converter
 		m_pConverter->Init(m_converterSurfaceFormat, videoWidth, videoHeight);
 		((AMFComponentElementConverterInterceptor*)m_converterInterceptor)->SetBlock(false);
-		// 
+		//
 		res = AMF_OK;
 	}
 	return res;

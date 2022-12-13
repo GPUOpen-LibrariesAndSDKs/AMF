@@ -516,7 +516,9 @@ AMF_RESULT VideoPresenterDX11::Init(amf_int32 width, amf_int32 height, amf::AMFS
 
 AMF_RESULT VideoPresenterDX11::Terminate()
 {
-    m_pCurrentOutput = NULL;
+    m_pCurrentOutput = nullptr;
+
+    m_pOutputs.clear();
 
     if (m_pSwapChain1 != nullptr)
     {
@@ -574,7 +576,10 @@ AMF_RESULT VideoPresenterDX11::CreatePresentationSwapChain(amf::AMFSurface* pSur
 
     amf::AMFLock lock(&m_sect);
 
-    m_pCurrentOutput.Release();
+    m_pCurrentOutput = nullptr;
+
+    m_pOutputs.clear();
+
     m_pSwapChainVideo.Release();
     m_pSwapChain1.Release();
     m_pSwapChain.Release();
@@ -607,8 +612,6 @@ AMF_RESULT VideoPresenterDX11::CreatePresentationSwapChain(amf::AMFSurface* pSur
     CComPtr<IDXGIFactory2> spIDXGIFactory2;
     spDXGIAdapter->GetParent(__uuidof(IDXGIFactory2), (void **)&spIDXGIFactory2);
 
-    HMONITOR hMonitor = MonitorFromWindow((HWND)m_hwnd, MONITOR_DEFAULTTONEAREST);
-
     for (UINT i = 0;; i++)
     {
         CComPtr<IDXGIOutput>                pOutput;
@@ -617,19 +620,18 @@ AMF_RESULT VideoPresenterDX11::CreatePresentationSwapChain(amf::AMFSurface* pSur
         {
             break;
         }
-        DXGI_OUTPUT_DESC outputDesc = {};
-        pOutput->GetDesc(&outputDesc);
-        if (outputDesc.Monitor == hMonitor)
-        {
-            m_pCurrentOutput = pOutput;
-            break;
-        }
+
+        m_pOutputs.push_back(pOutput);
     }
-    if (m_pCurrentOutput == nullptr)
+
+    AMF_RESULT outputUpdate = UpdateCurrentMonitorOutput();
+
+    if (m_pCurrentOutput == nullptr || outputUpdate == AMF_FAIL)
     {
         hr = spDXGIAdapter->EnumOutputs(0, &m_pCurrentOutput);
         ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"EnumOutputs(0) failed");
     }
+
     m_stereo = false;//for future
 
     if(spIDXGIFactory2!=NULL)
@@ -1066,6 +1068,8 @@ AMF_RESULT VideoPresenterDX11::ResizeSwapChain()
 
  //   spContext->ClearState();
     spContext->OMSetRenderTargets(0, 0, 0);
+
+    UpdateCurrentMonitorOutput();
 
     DXGI_OUTPUT_DESC outputDesc = {};
     m_pCurrentOutput->GetDesc(&outputDesc);
@@ -1599,4 +1603,23 @@ AMF_RESULT VideoPresenterDX11::ApplyCSC(amf::AMFSurface* pSurface)
 #endif
 #endif
     return AMF_OK;
+}
+
+inline AMF_RESULT VideoPresenterDX11::UpdateCurrentMonitorOutput()
+{
+    HMONITOR hMonitor = MonitorFromWindow((HWND)m_hwnd, MONITOR_DEFAULTTONEAREST);
+
+    for (size_t i = 0; i < m_pOutputs.size(); ++i)
+    {
+        DXGI_OUTPUT_DESC outputDesc = {};
+        m_pOutputs[i]->GetDesc(&outputDesc);
+
+        if (outputDesc.Monitor == hMonitor)
+        {
+            m_pCurrentOutput = m_pOutputs[i];
+            return AMF_OK;
+        }
+    }
+
+    return AMF_FAIL;
 }

@@ -38,6 +38,7 @@
 #include "public/include/components/VideoDecoderUVD.h"
 #include "public/include/components/VideoEncoderVCE.h"
 #include "public/include/components/VideoEncoderHEVC.h"
+#include "public/include/components/VideoEncoderAV1.h"
 #include "public/include/components/VideoConverter.h"
 #include "public/include/components/HQScaler.h"
 
@@ -273,10 +274,14 @@ AMF_RESULT ParamConverterMemoryType(const std::wstring& value, amf::AMFVariant& 
     {
         paramValue = amf::AMF_MEMORY_HOST;
     }else
-	if (uppValue == L"VULKAN" || uppValue == L"10")
-	{
-		paramValue = amf::AMF_MEMORY_VULKAN;
-	}
+    if (uppValue == L"VULKAN" || uppValue == L"10")
+    {
+        paramValue = amf::AMF_MEMORY_VULKAN;
+    }else
+    if (uppValue == L"DX12" || uppValue == L"11")
+    {
+        paramValue = amf::AMF_MEMORY_DX12;
+    }
     valueOut = amf_int64(paramValue);
     return AMF_OK;
 }
@@ -555,8 +560,8 @@ AMF_RESULT ParamConverterCodec(const std::wstring& value, amf::AMFVariant& value
     std::wstring paramValue;
 
     std::wstring uppValue = toUpper(value);
-    if (value == AMFVideoEncoderVCE_AVC || value == AMFVideoEncoder_HEVC ||
-        uppValue == AMFVideoEncoderVCE_AVC || uppValue == AMFVideoEncoder_HEVC)
+    if (value == AMFVideoEncoderVCE_AVC || value == AMFVideoEncoder_HEVC || value == AMFVideoEncoder_AV1 ||
+        uppValue == AMFVideoEncoderVCE_AVC || uppValue == AMFVideoEncoder_HEVC || uppValue == AMFVideoEncoder_AV1)
     {
         paramValue = value;
     }
@@ -567,7 +572,11 @@ AMF_RESULT ParamConverterCodec(const std::wstring& value, amf::AMFVariant& value
     else if(uppValue == L"HEVC" || uppValue == L"H265" || uppValue == L"H.265")
     {
         paramValue = AMFVideoEncoder_HEVC;
-    } 
+    }
+    else if (uppValue == L"AV1")
+    {
+        paramValue = AMFVideoEncoder_AV1;
+    }
     else 
     {
         LOG_ERROR(L"Invalid codec name \"" << value << L"\" value.");
@@ -595,6 +604,7 @@ const wchar_t *StreamCodecIDtoDecoderID(AMF_STREAM_CODEC_ID_ENUM eCodec)
     case AMF_STREAM_CODEC_ID_VP9: return AMFVideoDecoderHW_VP9;
     case AMF_STREAM_CODEC_ID_VP9_10BIT: return AMFVideoDecoderHW_VP9_10BIT;
     case AMF_STREAM_CODEC_ID_AV1: return AMFVideoDecoderHW_AV1;
+    case AMF_STREAM_CODEC_ID_AV1_12BIT: return AMFVideoDecoderHW_AV1_12BIT;
     }
     return L"";
 }
@@ -603,7 +613,11 @@ AMF_RESULT ParamConverterHQScalerAlgorithm(const std::wstring& value, amf::AMFVa
 {
     amf_int64    paramValue = -1;
     std::wstring uppValue   = toUpper(value);
-    if ((uppValue == L"BILINEAR") || (uppValue == L"0"))
+    if ((uppValue == L"POINT") || (uppValue == L"4"))
+    {
+        paramValue = AMF_HQ_SCALER_ALGORITHM_POINT;
+    }
+    else if ((uppValue == L"BILINEAR") || (uppValue == L"0"))
     {
         paramValue = AMF_HQ_SCALER_ALGORITHM_BILINEAR;
     }
@@ -615,7 +629,6 @@ AMF_RESULT ParamConverterHQScalerAlgorithm(const std::wstring& value, amf::AMFVa
     {
         paramValue = AMF_HQ_SCALER_ALGORITHM_FSR;
     }
-
     valueOut = amf_int64(paramValue);
     return AMF_OK;
 }
@@ -636,6 +649,115 @@ AMF_RESULT ParamConverterHighMotionQualityBoostMode(const std::wstring& value, a
     else
     {
         LOG_ERROR(L"AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_ENUM hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+
+AMF_RESULT ParamConverterSceneChange(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_ENUM paramValue;
+
+    std::wstring uppValue = toUpper(value);
+    if (uppValue == L"LOW" || uppValue == L"0")
+    {
+        paramValue = AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_LOW;
+    }
+    else if (uppValue == L"MEDIUM" || uppValue == L"1") {
+        paramValue = AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_MEDIUM;
+    }
+    else if (uppValue == L"HIGH" || uppValue == L"2") {
+        paramValue = AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_HIGH;
+    }
+    else {
+        LOG_ERROR(L"AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_ENUM hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+
+AMF_RESULT ParamConverterStaticScene(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_ENUM paramValue;
+
+    std::wstring uppValue = toUpper(value);
+    if (uppValue == L"LOW" || uppValue == L"0")
+    {
+        paramValue = AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_LOW;
+    }
+    else if (uppValue == L"MEDIUM" || uppValue == L"1") {
+        paramValue = AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_MEDIUM;
+    }
+    else if (uppValue == L"HIGH" || uppValue == L"2") {
+        paramValue = AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_HIGH;
+    }
+    else {
+        LOG_ERROR(L"AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_ENUM hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+
+AMF_RESULT ParamConverterActivityType(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_PA_ACTIVITY_TYPE_ENUM paramValue;
+
+    std::wstring uppValue = toUpper(value);
+    if (uppValue == L"Y")
+    {
+        paramValue = AMF_PA_ACTIVITY_Y;
+    }
+    else if (uppValue == L"YUV") {
+        paramValue = AMF_PA_ACTIVITY_YUV;
+    }
+    else {
+        LOG_ERROR(L"AMF_PA_ACTIVITY_TYPE_ENUM hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+
+AMF_RESULT ParamConverterCAQStrength(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_PA_CAQ_STRENGTH_ENUM paramValue;
+
+    std::wstring uppValue = toUpper(value);
+    if (uppValue == L"LOW" || uppValue == L"0")
+    {
+        paramValue = AMF_PA_CAQ_STRENGTH_LOW;
+    }
+    else if (uppValue == L"MEDIUM" || uppValue == L"1") {
+        paramValue = AMF_PA_CAQ_STRENGTH_MEDIUM;
+    }
+    else if (uppValue == L"HIGH" || uppValue == L"2") {
+        paramValue = AMF_PA_CAQ_STRENGTH_HIGH;
+    }
+    else {
+        LOG_ERROR(L"AMF_PA_CAQ_STRENGTH_ENUM hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+
+AMF_RESULT ParamConverterPAQMode(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_PA_PAQ_MODE_ENUM paramValue;
+
+    std::wstring uppValue = toUpper(value);
+    if (uppValue == L"NONE" || uppValue == L"0")
+    {
+        paramValue = AMF_PA_PAQ_MODE_NONE;
+    }
+    else if (uppValue == L"CAQ" || uppValue == L"1") {
+        paramValue = AMF_PA_PAQ_MODE_CAQ;
+    }
+    else {
+        LOG_ERROR(L"AMF_PA_PAQ_MODE_ENUM hasn't \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
     }
     valueOut = amf_int64(paramValue);

@@ -77,6 +77,10 @@ public:
     static const wchar_t* PARAM_NAME_PIP_FOCUS_X;
     static const wchar_t* PARAM_NAME_PIP_FOCUS_Y;
     static const wchar_t* PARAM_NAME_SIDE_BY_SIDE;
+    static const wchar_t* PARAM_NAME_HQ_SCALER_RGB;
+    static const wchar_t* PARAM_NAME_HQ_SCALER_RATIO;
+    static const wchar_t* PARAM_NAME_ENABLE_AUDIO;
+    static const wchar_t* PARAM_NAME_HQSCALER_SHARPNESS;
 
     virtual AMF_RESULT Play();
     virtual AMF_RESULT Pause();
@@ -117,6 +121,7 @@ protected:
     virtual AMF_RESULT  InitVideo(amf::AMFOutput* pOutput, amf::AMF_MEMORY_TYPE presenterEngine);
 	virtual AMF_RESULT  InitVideoPipeline(amf_uint32 iVideoStreamIndex, PipelineElementPtr pVideoSourceStream);
 	virtual AMF_RESULT  InitAudioPipeline(amf_uint32 iAudioStreamIndex, PipelineElementPtr pAudioSourceStream);
+    virtual AMF_RESULT  ReInit();
 
     amf::AMFContextPtr      m_pContext;
 

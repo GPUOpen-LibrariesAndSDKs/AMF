@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2017 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -50,6 +50,7 @@
 
 #include "public/common/AMFFactory.h"
 #include "public/include/components/VideoEncoderVCE.h"
+#include "public/include/components/VideoEncoderAV1.h"
 #include "public/include/core/Debug.h"
 
 #include "public/samples/CPPSamples/common/CmdLineParser.h"
@@ -78,7 +79,7 @@ HINSTANCE hInst  = NULL;                                // current instance
 HWND      g_hDlg = NULL;
 
 // Resolution of the desktops that could be captured
-struct CaptureSource 
+struct CaptureSource
 {
 	int			ResolutionX;
 	int			ResolutionY;
@@ -92,7 +93,6 @@ static std::vector<CaptureSource> s_vDisplays;
 const unsigned __int64 ID_STATUS_BAR    = 100;
 const unsigned         TIMER_ID         = 10000;
 
-static bool     s_bOCLConverter         = false;
 static UINT_PTR s_uiFpsTimerId          = 0;
 static unsigned kDefaultGPUIdx          = 0;
 
@@ -129,7 +129,7 @@ void                UpdateMessage(const wchar_t *msg);
 
 
 //-------------------------------------------------------------------------------------------------
-// define some wrapper classes to guarantee 
+// define some wrapper classes to guarantee
 // initialization and proper cleanup
 class CComInit
 {
@@ -179,8 +179,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(lpCmdLine);
     hInst = hInstance; // Store instance handle in our global variable
 
-
-	s_bOCLConverter = false;
     //-------------------------------------------------------------------------------------------------
     // Main
     // initialize required objects
@@ -218,7 +216,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     if (parseCmdLineParameters(s_pPipeline))
 #else
     if (parseCmdLineParameters(s_pPipeline, argc, argv))
-#endif        
+#endif
 
 
     //-------------------------------------------------------------------------------------------------
@@ -232,13 +230,18 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     PopulateMenus(GetMenu(g_hDlg));
     UpdateButtons(g_hDlg, false);
 
-		
+
     //-------------------------------------------------------------------------------------------------
 	// Main message loop:
     MSG  msg = {};
-    BOOL ret;
-    while (ret = GetMessage(&msg, NULL, 0, 0))
-	{
+
+    while (true)
+    {
+        BOOL ret = GetMessage(&msg, NULL, 0, 0);
+
+        if (ret == 0)
+            break;
+
         if (ret == -1)
             return -1;
 
@@ -246,12 +249,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
-	}
+    }
 
 	return (int)msg.wParam;
 }
 
-// Description: 
+// Description:
 //   Creates a status bar and divides it into 2 parts.
 // Parameters:
 //   hwndParent - parent window for the status bar.
@@ -329,7 +332,7 @@ void PopulateMenus(HMENU hMenu)
             UpdateMessage(adapterMsg.c_str());
 #endif
             // Ensure only AMD GPUs are listed
-            if (descAdapter.VendorId != 0x1002) 
+            if (descAdapter.VendorId != 0x1002)
             {
                 continue;
             }
@@ -347,7 +350,7 @@ void PopulateMenus(HMENU hMenu)
 				{
 					break;
 				}
-				
+
 				DXGI_OUTPUT_DESC descOutput;
 				hr = pOutput->GetDesc(&descOutput);
 				if (SUCCEEDED(hr))
@@ -487,8 +490,9 @@ void UpdateMenuItems()
     HMENU  hCaptureSources = GetSubMenu(hMenu, 2);
     for (int i = 0; i < (int)s_vDisplays.size(); ++i)
     {
-        const bool  enableItem = s_vDisplays[i].deviceIdx == iSelectedDevice;
-        const bool  checkItem = enableItem && (s_vDisplays[i].adapterIdx == iSelectedCapture);
+        //Casting is added to avoid signed/unsigned mismatch
+        const bool  enableItem = static_cast<int>(s_vDisplays[i].deviceIdx) == iSelectedDevice;
+        const bool  checkItem = enableItem && (static_cast<int>(s_vDisplays[i].adapterIdx) == iSelectedCapture);
         CheckMenuItem(hCaptureSources, ID_CAPTURE_SOURCE_START + i, MF_BYCOMMAND | (checkItem ? MF_CHECKED : MF_UNCHECKED));
         EnableMenuItem(hCaptureSources, ID_CAPTURE_SOURCE_START + i, enableItem ? MF_ENABLED : MF_DISABLED);
     }
@@ -505,7 +509,6 @@ void UpdateMenuItems()
         CheckMenuItem(hCaptureComponents, ID_CAPTURE_COMPONENT_START, MF_BYCOMMAND | MF_UNCHECKED);
     }
 
-    s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_OPENCL_CONVERTER, s_bOCLConverter);
 }
 
 
@@ -519,7 +522,8 @@ void UpdateMenuItems()
 //  WM_DESTROY    - post a quit message and return
 //
 //
-INT_PTR CALLBACK DialogProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+
+INT_PTR CALLBACK DialogProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM /*lParam*/)
 {
 	int wmId, wmEvent;
 
@@ -685,7 +689,7 @@ void GetCurrentFileLocation(TCHAR* szFile)
 }
 
 //-------------------------------------------------------------------------------------------------
-// Get record file name 
+// Get record file name
 void GetRecordFileLocation(TCHAR* szFile)
 {
     // Set record file location
@@ -753,7 +757,10 @@ void StartRecording(HWND hWnd)
 	// Update message
 	std::wstring str = L"Recording";
 #ifdef _DEBUG
-	if (s_bOCLConverter)
+
+    bool bOCLConverter = false;
+    s_pPipeline->GetParam(DisplayDvrPipeline::PARAM_NAME_OPENCL_CONVERTER, bOCLConverter);
+    if (bOCLConverter)
 	{
 		str += L" (using OCL) ";
 	}
@@ -805,7 +812,7 @@ void FailedRecording(HWND hWnd, bool init)
     // Grey out the Record and Stop buttons
     UpdateButtons(hWnd, false);
 
-    // 
+    //
     g_AMFFactory.Terminate();
 }
 
@@ -820,8 +827,8 @@ void UpdateButtons(HWND hWnd, bool recording)
 }
 
 //-------------------------------------------------------------------------------------------------
-// disply the recording FPS in the status bar...
-void UpdateFps(HWND hWnd)
+// Disply the recording FPS in the status bar...
+void UpdateFps(HWND /*hWnd*/)
 {
 	if (s_pPipeline->GetState() == PipelineStateRunning)
 	{

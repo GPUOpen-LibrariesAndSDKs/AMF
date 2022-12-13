@@ -70,6 +70,11 @@ AMF_RESULT ParamConverterColorPrimaries(const std::wstring& value, amf::AMFVaria
 AMF_RESULT ParamConverterColorRange(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterHQScalerAlgorithm(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterHighMotionQualityBoostMode(const std::wstring& value, amf::AMFVariant& valueOut);
+AMF_RESULT ParamConverterSceneChange(const std::wstring& value, amf::AMFVariant& valueOut);
+AMF_RESULT ParamConverterStaticScene(const std::wstring& value, amf::AMFVariant& valueOut);
+AMF_RESULT ParamConverterActivityType(const std::wstring& value, amf::AMFVariant& valueOut);
+AMF_RESULT ParamConverterCAQStrength(const std::wstring& value, amf::AMFVariant& valueOut);
+AMF_RESULT ParamConverterPAQMode(const std::wstring& value, amf::AMFVariant& valueOut);
 
 std::wstring AddIndexToPath(const std::wstring& path, amf_int32 index);
 
@@ -129,7 +134,7 @@ public:
 
     std::wstring  GetParamUsage();
 protected:
-    virtual void OnParamChanged(const wchar_t* name) {}
+    virtual void OnParamChanged(const wchar_t* /*name*/) {}
 
     std::wstring  GetParamUsage(ParamType type);
 

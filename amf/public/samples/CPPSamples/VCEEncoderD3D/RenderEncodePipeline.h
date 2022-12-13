@@ -36,6 +36,7 @@
 #include "public/include/core/Context.h"
 #include "public/include/components/VideoEncoderVCE.h"
 #include "public/include/components/VideoEncoderHEVC.h"
+#include "public/include/components/VideoEncoderAV1.h"
 #include "public/include/components/VideoConverter.h"
 
 
@@ -43,6 +44,7 @@
 #include "../common/ParametersStorage.h"
 #include "../common/EncoderParamsAVC.h"
 #include "../common/EncoderParamsHEVC.h"
+#include "../common/EncoderParamsAV1.h"
 
 #if defined(_WIN32)
 #include "../common/DeviceDX9.h"

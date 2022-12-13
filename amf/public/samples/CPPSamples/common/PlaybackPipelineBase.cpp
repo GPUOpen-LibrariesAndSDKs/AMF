@@ -55,6 +55,10 @@ const wchar_t* PlaybackPipelineBase::PARAM_NAME_PIP_ZOOM_FACTOR = L"PIPZOOMFACTO
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_PIP_FOCUS_X = L"PIPFOCUSX";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_PIP_FOCUS_Y = L"PIPFOCUSY";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_SIDE_BY_SIDE = L"SIDEBYSIDE";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_HQ_SCALER_RGB = L"HQSCALERRGB";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_HQ_SCALER_RATIO = L"HQSCALERRATIO";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_ENABLE_AUDIO = L"ENABLEAUDIO";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_HQSCALER_SHARPNESS = L"HQSCALERSHARPNESS";
 
 PlaybackPipelineBase::PlaybackPipelineBase() :
     m_iVideoWidth(0),
@@ -78,20 +82,28 @@ PlaybackPipelineBase::PlaybackPipelineBase() :
     SetParamDescription(PARAM_NAME_LOWLATENCY, ParamCommon, L"Low latency mode, boolean, default = false", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_FULLSCREEN, ParamCommon, L"Specifies fullscreen mode, true, false, default false", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_SW_DECODER, ParamCommon, L"Forces sw decoder, true, false, default false", ParamConverterBoolean);
-    SetParamDescription(PARAM_NAME_HQ_SCALER, ParamCommon,  L"Use HQ Scaler (OFF, Bilinear, Bicubic, FSR, default = OFF)", ParamConverterHQScalerAlgorithm);
+    SetParamDescription(PARAM_NAME_HQ_SCALER, ParamCommon,  L"Use HQ Scaler (OFF, Bilinear, Bicubic, FSR, POINT, default = OFF)", ParamConverterHQScalerAlgorithm);
     SetParamDescription(PARAM_NAME_PIP, ParamCommon, L"Specifies Picture in Picture mode, true, false, default false", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_PIP_ZOOM_FACTOR, ParamCommon, L"Specifies magnification ratio of PIP image, int, default 8", ParamConverterDouble);
-    SetParamDescription(PARAM_NAME_PIP_FOCUS_X, ParamCommon, L"H position of foreground image, int, default 0", ParamConverterDouble);
-    SetParamDescription(PARAM_NAME_PIP_FOCUS_Y, ParamCommon, L"V position of foreground image, int, default 0", ParamConverterDouble);
+    SetParamDescription(PARAM_NAME_PIP_FOCUS_X, ParamCommon, L"H position of foreground image, int, default 0", ParamConverterInt64);
+    SetParamDescription(PARAM_NAME_PIP_FOCUS_Y, ParamCommon, L"V position of foreground image, int, default 0", ParamConverterInt64);
     SetParamDescription(PARAM_NAME_SIDE_BY_SIDE, ParamCommon, L"Specifies Side-by-Side mode, true, false, default false", ParamConverterBoolean);
+    SetParamDescription(PARAM_NAME_HQ_SCALER_RGB, ParamCommon, L"Force RGB scaling, true, false, default false", ParamConverterBoolean);
+    SetParamDescription(PARAM_NAME_HQ_SCALER_RATIO, ParamCommon, L"Scaling Ratio (1.3x, 1.5x, 1.7x, 2.0x), default 2.0x", ParamConverterRatio);
+    SetParamDescription(PARAM_NAME_ENABLE_AUDIO, ParamCommon, L"Enables audio playback, boolean, default = true", ParamConverterDouble);
+    SetParamDescription(PARAM_NAME_HQSCALER_SHARPNESS, ParamCommon, L"Specifies FSR RCAS attenuation, double, default 0.75", ParamConverterDouble);
 
     SetParam(PARAM_NAME_LISTEN_FOR_CONNECTION, false);
     SetParam(PARAM_NAME_FULLSCREEN, false);
     SetParam(PARAM_NAME_PIP, false);
-    SetParam(PARAM_NAME_PIP_ZOOM_FACTOR, 0.1f);
-    SetParam(PARAM_NAME_PIP_FOCUS_X, 0.45f);
-    SetParam(PARAM_NAME_PIP_FOCUS_Y, 0.45f);
+    SetParam(PARAM_NAME_PIP_ZOOM_FACTOR, 0.4f);
+    SetParam(PARAM_NAME_PIP_FOCUS_X, 0);
+    SetParam(PARAM_NAME_PIP_FOCUS_Y, 0);
     SetParam(PARAM_NAME_SIDE_BY_SIDE, false);
+    SetParam(PARAM_NAME_HQ_SCALER_RGB, false);
+    SetParam(PARAM_NAME_HQ_SCALER_RATIO, AMFRatio({ 20, 10 }));
+    SetParam(PARAM_NAME_ENABLE_AUDIO, true);
+    SetParam(PARAM_NAME_HQSCALER_SHARPNESS, 0.75);
 
 #if defined(_WIN32)
     SetParam(PlaybackPipelineBase::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_DX11);
@@ -406,7 +418,10 @@ AMF_RESULT PlaybackPipelineBase::Init()
 		res = InitVideo(pVideoOutput, presenterEngine);
         CHECK_AMF_ERROR_RETURN(res, L"InitVideo() failed");
     }
-    if(iAudioStreamIndex >= 0)
+
+    bool bEnableAudio = true;
+    GetParam(PARAM_NAME_ENABLE_AUDIO, bEnableAudio);
+    if(bEnableAudio && iAudioStreamIndex >= 0)
     {
         res = InitAudio(pAudioOutput);
         if (res != AMF_OK)
@@ -491,7 +506,13 @@ AMF_RESULT PlaybackPipelineBase::InitVideoPipeline(amf_uint32 iVideoStreamIndex,
     bool bLowlatency = false;
     GetParam(PARAM_NAME_LOWLATENCY, bLowlatency);
 
-    if (m_pVideoProcessor != NULL)
+    bool bForceScalingRGB = false;
+    GetParam(PARAM_NAME_HQ_SCALER_RGB, bForceScalingRGB);
+    bool bYUVScaling = (((m_eDecoderFormat == amf::AMF_SURFACE_NV12) || (m_eDecoderFormat == amf::AMF_SURFACE_P010)) &&
+                        (m_pScaler != nullptr) &&
+                        !bForceScalingRGB);
+
+    if (!bYUVScaling && (m_pVideoProcessor != NULL))
 	{
         if (bLowlatency)
         {
@@ -502,6 +523,7 @@ AMF_RESULT PlaybackPipelineBase::InitVideoPipeline(amf_uint32 iVideoStreamIndex,
             Connect(PipelineElementPtr(new AMFComponentElement(m_pVideoProcessor)), m_bCPUDecoder ? 4 : 1, CT_ThreadQueue);
         }
     }
+
     if (m_pScaler != NULL)
     {
         if (m_pHQScaler2 == NULL)
@@ -536,6 +558,18 @@ AMF_RESULT PlaybackPipelineBase::InitVideoPipeline(amf_uint32 iVideoStreamIndex,
             }
         }
     }
+
+    if (bYUVScaling && (m_pVideoProcessor != NULL))
+    {
+        if (bLowlatency)
+        {
+            Connect(PipelineElementPtr(new AMFComponentElement(m_pVideoProcessor)), 1, CT_Direct);
+        }
+        else
+        {
+            Connect(PipelineElementPtr(new AMFComponentElement(m_pVideoProcessor)), m_bCPUDecoder ? 4 : 1, CT_ThreadQueue);
+        }
+    }
     if(m_bVideoPresenterDirectConnect)
     {
         Connect(m_pVideoPresenter, 4, CT_ThreadPoll); // if back buffers are used in multithreading the video memory changes every Present() call so pointer returned by GetBackBuffer() points to wrong memory
@@ -559,9 +593,19 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoProcessor()
         res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFHQScaler, &m_pScaler);
         CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFHQScaler << L") failed");
 
-        m_pScaler->SetProperty(AMF_HQ_SCALER_OUTPUT_SIZE, ::AMFConstructSize(m_iVideoWidth, m_iVideoHeight));
+        AMFRatio scalingRatio = { 0, 0 };
+        GetParam(PARAM_NAME_HQ_SCALER_RATIO, scalingRatio);
+
+        amf_int32 oVideoWidth = m_iVideoWidth * scalingRatio.num / scalingRatio.den;
+        amf_int32 oVideoHeight = m_iVideoHeight * scalingRatio.num / scalingRatio.den;
+
+        amf_double fHQScalerSharpness = 0;
+        GetParam(PARAM_NAME_HQSCALER_SHARPNESS, fHQScalerSharpness);
+
+        m_pScaler->SetProperty(AMF_HQ_SCALER_OUTPUT_SIZE, ::AMFConstructSize(oVideoWidth, oVideoHeight));
         m_pScaler->SetProperty(AMF_HQ_SCALER_ENGINE_TYPE, m_pVideoPresenter->GetMemoryType());
         m_pScaler->SetProperty(AMF_HQ_SCALER_ALGORITHM, hqScalerMode);
+        m_pScaler->SetProperty(AMF_HQ_SCALER_SHARPNESS, fHQScalerSharpness);
 
         /*
         // If enabled side-by-side, create a separate HQ Scaler
@@ -584,7 +628,9 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoProcessor()
     // initialize scaler
     if (m_pScaler != nullptr)
     {
-        res = m_pScaler->Init(m_pVideoPresenter->GetInputFormat(), m_iVideoWidth, m_iVideoHeight);
+        bool bForceScalingRGB = false;
+        GetParam(PARAM_NAME_HQ_SCALER_RGB, bForceScalingRGB);
+        res = m_pScaler->Init(bForceScalingRGB ? m_pVideoPresenter->GetInputFormat() : m_eDecoderFormat, m_iVideoWidth, m_iVideoHeight);
         CHECK_AMF_ERROR_RETURN(res, L"m_pScaler->Init() failed with err=%d");
     }
 
@@ -639,27 +685,41 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoDecoder(const wchar_t *pDecoderID, am
     bool bSWDecoder = false;
     GetParam(PARAM_NAME_SW_DECODER, bSWDecoder);
 
+    if ((surfaceFormat == amf::AMF_SURFACE_YUY2) ||
+        (surfaceFormat == amf::AMF_SURFACE_UYVY) ||
+        (surfaceFormat == amf::AMF_SURFACE_Y210) ||
+        (surfaceFormat == amf::AMF_SURFACE_Y416) ||
+        (surfaceFormat == amf::AMF_SURFACE_RGBA_F16) ||
+        (surfaceFormat == amf::AMF_SURFACE_RGBA))
+    {
+        bSWDecoder = true;
+    }
+
     if (bSWDecoder == false)
     {
-        AMF_RESULT res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, pDecoderID, &m_pVideoDecoder);
-        CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << pDecoderID << L") failed");
+        const wchar_t* pHwDecoderId = pDecoderID;
+        if ((std::wstring(pDecoderID) == AMFVideoDecoderHW_AV1) &&
+            ((surfaceFormat == amf::AMF_SURFACE_P012) || (surfaceFormat == amf::AMF_SURFACE_P016)))
+        {
+            pHwDecoderId = AMFVideoDecoderHW_AV1_12BIT;
+        }
+
+        AMF_RESULT res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, pHwDecoderId, &m_pVideoDecoder);
+        CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << pHwDecoderId << L") failed");
     }
 
     // switch to SW Decoder when the HW Decoder does not support this config
     amf::AMFCapsPtr pCaps;
-    if (m_pVideoDecoder != nullptr && m_pVideoDecoder->GetCaps(&pCaps) != AMF_OK)
+    if (m_pVideoDecoder != nullptr && 
+        m_pVideoDecoder->GetCaps(&pCaps) != AMF_OK)
     {
         m_pVideoDecoder = NULL;
     }
 
     if (m_pVideoDecoder != nullptr)
     {
-        amf::AMFCapsPtr pCaps;
-        AMF_RESULT res = m_pVideoDecoder->GetCaps(&pCaps);
-        CHECK_AMF_ERROR_RETURN(res, L"failed to get decoder caps");
-
         amf::AMFIOCapsPtr pInputCaps;
-        res = pCaps->GetInputCaps(&pInputCaps);
+        AMF_RESULT res = pCaps->GetInputCaps(&pInputCaps);
         CHECK_AMF_ERROR_RETURN(res, L"failed to get decoder input caps");
 
         // check resolution
@@ -669,8 +729,7 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoDecoder(const wchar_t *pDecoderID, am
         amf_int32 maxHeight = 0;
         pInputCaps->GetWidthRange(&minWidth, &maxWidth);
         pInputCaps->GetHeightRange(&minHeight, &maxHeight);
-        if (minWidth <= m_iVideoWidth && m_iVideoWidth <= maxWidth && minHeight <= m_iVideoHeight && m_iVideoHeight <= maxHeight &&
-            surfaceFormat != amf::AMF_SURFACE_P012 && surfaceFormat != amf::AMF_SURFACE_P016) //MM TODO Update caps
+        if (minWidth <= m_iVideoWidth && m_iVideoWidth <= maxWidth && minHeight <= m_iVideoHeight && m_iVideoHeight <= maxHeight)
         {
             m_pVideoDecoder->SetProperty(AMF_VIDEO_DECODER_REORDER_MODE, amf_int64(decoderMode));
             m_pVideoDecoder->SetProperty(AMF_VIDEO_DECODER_EXTRADATA, amf::AMFVariant(pExtraData));
@@ -680,6 +739,10 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoDecoder(const wchar_t *pDecoderID, am
             if (std::wstring(pDecoderID) == AMFVideoDecoderHW_H265_MAIN10)
             {
                 m_eDecoderFormat = amf::AMF_SURFACE_P010;
+            }
+            if (std::wstring(pDecoderID) == AMFVideoDecoderHW_AV1)
+            {
+                m_eDecoderFormat = surfaceFormat;
             }
             res = m_pVideoDecoder->Init(m_eDecoderFormat, m_iVideoWidth, m_iVideoHeight);
             CHECK_AMF_ERROR_RETURN(res, L"m_pVideoDecoder->Init(" << m_iVideoWidth << L", " << m_iVideoHeight << L") failed " << pDecoderID);
@@ -692,6 +755,10 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoDecoder(const wchar_t *pDecoderID, am
                     m_eDecoderFormat = (amf::AMF_SURFACE_FORMAT)format;
 			    }
 		    }
+            else if (std::wstring(pDecoderID) == AMFVideoDecoderHW_AV1_12BIT)
+            {
+                m_eDecoderFormat = amf::AMF_SURFACE_P012;
+            }
             m_bCPUDecoder = false;
         }
         else
@@ -729,7 +796,11 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoDecoder(const wchar_t *pDecoderID, am
 			{
 				codecID = AMF_STREAM_CODEC_ID_AV1;
 			}
-		}
+            else if (std::wstring(pDecoderID) == AMFVideoDecoderHW_AV1_12BIT)
+            {
+                codecID = AMF_STREAM_CODEC_ID_AV1_12BIT;
+            }
+        }
         m_pVideoDecoder->SetProperty(VIDEO_DECODER_CODEC_ID, codecID);
         m_pVideoDecoder->SetProperty(VIDEO_DECODER_BITRATE, bitrate);
         m_pVideoDecoder->SetProperty(VIDEO_DECODER_FRAMERATE, frameRate);
@@ -934,6 +1005,11 @@ AMF_RESULT PlaybackPipelineBase::Stop()
 
 void PlaybackPipelineBase::OnParamChanged(const wchar_t* name)
 {
+    //check if the pipeline will need to be recreated
+    if (std::wstring(name) == std::wstring(PARAM_NAME_HQ_SCALER_RGB))
+    {
+        ReInit();
+    }
     //check if HQScaler will need to be re-created in the pipeline
     if (std::wstring(name) == std::wstring(PARAM_NAME_HQ_SCALER))
     {
@@ -947,14 +1023,10 @@ void PlaybackPipelineBase::OnParamChanged(const wchar_t* name)
         amf_int64  modeHQScalerNew = -1;
         GetParam(PARAM_NAME_HQ_SCALER, modeHQScalerNew);
 
-        if ((modeHQScaler == -1 && modeHQScalerNew != -1)  || 
+        if ((modeHQScaler == -1 && modeHQScalerNew != -1)  ||
             (modeHQScaler != -1 && modeHQScalerNew == -1)) //need to re-build the pipeline
         {
-            if (GetState() == PipelineStateRunning)
-            {
-                Init();
-                Play();
-            }
+            ReInit();
         }
 
         if (m_pScaler != nullptr && modeHQScalerNew != -1)
@@ -982,19 +1054,31 @@ void PlaybackPipelineBase::OnParamChanged(const wchar_t* name)
             bool bEnablePIP = false;
             GetParam(PARAM_NAME_PIP, bEnablePIP);
             m_pVideoPresenter->SetEnablePIP(bEnablePIP);
+
+            amf_int iPIPZoomFactor;
+            GetParam(PARAM_NAME_PIP_ZOOM_FACTOR, iPIPZoomFactor);
+            m_pVideoPresenter->SetPIPZoomFactor(iPIPZoomFactor);
+
+            AMFPoint PIPFocusPos;
+            GetParam(PARAM_NAME_PIP_FOCUS_X, PIPFocusPos.x);
+            GetParam(PARAM_NAME_PIP_FOCUS_Y, PIPFocusPos.y);
+
+            AMFFloatPoint2D fPIPFocusPos = { (amf_float)PIPFocusPos.x / (amf_float)m_iVideoWidth, (amf_float)PIPFocusPos.y / (amf_float)m_iVideoHeight };
+            m_pVideoPresenter->SetPIPFocusPositions(fPIPFocusPos);
         }
         else if (std::wstring(name) == std::wstring(PARAM_NAME_PIP_ZOOM_FACTOR))
         {
-            amf_float fPIPZoomFactor;
-            GetParam(PARAM_NAME_PIP_ZOOM_FACTOR, fPIPZoomFactor);
-            m_pVideoPresenter->SetPIPZoomFactor(fPIPZoomFactor);
+            amf_int iPIPZoomFactor;
+            GetParam(PARAM_NAME_PIP_ZOOM_FACTOR, iPIPZoomFactor);
+            m_pVideoPresenter->SetPIPZoomFactor(iPIPZoomFactor);
         }
         else if (std::wstring(name) == std::wstring(PARAM_NAME_PIP_FOCUS_X) || std::wstring(name) == std::wstring(PARAM_NAME_PIP_FOCUS_Y))
         {
-            AMFFloatPoint2D fPIPFocusPos;
-            GetParam(PARAM_NAME_PIP_FOCUS_X, fPIPFocusPos.x);
-            GetParam(PARAM_NAME_PIP_FOCUS_Y, fPIPFocusPos.y);
+            AMFPoint PIPFocusPos;
+            GetParam(PARAM_NAME_PIP_FOCUS_X, PIPFocusPos.x);
+            GetParam(PARAM_NAME_PIP_FOCUS_Y, PIPFocusPos.y);
 
+            AMFFloatPoint2D fPIPFocusPos = { (amf_float)PIPFocusPos.x / (amf_float)m_iVideoWidth, (amf_float)PIPFocusPos.y / (amf_float)m_iVideoHeight };
             m_pVideoPresenter->SetPIPFocusPositions(fPIPFocusPos);
         }
         else if (std::wstring(name) == std::wstring(PARAM_NAME_SIDE_BY_SIDE))
@@ -1002,6 +1086,28 @@ void PlaybackPipelineBase::OnParamChanged(const wchar_t* name)
             bool bEnableSideBySide = false;
             GetParam(PARAM_NAME_SIDE_BY_SIDE, bEnableSideBySide);
             m_bEnableSideBySide = bEnableSideBySide;
+        }
+        else if (std::wstring(name) == std::wstring(PARAM_NAME_HQ_SCALER_RATIO))
+        {
+            if (m_pScaler != nullptr)
+            {
+                AMFRatio scalingRatio = { 0, 0 };
+                GetParam(PARAM_NAME_HQ_SCALER_RATIO, scalingRatio);
+
+                amf_int32 oVideoWidth = m_iVideoWidth * scalingRatio.num / scalingRatio.den;
+                amf_int32 oVideoHeight = m_iVideoHeight * scalingRatio.num / scalingRatio.den;
+                m_pScaler->SetProperty(AMF_HQ_SCALER_OUTPUT_SIZE, ::AMFConstructSize(oVideoWidth, oVideoHeight));
+            }
+        }
+        else if (std::wstring(name) == std::wstring(PARAM_NAME_HQSCALER_SHARPNESS))
+        {
+            if (m_pScaler != nullptr)
+            {
+                amf_double fHQScalerSharpness = 0.0f;
+                GetParam(PARAM_NAME_HQSCALER_SHARPNESS, fHQScalerSharpness);
+
+                m_pScaler->SetProperty(AMF_HQ_SCALER_SHARPNESS, fHQScalerSharpness);
+            }
         }
     }
     if(m_pVideoProcessor == NULL)
@@ -1208,6 +1314,11 @@ AMF_RESULT  PlaybackPipelineBase::InitVideo(amf::AMFOutput* pOutput, amf::AMF_ME
         res= pOutput->GetProperty(AMF_STREAM_CODEC_ID, &codecID);
         pVideoDecoderID = StreamCodecIDtoDecoderID(AMF_STREAM_CODEC_ID_ENUM(codecID));
 
+        if (pVideoDecoderID.size() == 0)    //try SW decoder
+        {
+            pOutput->GetProperty(FFMPEG_DEMUXER_VIDEO_CODEC, &codecID);
+        }
+
         pOutput->SetProperty(AMF_STREAM_ENABLED, true);
 
 		pOutput->GetProperty(AMF_STREAM_BIT_RATE, &bitRate);
@@ -1331,9 +1442,10 @@ AMF_RESULT PlaybackPipelineBase::OnActivate(bool bActivated)
             GetParam(PARAM_NAME_PIP, bEnablePIP);
             m_pVideoPresenter->SetEnablePIP(bEnablePIP);
 
-            AMFFloatPoint2D fPIPFocusPos;
-            GetParam(PARAM_NAME_PIP_FOCUS_X, fPIPFocusPos.x);
-            GetParam(PARAM_NAME_PIP_FOCUS_Y, fPIPFocusPos.y);
+            AMFPoint PIPFocusPos;
+            GetParam(PARAM_NAME_PIP_FOCUS_X, PIPFocusPos.x);
+            GetParam(PARAM_NAME_PIP_FOCUS_Y, PIPFocusPos.y);
+            AMFFloatPoint2D fPIPFocusPos = { (amf_float)PIPFocusPos.x / (amf_float)m_iVideoWidth, (amf_float)PIPFocusPos.y / (amf_float)m_iVideoHeight };
             m_pVideoPresenter->SetPIPFocusPositions(fPIPFocusPos);
         }
         else
@@ -1341,6 +1453,35 @@ AMF_RESULT PlaybackPipelineBase::OnActivate(bool bActivated)
             m_pVideoPresenter->SetFullScreen(false);
             m_pVideoPresenter->SetEnablePIP(false);
             AMFTraceDebug(AMF_FACILITY, L"ProcessMessage() Window Deactivated");
+        }
+    }
+    return AMF_OK;
+}
+
+AMF_RESULT PlaybackPipelineBase::ReInit()
+{
+    //restart the playback with possibably different pipeline 
+    if (GetState() == PipelineStateRunning)
+    {
+        Init();
+        Play();
+
+        //update the PIP parameters
+        if (m_pVideoPresenter != nullptr)
+        {
+            bool bEnablePIP = false;
+            GetParam(PARAM_NAME_PIP, bEnablePIP);
+            m_pVideoPresenter->SetEnablePIP(bEnablePIP);
+
+            amf_int iPIPZoomFactor;
+            GetParam(PARAM_NAME_PIP_ZOOM_FACTOR, iPIPZoomFactor);
+            m_pVideoPresenter->SetPIPZoomFactor(iPIPZoomFactor);
+
+            AMFPoint PIPFocusPos;
+            GetParam(PARAM_NAME_PIP_FOCUS_X, PIPFocusPos.x);
+            GetParam(PARAM_NAME_PIP_FOCUS_Y, PIPFocusPos.y);
+            AMFFloatPoint2D fPIPFocusPos = { (amf_float)PIPFocusPos.x / (amf_float)m_iVideoWidth, (amf_float)PIPFocusPos.y / (amf_float)m_iVideoHeight };
+            m_pVideoPresenter->SetPIPFocusPositions(fPIPFocusPos);
         }
     }
     return AMF_OK;

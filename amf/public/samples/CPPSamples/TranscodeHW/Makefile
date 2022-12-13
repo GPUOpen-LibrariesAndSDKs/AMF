@@ -56,6 +56,7 @@ src_files = \
     $(samples_common_dir)/CmdLogger.cpp \
     $(samples_common_dir)/DeviceVulkan.cpp \
     $(samples_common_dir)/CmdLineParser.cpp \
+	$(samples_common_dir)/EncoderParamsAV1.cpp \
     $(samples_common_dir)/EncoderParamsAVC.cpp \
     $(samples_common_dir)/EncoderParamsHEVC.cpp \
     $(samples_common_dir)/ParametersStorage.cpp \

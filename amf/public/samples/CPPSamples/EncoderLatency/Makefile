@@ -48,5 +48,6 @@ src_files = \
     $(samples_common_dir)/RawStreamReader.cpp \
     $(samples_common_dir)/EncoderParamsAVC.cpp \
     $(samples_common_dir)/EncoderParamsHEVC.cpp \
+	$(samples_common_dir)/EncoderParamsAV1.cpp \
 
 include $(amf_root)/public/make/common_rules.mak

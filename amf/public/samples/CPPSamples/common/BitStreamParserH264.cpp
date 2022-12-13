@@ -641,7 +641,14 @@ AvcParser::NalUnitType   AvcParser::ReadNextNaluUnit(size_t *offset, size_t *nal
                 break; // EOF
             }
         }
-        amf_uint8* data= m_ReadData.GetData() + *offset;
+
+        amf_uint8* data = m_ReadData.GetData();
+        if (data == nullptr) // check data before adding the offset
+        {
+            return NalUnitTypeUnspecified; // no data read
+        }
+        data += *offset; // don't forget the offset!
+
         for(size_t i = 0; i < ready; i++)
         {
             amf_uint8 ch = *data++;

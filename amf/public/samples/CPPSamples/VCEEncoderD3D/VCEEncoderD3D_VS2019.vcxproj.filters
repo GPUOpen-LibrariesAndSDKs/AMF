@@ -120,6 +120,9 @@
     <ClInclude Include="..\..\..\common\ByteArray.h">
       <Filter>public\common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\EncoderParamsAV1.h">
+      <Filter>common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\common\CmdLogger.cpp">
@@ -218,6 +221,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\common\VulkanImportTable.cpp">
       <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\EncoderParamsAV1.cpp">
+      <Filter>common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -46,20 +46,20 @@ class PipelineElement
 public:
     virtual amf_int32 GetInputSlotCount() const = 0;
     virtual amf_int32 GetOutputSlotCount() const = 0;
-    virtual AMF_RESULT SubmitInput(amf::AMFData* pData, amf_int32 slot) { return SubmitInput(pData); }
-    virtual AMF_RESULT ReSubmitInput(amf_int32 slot) { return ReSubmitInput(); }
+    virtual AMF_RESULT SubmitInput(amf::AMFData* pData, amf_int32 /*slot*/) { return SubmitInput(pData); }
+    virtual AMF_RESULT ReSubmitInput(amf_int32 /*slot*/) { return ReSubmitInput(); }
 
-    virtual AMF_RESULT QueryOutput(amf::AMFData** ppData, amf_int32 slot) { return QueryOutput(ppData); }
-    virtual AMF_RESULT SubmitInput(amf::AMFData* pData) { return AMF_NOT_SUPPORTED; }
+    virtual AMF_RESULT QueryOutput(amf::AMFData** ppData, amf_int32 /*slot*/) { return QueryOutput(ppData); }
+    virtual AMF_RESULT SubmitInput(amf::AMFData* /*pData*/) { return AMF_NOT_SUPPORTED; }
     virtual AMF_RESULT ReSubmitInput() { return AMF_NOT_SUPPORTED; }
-    virtual AMF_RESULT QueryOutput(amf::AMFData** ppData) { return AMF_NOT_SUPPORTED; }
+    virtual AMF_RESULT QueryOutput(amf::AMFData** /*ppData*/) { return AMF_NOT_SUPPORTED; }
 
     virtual AMF_RESULT Freeze() {amf::AMFLock lock(&m_cs); m_bFrozen = true; return AMF_OK;}
     virtual AMF_RESULT UnFreeze() {amf::AMFLock lock(&m_cs); m_bFrozen = false; return AMF_OK;}
     virtual AMF_RESULT Flush() { return AMF_OK; }
 
 
-    virtual AMF_RESULT Drain(amf_int32 inputSlot) { return AMF_NOT_SUPPORTED; }
+    virtual AMF_RESULT Drain(amf_int32 /*inputSlot*/) { return AMF_NOT_SUPPORTED; }
     virtual AMF_RESULT OnEof() { return AMF_EOF; }
     virtual std::wstring       GetDisplayResult() { return std::wstring(); }
 
@@ -120,7 +120,7 @@ public:
         }
         return res;
     }
-    virtual AMF_RESULT QueryOutput(amf::AMFData** ppData)
+    virtual AMF_RESULT QueryOutput(amf::AMFData** /*ppData*/)
     {
         return AMF_NOT_SUPPORTED;
     }
@@ -190,7 +190,7 @@ public:
         }
         return res;
     }
-    virtual AMF_RESULT QueryOutput(amf::AMFData** ppData)
+    virtual AMF_RESULT QueryOutput(amf::AMFData** /*ppData*/)
     {
         return AMF_NOT_SUPPORTED;
     }
@@ -228,7 +228,7 @@ public:
         }
         return AMF_OK;
     }
-    virtual AMF_RESULT QueryOutput(amf::AMFData** ppData)
+    virtual AMF_RESULT QueryOutput(amf::AMFData** /*ppData*/)
     {
         return AMF_NOT_SUPPORTED;
     }

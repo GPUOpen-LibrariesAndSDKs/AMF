@@ -49,9 +49,9 @@
 // On Win7 AMF Encoder can work on DX9 only
 // The next line can be used to demo DX11 input and DX9 output from converter
 #ifdef WIN32
-static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX9;
-static amf::AMF_MEMORY_TYPE memoryTypeOut = amf::AMF_MEMORY_DX9;
-//static amf::AMF_MEMORY_TYPE memoryTypeOut = amf::AMF_MEMORY_DX11;
+//static amf::AMF_MEMORY_TYPE memoryTypeIn = amf::AMF_MEMORY_DX9;
+static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX11;
+static amf::AMF_MEMORY_TYPE memoryTypeOut = amf::AMF_MEMORY_DX11;
 #else
 static amf::AMF_MEMORY_TYPE memoryTypeIn = amf::AMF_MEMORY_VULKAN; 
 static amf::AMF_MEMORY_TYPE memoryTypeOut = amf::AMF_MEMORY_VULKAN;
@@ -192,7 +192,6 @@ int main(int argc, char* argv[])
     if(memoryTypeIn == amf::AMF_MEMORY_DX11 || memoryTypeOut == amf::AMF_MEMORY_DX11)
     {
         res = context->InitDX11(NULL); // can be DX11 device
-        res = amf::AMFContext1Ptr(context)->InitVulkan(NULL); // can be DX11 device
     }
 #endif
     if(memoryTypeIn == amf::AMF_MEMORY_VULKAN || memoryTypeOut == amf::AMF_MEMORY_VULKAN)

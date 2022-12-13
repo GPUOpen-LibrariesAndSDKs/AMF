@@ -96,7 +96,10 @@ IVFParser::IVFParser(amf::AMFDataStream* stream, amf::AMFContext* pContext) :
 	m_bEof(false),
 	m_fps(0),
 	m_maxFramesNumber(0),
-	m_pContext(pContext)
+	m_pContext(pContext),
+	m_codec(IVF_CODEC_UNKNOWN),
+	m_pheight(0),
+	m_pwidth(0)
 {
 	stream->Seek(amf::AMF_SEEK_BEGIN, 0, NULL);
 	size_t ready = m_HeaderData.GetSize();

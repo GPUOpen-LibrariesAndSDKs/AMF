@@ -251,7 +251,7 @@ static const wchar_t* PARAM_NAME_PREVIEW_MODE = L"PREVIEWMODE";
 
 static AMF_RESULT RegisterCodecParams(ParametersStorage* pParams)
 {
-    pParams->SetParamDescription(PARAM_NAME_CODEC, ParamCommon, L"Codec name (AVC or H264, HEVC or H265)", ParamConverterCodec);
+    pParams->SetParamDescription(PARAM_NAME_CODEC, ParamCommon, L"Codec name (AVC or H264, HEVC or H265, AV1)", ParamConverterCodec);
     return AMF_OK;
 }
 
@@ -259,23 +259,24 @@ static AMF_RESULT RegisterCodecParams(ParametersStorage* pParams)
 AMF_RESULT RegisterParams(ParametersStorage* pParams)
 {
     pParams->SetParamDescription(PARAM_NAME_OUTPUT, ParamCommon, L"Output file name", NULL);
-    pParams->SetParamDescription(PARAM_NAME_INPUT, ParamCommon,  L"Input file name", NULL);
+    pParams->SetParamDescription(PARAM_NAME_INPUT,  ParamCommon, L"Input file name", NULL);
 
-    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_SCALE_WIDTH, ParamCommon, L"Frame width (integer, default = 0)", ParamConverterInt64);
+    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_SCALE_WIDTH,  ParamCommon, L"Frame width (integer, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_SCALE_HEIGHT, ParamCommon, L"Frame height (integer, default = 0)", ParamConverterInt64);
-    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_SCALE_TYPE, ParamCommon, L"Frame height (integer, default = 0)", ParamConverterScaleType);
+    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_FRAMES,       ParamCommon, L"Number of frames to render (in frames, default = 0 - means all )", ParamConverterInt64);
+    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_SCALE_TYPE,   ParamCommon, L"Frame height (integer, default = 0)", ParamConverterScaleType);
 
     pParams->SetParamDescription(PARAM_NAME_ADAPTERID, ParamCommon, L"Index of GPU adapter (number, default = 0)", NULL);
+    pParams->SetParamDescription(PARAM_NAME_ENGINE,    ParamCommon, L"Specifiy engine type (DX9, DX11, Vulkan)", NULL);
 
-    pParams->SetParamDescription(PARAM_NAME_ENGINE, ParamCommon,  L"Specifiy engine type (DX9, DX11, Vulkan)", NULL);
-    pParams->SetParamDescription(TranscodePipeline::PARAM_NAME_FRAMES, ParamCommon, L"Number of frames to render (in frames, default = 0 - means all )", ParamConverterInt64);
-
+    pParams->SetParamDescription(PARAM_NAME_THREADCOUNT,   ParamCommon, L"Number of session run ip parallel (number, default = 1)", ParamConverterInt64);
+    pParams->SetParamDescription(PARAM_NAME_PREVIEW_MODE,  ParamCommon, L"Preview Mode (bool, default = false)", ParamConverterBoolean);
+    pParams->SetParamDescription(PARAM_NAME_COMPUTE_QUEUE, ParamCommon, L"Vulkan Compute Queue Index (integer, default = 0, range [0,queueCount-1])", ParamConverterInt64);
+    pParams->SetParamDescription(PARAM_NAME_TRACE_LEVEL,   ParamCommon, L"Set the trace level (integer, default = 2 - means AMF_TRACE_INFO)", ParamConverterInt64);
 
     // to demo frame-specific properties - will be applied to each N-th frame (force IDR)
     pParams->SetParam(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, amf_int64(AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR));
 
-    pParams->SetParamDescription(PARAM_NAME_THREADCOUNT, ParamCommon, L"Number of session run ip parallel (number, default = 1)", ParamConverterInt64);
-    pParams->SetParamDescription(PARAM_NAME_PREVIEW_MODE, ParamCommon, L"Preview Mode (bool, default = false)", ParamConverterInt64);
     return AMF_OK;
 }
 
@@ -285,25 +286,13 @@ int _tmain(int argc, _TCHAR* argv[])
 int main(int argc, char* argv[])
 #endif
 {
-    AMF_RESULT              res = AMF_OK; // error checking can be added later
+    AMF_RESULT res = AMF_OK; // error checking can be added later
     res = g_AMFFactory.Init();
     if(res != AMF_OK)
     {
         wprintf(L"AMF Failed to initialize");
         return 1;
     }
-
-    AMFCustomTraceWriter writer(AMF_TRACE_WARNING);
-#ifdef _DEBUG
-    g_AMFFactory.GetDebug()->AssertsEnable(true);
-    g_AMFFactory.GetTrace()->SetGlobalLevel(AMF_TRACE_INFO);
-    g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_DEBUG_OUTPUT, AMF_TRACE_INFO);
-    g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_CONSOLE, AMF_TRACE_INFO);
-
-#else
-    g_AMFFactory.GetDebug()->AssertsEnable(false);
-    g_AMFFactory.GetTrace()->SetGlobalLevel(AMF_TRACE_WARNING);
-#endif
 
     amf_increase_timer_precision();
 
@@ -313,7 +302,7 @@ int main(int argc, char* argv[])
     RegisterPreProcessingParams(&params);
     RegisterEncoderParamsAVC(&params);
     RegisterEncoderParamsHEVC(&params);
-
+    RegisterEncoderParamsAV1(&params);
 #if defined(_WIN32)
     if (!parseCmdLineParameters(&params))
 #else
@@ -337,8 +326,35 @@ int main(int argc, char* argv[])
         RegisterEncoderParamsHEVC(&paramsHEVC);
         LOG_INFO(paramsHEVC.GetParamUsage());
 
+        LOG_INFO(L"+++ AV1 codec +++");
+        ParametersStorage paramsAV1;
+        RegisterCodecParams(&paramsAV1);
+        RegisterEncoderParamsAV1(&paramsAV1);
+        LOG_INFO(paramsAV1.GetParamUsage());
+
         return -1;
     }
+
+
+    AMFCustomTraceWriter writer(AMF_TRACE_WARNING);
+
+    // check if tracing level change was requested
+    amf_int64 traceLevel = AMF_TRACE_WARNING;
+    params.GetParam(PARAM_NAME_TRACE_LEVEL, traceLevel);
+
+#ifdef _DEBUG
+    g_AMFFactory.GetDebug()->AssertsEnable(true);
+    g_AMFFactory.GetTrace()->SetGlobalLevel(traceLevel);
+    g_AMFFactory.GetTrace()->EnableWriter  (AMF_TRACE_WRITER_CONSOLE, true);
+    g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_CONSOLE, traceLevel);
+    g_AMFFactory.GetTrace()->EnableWriter  (AMF_TRACE_WRITER_DEBUG_OUTPUT, true);
+    g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_DEBUG_OUTPUT, traceLevel);
+
+#else
+    g_AMFFactory.GetDebug()->AssertsEnable(false);
+    g_AMFFactory.GetTrace()->SetGlobalLevel(traceLevel);
+#endif
+
 
     // figure out the codec
     std::wstring codec = AMFVideoEncoderVCE_AVC;
@@ -358,6 +374,10 @@ int main(int argc, char* argv[])
     else if(codec == AMFVideoEncoder_HEVC)
     {
         RegisterEncoderParamsHEVC(&params);
+    }
+    else if (codec == AMFVideoEncoder_AV1)
+    {
+        RegisterEncoderParamsAV1(&params);
     }
     else
     {

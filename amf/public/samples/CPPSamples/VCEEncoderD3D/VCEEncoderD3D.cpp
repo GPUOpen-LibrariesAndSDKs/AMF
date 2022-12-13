@@ -71,7 +71,7 @@ static AMF_RESULT ParamConverterCodec(const std::wstring& value, amf::AMFVariant
 */
 static AMF_RESULT RegisterCodecParams(ParametersStorage* pParams)
 {
-    pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_CODEC, ParamCommon, L"Codec name (AVC or H264, HEVC or H265)", ParamConverterCodec);
+    pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_CODEC, ParamCommon, L"Codec name (AVC or H264, HEVC or H265, AV1)", ParamConverterCodec);
     return AMF_OK;
 }
 
@@ -137,6 +137,7 @@ int main(int argc, char* argv[])
     RegisterCodecParams(&params);
     RegisterEncoderParamsAVC(&params);
     RegisterEncoderParamsHEVC(&params);
+    RegisterEncoderParamsAV1(&params);
 
 #if defined(_WIN32)
     if (!parseCmdLineParameters(&params))
@@ -155,6 +156,12 @@ int main(int argc, char* argv[])
         RegisterCodecParams(&paramsHEVC);
         RegisterEncoderParamsHEVC(&paramsHEVC);
         LOG_INFO(paramsHEVC.GetParamUsage());
+
+        LOG_INFO(L"+++ AV1 codec +++");
+        ParametersStorage paramsAV1;
+        RegisterCodecParams(&paramsAV1);
+        RegisterEncoderParamsAV1(&paramsAV1);
+        LOG_INFO(paramsAV1.GetParamUsage());
         return -1;
     }
 
@@ -175,6 +182,10 @@ int main(int argc, char* argv[])
     else if(codec == AMFVideoEncoder_HEVC)
     {
         RegisterEncoderParamsHEVC(&params);
+    }
+    else if (codec == AMFVideoEncoder_AV1)
+    {
+        RegisterEncoderParamsAV1(&params);
     }
     else
     {

@@ -72,5 +72,8 @@
 #define PARAM_NAME_ENGINE                  L"ENGINE"
 
 #define PARAM_NAME_SEARCH_CENTER_MAP_INPUT L"SEARCH_CENTER_MAP_INPUT"
+#define PARAM_NAME_COMPUTE_QUEUE           L"COMPUTEQUEUE"
+
+#define PARAM_NAME_TRACE_LEVEL             L"TRACE_LEVEL"
 
 #endif // AMF_PipelineDefines_h

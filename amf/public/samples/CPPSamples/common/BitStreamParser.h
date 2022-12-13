@@ -155,7 +155,6 @@ namespace Parser
             amf_uint32 ue = readUe(data, startBitIdx);
             // se From Ue 
             amf_uint32 mod2 = ue % 2;
-            amf_uint32 half = ue / 2;
             amf_uint32 r = ue / 2 + mod2;
 
             if (mod2 == 0)

@@ -102,6 +102,9 @@ namespace amf
         amf_int32           iPlaneWidthPitch;
         amf_int32           iPlaneHeightPitch;
     } AMFVulkanView;
+
+#define AMF_CONTEXT_VULKAN_COMPUTE_QUEUE  L"VulkanComputeQueue" // amf_int64; default=0; Compute queue index in range [0, (VkQueueFamilyProperties.queueCount-1)] of the compute queue family.
+
 #if defined(__cplusplus)
 } // namespace amf
 #endif

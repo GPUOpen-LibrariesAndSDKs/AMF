@@ -30,6 +30,13 @@
 New features are available in 
 Driver: Radeon Software Adrenalin 2019 Edition; 19.7.1 Software: 19.30 and later 
 
+1.4.28.0 (13.12.2022) version
+--------------------------
+   - Added AV1 encoding support
+   - Added 12-bit AV1 decoding
+   - New VQEnhancer component
+   - New AVC / HEVC encoder rate control methods
+
 1.4.26.0 (26.07.2022) version
 --------------------------
    - New perceptual (PAQ) and temporal (TAQ) adaptive quantization modes for PreAnalysis

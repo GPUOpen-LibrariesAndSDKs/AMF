@@ -31,7 +31,7 @@
 // THE SOFTWARE.
 //
 
-// this sample encodes NV12 frames using AMF Encoder and writes them to H.264 elmentary stream
+// this sample encodes NV12 frames using AMF Encoder and writes them to H.264,H.265, or AV1 elmentary stream
 
 #include <stdio.h>
 #ifdef _WIN32
@@ -42,6 +42,7 @@
 #include "public/common/AMFFactory.h"
 #include "public/include/components/VideoEncoderVCE.h"
 #include "public/include/components/VideoEncoderHEVC.h"
+#include "public/include/components/VideoEncoderAV1.h"
 #include "public/common/Thread.h"
 #include "public/common/AMFSTL.h"
 #include "public/common/TraceAdapter.h"
@@ -49,18 +50,23 @@
 
 #define AMF_FACILITY L"SimpleEncoder"
 
-//#define ENABLE_4K
-//#define ENABLE_EFC // color conversion inside encoder component. Will use GFX or HW if available
-//#define ENABLE_10_BIT
+static const bool bEnable4K = false;
+static const bool bEnable10bit = false;
+static const bool bMaximumSpeed = true; // encoding speed preset
 
-#if defined(ENABLE_10_BIT)
-static const wchar_t *pCodec = AMFVideoEncoder_HEVC;
-static AMF_COLOR_BIT_DEPTH_ENUM eDepth = AMF_COLOR_BIT_DEPTH_10;
-#else
-static const wchar_t *pCodec = AMFVideoEncoderVCE_AVC;
-//static const wchar_t *pCodec = AMFVideoEncoder_HEVC;
-static AMF_COLOR_BIT_DEPTH_ENUM eDepth = AMF_COLOR_BIT_DEPTH_8;
-#endif
+static const bool bEnableEfc = false; // color conversion inside encoder component. Will use GFX or HW if available
+// Encoder Format Conversion (EFC) available for selected input formats
+static const amf::AMF_SURFACE_FORMAT efcSurfaceFormat[] = {
+    amf::AMF_SURFACE_RGBA,
+    amf::AMF_SURFACE_BGRA,
+    amf::AMF_SURFACE_R10G10B10A2,
+    amf::AMF_SURFACE_RGBA_F16 };
+
+static const int codecIndex = 0; // set to 0 for AVC, 1 for HEVC, 2 for AV1
+static_assert(!bEnable10bit || codecIndex != 0, "HEVC or AV1 required for 10 bit");
+static AMF_COLOR_BIT_DEPTH_ENUM eDepth = (bEnable10bit ? AMF_COLOR_BIT_DEPTH_10 : AMF_COLOR_BIT_DEPTH_8); ;
+static const wchar_t* pCodecNames[] = { AMFVideoEncoderVCE_AVC, AMFVideoEncoder_HEVC, AMFVideoEncoder_AV1 };
+static const wchar_t* fileNames[] = { L"./output.h264", L"./output.h265", L"./output.av1" };
 
 #ifdef _WIN32
 static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX11;
@@ -68,33 +74,17 @@ static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX11;
 static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_VULKAN;
 #endif
 
-#if defined ENABLE_EFC
-static amf::AMF_SURFACE_FORMAT formatIn = amf::AMF_SURFACE_RGBA;
-//static amf::AMF_SURFACE_FORMAT formatIn = amf::AMF_SURFACE_BGRA;
-//static amf::AMF_SURFACE_FORMAT formatIn = amf::AMF_SURFACE_R10G10B10A2;
-//static amf::AMF_SURFACE_FORMAT formatIn = amf::AMF_SURFACE_RGBA_F16;
-#else
-static amf::AMF_SURFACE_FORMAT formatIn   = amf::AMF_SURFACE_NV12;
-#endif
+static amf::AMF_SURFACE_FORMAT formatIn = (bEnableEfc ? efcSurfaceFormat[0] : amf::AMF_SURFACE_NV12);
 
-#if defined(ENABLE_4K)
-static amf_int32 widthIn                  = 1920*2;
-static amf_int32 heightIn                 = 1080*2;
 
-#else
-static amf_int32 widthIn                  = 1920;
-static amf_int32 heightIn                 = 1080;
-#endif
+static amf_int32 widthIn                  = (bEnable4K ? 1920 * 2 : 1920);
+static amf_int32 heightIn                 = (bEnable4K ? 1080 * 2 : 1080);
 static amf_int32 frameRateIn              = 30;
 static amf_int64 bitRateIn                = 5000000L; // in bits, 5MBit
 static amf_int32 rectSize                 = 50;
 static amf_int32 frameCount               = 500;
-static bool bMaximumSpeed = true;
 
 #define START_TIME_PROPERTY L"StartTimeProperty" // custom property ID to store submission time in a frame - all custom properties are copied from input to output
-
-static const wchar_t *fileNameOut_h264 = L"./output.h264";
-static const wchar_t *fileNameOut_h265 = L"./output.h265";
 
 static amf_int32 xPos = 0;
 static amf_int32 yPos = 0;
@@ -118,10 +108,12 @@ protected:
     amf::AMFComponentPtr    m_pEncoder;
     std::ofstream           m_pFile;
 public:
-    PollingThread(amf::AMFContext *context, amf::AMFComponent *encoder, const wchar_t *pFileName);
+    PollingThread(amf::AMFContext* context, amf::AMFComponent* encoder, const wchar_t* pFileName);
     ~PollingThread();
     virtual void Run();
 };
+
+AMF_RESULT simpleEncode(const wchar_t* pCodec, const wchar_t* pFileNameOut);
 
 #ifdef _WIN32
 int _tmain(int argc, _TCHAR* argv[])
@@ -129,12 +121,22 @@ int _tmain(int argc, _TCHAR* argv[])
 int main(int argc, char* argv[])
 #endif
 {
+    AMF_RESULT result = simpleEncode(pCodecNames[codecIndex], fileNames[codecIndex]);
+    if (result != AMF_OK)
+    {
+        wprintf(L"%s encode failed", pCodecNames[codecIndex]);
+    }
+    return 0;
+}
+
+// creates encoder using pCodec component id, then outputs encoded elementary stream to pFileNameOut
+AMF_RESULT simpleEncode(const wchar_t* pCodec, const wchar_t* pFileNameOut) {
     AMF_RESULT res = AMF_OK; // error checking can be added later
     res = g_AMFFactory.Init();
-    if(res != AMF_OK)
+    if (res != AMF_OK)
     {
         wprintf(L"AMF Failed to initialize");
-        return 1;
+        return res;
     }
 
     ::amf_increase_timer_precision();
@@ -151,20 +153,20 @@ int main(int argc, char* argv[])
     res = g_AMFFactory.GetFactory()->CreateContext(&context);
     AMF_RETURN_IF_FAILED(res, L"CreateContext() failed");
 
-    if(memoryTypeIn == amf::AMF_MEMORY_VULKAN)
+    if (memoryTypeIn == amf::AMF_MEMORY_VULKAN)
     {
         res = amf::AMFContext1Ptr(context)->InitVulkan(NULL);
         AMF_RETURN_IF_FAILED(res, L"InitVulkan(NULL) failed");
         PrepareFillFromHost(context);
     }
 #ifdef _WIN32
-    else if(memoryTypeIn == amf::AMF_MEMORY_DX9)
+    else if (memoryTypeIn == amf::AMF_MEMORY_DX9)
     {
 
         res = context->InitDX9(NULL); // can be DX9 or DX9Ex device
         AMF_RETURN_IF_FAILED(res, L"InitDX9(NULL) failed");
     }
-    else if(memoryTypeIn == amf::AMF_MEMORY_DX11)
+    else if (memoryTypeIn == amf::AMF_MEMORY_DX11)
     {
         res = context->InitDX11(NULL); // can be DX11 device
         AMF_RETURN_IF_FAILED(res, L"InitDX11(NULL) failed");
@@ -176,12 +178,12 @@ int main(int argc, char* argv[])
     res = g_AMFFactory.GetFactory()->CreateComponent(context, pCodec, &encoder);
     AMF_RETURN_IF_FAILED(res, L"CreateComponent(%s) failed", pCodec);
 
-    if(amf_wstring(pCodec) == amf_wstring(AMFVideoEncoderVCE_AVC))
+    if (amf_wstring(pCodec) == amf_wstring(AMFVideoEncoderVCE_AVC))
     {
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_TRANSCODING);
         AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_TRANSCODING) failed");
 
-        if(bMaximumSpeed)
+        if (bMaximumSpeed)
         {
             res = encoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
             // do not check error for AMF_VIDEO_ENCODER_B_PIC_PATTERN - can be not supported - check Capability Manager sample
@@ -191,25 +193,27 @@ int main(int argc, char* argv[])
 
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, bitRateIn);
         AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, %" LPRId64 L") failed", bitRateIn);
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(widthIn, heightIn));
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, %dx%d) failed", widthIn, heightIn);
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, ::AMFConstructRate(frameRateIn, 1));
         AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, %dx%d) failed", frameRateIn, 1);
 
-#if defined(ENABLE_4K)
-        res = encoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_HIGH);
-        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_HIGH) failed");
+        if (bEnable4K) {
+            res = encoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_HIGH);
+            AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_PROFILE, AMF_VIDEO_ENCODER_PROFILE_HIGH) failed");
 
-        res = encoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE_LEVEL, 51);
-        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_PROFILE_LEVEL, 51)");
-        res = encoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
-        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0)");
-#endif
+            res = encoder->SetProperty(AMF_VIDEO_ENCODER_PROFILE_LEVEL, 51);
+            AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_PROFILE_LEVEL, 51)");
+            res = encoder->SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0);
+            AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_B_PIC_PATTERN, 0)");
+        }
     }
-    else
+    else if (amf_wstring(pCodec) == amf_wstring(AMFVideoEncoder_HEVC))
     {
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_USAGE, AMF_VIDEO_ENCODER_HEVC_USAGE_TRANSCODING);
         AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_USAGE, AMF_VIDEO_ENCODER_HEVC_USAGE_TRANSCODING)");
 
-        if(bMaximumSpeed)
+        if (bMaximumSpeed)
         {
             res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET, AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED);
             AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET, AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED)");
@@ -217,6 +221,8 @@ int main(int argc, char* argv[])
 
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE, bitRateIn);
         AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE, %" LPRId64 L") failed", bitRateIn);
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE, ::AMFConstructSize(widthIn, heightIn));
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE, %dx%d) failed", widthIn, heightIn);
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, ::AMFConstructRate(frameRateIn, 1));
         AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, %dx%d) failed", frameRateIn, 1);
 
@@ -224,36 +230,68 @@ int main(int argc, char* argv[])
         AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_COLOR_BIT_DEPTH, %d) failed", eDepth);
 
 
-#if defined(ENABLE_4K)
-        res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_TIER, AMF_VIDEO_ENCODER_HEVC_TIER_HIGH);
-        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_TIER, AMF_VIDEO_ENCODER_HEVC_TIER_HIGH) failed");
-        res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_PROFILE_LEVEL, AMF_LEVEL_5_1);
-        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_PROFILE_LEVEL, AMF_LEVEL_5_1) failed");
-#endif
+        if (bEnable4K) {
+            res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_TIER, AMF_VIDEO_ENCODER_HEVC_TIER_HIGH);
+            AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_TIER, AMF_VIDEO_ENCODER_HEVC_TIER_HIGH) failed");
+            res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_PROFILE_LEVEL, AMF_LEVEL_5_1);
+            AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_PROFILE_LEVEL, AMF_LEVEL_5_1) failed");
+        }
     }
+    else if (amf_wstring(pCodec) == amf_wstring(AMFVideoEncoder_AV1))
+    {
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_AV1_USAGE, AMF_VIDEO_ENCODER_AV1_USAGE_TRANSCODING);
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_AV1_USAGE, AMF_VIDEO_ENCODER_AV1_USAGE_TRANSCODING)");
+
+        if (bMaximumSpeed)
+        {
+            res = encoder->SetProperty(AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET, AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_SPEED);
+            AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET, AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_SPEED)");
+        }
+
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_AV1_TARGET_BITRATE, bitRateIn);
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_AV1_TARGET_BITRATE, %" LPRId64 L") failed", bitRateIn);
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_AV1_FRAMESIZE, ::AMFConstructSize(widthIn, heightIn));
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_AV1_FRAMESIZE, %dx%d) failed", widthIn, heightIn);
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_AV1_FRAMERATE, ::AMFConstructRate(frameRateIn, 1));
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_AV1_FRAMERATE, %dx%d) failed", frameRateIn, 1);
+
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_AV1_COLOR_BIT_DEPTH, eDepth);
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_AV1_COLOR_BIT_DEPTH, %d) failed", eDepth);
+
+        if (bEnable4K) {
+            //res = encoder->SetProperty(AMF_VIDEO_ENCODER_AV1_PROFILE, AMF_VIDEO_ENCODER_AV1_PROFILE_HIGH);
+            //AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_AV1_PROFILE, AMF_VIDEO_ENCODER_AV1_PROFILE_HIGH) failed");
+            res = encoder->SetProperty(AMF_VIDEO_ENCODER_AV1_LEVEL, AMF_VIDEO_ENCODER_AV1_LEVEL_5_1);
+            AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_AV1_LEVEL, AMF_VIDEO_ENCODER_AV1_LEVEL_5_1) failed");
+        }
+
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE, AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_NO_RESTRICTIONS);
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE, %d) failed", AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_NO_RESTRICTIONS);
+    }
+
     res = encoder->Init(formatIn, widthIn, heightIn);
     AMF_RETURN_IF_FAILED(res, L"encoder->Init() failed");
 
 
-    PollingThread thread(context, encoder, amf_wstring(pCodec) == amf_wstring(AMFVideoEncoderVCE_AVC) ? fileNameOut_h264 : fileNameOut_h265);
+    PollingThread thread(context, encoder, pFileNameOut);
     thread.Start();
 
     // encode some frames
     amf_int32 submitted = 0;
-    while(submitted < frameCount)
+    while (submitted < frameCount)
     {
-        if(surfaceIn == NULL)
+        if (surfaceIn == NULL)
         {
             surfaceIn = NULL;
             res = context->AllocSurface(memoryTypeIn, formatIn, widthIn, heightIn, &surfaceIn);
             AMF_RETURN_IF_FAILED(res, L"AllocSurface() failed");
 
-            if(memoryTypeIn == amf::AMF_MEMORY_VULKAN)
+            if (memoryTypeIn == amf::AMF_MEMORY_VULKAN)
             {
                 FillSurfaceVulkan(context, surfaceIn);
             }
 #ifdef _WIN32
-            else if(memoryTypeIn  == amf::AMF_MEMORY_DX9)
+            else if (memoryTypeIn == amf::AMF_MEMORY_DX9)
             {
                 FillSurfaceDX9(context, surfaceIn);
             }
@@ -268,15 +306,15 @@ int main(int argc, char* argv[])
         surfaceIn->SetProperty(START_TIME_PROPERTY, start_time);
 
         res = encoder->SubmitInput(surfaceIn);
-        if(res == AMF_NEED_MORE_INPUT) // handle full queue
+        if (res == AMF_NEED_MORE_INPUT) // handle full queue
         {
             // do nothing
         }
-		else if (res == AMF_INPUT_FULL || res == AMF_DECODER_NO_FREE_SURFACES)
-		{
-			amf_sleep(1); // input queue is full: wait, poll and submit again
-		}
-		else
+        else if (res == AMF_INPUT_FULL || res == AMF_DECODER_NO_FREE_SURFACES)
+        {
+            amf_sleep(1); // input queue is full: wait, poll and submit again
+        }
+        else
         {
             AMF_RETURN_IF_FAILED(res, L"SubmitInput() failed");
             surfaceIn = NULL;
@@ -284,10 +322,10 @@ int main(int argc, char* argv[])
         }
     }
     // drain encoder; input queue can be full
-    while(true)
+    while (true)
     {
         res = encoder->Drain();
-        if(res != AMF_INPUT_FULL) // handle full queue
+        if (res != AMF_INPUT_FULL) // handle full queue
         {
             break;
         }
@@ -306,7 +344,7 @@ int main(int argc, char* argv[])
     context = NULL; // context is the last
 
     g_AMFFactory.Terminate();
-    return 0;
+    return AMF_OK;
 }
 
 #ifdef _WIN32
@@ -336,12 +374,8 @@ static void FillSurfaceDX9(amf::AMFContext *context, amf::AMFSurface *surface)
     yPos+=2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
 }
 
-
-
-
 static void FillSurfaceDX11(amf::AMFContext *context, amf::AMFSurface *surface)
 {
-    HRESULT hr = S_OK;
     // fill surface with something something useful. We fill with color and color rect
     // get native DX objects
     ID3D11Device *deviceDX11 = (ID3D11Device *)context->GetDX11Device(); // no reference counting - do not Release()
@@ -673,7 +707,7 @@ static void FillSurfaceVulkan(amf::AMFContext *context, amf::AMFSurface *surface
             yPos = 0;
         }
 
-        for(int p = 0; p < pColor1->GetPlanesCount(); p++)
+        for(amf_size p = 0; p < pColor1->GetPlanesCount(); p++)
         {
             amf::AMFPlane *plane = pColor1->GetPlaneAt(p);
             amf_size origin1[3] = {0, 0 , 0};

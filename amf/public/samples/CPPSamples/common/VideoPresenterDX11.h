@@ -95,11 +95,15 @@ private:
 
     AMF_RESULT ApplyCSC(amf::AMFSurface* pSurface);
 
+    inline AMF_RESULT UpdateCurrentMonitorOutput();
+
+
     amf::AMF_SURFACE_FORMAT             m_eInputFormat;
     CComQIPtr<IDXGISwapChain>           m_pSwapChain;
     CComPtr<IDXGISwapChain1>            m_pSwapChain1;
     CComPtr<IDXGIDecodeSwapChain>       m_pSwapChainVideo;
     CComPtr<IDXGIOutput>                m_pCurrentOutput;
+    std::vector<CComPtr<IDXGIOutput>>   m_pOutputs;
 
     bool                                m_stereo;
     CComPtr<ID3D11Texture2D>            m_pCopyTexture_L;

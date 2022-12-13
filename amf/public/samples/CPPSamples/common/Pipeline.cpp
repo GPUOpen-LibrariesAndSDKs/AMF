@@ -291,15 +291,6 @@ void Pipeline::OnEof()
 PipelineState Pipeline::GetState() const
 {
     amf::AMFLock lock(&m_cs);
-    // test code 
-    for(ConnectorList::const_iterator it = m_connectors.begin(); it != m_connectors.end(); it++)
-    {
-        if(!(*it)->IsEof())
-        {
-            int a = 1;
-        }
-    }
-
     return m_state;
 }
 //-------------------------------------------------------------------------------------------------
@@ -512,7 +503,7 @@ AMF_RESULT InputSlot::Drain()
     return AMF_EOF;
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT InputSlot::SubmitInput(amf::AMFData* pData, amf_ulong ulTimeout, bool poll)
+AMF_RESULT InputSlot::SubmitInput(amf::AMFData* pData, amf_ulong /*ulTimeout*/, bool poll)
 {
     if(m_bFrozen)
     {
@@ -600,7 +591,7 @@ AMF_RESULT InputSlot::SubmitInput(amf::AMFData* pData, amf_ulong ulTimeout, bool
     }
 
     // poll output
-    AMF_RESULT resPoll = m_pConnector->PollAll();
+    m_pConnector->PollAll();
 
     return res;
 }

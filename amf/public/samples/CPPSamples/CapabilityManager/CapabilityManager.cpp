@@ -36,6 +36,7 @@
 #include "public/include/components/VideoDecoderUVD.h"
 #include "public/include/components/VideoEncoderVCE.h"
 #include "public/include/components/VideoEncoderHEVC.h"
+#include "public/include/components/VideoEncoderAV1.h"
 #include "public/include/components/VideoConverter.h"
 #include "public/include/core/Context.h"
 #include "public/include/core/Debug.h"
@@ -354,6 +355,68 @@ bool QueryEncoderForCodecHEVC(const wchar_t *componentID, amf::AMFContext* pCont
     }
 }
 
+bool QueryEncoderForCodecAV1(const wchar_t* componentID, amf::AMFContext* pContext)
+{
+    std::wcout << L"\tCodec " << componentID << std::endl;
+    amf::AMFCapsPtr encoderCaps;
+    bool result = false;
+
+    amf::AMFComponentPtr pEncoder;
+    g_AMFFactory.GetFactory()->CreateComponent(pContext, componentID, &pEncoder);
+    if (pEncoder == NULL)
+    {
+        std::wcout << AccelTypeToString(amf::AMF_ACCEL_NOT_SUPPORTED) << std::endl;
+        return false;
+    }
+    if (pEncoder->GetCaps(&encoderCaps) == AMF_OK)
+    {
+        amf_uint32 NumOfHWInstances = 1;
+        encoderCaps->GetProperty(AMF_VIDEO_ENCODER_AV1_CAP_NUM_OF_HW_INSTANCES, &NumOfHWInstances);
+        std::wcout << L"\t\tNumber HW instances:" << NumOfHWInstances << std::endl;
+
+        for (amf_uint32 i = 0; i < NumOfHWInstances; i++)
+        {
+            if (NumOfHWInstances > 1)
+            {
+                pEncoder->SetProperty(AMF_VIDEO_ENCODER_AV1_ENCODER_INSTANCE_INDEX, i);
+                std::wcout << L"\t\t--------------------" << std::endl;
+                std::wcout << L"\t\tInstance:" << i << std::endl;
+            }
+
+            amf::AMF_ACCELERATION_TYPE accelType = encoderCaps->GetAccelerationType();
+            std::wcout << L"\t\tAcceleration Type:" << AccelTypeToString(accelType) << std::endl;
+
+            amf_uint32 maxProfile = 0;
+            encoderCaps->GetProperty(AMF_VIDEO_ENCODER_AV1_CAP_MAX_PROFILE, &maxProfile);
+            std::wcout << L"\t\tmaximum profile:" << maxProfile << std::endl;
+
+            amf_uint32 maxLevel = 0;
+            encoderCaps->GetProperty(AMF_VIDEO_ENCODER_AV1_CAP_MAX_LEVEL, &maxLevel);
+            std::wcout << L"\t\tmaximum level:" << maxLevel << std::endl;
+
+            std::wcout << L"\t\tEncoder input:\n";
+            amf::AMFIOCapsPtr inputCaps;
+            if (encoderCaps->GetInputCaps(&inputCaps) == AMF_OK)
+            {
+                result = QueryIOCaps(inputCaps);
+            }
+
+            std::wcout << L"\t\tEncoder output:\n";
+            amf::AMFIOCapsPtr outputCaps;
+            if (encoderCaps->GetOutputCaps(&outputCaps) == AMF_OK)
+            {
+                result = QueryIOCaps(outputCaps);
+            }
+        }
+        return true;
+    }
+    else
+    {
+        std::wcout << AccelTypeToString(amf::AMF_ACCEL_NOT_SUPPORTED) << std::endl;
+        return false;
+    }
+}
+
 void QueryDecoderCaps(amf::AMFContext* pContext)
 {
     std::wcout << L"Querying video decoder capabilities...\n";
@@ -375,6 +438,7 @@ void QueryEncoderCaps(amf::AMFContext* pContext)
     QueryEncoderForCodecAVC(AMFVideoEncoderVCE_AVC, pContext);
     QueryEncoderForCodecAVC(AMFVideoEncoderVCE_SVC, pContext);
     QueryEncoderForCodecHEVC(AMFVideoEncoder_HEVC, pContext);
+    QueryEncoderForCodecAV1(AMFVideoEncoder_AV1, pContext);
 }
 
 bool QueryConverterCaps(amf::AMFContext* pContext)

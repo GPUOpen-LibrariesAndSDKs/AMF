@@ -137,7 +137,7 @@ public:
         g_AMFFactory.GetTrace()->UnregisterWriter(L"AMFCustomTraceWriter");
         g_AMFFactory.Terminate();
     }
-    virtual void AMF_CDECL_CALL Write(const wchar_t* scope, const wchar_t* message) override
+    virtual void AMF_CDECL_CALL Write(const wchar_t* /*scope*/, const wchar_t* message) override
     {
         WriteLog(message, AMFLogLevelInfo);
     }

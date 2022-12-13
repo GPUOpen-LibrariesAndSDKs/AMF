@@ -45,8 +45,10 @@
 #include "public/common/TraceAdapter.h"
 #include "public/include/components/VideoEncoderVCE.h"
 #include "public/include/components/VideoEncoderHEVC.h"
+#include "public/include/components/VideoEncoderAV1.h"
 #include "public/samples/CPPSamples/common/EncoderParamsAVC.h"
 #include "public/samples/CPPSamples/common/EncoderParamsHEVC.h"
+#include "public/samples/CPPSamples/common/EncoderParamsAV1.h"
 #include "../common/ParametersStorage.h"
 #include "../common/CmdLineParser.h"
 #include "../common/CmdLogger.h"
@@ -55,9 +57,6 @@
 
 #include <fstream>
 #include <iostream>
-
-static const wchar_t* pCodec = AMFVideoEncoderVCE_AVC;
-//static const wchar_t *pCodec = AMFVideoEncoder_HEVC;
 
 static AMF_COLOR_BIT_DEPTH_ENUM eDepth = AMF_COLOR_BIT_DEPTH_8;
 static amf_int32 frameCount = 500;
@@ -79,12 +78,12 @@ amf_int32               widthIn = 1920;
 amf_int32               heightIn = 1080;
 amf_int32               rectSize = 50;
 
-bool          writeToFileMode = false;
-amf_int64     formatType = 0;
-amf_int64     memoryIn = 0;
-amf_wstring  codec = pCodec;
-amf_wstring  workAlgorithm = L"ASAP";
-amf_wstring   fileNameOut;
+bool        writeToFileMode = false;
+amf_int64   formatType = 0;
+amf_int64   memoryIn = 0;
+amf_wstring codec = AMFVideoEncoderVCE_AVC; // AVC default. can set using '-codec avc' '-codec hevc' '-codec av1' command line argument
+amf_wstring workAlgorithm = L"ASAP";
+amf_wstring fileNameOut;
 
 
 #define START_TIME_PROPERTY L"StartTimeProperty" // custom property ID to store submission time in a frame - all custom properties are copied from input to output
@@ -104,7 +103,7 @@ AMF_RESULT RegisterParams(ParametersStorage* pParams)
 {
     pParams->SetParamDescription(PARAM_NAME_WORKALGORITHM, ParamCommon, L"'ASAP' or 'OneInOne' frames submission algorithm", NULL);
     pParams->SetParamDescription(PARAM_NAME_ENGINE, ParamCommon, L"Memory type: DX9Ex, DX11, Vulkan (h.264 only)", ParamConverterMemoryType);
-    pParams->SetParamDescription(PARAM_NAME_CODEC, ParamCommon, L"Codec name (AVC or H264, HEVC or H265)", ParamConverterCodec);
+    pParams->SetParamDescription(PARAM_NAME_CODEC, ParamCommon, L"Codec name (AVC or H264, HEVC or H265, AV1)", ParamConverterCodec);
     pParams->SetParamDescription(PARAM_NAME_INPUT_FORMAT, ParamCommon, L"Supported file formats: RGBA_F16, R10G10B10A2, NV12, P010", ParamConverterFormat);
     pParams->SetParamDescription(PARAM_NAME_INPUT_FRAMES, ParamCommon, L"Output number of frames", ParamConverterInt64);
     pParams->SetParamDescription(PARAM_NAME_PRERENDER, ParamCommon, L"Pre-render number of frames", ParamConverterInt64);
@@ -130,6 +129,7 @@ AMF_RESULT ReadParams(ParametersStorage* params, int argc, char* argv[])
     RegisterParams(params);
     RegisterEncoderParamsAVC(params);
     RegisterEncoderParamsHEVC(params);
+    RegisterEncoderParamsAV1(params);
 
 #if defined(_WIN32)
     if (!parseCmdLineParameters(params))
@@ -152,6 +152,11 @@ AMF_RESULT ReadParams(ParametersStorage* params, int argc, char* argv[])
         RegisterEncoderParamsHEVC(&paramsHEVC);
         LOG_INFO(paramsHEVC.GetParamUsage());
 
+        LOG_INFO(L"+++ AV1 codec +++");
+        ParametersStorage paramsAV1;
+        RegisterEncoderParamsAV1(&paramsAV1);
+        LOG_INFO(paramsAV1.GetParamUsage());
+
         return AMF_FAIL;
     }
 
@@ -170,6 +175,10 @@ AMF_RESULT ReadParams(ParametersStorage* params, int argc, char* argv[])
     else if (codec == amf_wstring(AMFVideoEncoder_HEVC))
     {
         RegisterEncoderParamsHEVC(params);
+    }
+    else if (codec == amf_wstring(AMFVideoEncoder_AV1))
+    {
+        RegisterEncoderParamsAV1(params);
     }
     else
     {
@@ -330,13 +339,15 @@ AMF_RESULT SetEncoderDefaults(ParametersStorage* pParams, amf::AMFComponent* enc
             AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED) failed");
         }
 
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(widthIn, heightIn));
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, %dx%d) failed", widthIn, heightIn);
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_LOWLATENCY_MODE, true);
         AMF_RETURN_IF_FAILED(res, L"encoder->SetProperty(AMF_VIDEO_ENCODER_LOWLATENCY_MODE, true) failed");
 
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_QUERY_TIMEOUT, 50); //ms
         AMF_RETURN_IF_FAILED(res, L"encoder->SetProperty(AMF_VIDEO_ENCODER_QUERY_TIMEOUT, 50) failed");
     }
-    else
+    else if (codec == amf_wstring(AMFVideoEncoder_HEVC))
     {
         // usage parameters come first
         AMF_RETURN_IF_FAILED(PushParamsToPropertyStorage(pParams, ParamEncoderUsage, encoder));
@@ -371,11 +382,58 @@ AMF_RESULT SetEncoderDefaults(ParametersStorage* pParams, amf::AMFComponent* enc
             AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET, AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED)");
         }
 
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE, ::AMFConstructSize(widthIn, heightIn));
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE, %dx%d) failed", widthIn, heightIn);
+
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE, true);
         AMF_RETURN_IF_FAILED(res, L"encoder->SetProperty(AMF_VIDEO_ENCODER_LOWLATENCY_MODE, true) failed");
 
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_QUERY_TIMEOUT, 50); //ms
         AMF_RETURN_IF_FAILED(res, L"encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_QUERY_TIMEOUT, 50) failed");
+    }
+    else if (codec == amf_wstring(AMFVideoEncoder_AV1))
+    {
+        // usage parameters come first
+        AMF_RETURN_IF_FAILED(PushParamsToPropertyStorage(pParams, ParamEncoderUsage, encoder));
+
+        // AMF_VIDEO_ENCODER_AV1_USAGE needs to be set before the rest
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_AV1_USAGE, AMF_VIDEO_ENCODER_AV1_USAGE_TRANSCODING);
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_AV1_USAGE, AMF_VIDEO_ENCODER_AV1_USAGE_TRANSCODING)");
+
+        // initialize command line parameters
+        AMF_RETURN_IF_FAILED(PushParamsToPropertyStorage(pParams, ParamEncoderStatic, encoder));
+        AMF_RETURN_IF_FAILED(PushParamsToPropertyStorage(pParams, ParamEncoderDynamic, encoder));
+
+        // if we requested to run a specific VCN instance, check
+        // if it's available, otherwise we can't run the test...
+        if (vcnInstance != -1)
+        {
+            amf::AMFCapsPtr encoderCaps;
+            if (encoder->GetCaps(&encoderCaps) == AMF_OK)
+            {
+                amf_uint64  vcnInstCount = 0;
+                AMF_RETURN_IF_FAILED(encoderCaps->GetProperty(AMF_VIDEO_ENCODER_AV1_CAP_NUM_OF_HW_INSTANCES, &vcnInstCount), L"Multiple VCN instances not supported");
+                AMF_RETURN_IF_FALSE((vcnInstance >= 0) && (vcnInstance < vcnInstCount), AMF_OUT_OF_RANGE, L"Invalid VCN instance %d, requested.  Only %d instances supported.", vcnInstance, vcnInstCount);
+
+                res = encoder->SetProperty(AMF_VIDEO_ENCODER_AV1_ENCODER_INSTANCE_INDEX, vcnInstance);
+                AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_AV1_ENCODER_INSTANCE_INDEX, %d) failed", vcnInstance);
+            }
+        }
+
+        if (bMaximumSpeed)
+        {
+            res = encoder->SetProperty(AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET, AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_SPEED);
+            AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET, AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_SPEED)");
+        }
+
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_AV1_FRAMESIZE, ::AMFConstructSize(widthIn, heightIn));
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_AV1_FRAMESIZE, %dx%d) failed", widthIn, heightIn);
+
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE, AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE_LOWEST_LATENCY);
+        AMF_RETURN_IF_FAILED(res, L"encoder->SetProperty(AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE, AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE_LOWEST_LATENCY) failed");
+
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_AV1_QUERY_TIMEOUT, 50); //ms
+        AMF_RETURN_IF_FAILED(res, L"encoder->SetProperty(AMF_VIDEO_ENCODER_AV1_QUERY_TIMEOUT, 50) failed");
     }
     return AMF_OK;
 }
@@ -583,9 +641,10 @@ int main(int argc, char* argv[])
     }
     PipelineElementPtr pipelineElPtr(fileReader);
 
+    wprintf(L"Encoder: %s\n", codec.c_str());
     // component: encoder
     res = g_AMFFactory.GetFactory()->CreateComponent(context, codec.c_str(), &encoder);
-    AMF_RETURN_IF_FAILED(res, L"CreateComponent(%s) failed", pCodec);
+    AMF_RETURN_IF_FAILED(res, L"CreateComponent(%s) failed", codec.c_str());
 
     res = SetEncoderDefaults(&params, encoder, codec);
     AMF_RETURN_IF_FAILED(res, L"Could not set default values in encoder.");
