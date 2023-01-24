@@ -38,7 +38,7 @@
 #include "public/include/core/Context.h"
 #include "public/include/core/Trace.h"
 #include "public/common/TraceAdapter.h"
-
+#include "public/common/PropertyStorageImpl.h"
 
 #define AMF_FACILITY L"AMFAudioDecoderFFMPEGImpl"
 
@@ -115,6 +115,27 @@ AMFAudioDecoderFFMPEGImpl::~AMFAudioDecoderFFMPEGImpl()
 {
     Terminate();
     g_AMFFactory.Terminate();
+}
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::GetInputCodecAt(amf_size index, AMFPropertyStorage** codec) const
+{
+    AMF_RETURN_IF_INVALID_POINTER(codec);
+    amf_int64 codecID = 0;
+    amf_int32 sampleRate = 0;
+    switch (index)
+    {
+        case 0:
+            codecID = AV_CODEC_ID_AAC;
+            sampleRate = 0;
+            break;
+        default:
+            return AMF_OUT_OF_RANGE;
+    }
+    *codec = new AMFInterfaceImpl<amf::AMFPropertyStorageImpl<amf::AMFPropertyStorage>>();
+    (*codec)->Acquire();
+    (*codec)->SetProperty(SUPPORTEDCODEC_ID, codecID);
+    (*codec)->SetProperty(SUPPORTEDCODEC_SAMPLERATE, sampleRate);
+    return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*format*/, amf_int32 /*width*/, amf_int32 /*height*/)

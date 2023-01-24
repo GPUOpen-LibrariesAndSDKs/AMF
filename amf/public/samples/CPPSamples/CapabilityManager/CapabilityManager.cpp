@@ -474,7 +474,7 @@ bool QueryConverterCaps(amf::AMFContext* pContext)
 }
 
 #if defined(_WIN32)
-int _tmain(int argc, _TCHAR* argv[])
+int _tmain(int /* argc */, _TCHAR* /* argv */[])
 #else
 int main(int argc, char* argv[])
 #endif
@@ -498,7 +498,7 @@ int main(int argc, char* argv[])
 #endif        
     CAPABILITY_ENUM  mode       = CAPABILITY_DX11;
     params.GetParamWString(PARAM_NAME_CAPABILITY, capability);
-    std::transform(capability.begin(), capability.end(), capability.begin(), ::toupper);
+    std::transform(capability.begin(), capability.end(), capability.begin(), toUpperWchar);
     if (capability == L"DX9")
     {
         mode = CAPABILITY_DX9;

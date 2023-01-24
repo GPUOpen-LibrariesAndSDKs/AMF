@@ -110,7 +110,7 @@ BackBufferPresenter::SetProcessor(amf::AMFComponent* pProcessor, amf::AMFCompone
 AMFRect
 BackBufferPresenter::GetClientRect()
 {
-    AMFRect clientRect;
+    AMFRect clientRect = {0};
     if(m_hwnd!=NULL)
     {
 #if defined(_WIN32)

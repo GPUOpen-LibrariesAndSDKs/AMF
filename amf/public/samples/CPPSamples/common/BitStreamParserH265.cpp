@@ -553,7 +553,7 @@ static const amf_int s_winUnitX[]={1,2,2,1};
 static const amf_int s_winUnitY[]={1,2,1,1};
 
 static amf_int getWinUnitX (amf_int chromaFormatIdc) { return s_winUnitX[chromaFormatIdc];      }
-static amf_int getWinUnitY (amf_int chromaFormatIdc) { return s_winUnitY[chromaFormatIdc];      }
+// static amf_int getWinUnitY (amf_int chromaFormatIdc) { return s_winUnitY[chromaFormatIdc];      }
 static const int MacroblockSize = 16;
 
 AMFRect HevcParser::GetCropRect() const
@@ -700,7 +700,7 @@ AMF_RESULT HevcParser::QueryOutput(amf::AMFData** ppData)
     std::vector<size_t> naluSizes;
     size_t dataOffset = 0;
     bool bSliceFound = false;
-	amf_uint32 prev_slice_nal_unit_type;
+	amf_uint32 prev_slice_nal_unit_type = 0;
 	
     do 
     {
@@ -1015,7 +1015,7 @@ bool HevcParser::SpsData::Parse(amf_uint8 *nalu, size_t size)
     size_t offset = 16; // 2 bytes NALU header + 
     amf_uint32 activeVPS = Parser::readBits(nalu, offset,4);
     amf_uint32 max_sub_layer_minus1 = Parser::readBits(nalu, offset,3);
-    amf_uint32 sps_temporal_id_nesting_flag = Parser::getBit(nalu, offset);
+    sps_temporal_id_nesting_flag = Parser::getBit(nalu, offset);
     AMFH265_profile_tier_level_t ptl;
     memset (&ptl,0,sizeof(ptl));
     ParsePTL(&ptl, true, max_sub_layer_minus1, nalu, size, offset);
@@ -1023,7 +1023,6 @@ bool HevcParser::SpsData::Parse(amf_uint8 *nalu, size_t size)
 
     sps_video_parameter_set_id = activeVPS;
     sps_max_sub_layers_minus1 = max_sub_layer_minus1;
-    sps_temporal_id_nesting_flag = sps_temporal_id_nesting_flag;
     memcpy (&profile_tier_level,&ptl,sizeof(ptl));
     sps_seq_parameter_set_id = SPS_ID;
 
@@ -1419,7 +1418,7 @@ void HevcParser::SpsData::ParseScalingList(AMFH265_scaling_list_data_t * s_data,
         }
     }
 }
-void HevcParser::SpsData::ParseShortTermRefPicSet(AMFH265_short_term_RPS_t *rps, amf_int32 stRpsIdx, amf_uint32 num_short_term_ref_pic_sets, AMFH265_short_term_RPS_t rps_ref[], amf_uint8 *nalu, size_t /*size*/, size_t& offset)
+void HevcParser::SpsData::ParseShortTermRefPicSet(AMFH265_short_term_RPS_t *rps, amf_int32 stRpsIdx, amf_uint32 number_short_term_ref_pic_sets, AMFH265_short_term_RPS_t rps_ref[], amf_uint8 *nalu, size_t /*size*/, size_t& offset)
 {
     amf_uint32 interRPSPred = 0;
     amf_uint32 delta_idx_minus1 = 0;
@@ -1434,7 +1433,7 @@ void HevcParser::SpsData::ParseShortTermRefPicSet(AMFH265_short_term_RPS_t *rps,
         amf_uint32 delta_rps_sign, abs_delta_rps_minus1;
         amf_bool used_by_curr_pic_flag[16] = {0};
         amf_bool use_delta_flag[16] = {0};
-        if (unsigned(stRpsIdx) == num_short_term_ref_pic_sets)
+        if (unsigned(stRpsIdx) == number_short_term_ref_pic_sets)
         {
             delta_idx_minus1 = Parser::ExpGolomb::readUe(nalu, offset);
         }

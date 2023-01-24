@@ -168,9 +168,9 @@ public:
 
 #ifdef _WIN32
 //int _tmain(int argc, _TCHAR* argv[])
-amf_int main(amf_int argc, char** argv)
+amf_int main(amf_int /* argc */, char** /* argv */)
 #else
-int main(int argc, char* argv[])
+int main(int /* argc */, char* /* argv */ [])
 #endif
 {
     AMF_RESULT res = AMF_OK; // error checking can be added later

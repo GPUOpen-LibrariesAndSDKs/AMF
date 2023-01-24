@@ -127,8 +127,23 @@ AMF_RESULT AMF_STD_CALL AMFCursorCaptureLinux::AcquireCursor(AMFSurface** pSurfa
     AMFPoint hotspot;
     hotspot.x = cursor->xhot;
     hotspot.y = cursor->yhot;
-
     (*pSurface)->SetProperty(L"Hotspot", hotspot);
+
+    Window root = DefaultRootWindow((Display*)display);
+
+    Window rootOut = 0;
+    int x, y = 0;
+    unsigned int swidth, sheight = 0;
+    unsigned int borderWidth, depth = 0;
+    Status ret = XGetGeometry(display, root, &rootOut, &x, &y, &swidth, &sheight, &borderWidth, &depth);
+
+    AMFSize screenSize = {0, 0};
+    // zero status codes indicate an error
+    if (ret != 0)
+    {
+        screenSize = AMFConstructSize(swidth, sheight);
+    }
+    (*pSurface)->SetProperty(L"Resolution", screenSize);
 
     m_bFirstCursor = true;
 

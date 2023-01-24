@@ -340,7 +340,7 @@ AMF_RESULT RawStreamReader::Terminate()
     return res;
 }
 
-AMF_RESULT RawStreamReader::SubmitInput(amf::AMFData* pData)
+AMF_RESULT RawStreamReader::SubmitInput(amf::AMFData* /* pData */)
 {
     return AMF_NOT_SUPPORTED;
 }
@@ -392,7 +392,7 @@ AMF_RESULT RawStreamReader::QueryOutput(amf::AMFData** ppData)
     return AMF_OK;
 }
 
-AMF_RESULT RawStreamReader::ReadNextFrame(int dstStride, int dstHeight, int valignment, unsigned char* pDstBits)
+AMF_RESULT RawStreamReader::ReadNextFrame(int dstStride, int /* dstHeight */, int valignment, unsigned char* pDstBits)
 {
     if(m_framesCountRead == m_framesCount)
     {
@@ -435,7 +435,7 @@ AMF_RESULT RawStreamReader::ReadNextFrame(int dstStride, int dstHeight, int vali
     return AMF_OK;
 }
 
-AMF_RESULT RawStreamReader::ReadNextSearchCenterMap(int dstStride, int dstHeight, int valignment, unsigned char* pDstBits)
+AMF_RESULT RawStreamReader::ReadNextSearchCenterMap(int dstStride, int /* dstHeight */, int valignment, unsigned char* pDstBits)
 {
 	amf_size read = 0;
 	m_pSearchCenterMapStream->Read(m_searchCenterMapFrame.GetData(), m_searchCenterMapFrame.GetSize(), &read);
@@ -465,10 +465,8 @@ void RawStreamReader::ParseRawFileFormat(const std::wstring path, amf_int32 &wid
         std::string _ini_file(ini_file.begin(), ini_file.end());
         configStream.open(_ini_file, std::ios_base::in);
 #endif
-        std::wstring line;
         if (configStream.is_open())
         {
-            bool skip = false;
             while (configStream.eof() == false)
             {
                 std::wstring line;

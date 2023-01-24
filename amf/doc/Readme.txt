@@ -27,8 +27,14 @@
 // THE SOFTWARE.
 //
 
-New features are available in 
-Driver: Radeon Software Adrenalin 2019 Edition; 19.7.1 Software: 19.30 and later 
+New features are available in
+Driver: Radeon Software Adrenalin 2019 Edition; 19.7.1 Software: 19.30 and later
+
+1.4.29.0 (24.1.2023) version
+--------------------------
+   - Added Smart Access Video for decoder and AVC / HEVC / AV1 encoders
+   - New options for VQEnhancer and AV1 encoder components
+   - Switched to Markdown based API docs which enable easier open source developer contributions
 
 1.4.28.0 (13.12.2022) version
 --------------------------
@@ -68,7 +74,7 @@ Driver: Radeon Software Adrenalin 2019 Edition; 19.7.1 Software: 19.30 and later
 --------------------------
    - HDR color conversion updated
    - HDR color conversion in encoder
-   - QVBR rate control mode in encoder 
+   - QVBR rate control mode in encoder
    - Extended statistic and quality metrics in encoder
    - Frame rate parameter became dynamic
    - New LTR encoder mode
@@ -80,7 +86,7 @@ Driver: Radeon Software Adrenalin 2019 Edition; 19.7.1 Software: 19.30 and later
    - VP9 decoding
    - DX12 decoding and color conversion
    - Pre-analysis component  (PA)
-   - Pre-processing filter 
+   - Pre-processing filter
    - Encoder: output timeout support, throughput information, picture management , statistic
 
 1.4.14.0 (08.07.2019) version
@@ -130,7 +136,7 @@ Driver: Radeon Software Adrenalin 2019 Edition; 19.7.1 Software: 19.30 and later
 
 
 
-Driver: Radeon Software Edition Crimson; 16.7.3 Software: 16.30 and later 
+Driver: Radeon Software Edition Crimson; 16.7.3 Software: 16.30 and later
 
 1.3.0.5 (19.07.2016) version
 --------------------------

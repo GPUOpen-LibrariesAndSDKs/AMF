@@ -182,11 +182,9 @@ AMF_RESULT  AMFZCamLiveStreamImpl::AMFOutputZCamLiveStreamImpl::GetAudioData(AMF
         err = m_pHost->m_pContext->AllocAudioBuffer(AMF_MEMORY_HOST, sampleFormat, samples, sampleRate, channels, &pAudioBuffer);
         if (AMF_OK == err && pAudioBuffer)
         {
-            size_t lenData = pAudioBuffer->GetSize();
             pAudioBuffer->SetPts(m_ptsLast);
             pAudioBuffer->SetDuration(audioLength);
             m_ptsLast += audioLength;
-            void* pMem = pAudioBuffer->GetNative();
             *ppData = pAudioBuffer.Detach();
             err = AMF_OK;
         }
@@ -283,8 +281,8 @@ AMF_RESULT AMF_STD_CALL  AMFZCamLiveStreamImpl::Init(AMF_SURFACE_FORMAT /*format
     //init cameras
     if (AMF_OK == res)
     {
-        std::wstring modeCommandW = ZCamVideoModeCommandEnum[m_videoMode].name;
-        std::string modeCommand = std::string(modeCommandW.begin(), modeCommandW.end());
+        amf_wstring modeCommandW(ZCamVideoModeCommandEnum[m_videoMode].name);
+        amf_string modeCommand(amf::amf_from_unicode_to_utf8(modeCommandW));
 
         int err = m_dataStreamZCam.SetupCameras(modeCommand.c_str());
         if (!err)
@@ -382,9 +380,9 @@ AMF_RESULT AMFZCamLiveStreamImpl::PollStream()
     std::vector<int> lenDataList;
     std::vector<char*> pDataList;
     amf_pts timestampCapStart = amf_high_precision_clock();
-    int err = m_dataStreamZCam.CaptureOneFrame(pDataList, lenDataList);
+    m_dataStreamZCam.CaptureOneFrame(pDataList, lenDataList);
     amf_pts timestampCapEnd = amf_high_precision_clock();
-    if (pDataList.size() != m_streamCount)
+    if (pDataList.size() != static_cast<amf_uint32>(m_streamCount))
     {
         AMFTraceWarning(L"Videostitch", L"CaptureOneFrame, pDataList.size() != m_streamCount! Received streams = %d", (amf_int32)pDataList.size());
         return AMF_OK;
@@ -416,7 +414,6 @@ AMF_RESULT AMFZCamLiveStreamImpl::PollStream()
 
                 void* pMem = pBuf->GetNative();
                 memcpy(pMem, pData, lenData);
-                AMF_RESULT err = AMF_INPUT_FULL;
                 while (!m_ZCamPollingThread.StopRequested())
                 {
                     //this is for playback

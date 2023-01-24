@@ -240,16 +240,16 @@ public:
     virtual AMF_RESULT QueryOutput(amf::AMFData** ppData)
     {
         AMF_RESULT res = AMFComponentElement::QueryOutput(ppData);
+
+        /*
         if(res == AMF_OK && *ppData != nullptr)
         {
 			amf_pts capturePts = (*ppData)->GetPts();
 			amf_pts encodedPts = m_pDisplayDvrPipeline->m_pCurrentTime->Get();
-            // AMFTraceInfo(L"Latency", L"latency = %5.2f", (encodedPts - capturePts) / 10000. );
+            AMFTraceInfo(L"Latency", L"latency = %5.2f", (encodedPts - capturePts) / 10000. );
         }
-        else
-        {
-            int a = 1;
-        }
+        */
+
         return res;
     }
 protected:
@@ -308,6 +308,8 @@ amf_pts DisplayDvrPipeline::GetCurrentPts()
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT DisplayDvrPipeline::InitContext(const std::wstring& /*engineStr*/, amf::AMF_MEMORY_TYPE engineMemoryType, amf_uint32 adapterID)
 {
+	m_pCurrentTime = (new amf::AMFCurrentTimeImpl());
+
 	AMF_RESULT res = AMF_OK;
 
 	res = g_AMFFactory.GetFactory()->CreateContext(&m_pContext);
@@ -349,8 +351,7 @@ AMF_RESULT DisplayDvrPipeline::InitContext(const std::wstring& /*engineStr*/, am
 }
 
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT DisplayDvrPipeline::InitVideo(amf::AMF_MEMORY_TYPE engineMemoryType, amf_int scaleWidth, amf_int scaleHeight,
-	amf_int32 videoWidth, amf_int32 videoHeight)
+AMF_RESULT DisplayDvrPipeline::InitVideo(amf::AMF_MEMORY_TYPE engineMemoryType, amf_int32 videoWidth, amf_int32 videoHeight)
 {
 	AMF_RESULT res = AMF_OK;
 
@@ -385,6 +386,9 @@ AMF_RESULT DisplayDvrPipeline::InitVideo(amf::AMF_MEMORY_TYPE engineMemoryType, 
 	res = m_pDisplayCapture->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
 	CHECK_AMF_ERROR_RETURN(res, L"Failed to make Dvr component");
 
+	AMFSize resolution = {};
+	m_pDisplayCapture->GetProperty(AMF_DISPLAYCAPTURE_RESOLUTION, &resolution);
+
 	// Init converter
 	res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFVideoConverter, &m_pConverter);
 	CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFVideoConverter << L") failed");
@@ -393,9 +397,9 @@ AMF_RESULT DisplayDvrPipeline::InitVideo(amf::AMF_MEMORY_TYPE engineMemoryType, 
 		(m_useOpenCLConverter) ? amf::AMF_MEMORY_OPENCL : engineMemoryType);
 	m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_MEMORY_TYPE, engineMemoryType);
 	m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, amf::AMF_SURFACE_NV12);
-	m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, AMFConstructSize(scaleWidth, scaleHeight));
+	m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, AMFConstructSize(videoWidth, videoHeight));
 
-	m_pConverter->Init(m_converterSurfaceFormat, videoWidth, videoHeight);
+	m_pConverter->Init(m_converterSurfaceFormat, resolution.width,resolution.height);
 
 	// Init encoder
 	m_szEncoderID = AMFVideoEncoderVCE_AVC;
@@ -711,9 +715,6 @@ AMF_RESULT DisplayDvrPipeline::Init()
 	GetParam(PARAM_NAME_VIDEO_WIDTH, videoWidth);
 	GetParam(PARAM_NAME_VIDEO_HEIGHT, videoHeight);
 
-	amf_int scaleWidth = 0;    // if 0 - no scaling
-	amf_int scaleHeight = 0;   // if 0 - no scaling
-
 	amf_uint32 adapterID = 0;
 	GetParam(PARAM_NAME_ADAPTERID, adapterID);
 
@@ -732,7 +733,7 @@ AMF_RESULT DisplayDvrPipeline::Init()
 
 	//---------------------------------------------------------------------------------------------
 	// Init video except the muxer
-	res = InitVideo(engineMemoryType, scaleWidth, scaleHeight, videoWidth, videoHeight);
+	res = InitVideo(engineMemoryType, videoWidth, videoHeight);
 	if (AMF_OK == res)
 	{
 		hasDDVideoStream = true;

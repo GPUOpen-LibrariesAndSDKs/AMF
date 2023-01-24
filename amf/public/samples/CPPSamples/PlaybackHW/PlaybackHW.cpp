@@ -291,6 +291,12 @@ bool InitInstance(int nCmdShow)
     LoadString((HINSTANCE)hInst, IDC_PLAYBACKHW, szWindowClass, MAX_LOADSTRING);
 
     ATOM atom = MyRegisterClass();
+
+    if (atom == 0)
+    {
+        return false;
+    }
+
     hMainWindow = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, (HINSTANCE)hInst, NULL);
 
@@ -596,6 +602,10 @@ HWND CreateClientWindow(HWND hWndParent)
 
     ATOM reg = RegisterClassEx(&wcex);
 
+    if (reg == 0)
+    {
+        return nullptr;
+    }
 
     HWND hClientWnd = CreateWindowEx( 0, ChildClassName, NULL, WS_CHILD | WS_VISIBLE,
         0, 0, 100, 100, 
@@ -622,7 +632,7 @@ void                UpdateCaption(HWND hWnd)
 // toolbar
 //-------------------------------------------------------------------------------------------------
 #define MAX_SLIDER_VALUE 10000
-static INT_PTR CALLBACK ToolbarDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK ToolbarDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM /* lParam */)
 {
     HWND hSlider = GetDlgItem(hwnd, IDC_SEEK);
     switch(Message)
@@ -721,7 +731,7 @@ void  StreamOpen(HWND hWnd)
     }
 
 }
-INT_PTR CALLBACK    OpenStreamProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK    OpenStreamProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM /* lParam */)
 {
     switch (message)
     {
@@ -760,7 +770,7 @@ INT_PTR CALLBACK    OpenStreamProc(HWND hDlg, UINT message, WPARAM wParam, LPARA
     return (INT_PTR)FALSE;
 }
 
-static INT_PTR CALLBACK ProgressDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK ProgressDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM /* lParam */)
 {
     class OptimizationThread : public amf::AMFThread, public amf::AMFComponentOptimizationCallback
     {

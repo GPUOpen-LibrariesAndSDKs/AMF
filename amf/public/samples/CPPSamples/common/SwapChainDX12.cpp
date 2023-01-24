@@ -58,7 +58,7 @@ SwapChainDX12::~SwapChainDX12()
     Terminate();
 }
 
-AMF_RESULT SwapChainDX12::Init(amf_handle hWnd, amf_handle hDisplay, bool bFullScreen, amf_int32 width, amf_int32 height, amf_uint32 format)
+AMF_RESULT SwapChainDX12::Init(amf_handle hWnd, amf_handle hDisplay, bool /* bFullScreen */, amf_int32 width, amf_int32 height, amf_uint32 format)
 {
     AMF_RESULT res = AMF_OK;
 
@@ -124,13 +124,12 @@ AMF_RESULT SwapChainDX12::Terminate()
     return AMF_OK;
 }
 
-AMF_RESULT SwapChainDX12::LoadPipeline(amf_handle hWnd, amf_handle hDisplay, amf_uint32 format)
+AMF_RESULT SwapChainDX12::LoadPipeline(amf_handle hWnd, amf_handle /* hDisplay */, amf_uint32 format)
 {
     AMF_RETURN_IF_FALSE(m_pDX12Device != nullptr, AMF_FAIL, L"DX12 Device is not initialized.");
 
     m_format = (DXGI_FORMAT)format;
 
-    AMF_RESULT res = AMF_OK;
     HRESULT hr = S_OK;
 
     UINT dxgiFactoryFlags = 0;
@@ -255,7 +254,7 @@ AMF_RESULT SwapChainDX12::DeleteFrameBuffers()
     return AMF_OK;
 }
 
-AMF_RESULT SwapChainDX12::ResizeSwapChain(bool bFullScreen, amf_int32 width, amf_int32 height)
+AMF_RESULT SwapChainDX12::ResizeSwapChain(bool /* bFullScreen */, amf_int32 width, amf_int32 height)
 {
     HRESULT hr = S_OK;
 
@@ -275,7 +274,6 @@ AMF_RESULT SwapChainDX12::ResizeSwapChain(bool bFullScreen, amf_int32 width, amf
 
 AMF_RESULT              SwapChainDX12::Present(amf_uint32 imageIndex)
 {
-    AMF_RESULT res = AMF_OK;
     HRESULT hr = S_OK;
 
     TransitionResource(m_BackBuffers[imageIndex].rtvBuffer, D3D12_RESOURCE_STATE_PRESENT);
@@ -339,7 +337,7 @@ AMF_RESULT SwapChainDX12::TransitionResource(ID3D12Resource* surface, amf_int32 
     UINT stateSize = sizeof(D3D12_RESOURCE_STATES);
     UINT beforeState = D3D12_RESOURCE_STATE_COMMON;
     pResource->GetPrivateData(AMFResourceStateGUID, &stateSize, &beforeState);
-    if (beforeState == newState)
+    if (newState >= 0 && beforeState == static_cast<amf_uint32>(newState))
     {
         return AMF_OK;
     }
@@ -388,7 +386,6 @@ AMF_RESULT SwapChainDX12::WaitForGpu()
 {
     CComPtr<ID3D12Device> deviceDX12 = static_cast<ID3D12Device*>(m_pDX12Device);
 
-    AMF_RESULT res = AMF_OK;
     HRESULT hr = S_OK;
 
     // Schedule a Signal command in the queue.
@@ -409,7 +406,6 @@ AMF_RESULT SwapChainDX12::WaitForGpu()
 
 AMF_RESULT SwapChainDX12::MoveToNextFrame()
 {
-    AMF_RESULT res = AMF_OK;
     HRESULT hr = S_OK;
 
     // Schedule a Signal command in the queue.

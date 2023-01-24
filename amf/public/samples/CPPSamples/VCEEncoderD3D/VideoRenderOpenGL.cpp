@@ -84,10 +84,8 @@ VideoRenderOpenGL::~VideoRenderOpenGL()
     Terminate();
 }
 
-AMF_RESULT VideoRenderOpenGL::Init(amf_handle hWnd, amf_handle hDisplay, bool bFullScreen)
+AMF_RESULT VideoRenderOpenGL::Init(amf_handle hWnd, amf_handle /* hDisplay */, bool /* bFullScreen */)
 {
-    AMF_RESULT res = AMF_OK;
-
     m_hDC = (HDC)m_pContext->GetOpenGLDrawable();
     m_hContextOGL = (HGLRC)m_pContext->GetOpenGLContext();
     if(m_hWnd != ::GetDesktopWindow())
@@ -203,7 +201,6 @@ AMF_RESULT VideoRenderOpenGL::Render(amf::AMFData** ppData)
 #endif
 
     AMF_RESULT res = AMF_OK;
-    HRESULT hr = S_OK;
     amf::AMFSurfacePtr pSurface;
     res = m_pContext->AllocSurface(amf::AMF_MEMORY_OPENGL, amf::AMF_SURFACE_BGRA, m_width, m_height, &pSurface);
     CHECK_AMF_ERROR_RETURN(res, L"AMFSurfrace::AllocSurface() failed");

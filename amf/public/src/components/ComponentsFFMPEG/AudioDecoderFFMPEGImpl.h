@@ -33,6 +33,7 @@
 #pragma once
 
 #include "public/include/components/Component.h"
+#include "public/include/components/SupportedCodecs.h"
 #include "public/include/components/FFMPEGAudioDecoder.h"
 #include "public/common/PropertyStorageExImpl.h"
 #include "public/include/core/Context.h"
@@ -60,13 +61,15 @@ namespace amf
 
     class AMFAudioDecoderFFMPEGImpl : 
         public AMFInterfaceBase,
-        public AMFPropertyStorageExImpl<AMFComponent>
+        public AMFPropertyStorageExImpl<AMFComponent>,
+        public AMFSupportedCodecs
     {
 
     public:
         // interface access
         AMF_BEGIN_INTERFACE_MAP
             AMF_INTERFACE_MULTI_ENTRY(AMFComponent)
+            AMF_INTERFACE_MULTI_ENTRY(AMFSupportedCodecs)
             AMF_INTERFACE_CHAIN_ENTRY(AMFPropertyStorageExImpl<AMFComponent>)
         AMF_END_INTERFACE_MAP
 
@@ -92,6 +95,9 @@ namespace amf
         // AMFPropertyStorageObserver interface
         virtual void        AMF_STD_CALL  OnPropertyChanged(const wchar_t* pName);
 
+        // AMFSupportedCodecs interface
+        virtual AMF_RESULT     AMF_STD_CALL GetInputCodecAt(amf_size index, AMFPropertyStorage** codec) const override;
+        virtual AMF_RESULT     AMF_STD_CALL GetOutputCodecAt(amf_size index, AMFPropertyStorage** codec) const override { return AMF_NOT_SUPPORTED; };
 
     protected:
         bool                AMF_STD_CALL  ReadAVPacketInfo(AMFBufferPtr pBuffer, AVPacket *pPacket);

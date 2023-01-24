@@ -189,7 +189,7 @@ ATOM CaptureVideo::MyRegisterClass()
 }
 
 //------------------------------------------------------------------------------------------------------------
-BOOL CaptureVideo::InitInstance(int nCmdShow)
+BOOL CaptureVideo::InitInstance(int /* nCmdShow */)
 {
     m_hWnd = ::CreateWindow(m_windowClass, m_title, WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, m_hInst, NULL);
@@ -229,6 +229,12 @@ HWND CaptureVideo::CreateClientWindow(HWND hWndParent)
     wcex.hIconSm       = NULL;
 
     ATOM reg = RegisterClassEx(&wcex);
+
+    if (reg == 0)
+    {
+        return nullptr;
+    }
+
     HWND hClientWnd = CreateWindowEx( 0, ChildClassName, NULL, WS_CHILD | WS_VISIBLE, 0, 0, 100, 100,
         hWndParent, (HMENU)(int)(1), m_hInst, NULL);
     return hClientWnd;
@@ -565,7 +571,6 @@ void CaptureVideo::FileLoadOptions(bool bLoad)
 {
     OPENFILENAME ofn;         // common dialog box structure
     WCHAR szFile[_MAX_PATH];  // buffer for file name
-    bool ret = false;
 
     // Initialize OPENFILENAME
     ZeroMemory(&ofn, sizeof(ofn));
@@ -942,7 +947,7 @@ void OptimizationThread::Run()
 }
 
 //------------------------------------------------------------------------------------------------------------
-INT_PTR CaptureVideo::ProgressDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
+INT_PTR CaptureVideo::ProgressDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM /* lParam */)
 {
     static OptimizationThread s_optimizationThread;
 
@@ -994,7 +999,7 @@ void CaptureVideo::LoadFromOptions(LPWSTR file)
     m_bChromaKeySpill = false;
     m_iChromaKeyColorAdj = 0;
     m_bChromaKeyDebug = false;
-    amf_uint64 modeVideoSource = VIDEO_SOURCE_MODE_INVALID;
+    amf_uint64 modeVideoSource = static_cast<amf_uint64>(VIDEO_SOURCE_MODE_INVALID);
 
     Options options;
     if (options.LoadFromPath(file) == AMF_OK)

@@ -36,6 +36,8 @@
 
 #pragma comment(lib, "opengl32.lib")
 
+/*
+
 static bool ReportGLErrors(const char* file, int line)
 {
     unsigned int err = GL_NO_ERROR;
@@ -67,6 +69,8 @@ static bool ReportGLErrors(const char* file, int line)
     if( ReportGLErrors(__FILE__, __LINE__) ) return AMF_FAIL; \
 }
 
+*/
+
 DeviceOpenGL::DeviceOpenGL() : 
     m_hDC(NULL),
     m_hContextOGL(NULL),
@@ -83,8 +87,6 @@ DeviceOpenGL::~DeviceOpenGL()
 
 AMF_RESULT DeviceOpenGL::Init(HWND hWnd, const wchar_t* displayDeviceName)
 {
-    DWORD error = 0;
-
     if (hWnd == nullptr)
     {
         hWnd = ::GetDesktopWindow();

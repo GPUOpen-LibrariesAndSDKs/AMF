@@ -74,7 +74,7 @@ void SetupWaveHeader(RiffWave *fhd,
 	//	<< (channels - 1);
 
     fhd->wave.fmt.info.nAvgBytesPerSec = (sampleRate*channels*bitsPerSample) / 8;
-    fhd->wave.fmt.info.nBlockAlign = (channels*bitsPerSample) / 8;
+    fhd->wave.fmt.info.nBlockAlign = static_cast<short>((channels*bitsPerSample) / 8);
 
     if (bitsPerSample == 32) {
         fhd->wave.fmt.info.formatTag = 3;

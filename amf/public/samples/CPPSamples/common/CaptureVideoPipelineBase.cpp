@@ -448,13 +448,13 @@ AMF_RESULT CaptureVideoPipelineBase::InitInternal()
             res = m_streamBK.InitStream(m_pContext, pDemuxerExBK, iVideoPinIndexBK, iAudioPinIndexBK, NULL, bLowLatency);
             AMF_RETURN_IF_FAILED(res, L"InitStream() failed!");
 
-            PipelineElementPtr pPipelineElementDemuxer = PipelineElementPtr(new AMFComponentExElement(m_streamBK.m_pDemuxer));
-            res = Connect(pPipelineElementDemuxer, 0, NULL, 0, 3);
+            PipelineElementPtr pPipelineElementBKDemuxer = PipelineElementPtr(new AMFComponentExElement(m_streamBK.m_pDemuxer));
+            res = Connect(pPipelineElementBKDemuxer, 0, NULL, 0, 3);
             AMF_RETURN_IF_FAILED(res, L"Connect() failed!");
 
             //init decoder
             m_streamBK.m_pDecoderElement = PipelineElementPtr(new PipelineElementAMFDecoder(m_streamBK.m_pDecoder, 1, m_pDecoderSubmissionSync.get(), this));
-            res = Connect(m_streamBK.m_pDecoderElement, 0, pPipelineElementDemuxer, iVideoPinIndexBK, 2);
+            res = Connect(m_streamBK.m_pDecoderElement, 0, pPipelineElementBKDemuxer, iVideoPinIndexBK, 2);
             AMF_RETURN_IF_FAILED(res, L"Connect() failed!");
         }
 
@@ -542,7 +542,7 @@ AMF_RESULT CaptureVideoPipelineBase::InitVideoConverter(
 }
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT CaptureVideoPipelineBase::InitCapture(
-    amf::AMF_SURFACE_FORMAT eFormat)
+    amf::AMF_SURFACE_FORMAT /* eFormat */)
 {
     AMF_RESULT res = AMF_OK;
 
@@ -913,7 +913,7 @@ AMF_RESULT PlaybackStream::InitVideoDecoder(amf::AMFContext *pContext,
     {
         bool bHWDecoder = false;
         res = g_AMFFactory.GetFactory()->CreateComponent(pContext, pVideoDecoderID.c_str(), &m_pDecoder);
-        AMF_RETURN_IF_FAILED(res, L"AMFCreateComponent( %s) failed", pVideoDecoderID);
+        AMF_RETURN_IF_FAILED(res, L"AMFCreateComponent( %s) failed", pVideoDecoderID.c_str());
 
         amf::AMFCapsPtr pCaps;
         m_pDecoder->GetCaps(&pCaps);
@@ -991,7 +991,7 @@ AMF_RESULT PlaybackStream::InitVideoDecoder(amf::AMFContext *pContext,
     }
     else   //SDI capture
     {
-        amf_int64 format = amf::AMF_SURFACE_UNKNOWN;
+        format = amf::AMF_SURFACE_UNKNOWN;
         pOutput->GetProperty(AMF_STREAM_VIDEO_FORMAT, &format);
         m_eVideoDecoderFormat = amf::AMF_SURFACE_FORMAT(format);
     }

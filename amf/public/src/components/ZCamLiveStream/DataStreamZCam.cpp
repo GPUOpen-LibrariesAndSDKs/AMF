@@ -65,7 +65,7 @@ using namespace amf;
     #define ENABLE_LOG      0
 #endif
 //-------------------------------------------------------------------------------------------------
-AMFDataStreamZCamVideo::AMFDataStreamZCamVideo(SOCKET& mySocket, const char* pAddressIP) :
+AMFDataStreamZCamVideo::AMFDataStreamZCamVideo(SOCKET& mySocket, const char* /* pAddressIP */) :
     m_socket(mySocket),
     m_pDataBuf(NULL),
     m_dataLen(0),
@@ -148,7 +148,7 @@ int AMFDataStreamZCamImpl::CaptureOneFrame(int index, char** ppData, int& lenDat
 {
     if ((index >= m_endCamera) || !m_videoZCam[index])
         return NULL;
-    int result = m_videoZCam[index]->CaptureOneFrameReq();
+    m_videoZCam[index]->CaptureOneFrameReq();
     return m_videoZCam[index]->CaptureOneFrame(ppData, lenData);
 }
 //-------------------------------------------------------------------------------------------------
@@ -363,7 +363,7 @@ AMF_RESULT AMFDataStreamZCamImpl::Open()
     return Open(m_addressIP[0].c_str(), AMF_STREAM_OPEN::AMFSO_READ, AMF_FILE_SHARE::AMFFS_SHARE_READ);
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMFDataStreamZCamImpl::Open(const char* pAddressIP, AMF_STREAM_OPEN eOpenType, AMF_FILE_SHARE eShareType)
+AMF_RESULT AMFDataStreamZCamImpl::Open(const char* pAddressIP, AMF_STREAM_OPEN /* eOpenType */, AMF_FILE_SHARE /* eShareType */)
 {
     m_bFirstCapture = true;
     AMF_RESULT err = AMF_OK;
@@ -586,7 +586,6 @@ int AMFDataStreamZCamImpl::SetupCameras(const char* mode)
 //-------------------------------------------------------------------------------------------------
 int AMFDataStreamZCamImpl::SetupCamera(SOCKET& mySocket, const char* ipAddress, bool isMaterCamer, const char* mode)
 {
-    int result = 0;
     int recvbuflen = 1024;
     char  recvbuf[1024];
     char  sendBuf[256];
@@ -626,8 +625,8 @@ int AMFDataStreamZCamImpl::SendCommand(SOCKET mySocket, const char* ipCamera, ch
     strcat(sendBuf, ipCamera);
     strcat(sendBuf, "\r\n\r\n\0");
     int sendSize = send(mySocket, sendBuf, (int)strlen(sendBuf), 0);
-
-    if (sendSize != strlen(sendBuf))
+    
+    if (sendSize != static_cast<int>(strlen(sendBuf)))
     {
         AMFTraceError(L"AMFDataStreamZCamImpl", L"SendCommand() failed!");
         return -1;

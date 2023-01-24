@@ -69,7 +69,8 @@ void WriteLog(const wchar_t* message, AMFLogLevel level);
 
 #define LOG_AMF_ERROR(err, text) \
     { \
-        if( (err) != AMF_OK) \
+        const bool tmpAmfErr = ((err) != AMF_OK); \
+        if (tmpAmfErr) \
         { \
             LOG_WRITE(text << L" Error:" << g_AMFFactory.GetTrace()->GetResultText((err)) << std::endl, AMFLogLevelError);\
         } \
@@ -86,7 +87,8 @@ void WriteLog(const wchar_t* message, AMFLogLevel level);
 
 #define CHECK_AMF_ERROR_RETURN(err, text) \
     { \
-        if((err) != AMF_OK) \
+        const bool tmpAmfErrCheck = ((err) != AMF_OK); \
+        if(tmpAmfErrCheck) \
         {  \
             LOG_AMF_ERROR(err, text);\
             return (err); \

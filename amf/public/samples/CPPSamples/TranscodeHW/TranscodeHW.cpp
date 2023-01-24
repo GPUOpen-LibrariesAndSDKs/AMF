@@ -277,11 +277,16 @@ AMF_RESULT RegisterParams(ParametersStorage* pParams)
     // to demo frame-specific properties - will be applied to each N-th frame (force IDR)
     pParams->SetParam(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, amf_int64(AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR));
 
+    // add AAA properties
+    pParams->SetParamDescription(AMF_VIDEO_DECODER_ENABLE_SMART_ACCESS_VIDEO, ParamCommon, L"Enable decoder smart access video feature (bool, default = false)", ParamConverterBoolean);
+
+    pParams->SetParamDescription(AMF_VIDEO_DECODER_LOW_LATENCY, ParamCommon, L"Enable low latency decode, false = regular decode (bool, default = false)", ParamConverterBoolean);
+
     return AMF_OK;
 }
 
 #if defined(_WIN32)
-int _tmain(int argc, _TCHAR* argv[])
+int _tmain(int /* argc */, _TCHAR* /* argv */[])
 #else
 int main(int argc, char* argv[])
 #endif
@@ -339,7 +344,7 @@ int main(int argc, char* argv[])
     AMFCustomTraceWriter writer(AMF_TRACE_WARNING);
 
     // check if tracing level change was requested
-    amf_int64 traceLevel = AMF_TRACE_WARNING;
+    amf_int32 traceLevel = AMF_TRACE_WARNING;
     params.GetParam(PARAM_NAME_TRACE_LEVEL, traceLevel);
 
 #ifdef _DEBUG
@@ -418,10 +423,10 @@ int main(int argc, char* argv[])
     for(amf_int32 i = 0 ; i < threadCount; i++)
     {
         TranscodePipeline *pipeline= new TranscodePipeline();
-        AMF_RESULT res = pipeline->Init(&params,
-                i == 0 ? previewWindow.GetHwnd() : NULL,
-                i == 0 ? previewWindow.GetDisplay() : NULL,
-                threadCount ==1 ? -1 : counter);
+        res = pipeline->Init(&params, 
+            i == 0 ? previewWindow.GetHwnd() : NULL,
+            i == 0 ? previewWindow.GetDisplay() : NULL,
+            threadCount ==1 ? -1 : counter);
         if(res == AMF_OK)
         {
             threads.push_back(pipeline);

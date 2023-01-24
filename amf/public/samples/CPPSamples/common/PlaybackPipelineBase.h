@@ -81,6 +81,7 @@ public:
     static const wchar_t* PARAM_NAME_HQ_SCALER_RATIO;
     static const wchar_t* PARAM_NAME_ENABLE_AUDIO;
     static const wchar_t* PARAM_NAME_HQSCALER_SHARPNESS;
+    static const wchar_t* PARAM_NAME_FRAME_RATE;
 
     virtual AMF_RESULT Play();
     virtual AMF_RESULT Pause();

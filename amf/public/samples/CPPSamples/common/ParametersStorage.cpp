@@ -613,11 +613,7 @@ AMF_RESULT ParamConverterHQScalerAlgorithm(const std::wstring& value, amf::AMFVa
 {
     amf_int64    paramValue = -1;
     std::wstring uppValue   = toUpper(value);
-    if ((uppValue == L"POINT") || (uppValue == L"4"))
-    {
-        paramValue = AMF_HQ_SCALER_ALGORITHM_POINT;
-    }
-    else if ((uppValue == L"BILINEAR") || (uppValue == L"0"))
+    if ((uppValue == L"BILINEAR") || (uppValue == L"0"))
     {
         paramValue = AMF_HQ_SCALER_ALGORITHM_BILINEAR;
     }
@@ -625,9 +621,17 @@ AMF_RESULT ParamConverterHQScalerAlgorithm(const std::wstring& value, amf::AMFVa
     {
         paramValue = AMF_HQ_SCALER_ALGORITHM_BICUBIC;
     }
-    else if ((uppValue == L"FSR") || (uppValue == L"2"))
+    else if ((uppValue == L"VIDEOSR1.0") || (uppValue == L"2"))
     {
-        paramValue = AMF_HQ_SCALER_ALGORITHM_FSR;
+        paramValue = AMF_HQ_SCALER_ALGORITHM_VIDEOSR1_0;
+    }
+    else if ((uppValue == L"POINT") || (uppValue == L"3"))
+    {
+        paramValue = AMF_HQ_SCALER_ALGORITHM_POINT;
+    }
+    else if ((uppValue == L"VIDEOSR1.1") || (uppValue == L"4"))
+    {
+        paramValue = AMF_HQ_SCALER_ALGORITHM_VIDEOSR1_1;
     }
     valueOut = amf_int64(paramValue);
     return AMF_OK;

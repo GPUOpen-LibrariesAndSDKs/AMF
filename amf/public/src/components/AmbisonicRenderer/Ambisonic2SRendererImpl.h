@@ -114,7 +114,7 @@ namespace amf
         virtual AMF_RESULT  AMF_STD_CALL  SubmitInput(AMFData* pData);
         virtual AMF_RESULT  AMF_STD_CALL  QueryOutput(AMFData** ppData);
         virtual AMFContext* AMF_STD_CALL  GetContext()                                              {  return m_pContext;  };
-        virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* callback)    {  return AMF_NOT_SUPPORTED;  };
+        virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* /* callback */) { return AMF_NOT_SUPPORTED; };
 
         virtual AMF_RESULT  AMF_STD_CALL GetCaps(AMFCaps** ppCaps);
 

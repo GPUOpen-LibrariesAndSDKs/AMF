@@ -336,6 +336,9 @@ AMF_RESULT RegisterEncoderParamsAVC(ParametersStorage* pParams)
     // color conversion
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_COLOR_BIT_DEPTH, ParamEncoderStatic, L"8 bit (integer, default = 8)", ParamConverterInt64);
 
+    // AAA properties
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_ENABLE_SMART_ACCESS_VIDEO, ParamEncoderStatic, L"Enable encoder smart access video feature (bool, default = false)", ParamConverterBoolean);
+
     // ------------- Encoder params dynamic ---------------
 //    pParams->SetParamDescription(AMF_VIDEO_ENCODER_WIDTH, ParamEncoderDynamic, L"Frame width (integer, default = 0)", ParamConverterInt64);
 //    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEIGHT, ParamEncoderDynamic, L"Frame height (integer, default = 0)", ParamConverterInt64);

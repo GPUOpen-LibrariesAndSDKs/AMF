@@ -116,9 +116,9 @@ public:
 AMF_RESULT simpleEncode(const wchar_t* pCodec, const wchar_t* pFileNameOut);
 
 #ifdef _WIN32
-int _tmain(int argc, _TCHAR* argv[])
+int _tmain(int /* argc */, _TCHAR* /* argv */[])
 #else
-int main(int argc, char* argv[])
+int main(int /* argc */, char* /* argv */ [])
 #endif
 {
     AMF_RESULT result = simpleEncode(pCodecNames[codecIndex], fileNames[codecIndex]);
@@ -730,9 +730,9 @@ static void FillSurfaceVulkan(amf::AMFContext *context, amf::AMFSurface *surface
 
 PollingThread::PollingThread(amf::AMFContext *context, amf::AMFComponent *encoder, const wchar_t *pFileName) : m_pContext(context), m_pEncoder(encoder)
 {
-    std::wstring wStr(pFileName);
-    std::string str(wStr.begin(), wStr.end());
-    m_pFile.open(str, std::ios::binary);
+    amf_wstring wStr(pFileName);
+    amf_string str(amf::amf_from_unicode_to_utf8(wStr));
+    m_pFile.open(str.c_str(), std::ios::binary);
 }
 PollingThread::~PollingThread()
 {

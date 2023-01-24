@@ -228,7 +228,7 @@ AMF_RESULT AMF_STD_CALL  AMFVideoCaptureImpl::Flush()
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL  AMFVideoCaptureImpl::GetOutput(amf_int32 index, AMFOutput** ppOutput)
+AMF_RESULT AMF_STD_CALL  AMFVideoCaptureImpl::GetOutput(amf_int32 /* index */, AMFOutput** ppOutput)
 {
     AMF_RETURN_IF_FALSE(ppOutput != NULL, AMF_INVALID_ARG, L"ppOutput = NULL");
 
@@ -250,10 +250,7 @@ AMF_RESULT AMFVideoCaptureImpl::PollStream()
     char* pData(NULL);
     UINT lenData(0);
 
-    amf_pts timestampCapStart = amf_high_precision_clock();
     int err = m_videoSource.CaptureOnePacket(&pData, lenData);
-    amf_pts timestampCapEnd = amf_high_precision_clock();
-
 
     if ((err != AMF_OK) || (lenData <= 0))
     {
@@ -278,11 +275,10 @@ AMF_RESULT AMFVideoCaptureImpl::PollStream()
                 memcpy(pDst, pData, lenData);
             }
 
-            AMF_RESULT err = AMF_INPUT_FULL;
             while (!m_videoPollingThread.StopRequested())
             {
-                err = m_OutputStream->SubmitFrame(pVideoBuffer);
-                if (AMF_INPUT_FULL != err)
+                AMF_RESULT result = m_OutputStream->SubmitFrame(pVideoBuffer);
+                if (AMF_INPUT_FULL != result)
                 {
                     break;
                 }

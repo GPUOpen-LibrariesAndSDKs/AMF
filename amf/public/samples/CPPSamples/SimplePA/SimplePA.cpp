@@ -105,9 +105,9 @@ public:
 };
 
 #ifdef _WIN32
-int _tmain(int argc, _TCHAR* argv[])
+int _tmain(int /* argc */, _TCHAR* /* argv */[])
 #else
-int main(int argc, char* argv[])
+int main(int /* argc */, char* /* argv */[])
 #endif
 {
 	AMF_RESULT res = AMF_OK; // error checking can be added later
@@ -272,7 +272,6 @@ static void FillSurfaceDX9(amf::AMFContext *context, amf::AMFSurface *surface)
 
 static void FillSurfaceDX11(amf::AMFContext *context, amf::AMFSurface *surface)
 {
-	HRESULT hr = S_OK;
 	// fill surface with something something useful. We fill with color and color rect
 	// get native DX objects
 	ID3D11Device *deviceDX11 = (ID3D11Device *)context->GetDX11Device(); // no reference counting - do not Release()
@@ -390,9 +389,9 @@ static void FillSurfaceVulkan(amf::AMFContext *context, amf::AMFSurface *surface
 
 PollingThread::PollingThread(amf::AMFContext *context, amf::AMFComponent *pre_analysis, const wchar_t *pFileName) : m_pContext(context), m_pPreAnalysis(pre_analysis)
 {
-	std::wstring wStr(pFileName);
-	std::string str(wStr.begin(), wStr.end());
-	m_pFile.open(str, std::ios::binary);
+	amf_wstring wStr(pFileName);
+	amf_string str(amf::amf_from_unicode_to_utf8(wStr));
+	m_pFile.open(str.c_str(), std::ios::binary);
 }
 PollingThread::~PollingThread()
 {

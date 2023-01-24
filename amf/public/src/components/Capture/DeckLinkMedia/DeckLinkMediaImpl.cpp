@@ -335,7 +335,7 @@ AMFDeckLinkDeviceImpl::~AMFDeckLinkDeviceImpl()
 
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT  AMF_STD_CALL  AMFDeckLinkDeviceImpl::Init(AMF_SURFACE_FORMAT format, amf_int32 width, amf_int32 height)
+AMF_RESULT  AMF_STD_CALL  AMFDeckLinkDeviceImpl::Init(AMF_SURFACE_FORMAT /* format */, amf_int32 /* width */, amf_int32 /* height */)
 {
     AMF_RESULT   res = AMF_OK;
 
@@ -642,13 +642,13 @@ AMF_RESULT  AMF_STD_CALL  AMFDeckLinkDeviceImpl::Start()
 {
     AMF_RETURN_IF_FALSE(m_pDLInput != NULL, AMF_NOT_INITIALIZED, L"Not initialized");
 
-    AMF_RESULT res = AMF_OK;
-    HRESULT hr = S_OK;
+//    AMF_RESULT res = AMF_OK;
+//    HRESULT hr = S_OK;
 
 //    res = AllocOutputPool();
 //    AMF_RETURN_IF_FAILED(res, L"AllocOutputPool() failed");
 
-//	hr = m_pDLInput->StartStreams();
+//	  hr = m_pDLInput->StartStreams();
 //    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_FAIL, L"StartStreams() failed");
 
     return AMF_OK;
@@ -666,7 +666,7 @@ AMF_RESULT  AMF_STD_CALL  AMFDeckLinkDeviceImpl::Stop()
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT  AMF_STD_CALL  AMFDeckLinkDeviceImpl::ReInit(amf_int32 width, amf_int32 height)
+AMF_RESULT  AMF_STD_CALL  AMFDeckLinkDeviceImpl::ReInit(amf_int32 /* width */, amf_int32 /* height */)
 {
     Terminate();
     return Init(AMF_SURFACE_UNKNOWN, 0, 0);
@@ -1074,9 +1074,6 @@ HRESULT STDMETHODCALLTYPE	CaptureCallback::VideoInputFrameArrived(IDeckLinkVideo
         videoFrame->GetBytes((void**)&data);
 
         long rowBytes= videoFrame->GetRowBytes();
-        long width = videoFrame->GetWidth();
-        long height = videoFrame->GetHeight();
-        BMDPixelFormat format = videoFrame->GetPixelFormat();
 
 
         CComPtr<IDeckLinkVideoFrameAncillary> pAuxData; 
@@ -1126,7 +1123,7 @@ HRESULT STDMETHODCALLTYPE	CaptureCallback::VideoInputFrameArrived(IDeckLinkVideo
     return S_OK;
 }
 //-------------------------------------------------------------------------------------------------
-HRESULT	STDMETHODCALLTYPE	CaptureCallback::VideoInputFormatChanged(BMDVideoInputFormatChangedEvents notificationEvents, IDeckLinkDisplayMode *newDisplayMode, BMDDetectedVideoInputFormatFlags detectedSignalFlags)
+HRESULT	STDMETHODCALLTYPE	CaptureCallback::VideoInputFormatChanged(BMDVideoInputFormatChangedEvents /* notificationEvents */, IDeckLinkDisplayMode* newDisplayMode, BMDDetectedVideoInputFormatFlags detectedSignalFlags)
 {
     AMFLock lock(&m_pHost->m_sect);
 
@@ -1143,7 +1140,6 @@ HRESULT	STDMETHODCALLTYPE	CaptureCallback::VideoInputFormatChanged(BMDVideoInput
 
     if((detectedSignalFlags & bmdDetectedVideoInputYCbCr422) == bmdDetectedVideoInputYCbCr422)
     {
-        int a = 1;
         pixelFormat = bmdFormat8BitYUV;
 //        pixelFormat = bmdFormat8BitBGRA;
     }

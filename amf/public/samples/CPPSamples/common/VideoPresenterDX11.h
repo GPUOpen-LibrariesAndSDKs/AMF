@@ -77,7 +77,7 @@ public:
 protected:
     virtual void        UpdateProcessor();
     CComPtr<ID3D11Device>   m_pDevice;
-    virtual void CustomDraw();
+    virtual AMF_RESULT CustomDraw();
     virtual AMF_RESULT ResizeSwapChain();
 
 private:

@@ -99,7 +99,7 @@ void                FileOpenPTGuiProject();
 void                UpdateMenuItems(HMENU hMenu);
 void                HandleKeyboard(WPARAM wParam);
 
-static INT_PTR CALLBACK ProgressDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK ProgressDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM /* lParam */)
 {
     class OptimizationThread : public amf::AMFThread, public amf::AMFComponentOptimizationCallback
     {
@@ -304,7 +304,7 @@ ATOM MyRegisterClass()
 //        In this function, we save the instance handle in a global variable and
 //        create and display the main program window.
 //
-BOOL InitInstance(int nCmdShow)
+BOOL InitInstance(int /* nCmdShow */)
 {
     hWnd = NULL;
 
@@ -345,6 +345,10 @@ HWND CreateClientWindow(HWND hWndParent)
 
     ATOM reg = RegisterClassEx(&wcex);
 
+    if (reg == 0)
+    {
+        return nullptr;
+    }
 
     HWND hClientWnd = CreateWindowEx( 0, ChildClassName, NULL, WS_CHILD | WS_VISIBLE,
         0, 0, 100, 100, 
@@ -410,7 +414,7 @@ void UpdateMenuItems(HMENU hMenu)
 static POINT s_MousePos;
 static bool     s_MouseDown = false;
 
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK WndProc(HWND hWindow, UINT message, WPARAM wParam, LPARAM lParam)
 {
     int wmId, wmEvent;
     PAINTSTRUCT ps;
@@ -419,7 +423,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     switch (message)
     {
     case WM_USER+1000:
-        if(DialogBox( hInst, MAKEINTRESOURCE(IDD_PROGRESS_DLG),  hWnd,  (DLGPROC) ProgressDlgProc ) != IDOK)
+        if(DialogBox( hInst, MAKEINTRESOURCE(IDD_PROGRESS_DLG), hWindow,  (DLGPROC) ProgressDlgProc ) != IDOK)
         {
             PostQuitMessage(0);
         }
@@ -431,10 +435,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         switch (wmId)
         {
         case IDM_ABOUT:
-            DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+            DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWindow, About);
             break;
         case IDM_EXIT:
-            DestroyWindow(hWnd);
+            DestroyWindow(hWindow);
             break;
         case ID_FILE_OPEN:
             FileOpen();
@@ -447,7 +451,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             break;
         case ID_PLAYBACK_PLAY:
             g_pPipeline->Play();
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems(::GetMenu(hWindow));
             break;
         case ID_PLAYBACK_PAUSE:
             g_pPipeline->Pause();
@@ -461,84 +465,84 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         case ID_OPTIONS_RENDERER_DX11:
             memoryType = amf::AMF_MEMORY_DX11;
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems(::GetMenu(hWindow));
             break;
         case ID_OPTIONS_COMPUTE_FOR_DX11:
             memoryType = amf::AMF_MEMORY_COMPUTE_FOR_DX11;
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems(::GetMenu(hWindow));
             break;
         case ID_OPTIONS_RENDERER_OPENCL:
             memoryType = amf::AMF_MEMORY_OPENCL;
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems(::GetMenu(hWindow));
             break;
         case ID_OPTIONS_LOOP:
             bLoop = !bLoop;
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems(::GetMenu(hWindow));
             break;
         case ID_OPTIONS_FORCE60FPS:
             bForce60FPS = !bForce60FPS;
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems(::GetMenu(hWindow));
             break;
         case ID_OPTIONS_FULLSPEED:
             bFullSpeed = !bFullSpeed;
             g_pPipeline->m_Pipeline.SetFullSpeed(bFullSpeed);
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems(::GetMenu(hWindow));
             break;
         case ID_OPTIONS_LOW_LATENCY:
             bLowLatency = !bLowLatency;
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems(::GetMenu(hWindow));
             break;
         case ID_FILE_ZCAMLIVE:
             iZCamMode = (iZCamMode == CAMLIVE_MODE_ZCAM_1080P30) ? CAMLIVE_MODE_INVALID : CAMLIVE_MODE_ZCAM_1080P30;
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems(::GetMenu(hWindow));
             break;
         case ID_FILE_ZCAMLIVE_2K7:
             iZCamMode = (iZCamMode == CAMLIVE_MODE_ZCAM_2K7P30) ? CAMLIVE_MODE_INVALID : CAMLIVE_MODE_ZCAM_2K7P30;
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems(::GetMenu(hWindow));
             break;
         case ID_FILE_RICOH_THETA_S:
             iZCamMode = (iZCamMode == CAMLIVE_MODE_THETAS) ? CAMLIVE_MODE_INVALID : CAMLIVE_MODE_THETAS;
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems(::GetMenu(hWindow));
             break;
         case ID_FILE_RICOH_THETA_V:
             iZCamMode = (iZCamMode == CAMLIVE_MODE_THETAV) ? CAMLIVE_MODE_INVALID : CAMLIVE_MODE_THETAV;
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems(::GetMenu(hWindow));
             break;
         case ID_OPTIONS_DUMP_TEMPLATE:
             g_pPipeline->m_Pipeline.Dump();
             break;
         case ID_SUBRESOURCE_INDEX0:
             g_pPipeline->m_Pipeline.SetSubresourceIndex(0);
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems(::GetMenu(hWindow));
             break;
         case ID_SUBRESOURCE_INDEX1:
             g_pPipeline->m_Pipeline.SetSubresourceIndex(1);
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems(::GetMenu(hWindow));
             break;
         case ID_SUBRESOURCE_INDEX2:
             g_pPipeline->m_Pipeline.SetSubresourceIndex(2);
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems(::GetMenu(hWindow));
             break;
         case ID_SUBRESOURCE_INDEX3:
             g_pPipeline->m_Pipeline.SetSubresourceIndex(3);
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems(::GetMenu(hWindow));
             break;
         case ID_SUBRESOURCE_INDEX4:
             g_pPipeline->m_Pipeline.SetSubresourceIndex(4);
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems(::GetMenu(hWindow));
             break;
         case ID_SUBRESOURCE_INDEX5:
             g_pPipeline->m_Pipeline.SetSubresourceIndex(5);
-            UpdateMenuItems(::GetMenu(hWnd));
+            UpdateMenuItems(::GetMenu(hWindow));
             break;
         default:
-            return DefWindowProc(hWnd, message, wParam, lParam);
+            return DefWindowProc(hWindow, message, wParam, lParam);
         }
         break;
     case WM_PAINT:
-        hdc = BeginPaint(hWnd, &ps);
+        hdc = BeginPaint(hWindow, &ps);
         // TODO: Add any drawing code here...
-        EndPaint(hWnd, &ps);
+        EndPaint(hWindow, &ps);
         break;
     case WM_CREATE:
         break;
@@ -559,12 +563,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
 
     default:
-        return DefWindowProc(hWnd, message, wParam, lParam);
+        return DefWindowProc(hWindow, message, wParam, lParam);
     }
     return 0;
 }
 
-LRESULT CALLBACK ClientWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK ClientWndProc(HWND hWindow, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
@@ -596,7 +600,7 @@ LRESULT CALLBACK ClientWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
         HandleKeyboard(wParam);
         break;
     default:
-        return DefWindowProc(hWnd, message, wParam, lParam);
+        return DefWindowProc(hWindow, message, wParam, lParam);
     }
     return 0;
 }
@@ -698,7 +702,7 @@ void                FileOpenPTGuiProject()
         std::wstring::size_type pos = PTGuiProject.find_last_of(L".");
         std::wstring ext = PTGuiProject.substr(pos + 1);
         std::wstring result;
-        std::transform(ext.begin(), ext.end(), std::back_inserter(result), toupper);
+        std::transform(ext.begin(), ext.end(), std::back_inserter(result), toUpperWchar);
         if (result == L"PTS")
         {
             g_pPipeline->m_Pipeline.InitCamera(PTGuiProject);

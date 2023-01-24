@@ -77,7 +77,6 @@ AMFCaptureManagerImpl::~AMFCaptureManagerImpl()
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT          AMF_STD_CALL AMFCaptureManagerImpl::Update()
 {
-    AMF_RESULT res = AMF_OK;
     for(std::vector<AMFCaptureManagerPtr>::iterator it = m_SatelliteManagers.begin(); it != m_SatelliteManagers.end(); it++)
     {
         (*it)->Update();

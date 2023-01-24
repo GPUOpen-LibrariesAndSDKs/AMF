@@ -43,5 +43,6 @@
 #define AMF_VIDEO_ENHANCER_OUTPUT_SIZE       L"AMF_VIDEO_ENHANCER_OUTPUT_SIZE"        // AMFSize                       
 #define AMF_VE_FCR_ATTENUATION               L"AMF_VE_FCR_ATTENUATION"                // Float in the range of [0.02, 0.4], default : 0.1
 #define AMF_VE_FCR_RADIUS                    L"AMF_VE_FCR_RADIUS"                     // int  in the range of [1, 4]
+#define AMF_VE_FCR_SPLIT_VIEW                L"AMF_VE_FCR_SPLIT_VIEW"                 // FCR View split window
 
 #endif //#ifndef AMFVQEnhancer_h

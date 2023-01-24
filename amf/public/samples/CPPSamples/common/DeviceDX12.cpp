@@ -73,7 +73,6 @@ ATL::CComPtr<ID3D12Device>      DeviceDX12::GetDevice()
 AMF_RESULT DeviceDX12::Init(amf_uint32 adapterID, bool onlyWithOutputs)
 {
     HRESULT hr = S_OK;
-    AMF_RESULT err = AMF_OK;
     // find adapter
     ATL::CComPtr<IDXGIAdapter> pAdapter;
 
@@ -150,10 +149,10 @@ AMF_RESULT DeviceDX12::Init(amf_uint32 adapterID, bool onlyWithOutputs)
 
 	for (UINT adapterIndex = adapterID; DXGI_ERROR_NOT_FOUND != pFactory->EnumAdapters1(adapterIndex, &adapter); ++adapterIndex)
 	{
-		DXGI_ADAPTER_DESC1 desc;
-		adapter->GetDesc1(&desc);
+		DXGI_ADAPTER_DESC1 adapterDesc;
+		adapter->GetDesc1(&adapterDesc);
 
-		if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+		if (adapterDesc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
 		{
 			// Don't select the Basic Render Driver adapter.
 			// If you want a software adapter, pass in "/warp" on the command line.
@@ -258,13 +257,13 @@ void DeviceDX12::EnumerateAdapters(bool onlyWithOutputs)
         pOutput = nullptr;
         while (pAdapter->EnumOutputs(i, &pOutput) != DXGI_ERROR_NOT_FOUND)
         {
-            DXGI_OUTPUT_DESC desc = {};
-            pOutput->GetDesc(&desc);
-            LOG_INFO("               Output " << i << ": " << desc.DeviceName << " ["
-                << desc.DesktopCoordinates.left << " "
-                << desc.DesktopCoordinates.top << " "
-                << desc.DesktopCoordinates.right << " "
-                << desc.DesktopCoordinates.bottom
+            DXGI_OUTPUT_DESC outputDesc = {};
+            pOutput->GetDesc(&outputDesc);
+            LOG_INFO("               Output " << i << ": " << outputDesc.DeviceName << " ["
+                << outputDesc.DesktopCoordinates.left << " "
+                << outputDesc.DesktopCoordinates.top << " "
+                << outputDesc.DesktopCoordinates.right << " "
+                << outputDesc.DesktopCoordinates.bottom
                 << "]");
             i++;
             pOutput = nullptr;

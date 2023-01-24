@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2017 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -63,9 +63,9 @@
 //
 // The pipeline setup is the following:
 //
-//	DisplayCapture -> Converter -> Encoder 
+//	DisplayCapture -> Converter -> Encoder
 //											-> Muxer(writes out file)
-//	AudioCapture -> Converter -> Encoder 
+//	AudioCapture -> Converter -> Encoder
 //
 // A video will still be generated if no audio is available
 //
@@ -102,7 +102,7 @@ public:
 #if !defined(METRO_APP)
 	AMF_RESULT Init();
 #else
-	AMF_RESULT Init(const wchar_t* path, IRandomAccessStream^ inputStream, IRandomAccessStream^ outputStream, 
+	AMF_RESULT Init(const wchar_t* path, IRandomAccessStream^ inputStream, IRandomAccessStream^ outputStream,
 		ISwapChainBackgroundPanelNative* previewTarget, AMFSize swapChainPanelSize, ParametersStorage* pParams);
 #endif
 
@@ -128,13 +128,12 @@ protected:
 
 private:
 	AMF_RESULT			InitContext(
-							const std::wstring& engineStr, 
-							amf::AMF_MEMORY_TYPE engineMemoryType, 
+							const std::wstring& engineStr,
+							amf::AMF_MEMORY_TYPE engineMemoryType,
 							amf_uint32 adapterID);
 
 	AMF_RESULT			InitVideo(
 							amf::AMF_MEMORY_TYPE engineMemoryType,
-							amf_int scaleWidth, amf_int scaleHeight,
 							amf_int32 videoWidth, amf_int32 videoHeight);
 
 	AMF_RESULT			InitAudio();
@@ -182,7 +181,7 @@ private:
 	// Muxer indices
 	amf_int32	                    m_outVideoStreamMuxerIndex;
 	amf_int32	                    m_outAudioStreamMuxerIndex;
-	
+
 	void*                           m_converterInterceptor;
 
 	mutable amf::AMFCriticalSection m_sync;

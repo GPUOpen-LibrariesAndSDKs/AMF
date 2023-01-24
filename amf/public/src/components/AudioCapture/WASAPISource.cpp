@@ -144,7 +144,7 @@ AMF_RESULT AMFWASAPISourceImpl::CaptureOnePacket(amf_uint8** ppData, UINT& numSa
                     if (flags & AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR)
                     {
                         AMFTraceError(AMF_FACILITY, L"GetBuffer: Timestamp error at pos=%llu, timestamp=%llu", pos, ts);
-                        pos = 0xFFFFFFFFFFFFFFFFLL;
+                        pos = 0xFFFFFFFFFFFFFFFFULL;
                     }
                     posStream = pos;
                     break;

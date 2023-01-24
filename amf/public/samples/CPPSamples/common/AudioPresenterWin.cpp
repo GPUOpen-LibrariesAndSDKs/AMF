@@ -370,7 +370,6 @@ AMF_RESULT AudioPresenterWin::Present(AMFAudioBuffer *buffer,amf_pts &sleeptime)
     }
 
     IAudioClient *pAudioClient=(IAudioClient *)m_pAudioClient;
-    IAudioRenderClient *pRenderClient = (IAudioRenderClient *)m_pRenderClient;
     WAVEFORMATEX *pMixFormat=(WAVEFORMATEX *)m_pMixFormat;
 
     if(m_eEngineState==AMFAPS_STOPPED_STATUS)
@@ -468,7 +467,6 @@ AMF_RESULT AudioPresenterWin::PushBuffer(AMFAudioBufferPtr &buffer,amf_size &uiB
 {
     AMF_RETURN_IF_FALSE(m_pRenderClient!=NULL && m_pAudioClient!=NULL,AMF_NOT_INITIALIZED, L"PushBuffer() - Render Client or Audio Client not Initialized");
     HRESULT hr=S_OK;
-    AMF_RESULT err=AMF_OK;
 
     IAudioClient *pAudioClient=(IAudioClient *)m_pAudioClient;
     IAudioRenderClient *pRenderClient = (IAudioRenderClient *)m_pRenderClient;
@@ -527,7 +525,6 @@ AMF_RESULT AudioPresenterWin::Resume(amf_pts currentTime)
 {
     amf::AMFLock lock(&m_cs);
     AMF_RETURN_IF_FALSE(m_pRenderClient!=NULL && m_pAudioClient!=NULL,AMF_NOT_INITIALIZED, L"Resume() - Render Client or Audio Client not Initialized");
-    HRESULT hr=S_OK;
     AMF_RESULT err=AMF_OK;
 
     IAudioClient *pAudioClient=(IAudioClient *)m_pAudioClient;

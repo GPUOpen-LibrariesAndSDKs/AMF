@@ -93,7 +93,7 @@ VideoPresenterDX12::~VideoPresenterDX12()
     Terminate();
 }
 
-AMF_RESULT VideoPresenterDX12::Init(amf_int32 width, amf_int32 height, amf::AMFSurface* pSurface)
+AMF_RESULT VideoPresenterDX12::Init(amf_int32 width, amf_int32 height, amf::AMFSurface* /* pSurface */)
 {
     DXGI_FORMAT format = GetDXGIFormat(m_eInputFormat);
     CHECK_RETURN(width != 0 && height != 0 && format != DXGI_FORMAT_UNKNOWN, AMF_FAIL, L"Bad width/height: width=" << width << L" height=" << height << L" format" << amf::AMFSurfaceGetFormatName(m_eInputFormat));
@@ -138,8 +138,6 @@ AMF_RESULT VideoPresenterDX12::Present(amf::AMFSurface* pSurface)
     {
         res;
     }
-
-    UINT imageIndex = 0;
 
     ApplyCSC(pSurface);
 
@@ -210,12 +208,9 @@ AMF_RESULT VideoPresenterDX12::BitBlt(amf::AMF_FRAME_TYPE eFrameType, ID3D12Reso
     return BitBltRender(eFrameType, pSrcSurface, pSrcRect, pDstSurface, pDstRect);
 }
 
-AMF_RESULT VideoPresenterDX12::BitBltRender(amf::AMF_FRAME_TYPE eFrameType, ID3D12Resource* pSrcSurface, AMFRect* pSrcRect, ID3D12Resource* pDstSurface, AMFRect* pDstRect)
+AMF_RESULT VideoPresenterDX12::BitBltRender(amf::AMF_FRAME_TYPE /* eFrameType */, ID3D12Resource* pSrcSurface, AMFRect* pSrcRect, ID3D12Resource* pDstSurface, AMFRect* pDstRect)
 {
     CHECK_RETURN(m_pDX12Device != nullptr, AMF_FAIL, L"DX12 Device is not initialized.");
-
-    AMF_RESULT err = AMF_OK;
-    HRESULT hr = S_OK;
 
     BackBuffer& backBuffer = m_BackBuffers[m_frameIndex];
 
@@ -350,7 +345,6 @@ AMF_RESULT VideoPresenterDX12::CompileShaders()
 {
     CHECK_RETURN(m_pDX12Device != nullptr, AMF_FAIL, L"DX12 Device is not initialized.");
 
-    AMF_RESULT res = AMF_OK;
     HRESULT hr = S_OK;
 
     D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
@@ -491,26 +485,30 @@ AMF_RESULT VideoPresenterDX12::PrepareStates()
             sizeof(SimpleVertex) * IndicesCount
         );
 
-        hr = m_pDX12Device->CreateCommittedResource(
-            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-            D3D12_HEAP_FLAG_NONE,
-            &vertexDesc,
-            D3D12_RESOURCE_STATE_COPY_DEST,
-            nullptr,
-            IID_PPV_ARGS(&m_pVertexBuffer));
+        {
+            CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
+            hr = m_pDX12Device->CreateCommittedResource(
+                &heapProperties,
+                D3D12_HEAP_FLAG_NONE,
+                &vertexDesc,
+                D3D12_RESOURCE_STATE_COPY_DEST,
+                nullptr,
+                IID_PPV_ARGS(&m_pVertexBuffer));
+        }
 
         D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COPY_DEST;
         m_pVertexBuffer->SetPrivateData(AMFResourceStateGUID, sizeof(D3D12_RESOURCE_STATES), &initialState);
 
-
-        hr = m_pDX12Device->CreateCommittedResource(
-            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-            D3D12_HEAP_FLAG_NONE,
-            &vertexDesc,
-            D3D12_RESOURCE_STATE_GENERIC_READ,
-            nullptr,
-            IID_PPV_ARGS(&m_pVertexBufferUpload));
-
+        {
+            CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_UPLOAD);
+            hr = m_pDX12Device->CreateCommittedResource(
+                &heapProperties,
+                D3D12_HEAP_FLAG_NONE,
+                &vertexDesc,
+                D3D12_RESOURCE_STATE_GENERIC_READ,
+                nullptr,
+                IID_PPV_ARGS(&m_pVertexBufferUpload));
+        }
         // Initialize the vertex buffer views.
         m_vertexBufferView.BufferLocation = m_pVertexBuffer->GetGPUVirtualAddress();
         m_vertexBufferView.StrideInBytes = sizeof(SimpleVertex);
@@ -531,23 +529,30 @@ AMF_RESULT VideoPresenterDX12::PrepareStates()
             bufferSize
         );
 
-        hr = m_pDX12Device->CreateCommittedResource(
-            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-            D3D12_HEAP_FLAG_NONE,
-            &cbDesc,
-            D3D12_RESOURCE_STATE_COPY_DEST,
-            nullptr,
-            IID_PPV_ARGS(&m_pCBChangesOnResize));
+        {
+            CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
+            hr = m_pDX12Device->CreateCommittedResource(
+                &heapProperties,
+                D3D12_HEAP_FLAG_NONE,
+                &cbDesc,
+                D3D12_RESOURCE_STATE_COPY_DEST,
+                nullptr,
+                IID_PPV_ARGS(&m_pCBChangesOnResize));
+        }
         NAME_D3D12_OBJECT(m_pCBChangesOnResize);
 
+
         CComPtr<ID3D12Resource> cbUpload;
-        hr = m_pDX12Device->CreateCommittedResource(
-            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-            D3D12_HEAP_FLAG_NONE,
-            &cbDesc,
-            D3D12_RESOURCE_STATE_GENERIC_READ,
-            nullptr,
-            IID_PPV_ARGS(&cbUpload));
+        {
+            CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_UPLOAD);
+            hr = m_pDX12Device->CreateCommittedResource(
+                &heapProperties,
+                D3D12_HEAP_FLAG_NONE,
+                &cbDesc,
+                D3D12_RESOURCE_STATE_GENERIC_READ,
+                nullptr,
+                IID_PPV_ARGS(&cbUpload));
+        }
 
         UINT8* pBuffer = nullptr;
         CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
@@ -591,24 +596,30 @@ AMF_RESULT VideoPresenterDX12::PreparePIPStates()
         sizeof(SimpleVertex) * IndicesCount
     );
 
-    hr = m_pDX12Device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-        D3D12_HEAP_FLAG_NONE,
-        &vertexDesc,
-        D3D12_RESOURCE_STATE_COPY_DEST,
-        nullptr,
-        IID_PPV_ARGS(&m_pPIPVertexBuffer));
+    {
+        CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
+        hr = m_pDX12Device->CreateCommittedResource(
+            &heapProperties,
+            D3D12_HEAP_FLAG_NONE,
+            &vertexDesc,
+            D3D12_RESOURCE_STATE_COPY_DEST,
+            nullptr,
+            IID_PPV_ARGS(&m_pPIPVertexBuffer));
+    }
 
     D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COPY_DEST;
     m_pPIPVertexBuffer->SetPrivateData(AMFResourceStateGUID, sizeof(D3D12_RESOURCE_STATES), &initialState);
 
-    hr = m_pDX12Device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-        D3D12_HEAP_FLAG_NONE,
-        &vertexDesc,
-        D3D12_RESOURCE_STATE_GENERIC_READ,
-        nullptr,
-        IID_PPV_ARGS(&m_pPIPVertexBufferUpload));
+    {
+        CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_UPLOAD);
+        hr = m_pDX12Device->CreateCommittedResource(
+            &heapProperties,
+            D3D12_HEAP_FLAG_NONE,
+            &vertexDesc,
+            D3D12_RESOURCE_STATE_GENERIC_READ,
+            nullptr,
+            IID_PPV_ARGS(&m_pPIPVertexBufferUpload));
+    }
 
     // Initialize the vertex buffer views.
     m_PIPVertexBufferView.BufferLocation = m_pPIPVertexBuffer->GetGPUVirtualAddress();
@@ -623,7 +634,6 @@ AMF_RESULT   VideoPresenterDX12::CheckForResize(bool bForce, bool *bResized)
     CHECK_RETURN(m_pSwapChain != nullptr, AMF_FAIL, L"DX12 SwapChain is not initialized.");
 
     *bResized = false;
-    AMF_RESULT err=AMF_OK;
     HRESULT hr = S_OK;
 
     AMFRect client;
@@ -861,7 +871,6 @@ AMF_RESULT VideoPresenterDX12::CreateCommandBuffer()
     CHECK_RETURN(m_pDX12Device != nullptr, AMF_FAIL, L"DX12 Device is not initialized.");
 
     HRESULT hr = S_OK;
-    AMF_RESULT res = AMF_OK;
 
     // Create the command lists.
     {
@@ -968,7 +977,7 @@ void        VideoPresenterDX12::UpdateProcessor()
                     pHDRData->maxMasteringLuminance = amf_uint32(desc.MaxLuminance * 10000.f);
                     pHDRData->minMasteringLuminance = amf_uint32(desc.MinLuminance * 10000.f);
                     pHDRData->maxContentLightLevel = 0;
-                    pHDRData->maxFrameAverageLightLevel = amf_uint32(desc.MaxFullFrameLuminance* 10000.f);
+                    pHDRData->maxFrameAverageLightLevel = amf_uint16(desc.MaxFullFrameLuminance * 10000.f);
 
 
                     m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_HDR_METADATA, pBuffer);
@@ -1087,8 +1096,7 @@ AMF_RESULT VideoPresenterDX12::ApplyCSC(amf::AMFSurface* pSurface)
                     metadata.MaxContentLightLevel = pHDRData->maxContentLightLevel;
                     metadata.MaxFrameAverageLightLevel = pHDRData->maxFrameAverageLightLevel;
 
-                    HRESULT hr = pSwapChain4->SetHDRMetaData(DXGI_HDR_METADATA_TYPE_HDR10, sizeof(metadata), &metadata);
-                    int a = 1;
+                    pSwapChain4->SetHDRMetaData(DXGI_HDR_METADATA_TYPE_HDR10, sizeof(metadata), &metadata);
                 }
                 m_bFirstFrame = false;
             }

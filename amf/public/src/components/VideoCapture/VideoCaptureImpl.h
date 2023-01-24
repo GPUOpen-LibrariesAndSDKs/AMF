@@ -108,18 +108,18 @@ namespace amf
         virtual AMF_RESULT  AMF_STD_CALL  Drain();
         virtual AMF_RESULT  AMF_STD_CALL  Flush();
 
-        virtual AMF_RESULT  AMF_STD_CALL  SubmitInput(AMFData* pData)                               { return AMF_NOT_SUPPORTED;  };
-        virtual AMF_RESULT  AMF_STD_CALL  QueryOutput(AMFData** ppData)                             { return AMF_NOT_SUPPORTED;  };
-        virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* callback)    { return AMF_OK; };
-        virtual AMF_RESULT  AMF_STD_CALL  GetCaps(AMFCaps** ppCaps)                                 { return AMF_NOT_SUPPORTED;  };
-        virtual AMF_RESULT  AMF_STD_CALL  Optimize(AMFComponentOptimizationCallback* pCallback)     { return AMF_OK;  };
-        virtual AMFContext* AMF_STD_CALL  GetContext()                                              { return m_pContext; };
+        virtual AMF_RESULT  AMF_STD_CALL  SubmitInput(AMFData* /* pData */)                             { return AMF_NOT_SUPPORTED; };
+        virtual AMF_RESULT  AMF_STD_CALL  QueryOutput(AMFData** /* ppData */)                           { return AMF_NOT_SUPPORTED; };
+        virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* /* pCallback */) { return AMF_OK; };
+        virtual AMF_RESULT  AMF_STD_CALL  GetCaps(AMFCaps** /* ppCaps */)                               { return AMF_NOT_SUPPORTED; };
+        virtual AMF_RESULT  AMF_STD_CALL  Optimize(AMFComponentOptimizationCallback* /* pCallback */ )  { return AMF_OK; };
+        virtual AMFContext* AMF_STD_CALL  GetContext()                                                  { return m_pContext; };
 
         // AMFComponentEx interface
-        virtual amf_int32   AMF_STD_CALL  GetInputCount()                                           {  return 0;  };
-        virtual amf_int32   AMF_STD_CALL  GetOutputCount()                                          {  return 1;  };
+        virtual amf_int32   AMF_STD_CALL  GetInputCount()                                               {  return 0;  };
+        virtual amf_int32   AMF_STD_CALL  GetOutputCount()                                              {  return 1;  };
 
-        virtual AMF_RESULT  AMF_STD_CALL  GetInput(amf_int32 index, AMFInput** ppInput)             {  return AMF_NOT_SUPPORTED;  };
+        virtual AMF_RESULT  AMF_STD_CALL  GetInput(amf_int32 /* index */, AMFInput** /* ppInput */)     { return AMF_NOT_SUPPORTED; };
         virtual AMF_RESULT  AMF_STD_CALL  GetOutput(amf_int32 index, AMFOutput** ppOutput);
 
         // AMFPropertyStorageObserver interface

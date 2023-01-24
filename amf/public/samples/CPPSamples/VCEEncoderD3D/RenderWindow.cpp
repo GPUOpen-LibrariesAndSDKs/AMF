@@ -55,8 +55,8 @@ LRESULT CALLBACK MyDefWindowProcW(
     __in LPARAM lParam);
 BOOL CALLBACK MyStaticEnumProc(
   _In_  HMONITOR hMonitor,
-  _In_  HDC hdcMonitor,
-  _In_  LPRECT lprcMonitor,
+  _In_  HDC /* hdcMonitor */,
+  _In_  LPRECT /* lprcMonitor */,
   _In_  LPARAM dwData
 )
 {
@@ -78,7 +78,7 @@ BOOL    RenderWindow::MyEnumProc(HMONITOR hMonitor)
     return TRUE;
 }
 
-bool RenderWindow::CreateD3Window(amf_int32  width, amf_int32  height, amf_int32  adapterID, bool bFullScreen)
+bool RenderWindow::CreateD3Window(amf_int32  width, amf_int32  height, amf_int32  adapterID, bool /* bFullScreen */)
 {
     if(m_hWnd != NULL)
     {

@@ -112,7 +112,7 @@ VideoRenderDX11::~VideoRenderDX11()
     Terminate();
 }
 
-AMF_RESULT VideoRenderDX11::Init(amf_handle hWnd, amf_handle hDisplay, bool bFullScreen)
+AMF_RESULT VideoRenderDX11::Init(amf_handle hWnd, amf_handle /* hDisplay */, bool /* bFullScreen */)
 {
     AMF_RESULT res = AMF_OK;
     HRESULT hr = S_OK;

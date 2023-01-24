@@ -80,7 +80,7 @@ m_pSDIExt(NULL)
         PFNAmdDxExtCreate11 pAmdDxExtCreate = reinterpret_cast<PFNAmdDxExtCreate11>(GetProcAddress(m_hDrvDll, "AmdDxExtCreate11"));
         if(pAmdDxExtCreate != NULL)
         {
-            HRESULT hr = pAmdDxExtCreate(m_pDeviceD3D, &m_pExt);
+            pAmdDxExtCreate(m_pDeviceD3D, &m_pExt);
             if(m_pExt != NULL)
             {
                 m_pSDIExt = static_cast<IAmdDxExtSDI*>((m_pExt)->GetExtInterface(AmdDxExtSDIID)); // GetExtInterface() returns reference count = 1

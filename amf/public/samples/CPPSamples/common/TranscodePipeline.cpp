@@ -51,9 +51,13 @@ const wchar_t* TranscodePipeline::PARAM_NAME_FRAMES       = L"FRAMES";
 const wchar_t* TranscodePipeline::PARAM_NAME_SCALE_TYPE   = L"SCALETYPE";
 
 
-// NOTE: AAC codec ID for ffmpeg 4.1.3 - id can change with different ffmpeg versions
-#pragma message("NOTE: AAC codec ID for ffmpeg 4.1.3 - id might change on other versions of ffmpeg")
-#define CODEC_ID_AAC  0x15002
+// NOTE: codec ID for ffmpeg 4.1.3 - id can change with different ffmpeg versions
+#pragma message("NOTE: Audio codec IDs for ffmpeg 4.1.3 - id might change on other versions of ffmpeg")
+#define CODEC_ID_PCM_S16LE  0x10000
+#define CODEC_ID_MP3        0x15001
+#define CODEC_ID_AAC        0x15002
+#define CODEC_ID_AC3        0x15003
+#define CODEC_ID_FLAC       0x1500C
 
 
 
@@ -111,7 +115,8 @@ protected:
 
 TranscodePipeline::TranscodePipeline()
     :m_pContext(),
-    m_eDecoderFormat(amf::AMF_SURFACE_NV12)
+    m_eDecoderFormat(amf::AMF_SURFACE_NV12),
+    m_eEncoderFormat(amf::AMF_SURFACE_NV12)
 {
 }
 
@@ -219,7 +224,93 @@ double TranscodePipeline::GetProgressPosition()
     {
         m_pStreamIn->GetPosition(&pos);
     }
-    return (double)pos;}
+    return (double)pos;
+}
+
+AMF_RESULT TranscodePipeline::SetRecommendedDecoderPoolSize(ParametersStorage* pParams)
+{
+    // Since we initialize the decoder before the encoder, we cannot just check if PA is enabled in the encoder.
+    // There are three ways we can determine if PA is enabled from the params.
+    // 
+    // 1. PA enabled by direct param
+    // 2. PA enabled by HQ usage
+    // 3. PA enabled by QVBR, HQVBR, HQCBR rate control methods
+    amf::AMFVariant  rateControlMethod;
+    amf_bool enablePAbyParam = false;
+    amf_bool enablePAbyRCmethod = false;
+    amf_bool enablePAbyUsage = false;
+    amf_int64 usage = 0;
+    amf_size labDepth = 0;
+
+    if (m_EncoderID == AMFVideoEncoderVCE_AVC)
+    {
+        pParams->GetParam(AMF_VIDEO_ENCODER_PRE_ANALYSIS_ENABLE, enablePAbyParam);
+
+        pParams->GetParam(AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD, rateControlMethod);
+        if (rateControlMethod.ToInt64() == AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_QUALITY_VBR ||
+            rateControlMethod.ToInt64() == AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_HIGH_QUALITY_VBR ||
+            rateControlMethod.ToInt64() == AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_HIGH_QUALITY_CBR)
+        {
+            enablePAbyRCmethod = true;
+            labDepth = 1; // default LAB depth for QVBR, HQVBR, HQCBR
+        }
+
+        // The LAB value from usage setting takes precedence over the LAB value from rate control method
+        pParams->GetParam(AMF_VIDEO_ENCODER_USAGE, usage);
+        if (usage == AMF_VIDEO_ENCODER_USAGE_HIGH_QUALITY)
+        {
+            enablePAbyUsage = true;
+            labDepth = 11; // default LAB depth for AMF_VIDEO_ENCODER_USAGE_HIGH_QUALITY
+        }
+    }
+    else if (m_EncoderID == AMFVideoEncoder_HEVC)
+    {
+        pParams->GetParam(AMF_VIDEO_ENCODER_HEVC_PRE_ANALYSIS_ENABLE, enablePAbyParam);
+
+        pParams->GetParam(AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD, rateControlMethod);
+        if (rateControlMethod.ToInt64() == AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_QUALITY_VBR ||
+            rateControlMethod.ToInt64() == AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_HIGH_QUALITY_VBR ||
+            rateControlMethod.ToInt64() == AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_HIGH_QUALITY_CBR)
+        {
+            enablePAbyRCmethod = true;
+            labDepth = 1; // default LAB depth for QVBR, HQVBR, HQCBR
+        }
+
+        // The LAB value from usage setting takes precedence over the LAB value from rate control method
+        pParams->GetParam(AMF_VIDEO_ENCODER_HEVC_USAGE, usage);
+        if (usage == AMF_VIDEO_ENCODER_HEVC_USAGE_HIGH_QUALITY)
+        {
+            enablePAbyUsage = true;
+            labDepth = 11; // default LAB depth for AMF_VIDEO_ENCODER_HEVC_USAGE_HIGH_QUALITY
+        }
+    }
+    else if (m_EncoderID == AMFVideoEncoder_AV1)
+    {
+        pParams->GetParam(AMF_VIDEO_ENCODER_AV1_PRE_ANALYSIS_ENABLE, enablePAbyParam);
+
+        pParams->GetParam(AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD, rateControlMethod);
+        if (rateControlMethod.ToInt64() == AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_QUALITY_VBR ||
+            rateControlMethod.ToInt64() == AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_HIGH_QUALITY_VBR ||
+            rateControlMethod.ToInt64() == AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_HIGH_QUALITY_CBR)
+        {
+            enablePAbyRCmethod = true;
+            labDepth = 1; // default LAB depth for QVBR, HQVBR, HQCBR
+        }
+    }
+
+    if (enablePAbyParam || enablePAbyUsage || enablePAbyRCmethod)
+    {
+        // User specified LAB depth takes priority. If the param is not specified,
+        // then the input value remains.
+        pParams->GetParam(AMF_PA_LOOKAHEAD_BUFFER_DEPTH, labDepth);
+
+        // pool size will be = (16 for compliant mode) + (labDepth) + (2 for transit)
+        amf_int64 poolSize = 18 + labDepth;
+        m_pDecoder->SetProperty(AMF_VIDEO_DECODER_SURFACE_POOL_SIZE, poolSize);
+    }
+
+    return AMF_OK;
+}
 
 #if !defined(METRO_APP)
 AMF_RESULT TranscodePipeline::Init(ParametersStorage* pParams, amf_handle previewTarget, amf_handle display, int threadID)
@@ -276,11 +367,6 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     {
         CHECK_RETURN(false, AMF_INVALID_ARG, L"Wrong parameter " << engineStr);
     }
-
-
-    // decode options to be played with
-    AMF_VIDEO_DECODER_MODE_ENUM   decoderMode = AMF_VIDEO_DECODER_MODE_COMPLIANT; //amf:::AMF_VIDEO_DECODER_MODE_REGULAR , AMF_VIDEO_DECODER_MODE_LOW_LATENCY;
-    bool                    decodeAsAnnexBStream = false; // switches between Annex B and AVCC types of decode input.
 
     // frequency of dynamic changes in the encoder parameters
     amf_int frameParameterFreq = 0;
@@ -452,7 +538,7 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     }
     if(iAudioStreamIndex >= 0 && outStreamType == BitStreamUnknown) // do not process audio if we write elmentary stream
     {
-        InitAudio(pAudioOutput);
+        InitAudio(pAudioOutput, pParams);
     }
 
     //---------------------------------------------------------------------------------------------
@@ -490,15 +576,9 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
         m_pMuxer = amf::AMFComponentExPtr(pMuxer);
 
         m_pMuxer->SetProperty(FFMPEG_MUXER_PATH, outputPath.c_str());
-        if(iVideoStreamIndex >= 0)
-        {
-            m_pMuxer->SetProperty(FFMPEG_MUXER_ENABLE_VIDEO, true);
 
-        }
-        if(iAudioStreamIndex >= 0)
-        {
-            m_pMuxer->SetProperty(FFMPEG_MUXER_ENABLE_AUDIO, true);
-        }
+        m_pMuxer->SetProperty(FFMPEG_MUXER_ENABLE_VIDEO, iVideoStreamIndex >= 0);
+        m_pMuxer->SetProperty(FFMPEG_MUXER_ENABLE_AUDIO, iAudioStreamIndex >= 0);
 
         amf_int32 inputs = m_pMuxer->GetInputCount();
         for(amf_int32 input = 0; input < inputs; input++)
@@ -665,7 +745,12 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     else
     {
         PipelineElementPtr pPipelineElementMuxer = PipelineElementPtr(new AMFComponentExElement(m_pMuxer));
-        Connect(pPipelineElementMuxer, outVideoStreamIndex, pPipelineElementEncoder, 0, 10, CT_ThreadQueue);
+
+        if (outVideoStreamIndex >= 0)
+        {
+            Connect(pPipelineElementMuxer, outVideoStreamIndex, pPipelineElementEncoder, 0, 10, CT_ThreadQueue);
+        }
+
         SetStatSlot( pPipelineElementMuxer, 0);
 
         // audio
@@ -712,7 +797,7 @@ AMF_RESULT TranscodePipeline::Run()
     return res;
 }
 
-AMF_RESULT  TranscodePipeline::InitAudio(amf::AMFOutput* pOutput)
+AMF_RESULT  TranscodePipeline::InitAudio(amf::AMFOutput* pOutput, ParametersStorage* pParams)
 {
     AMF_RESULT res = AMF_OK;
 
@@ -777,7 +862,38 @@ AMF_RESULT  TranscodePipeline::InitAudio(amf::AMFOutput* pOutput)
     res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_AUDIO_ENCODER, &m_pAudioEncoder);
     CHECK_AMF_ERROR_RETURN(res, L"LoadExternalComponent(" << FFMPEG_AUDIO_ENCODER << L") failed");
 
-    m_pAudioEncoder->SetProperty(AUDIO_ENCODER_AUDIO_CODEC_ID, CODEC_ID_AAC); // switch to AAC for output
+    std::wstring outputPath = L"";
+    res = pParams->GetParamWString(PARAM_NAME_OUTPUT, outputPath);
+
+    amf_int64 encoderCodecID = CODEC_ID_AAC;  // Default to AAC for video and unknown formats
+
+    // Set encoder codec based on output file extension
+    const wchar_t EXT_DELIMITER = L'.';
+    std::wstring::size_type pos = outputPath.find_last_of(EXT_DELIMITER);
+    if (pos != std::wstring::npos)
+    {
+        std::wstring outputFileExt = outputPath.substr(pos + 1);
+        std::transform(outputFileExt.begin(), outputFileExt.end(), outputFileExt.begin(), towlower);
+        
+        if (outputFileExt == L"wav")
+        {
+            encoderCodecID = CODEC_ID_PCM_S16LE;
+        }
+        else if (outputFileExt == L"flac")
+        {
+            encoderCodecID = CODEC_ID_FLAC;
+        }
+        else if (outputFileExt == L"mp3")
+        {
+            encoderCodecID = CODEC_ID_MP3;
+        }
+        else if (outputFileExt == L"ac3")
+        {
+            encoderCodecID = CODEC_ID_AC3;
+        }
+    }
+
+    m_pAudioEncoder->SetProperty(AUDIO_ENCODER_AUDIO_CODEC_ID, encoderCodecID);
     res = m_pAudioEncoder->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
     CHECK_AMF_ERROR_RETURN(res, L"m_pAudioEncoder->Init() failed");
 
@@ -801,7 +917,7 @@ AMF_RESULT  TranscodePipeline::InitAudio(amf::AMFOutput* pOutput)
 
    return AMF_OK;
 }
-AMF_RESULT  TranscodePipeline::InitVideoDecoder(const wchar_t *pDecoderID, amf_int64 codecID, amf_int32 videoWidth, amf_int32 videoHeight, AMFRate frameRate, amf::AMFBuffer* pExtraData)
+AMF_RESULT  TranscodePipeline::InitVideoDecoder(const wchar_t *pDecoderID, amf_int64 codecID, amf_int32 videoWidth, amf_int32 videoHeight, AMFRate frameRate, amf::AMFBuffer* pExtraData, ParametersStorage* pParams, amf_bool enableSmartAccess, amf_bool enableLowLatency)
 {
     AMF_VIDEO_DECODER_MODE_ENUM   decoderMode = AMF_VIDEO_DECODER_MODE_COMPLIANT; //amf:::AMF_VIDEO_DECODER_MODE_REGULAR , AMF_VIDEO_DECODER_MODE_LOW_LATENCY;
     AMF_RESULT res = AMF_OK;
@@ -827,9 +943,14 @@ AMF_RESULT  TranscodePipeline::InitVideoDecoder(const wchar_t *pDecoderID, amf_i
             pInputCaps->GetHeightRange(&minHeight, &maxHeight);
             if (minWidth <= videoWidth && videoWidth <= maxWidth && minHeight <= videoHeight && videoHeight <= maxHeight)
             {
+                m_pDecoder->SetProperty(AMF_VIDEO_DECODER_ENABLE_SMART_ACCESS_VIDEO, enableSmartAccess);
                 m_pDecoder->SetProperty(AMF_VIDEO_DECODER_REORDER_MODE, amf_int64(decoderMode));
                 m_pDecoder->SetProperty(AMF_VIDEO_DECODER_EXTRADATA, amf::AMFVariant(pExtraData));
                 m_pDecoder->SetProperty(AMF_TIMESTAMP_MODE, amf_int64(AMF_TS_DECODE)); // our sample H264 parser provides decode order timestamps- change depend on demuxer
+                m_pDecoder->SetProperty(AMF_VIDEO_DECODER_LOW_LATENCY, enableLowLatency);
+
+                SetRecommendedDecoderPoolSize(pParams);
+
                 m_eDecoderFormat = amf::AMF_SURFACE_NV12;
                 if (std::wstring(pDecoderID) == AMFVideoDecoderHW_H265_MAIN10)
                 {
@@ -931,7 +1052,7 @@ AMF_RESULT  TranscodePipeline::InitVideoProcessor(amf::AMF_MEMORY_TYPE presenter
         m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_SCALE, scaleType);
     }
     m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_MEMORY_TYPE, presenterEngine);
-    m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, amf::AMF_SURFACE_NV12);
+    m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, m_eEncoderFormat);
     m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, AMFConstructSize(outWidth, outHeight));
 
     m_pConverter->Init(m_eDecoderFormat, inWidth, inHeight);
@@ -1036,11 +1157,24 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamRe
         frameRate.den = 1;
         m_eDecoderFormat = pRawReader->GetFormat();
     }
+
+
+    // The decoder needs to know about PA because some PA features such
+    // as LAB depend on an adequate amount of decoder output buffers
+    m_EncoderID = AMFVideoEncoderVCE_AVC;
+    pParams->GetParamWString(PARAM_NAME_CODEC, m_EncoderID);
+
     //---------------------------------------------------------------------------------------------
     if ((pParser != NULL) || (pOutput != NULL))
     {
+        amf_bool enableDecoderSmartAccess = false;
+        pParams->GetParam(AMF_VIDEO_DECODER_ENABLE_SMART_ACCESS_VIDEO, enableDecoderSmartAccess);
+
+        amf_bool enableDecoderLowLatency = false;
+        pParams->GetParam(AMF_VIDEO_DECODER_LOW_LATENCY, enableDecoderLowLatency);
+
         // Init Video Decoder
-        res = InitVideoDecoder(pVideoDecoderID.c_str(), codecID, videoWidth, videoHeight, frameRate, pExtraData);
+        res = InitVideoDecoder(pVideoDecoderID.c_str(), codecID, videoWidth, videoHeight, frameRate, pExtraData, pParams, enableDecoderSmartAccess, enableDecoderLowLatency);
         CHECK_AMF_ERROR_RETURN(res, L"InitVideoDecoder() failed");
     }
 
@@ -1063,6 +1197,32 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamRe
 
     amf_int64 scaleType = AMF_VIDEO_CONVERTER_SCALE_INVALID;
     pParams->GetParam(PARAM_NAME_SCALE_TYPE, scaleType);
+
+    // Check the bit depth of output to adjust encoder surface format appropriately, AVC is always 8bit
+    amf_int64 colorBitDepth = 8;
+    if (m_EncoderID == AMFVideoEncoder_HEVC)
+    {
+        pParams->GetParam(AMF_VIDEO_ENCODER_HEVC_COLOR_BIT_DEPTH, colorBitDepth);
+    }
+    else if (m_EncoderID == AMFVideoEncoder_AV1)
+    {
+        pParams->GetParam(AMF_VIDEO_ENCODER_AV1_COLOR_BIT_DEPTH, colorBitDepth);
+    }
+    switch (colorBitDepth)
+    {
+    case 8:
+        m_eEncoderFormat = amf::AMF_SURFACE_NV12;
+        break;
+    case 10:
+        m_eEncoderFormat = amf::AMF_SURFACE_P010;
+        break;
+    case 12:
+        m_eEncoderFormat = amf::AMF_SURFACE_P012;
+        break;
+    default:
+        LOG_ERROR("[Error] Unknown color bit depth: " << colorBitDepth);
+        break;
+    }
 
     //---------------------------------------------------------------------------------------------
     // Init Video Converter/Processor
@@ -1096,10 +1256,10 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamRe
             res = m_pPreProcFilter->SetProperty(AMF_PP_TARGET_BITRATE, targetBitrate);
             CHECK_AMF_ERROR_RETURN(res, L"AMFPreProcessing failed to set target bitrate for the adaptive filter mechanism");
         }
-        AMFRate frameRate = AMFConstructRate(30, 1);
-        if (pParams->GetParam(AMF_PP_FRAME_RATE, frameRate) == AMF_OK)
+        AMFRate preProcFrameRate = AMFConstructRate(30, 1);
+        if (pParams->GetParam(AMF_PP_FRAME_RATE, preProcFrameRate) == AMF_OK)
         {
-            res = m_pPreProcFilter->SetProperty(AMF_PP_FRAME_RATE, frameRate);
+            res = m_pPreProcFilter->SetProperty(AMF_PP_FRAME_RATE, preProcFrameRate);
             CHECK_AMF_ERROR_RETURN(res, L"AMFPreProcessing failed to set frame rate for the adaptive filter mechanism");
         }
 
@@ -1109,9 +1269,6 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamRe
     //---------------------------------------------------------------------------------------------
     // Init Video Encoder
 
-
-    m_EncoderID = AMFVideoEncoderVCE_AVC;
-    pParams->GetParamWString(PARAM_NAME_CODEC, m_EncoderID);
 
     if(m_EncoderID == AMFVideoEncoderVCE_AVC)
     {
@@ -1197,7 +1354,7 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamRe
 
     PushParamsToPropertyStorage(pParams, ParamEncoderDynamic, m_pEncoder);
 
-    res = m_pEncoder->Init(amf::AMF_SURFACE_NV12, scaleWidth, scaleHeight);
+    res = m_pEncoder->Init(m_eEncoderFormat, scaleWidth, scaleHeight);
     CHECK_AMF_ERROR_RETURN(res, L"m_pEncoder->Init() failed");
 
 //    PushParamsToPropertyStorage(pParams, ParamEncoderDynamic, m_pEncoder);

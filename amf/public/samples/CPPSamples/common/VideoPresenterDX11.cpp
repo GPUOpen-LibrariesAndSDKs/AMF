@@ -301,10 +301,6 @@ AMF_RESULT VideoPresenterDX11::BitBltCopy(ID3D11Texture2D* pSrcSurface, AMFRect*
 
 AMF_RESULT VideoPresenterDX11::BitBltRender(amf::AMF_FRAME_TYPE eFrameType, ID3D11Texture2D* pSrcSurface, AMFRect* pSrcRect, ID3D11Texture2D* pDstSurface, AMFRect* pDstRect)
 {
-    AMF_RESULT err = AMF_OK;
-    HRESULT hr = S_OK;
-
-
     CComPtr<ID3D11DeviceContext> spContext;
     m_pDevice->GetImmediateContext( &spContext );
 
@@ -319,15 +315,8 @@ AMF_RESULT VideoPresenterDX11::BitBltRender(amf::AMF_FRAME_TYPE eFrameType, ID3D
     if((srcDesc.BindFlags & D3D11_BIND_SHADER_RESOURCE) != D3D11_BIND_SHADER_RESOURCE || (srcDesc.MiscFlags & D3D11_RESOURCE_MISC_TEXTURECUBE))
     {
         CopySurface(eFrameType, pSrcSurface, pSrcRect);
-        AMFRect  newSourceRect;
-
-        newSourceRect.left = 0;
-        newSourceRect.top = 0;
-        newSourceRect.right = pSrcRect->Width();
-        newSourceRect.bottom = pSrcRect->Height();
         srcSize.width = pSrcRect->Width();
         srcSize.height = pSrcRect->Height();
-
     }
     AMFSize dstSize = {(amf_int32)dstDesc.Width, (amf_int32)dstDesc.Height};
     UpdateVertices(&newSourceRect, &srcSize, pDstRect, &dstSize);
@@ -850,7 +839,6 @@ AMF_RESULT VideoPresenterDX11::CompileShaders()
         dwShaderFlags, 0, &pBlobVertexShader, &pErrorBlob);
     if(FAILED(hr))
     {
-        char *data = (char *)pErrorBlob->GetBufferPointer();
         return AMF_FAIL;
     }
     hr = m_pDevice->CreateVertexShader( pBlobVertexShader->GetBufferPointer(), pBlobVertexShader->GetBufferSize(), NULL, &m_pVertexShader );
@@ -873,7 +861,6 @@ AMF_RESULT VideoPresenterDX11::CompileShaders()
         dwShaderFlags, 0, &pBlobPixelShader, &pErrorBlob);
     if(FAILED(hr))
     {
-        char *data = (char *)pErrorBlob->GetBufferPointer();
         return AMF_FAIL;
     }
     hr = m_pDevice->CreatePixelShader( pBlobPixelShader->GetBufferPointer(), pBlobPixelShader->GetBufferSize(), NULL, &m_pPixelShader);
@@ -979,7 +966,6 @@ AMF_RESULT VideoPresenterDX11::PrepareStates()
 AMF_RESULT            VideoPresenterDX11::CheckForResize(bool bForce, bool *bResized)
 {
     *bResized = false;
-    AMF_RESULT err=AMF_OK;
     HRESULT hr = S_OK;
 
     if (m_hDCompositionSurfaceHandle != nullptr)
@@ -1244,8 +1230,8 @@ AMFPoint VideoPresenterDX11::MapSourceToClient(const AMFPoint& point)
     return point;
 }
 
-AMF_RESULT AMF_STD_CALL VideoPresenterDX11::AllocSurface(amf::AMF_MEMORY_TYPE type, amf::AMF_SURFACE_FORMAT format,
-            amf_int32 width, amf_int32 height, amf_int32 hPitch, amf_int32 vPitch, amf::AMFSurface** ppSurface)
+AMF_RESULT AMF_STD_CALL VideoPresenterDX11::AllocSurface(amf::AMF_MEMORY_TYPE /* type */, amf::AMF_SURFACE_FORMAT /* format */,
+            amf_int32 /* width */, amf_int32 /* height */, amf_int32 /* hPitch */, amf_int32 /* vPitch */, amf::AMFSurface** ppSurface)
 {
     if(!m_bRenderToBackBuffer)
     {
@@ -1460,7 +1446,7 @@ void        VideoPresenterDX11::UpdateProcessor()
             pHDRData->maxMasteringLuminance = amf_uint32(desc.MaxLuminance * 10000.f);
             pHDRData->minMasteringLuminance = amf_uint32(desc.MinLuminance * 10000.f);
             pHDRData->maxContentLightLevel = 0;
-            pHDRData->maxFrameAverageLightLevel = amf_uint32(desc.MaxFullFrameLuminance* 10000.f);
+            pHDRData->maxFrameAverageLightLevel = amf_uint16(desc.MaxFullFrameLuminance* 10000.f);
 
 
             m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_HDR_METADATA, pBuffer);
@@ -1557,12 +1543,14 @@ void        VideoPresenterDX11::UpdateProcessor()
     }
 }
 
-void VideoPresenterDX11::CustomDraw()
+AMF_RESULT VideoPresenterDX11::CustomDraw()
 {
+    return AMF_OK;
 }
 
 AMF_RESULT VideoPresenterDX11::ApplyCSC(amf::AMFSurface* pSurface)
 {
+    pSurface; // Suppress unreferenced parameter warning (C4100)
 #if defined(NTDDI_WIN10_RS2)
 #if USE_COLOR_TWITCH_IN_DISPLAY
     if(m_bFirstFrame)

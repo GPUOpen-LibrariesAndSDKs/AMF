@@ -45,7 +45,7 @@ VideoRenderHost::~VideoRenderHost()
     Terminate();
 }
 
-AMF_RESULT      VideoRenderHost::Init(amf_handle hWnd, amf_handle hDisplay, bool bFullScreen)
+AMF_RESULT      VideoRenderHost::Init(amf_handle /* hWnd */, amf_handle /* hDisplay */, bool /* bFullScreen */)
 {
     return AMF_OK;
 }

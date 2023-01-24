@@ -43,7 +43,7 @@
 
 extern "C"
 {
-    AMF_RESULT AMF_CDECL_CALL AMFCreateComponentAmbisonic(amf::AMFContext* pContext, void* reserved, amf::AMFComponent** ppComponent)
+    AMF_RESULT AMF_CDECL_CALL AMFCreateComponentAmbisonic(amf::AMFContext* pContext, void* /* reserved */, amf::AMFComponent** ppComponent)
     {
         *ppComponent = new amf::AMFInterfaceMultiImpl< amf::AMFAmbisonic2SRendererImpl, amf::AMFComponent, amf::AMFContext* >(pContext);
         (*ppComponent)->Acquire();
@@ -55,10 +55,8 @@ extern "C"
 
 using namespace amf;
 
-void Ambi2Stereo::loadTabulatedHRTFs(){
- 
-    float *hrtf = new float[responseLength];
-
+void Ambi2Stereo::loadTabulatedHRTFs()
+{
     LeftResponseW = new float[responseLength];
     LeftResponseX = new float[responseLength];
     LeftResponseY = new float[responseLength];
@@ -147,14 +145,14 @@ Ambi2Stereo::~Ambi2Stereo()
         }
         vSpkrNresponse_R[n] = NULL;
     }
-    delete LeftResponseW;
-    delete LeftResponseX;
-    delete LeftResponseY;
-    delete LeftResponseZ;
-    delete RightResponseW;
-    delete RightResponseX;
-    delete RightResponseY;
-    delete RightResponseZ;
+    delete[] LeftResponseW;
+    delete[] LeftResponseX;
+    delete[] LeftResponseY;
+    delete[] LeftResponseZ;
+    delete[] RightResponseW;
+    delete[] RightResponseX;
+    delete[] RightResponseY;
+    delete[] RightResponseZ;
 
     if (m_convolution)
     {
@@ -257,16 +255,14 @@ void Ambi2Stereo::getResponses(float thetaHead, float phiHead,
 
 void Ambi2Stereo::process(float newtheta, float newphi, int nSamples, float *W, float *X, float *Y, float *Z, float *left, float *right)
 {
-    float theta = prevHeadTheta;
-    float phi = prevHeadPhi;
+    float headTheta = prevHeadTheta;
+    float headPhi = prevHeadPhi;
 
-
-
-    if (fabs(newtheta - theta) > 180.0){
-        theta += 360;
+    if (fabs(newtheta - headTheta) > 180.0){
+        headTheta += 360;
     }
-    float deltaTheta = (newtheta - theta)*bufSize / nSamples;
-    float deltaPhi = (newphi - phi)*bufSize / nSamples;
+    float deltaTheta = (newtheta - headTheta)*bufSize / nSamples;
+    float deltaPhi = (newphi - headPhi)*bufSize / nSamples;
 
     //AMFTraceWarning(AMF_FACILITY, L"theta: %f, phi: %f, delta theta %f, phi %f\n", newtheta, newphi, deltaTheta, deltaPhi);
 
@@ -296,7 +292,6 @@ void Ambi2Stereo::process(float newtheta, float newphi, int nSamples, float *W, 
     Data[6] = Y;
     Data[7] = Z;
 
-    float updTime = 0.0;
     if (responseLength == 1){
         getResponses(newtheta, newphi, 0, LeftResponseW, LeftResponseX, LeftResponseY, LeftResponseZ);
         getResponses(newtheta, newphi, 1, RightResponseW, RightResponseX, RightResponseY, RightResponseZ);
@@ -310,10 +305,10 @@ void Ambi2Stereo::process(float newtheta, float newphi, int nSamples, float *W, 
 
         for (long i = 0; i < nSamples; i += bufSize){
             amf_size nProcessed;
-            getResponses(theta, phi, 0, LeftResponseW, LeftResponseX, LeftResponseY, LeftResponseZ);
-            getResponses(theta, phi, 1, RightResponseW, RightResponseX, RightResponseY, RightResponseZ);
-            theta += deltaTheta;
-            phi += deltaPhi;
+            getResponses(headTheta, headPhi, 0, LeftResponseW, LeftResponseX, LeftResponseY, LeftResponseZ);
+            getResponses(headTheta, headPhi, 1, RightResponseW, RightResponseX, RightResponseY, RightResponseZ);
+            headTheta += deltaTheta;
+            headPhi += deltaPhi;
 
             nProcessed = bufSize;
             memset(OutData[0], 0, sizeof(float)*bufSize);
@@ -496,7 +491,6 @@ AMFAmbisonic2SRendererImpl::~AMFAmbisonic2SRendererImpl()
 AMF_RESULT AMF_STD_CALL  AMFAmbisonic2SRendererImpl::Init(AMF_SURFACE_FORMAT /*format*/, amf_int32 /*width*/, amf_int32 /*height*/)
 {
     AMFLock lock(&m_syncProperties);
-    AMF_RESULT res = AMF_OK;
     // clean up any information we might previously have
     Terminate();
 
@@ -512,9 +506,6 @@ AMF_RESULT AMF_STD_CALL  AMFAmbisonic2SRendererImpl::Init(AMF_SURFACE_FORMAT /*f
     m_Theta = 0.0f;
     m_Phi = 0.0f;
     m_Rho = 0.0f;
-
-    amf_int64  outChannelLayout = 0;
-    amf_int64  outSampleFormat = AMFAF_UNKNOWN;
 
     GetProperty(AMF_AMBISONIC2SRENDERER_IN_AUDIO_CHANNELS, &m_inChannels);
     if (4 != m_inChannels)
@@ -686,7 +677,6 @@ AMF_RESULT AMF_STD_CALL  AMFAmbisonic2SRendererImpl::QueryOutput(AMFData** ppDat
 
     //accessing input data
     int       iSampleSizeIn  = GetAudioSampleSize(m_inSampleFormat);
-    int       iSampleSizeOut = GetAudioSampleSize(m_outSampleFormat);
     amf_int64 iSamplesIn     = 0;
     uint8_t* pMemIn = NULL;
 
@@ -890,17 +880,19 @@ AMF_RESULT AMF_STD_CALL  AMFAmbisonic2SRendererImpl::QueryOutput(AMFData** ppDat
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL AMFAmbisonic2SRendererImpl::GetCaps(AMFCaps** ppCaps)
+AMF_RESULT AMF_STD_CALL AMFAmbisonic2SRendererImpl::GetCaps(AMFCaps** /* ppCaps */)
 {
     AMFLock lock(&m_sync);
     ///////////TODO:///////////////////////////////
     return AMF_NOT_IMPLEMENTED;
 }
 //-------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL AMFAmbisonic2SRendererImpl::Optimize(AMFComponentOptimizationCallback* pCallback)
+AMF_RESULT AMF_STD_CALL AMFAmbisonic2SRendererImpl::Optimize(AMFComponentOptimizationCallback* /* pCallback */)
 {
     ///////////TODO:///////////////////////////////
     return AMF_NOT_IMPLEMENTED;
+
+    /*
 
     amf_set<AMF_MEMORY_TYPE> deviceTypes;
     AMF_RESULT err = AMF_OK;
@@ -934,7 +926,8 @@ AMF_RESULT AMF_STD_CALL AMFAmbisonic2SRendererImpl::Optimize(AMFComponentOptimiz
     {
         deviceTypes.insert(AMF_MEMORY_OPENCL);
     }
-    amf_uint count = 0;
+
+    */
 }
 //-------------------------------------------------------------------------------------------------
 void AMF_STD_CALL  AMFAmbisonic2SRendererImpl::OnPropertyChanged(const wchar_t* pName)

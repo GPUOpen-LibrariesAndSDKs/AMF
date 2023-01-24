@@ -65,7 +65,7 @@ namespace amf
         virtual ~VideoMemoryAllocator(){}
 
 	    // IUnknown methods
-        virtual HRESULT STDMETHODCALLTYPE	QueryInterface(REFIID iid, LPVOID *ppv) {return E_NOTIMPL;}
+        virtual HRESULT STDMETHODCALLTYPE	QueryInterface(REFIID /* iid */, LPVOID* /* ppv */) { return E_NOTIMPL; }
         virtual ULONG STDMETHODCALLTYPE		AddRef(void){return 1;}
 	    virtual ULONG STDMETHODCALLTYPE		Release(void){return 1;}
 
@@ -87,7 +87,7 @@ namespace amf
 
 
 	    // IUnknown needs only a dummy implementation
-        virtual HRESULT STDMETHODCALLTYPE	QueryInterface(REFIID iid, LPVOID *ppv) {return E_NOTIMPL;}
+        virtual HRESULT STDMETHODCALLTYPE	QueryInterface(REFIID /* iid */, LPVOID* /* ppv */) { return E_NOTIMPL; }
         virtual ULONG STDMETHODCALLTYPE		AddRef(void){return 1;}
 	    virtual ULONG STDMETHODCALLTYPE		Release(void){return 1;}
 
@@ -170,18 +170,18 @@ namespace amf
         virtual AMF_RESULT  AMF_STD_CALL    Drain();
         virtual AMF_RESULT  AMF_STD_CALL    Flush();
 
-        virtual AMF_RESULT  AMF_STD_CALL    SubmitInput(AMFData* pData)                               { return AMF_NOT_SUPPORTED;  };
-        virtual AMF_RESULT  AMF_STD_CALL    QueryOutput(AMFData** ppData)                             { return AMF_NOT_SUPPORTED;  };
-        virtual AMF_RESULT  AMF_STD_CALL    SetOutputDataAllocatorCB(AMFDataAllocatorCB* callback)    { return AMF_OK; };
-        virtual AMF_RESULT  AMF_STD_CALL    GetCaps(AMFCaps** ppCaps)                                 { return AMF_NOT_SUPPORTED;  };
-        virtual AMF_RESULT  AMF_STD_CALL    Optimize(AMFComponentOptimizationCallback* pCallback)     { return AMF_OK;  };
-        virtual AMFContext* AMF_STD_CALL    GetContext()                                              { return m_pContext; };
+        virtual AMF_RESULT  AMF_STD_CALL    SubmitInput(AMFData* /* pData */)                               { return AMF_NOT_SUPPORTED; };
+        virtual AMF_RESULT  AMF_STD_CALL    QueryOutput(AMFData** /* ppData */)                             { return AMF_NOT_SUPPORTED; };
+        virtual AMF_RESULT  AMF_STD_CALL    SetOutputDataAllocatorCB(AMFDataAllocatorCB* /* callback */)    { return AMF_OK; };
+        virtual AMF_RESULT  AMF_STD_CALL    GetCaps(AMFCaps** /* ppCaps */)                                 { return AMF_NOT_SUPPORTED; };
+        virtual AMF_RESULT  AMF_STD_CALL    Optimize(AMFComponentOptimizationCallback* /* pCallback */)     { return AMF_OK; };
+        virtual AMFContext* AMF_STD_CALL    GetContext()                                                    { return m_pContext; };
 
         // AMFComponentEx interface
-        virtual amf_int32   AMF_STD_CALL    GetInputCount()                                           {  return 0;  };
+        virtual amf_int32   AMF_STD_CALL    GetInputCount()                                                 {  return 0;  };
         virtual amf_int32   AMF_STD_CALL    GetOutputCount();
 
-        virtual AMF_RESULT  AMF_STD_CALL    GetInput(amf_int32 index, AMFInput** ppInput)             {  return AMF_NOT_SUPPORTED;  };
+        virtual AMF_RESULT  AMF_STD_CALL    GetInput(amf_int32 /* index */, AMFInput** /* ppInput */)       { return AMF_NOT_SUPPORTED; };
         virtual AMF_RESULT  AMF_STD_CALL    GetOutput(amf_int32 index, AMFOutput** ppOutput);
 
         // AMFSurfaceObserver interface

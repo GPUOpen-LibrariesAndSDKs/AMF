@@ -55,7 +55,7 @@ AMF_RESULT AMFMFSourceImpl::CaptureOnePacket(char** ppData, UINT& lenData)
     {
         DWORD streamIndex, flags;
         LONGLONG llTimeStamp;
-        hr = m_pReader->ReadSample(MF_SOURCE_READER_ANY_STREAM, 0, &streamIndex, &flags, &llTimeStamp, &m_pSample);
+        hr = m_pReader->ReadSample(static_cast<DWORD>(MF_SOURCE_READER_ANY_STREAM), 0, &streamIndex, &flags, &llTimeStamp, &m_pSample);
         ASSERT_RETURN_IF_HR_FAILED(hr, AMF_FAIL, L"ReadSample() failed");
 
         if (!m_pSample)
@@ -206,9 +206,9 @@ AMF_RESULT AMFMFSourceImpl::CreateDeviceList()
             break;
         }
 
-        std::wstring name = pName;
-        std::string nameNew(name.begin(), name.end());
-        m_deviceList.push_back(nameNew);
+        amf_wstring name(pName);
+        amf_string nameNew(amf::amf_from_unicode_to_utf8(name));
+        m_deviceList.push_back(nameNew.c_str());
         CoTaskMemFree(pName);
     }
 

@@ -452,8 +452,6 @@ AMF_RESULT VideoPresenterVulkan::CreateCommandBuffer()
     amf::AMFVulkanDevice* pVulkanDev = (amf::AMFVulkanDevice*)m_hVulkanDev;    
 
     VkResult res = VK_INCOMPLETE;
-    AMF_RESULT resAMF = AMF_OK;
-
 
     VkCommandBufferAllocateInfo bufferAllocInfo = {};
         bufferAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -495,8 +493,6 @@ AMF_RESULT VideoPresenterVulkan::ResetCommandBuffer()
 AMF_RESULT VideoPresenterVulkan::RecordCommandBuffer(amf_uint32 imageIndex)
 {
     VkResult res = VK_INCOMPLETE;
-    amf::AMFVulkanDevice* pVulkanDev = (amf::AMFVulkanDevice*)m_hVulkanDev;
-
 
     BackBuffer &backBuffer = m_BackBuffers[imageIndex];
 
@@ -547,12 +543,7 @@ AMF_RESULT VideoPresenterVulkan::RecordCommandBuffer(amf_uint32 imageIndex)
 }
 
 AMF_RESULT VideoPresenterVulkan::CreateVertexBuffers()
-{
-    amf::AMFVulkanDevice* pVulkanDev = (amf::AMFVulkanDevice*)m_hVulkanDev;    
-
-    VkResult res = VK_INCOMPLETE;
-
-    
+{   
     // Create vertex buffer
     
     Vertex vertexes[] =
@@ -652,8 +643,6 @@ AMF_RESULT VideoPresenterVulkan::CreateDescriptorSetPool()
 AMF_RESULT VideoPresenterVulkan::UpdateTextureDescriptorSet(amf::AMFVulkanView* pView)
 {
     amf::AMFVulkanDevice* pVulkanDev = (amf::AMFVulkanDevice*)m_hVulkanDev;    
-
-    VkResult res = VK_INCOMPLETE;
 
     VkDescriptorBufferInfo bufferInfo = {};
         bufferInfo.buffer = m_MVPBuffer.hBuffer;
@@ -756,8 +745,6 @@ AMF_RESULT VideoPresenterVulkan::Present(amf::AMFSurface* pSurface)
 
         err = AcquireBackBuffer(&imageIndex);
         CHECK_AMF_ERROR_RETURN(err, L"AcquireBackBuffer() failed");
-
-        BackBuffer &backBuffer = m_BackBuffers[imageIndex];
     
         AMFRect srcRect = {pPlane->GetOffsetX(), pPlane->GetOffsetY(), pPlane->GetOffsetX() + pPlane->GetWidth(), pPlane->GetOffsetY() + pPlane->GetHeight()};
         AMFRect outputRect;
@@ -826,14 +813,7 @@ AMF_RESULT VideoPresenterVulkan::BitBltCopy(amf::AMFSurface* pSurface, AMFRect *
 AMF_RESULT VideoPresenterVulkan::BitBltRender(amf::AMFSurface* pSurface, AMFRect *srcRect, amf_uint32 imageIndex, AMFRect *outputRect)
 {
     AMF_RESULT err = AMF_OK;
-
-    BackBuffer &backBuffer = m_BackBuffers[imageIndex];
-
-    amf::AMFVulkanDevice* pVulkanDev = (amf::AMFVulkanDevice*)m_hVulkanDev;    
-
     VkResult res = VK_INCOMPLETE;
-    AMF_RESULT resAMF = AMF_OK;
-
    
     ResetCommandBuffer();
 
@@ -914,11 +894,6 @@ AMF_RESULT VideoPresenterVulkan::UpdateVertices(AMFRect *srcRect, AMFSize *srcSi
     w *= (float)dstRect->Width() / dstSize->width;
     h *= (float)dstRect->Height() / dstSize->height;
 
-    if(h < 0 || w < 0)
-    {
-        int a = 1;
-    }
-
     float centerX = m_fOffsetX * 2.f / dstRect->Width();
     float centerY = - m_fOffsetY * 2.f/ dstRect->Height();
 
@@ -972,8 +947,8 @@ AMF_RESULT VideoPresenterVulkan::UpdateVertices(AMFRect *srcRect, AMFSize *srcSi
     return AMF_OK;
 }
 
-AMF_RESULT AMF_STD_CALL VideoPresenterVulkan::AllocSurface(amf::AMF_MEMORY_TYPE type, amf::AMF_SURFACE_FORMAT format,
-            amf_int32 width, amf_int32 height, amf_int32 hPitch, amf_int32 vPitch, amf::AMFSurface** ppSurface)
+AMF_RESULT AMF_STD_CALL VideoPresenterVulkan::AllocSurface(amf::AMF_MEMORY_TYPE /* type */, amf::AMF_SURFACE_FORMAT /* format */,
+            amf_int32 /* width */, amf_int32 /* height */, amf_int32 /* hPitch */, amf_int32 /* vPitch */, amf::AMFSurface** ppSurface)
 {
     if(!m_bRenderToBackBuffer)
     {
@@ -1061,7 +1036,6 @@ AMF_RESULT              VideoPresenterVulkan::Flush()
 AMF_RESULT VideoPresenterVulkan::CheckForResize(bool bForce, bool *bResized)
 {
     *bResized = false;
-    AMF_RESULT err = AMF_OK;
 
     AMFRect clientRect= GetClientRect();
 
@@ -1080,8 +1054,6 @@ AMF_RESULT VideoPresenterVulkan::CheckForResize(bool bForce, bool *bResized)
 
 AMF_RESULT VideoPresenterVulkan::ResizeSwapChain()
 {
-    AMF_RESULT res = AMF_OK;
-
     amf::AMFVulkanDevice* pVulkanDev = (amf::AMFVulkanDevice*)m_hVulkanDev;    
 	GetVulkan()->vkDeviceWaitIdle(pVulkanDev->hDevice);
 
@@ -1109,7 +1081,6 @@ void AMF_STD_CALL  VideoPresenterVulkan::CheckForResize() // call from UI thread
 
     if(bResized)
     {
-        amf::AMFLock lock(&m_sect);
         m_rectClientResize = GetClientRect();
     }
     

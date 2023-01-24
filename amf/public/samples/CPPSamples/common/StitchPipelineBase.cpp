@@ -309,7 +309,7 @@ AMF_RESULT StitchElement::QueryOutput(amf::AMFData** ppData)
 
     return res;
 }
-AMF_RESULT StitchElement::Drain(amf_int32 inputSlot)
+AMF_RESULT StitchElement::Drain(amf_int32 /* inputSlot */)
 { 
     amf::AMFLock lock(&m_cs);
     for(std::vector<Data>::iterator it = m_lastInputs.begin(); it != m_lastInputs.end(); it++)
@@ -328,10 +328,6 @@ AMF_RESULT StitchElement::Resubmit()
     {
         amf::AMFDataPtr     data = m_lastInputs[i].data; // need to store this pointer to avoid release during overwrite 
         res = SubmitInputInt(data, i);
-        if(res != AMF_OK)
-        {
-            int a = 1;
-        }
     }
     return AMF_OK;
 }
@@ -579,7 +575,7 @@ std::vector<MediaInfo>*  StitchPipelineBase::UpdateMediaInfo(const wchar_t *pNam
 
     if (!m_pContext)
     {
-        AMF_RESULT res = InitContext(amf::AMF_MEMORY_DX11);
+        InitContext(amf::AMF_MEMORY_DX11);
     }
 
     stream.GetMediaInfo(m_pContext, pName, m_Media[ch], paramAudioCodec);
@@ -630,10 +626,7 @@ AMF_RESULT StitchPipelineBase::Init()
     return InitInternal();
 }
 AMF_RESULT StitchPipelineBase::InitInternal()
-
 {
-    amf::AMF_MEMORY_TYPE presenterEngine = amf::AMF_MEMORY_DX11;
-
     amf_int64 modeZCam = CAMLIVE_MODE_INVALID;
     GetParam(PARAM_NAME_ZCAMLIVE_MODE, modeZCam);
     bool isZCamLive = modeZCam != CAMLIVE_MODE_INVALID;
@@ -676,14 +669,12 @@ AMF_RESULT StitchPipelineBase::InitInternal()
     }
     //---------------------------------------------------------------------------------------------
     // Init context and devices
-    bool bUseDirectOutput = false;
    
     amf::AMF_SURFACE_FORMAT eComposerInput = eComposerInputDefault;
 
     // use this to try OpenCL
 //    res = m_pContext->InitOpenCL(NULL);
-//    bUseDirectOutput = false;
-    //
+  
     amf_int32 compositedWidth = 3840;
     amf_int32 compositedHeight = 1920;
     GetParam(PARAM_NAME_COMPOSITED_WIDTH, compositedWidth);
@@ -749,7 +740,7 @@ AMF_RESULT StitchPipelineBase::InitInternal()
         }
     }
 
-    AMF_RETURN_IF_FALSE(isStitchedSource || (m_Cameras.size() == streamCount), AMF_OUT_OF_RANGE, L"stream number does not match project setting!");
+    AMF_RETURN_IF_FALSE(isStitchedSource || (m_Cameras.size() == static_cast<amf_uint32>(streamCount)), AMF_OUT_OF_RANGE, L"stream number does not match project setting!");
 
     if (isCombinedSource || isStitchedSource)
     {
@@ -771,9 +762,7 @@ AMF_RESULT StitchPipelineBase::InitInternal()
     amf_int32 audioChannel = enableAudio ? 0 : -1; //passthrough audio index for encoding only for now
     GetParam(StitchPipelineBase::PARAM_NAME_AUDIO_CH, audioChannel);
     audioChannel = (audioChannel >= streamCount) ? 0 : audioChannel;
-    amf_int32 streamAudioPinIndex = -1;
     amf_int32 iAudioPinIndex = enableAudio ? -1 : 0; // if outside the loop only first audio will be activated
-    PipelineElementPtr pPipelineElementDemuxer;
 
     for (amf_int32 ch = 0; ch < streamCount; ch++)
     {
@@ -888,7 +877,7 @@ AMF_RESULT StitchPipelineBase::InitInternal()
 
     if (bEncode)
     {
-        AMF_RESULT res = InitVideoEncoder();
+        res = InitVideoEncoder();
         AMF_RETURN_IF_FAILED(res, L"AMFCreateComponent() failed to create a SW/HW Encoder");
         PipelineElementPtr converter(new AMFComponentElement(m_pConverterEncode));
         PipelineElementPtr encoder(new AMFComponentElement(m_pEncoder));
@@ -1192,7 +1181,7 @@ AMF_RESULT StitchStream::InitDemuxer(
     amf_int32& iVideoStreamIndex,
     amf_int32& iAudioStreamIndex,
     ParamAudioCodec* pParamsAudio,
-    bool infoOnly,
+    bool /* infoOnly */,
     amf::AMFBufferPtr& pExtraData)
 {
     AMF_RESULT res = AMF_OK;
@@ -1329,7 +1318,7 @@ AMF_RESULT StitchStream::InitDecoder(
     // decode options to be played with
     res = g_AMFFactory.GetFactory()->CreateComponent(pContext, pVideoDecoderID.c_str(), &m_pDecoder);
 
-    AMF_RETURN_IF_FAILED(res, L"AMFCreateComponent( %s) failed", pVideoDecoderID);
+    AMF_RETURN_IF_FAILED(res, L"AMFCreateComponent( %s) failed", pVideoDecoderID.c_str());
 
     if (bLowLatency)
     {
@@ -1711,7 +1700,7 @@ AMF_RESULT StitchPipelineBase::Restart()
 
     if (m_Streams.size() > 0)
     {
-        amf::AMFContext::AMFDX11Locker lock(m_pContext);
+        amf::AMFContext::AMFDX11Locker dxLock(m_pContext);
 
         for (std::vector<StitchStream>::iterator it = m_Streams.begin(); it != m_Streams.end(); it++)
         {
@@ -1921,7 +1910,6 @@ void ReadOneImage(std::string &text, StitchTemplate &t)
         char attribute = ReadOneAttribute(text, pos);
 
         double valueDbl = 0;
-        double valueInt = 0;
 
         switch (attribute)
         {
@@ -2025,7 +2013,6 @@ void StitchPipelineBase::ParsePTGuiProject(const std::wstring &ptguifilename)
     {
         return;
     }
-    AMF_RESULT res = AMF_OK;
 
     //support upto 32 cameras    
     m_Cameras.resize(32);
@@ -2115,7 +2102,7 @@ AMF_RESULT StitchPipelineBase::InitVideoEncoder()
     amf::AMF_SURFACE_FORMAT encoderInputFormat = amf::AMF_SURFACE_UNKNOWN;
     {
         res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, codec.c_str(), &m_pEncoder);
-        AMF_RETURN_IF_FAILED(res, L"g_AMFFactory.GetFactory()->CreateComponent(%s ) failed", codec);
+        AMF_RETURN_IF_FAILED(res, L"g_AMFFactory.GetFactory()->CreateComponent(%s ) failed", codec.c_str());
 
         encoderInputFormat = amf::AMF_SURFACE_NV12;
     }
@@ -2161,7 +2148,6 @@ AMF_RESULT StitchPipelineBase::SetVideoMuxerParams(amf::AMFInput* const pInput)
     std::wstring codec = AMFVideoEncoderVCE_AVC;
     GetParamWString(StitchPipelineBase::PARAM_NAME_ENCODER_CODEC, codec);
 
-    ParametersStorage            *encoderParamsAVC = NULL;
     if(codec == AMFVideoEncoderVCE_AVC)
     {
         m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, &bitrate);
@@ -2284,8 +2270,8 @@ AMF_RESULT  StitchPipelineBase::InitZCam()
         GetParam(PARAM_NAME_STREAMING, isStreamingEnabled);
         m_pSourceZCam->SetProperty(ZCAMLIVE_VIDEO_MODE, modeZCam);
         m_pSourceZCam->SetProperty(ZCAMLIVE_AUDIO_MODE, isStreamingEnabled ? CAM_AUDIO_MODE_SILENT : CAM_AUDIO_MODE_NONE);
-        bool bLowLatency = true;
-        //        GetParam(PARAM_NAME_LOWLATENCY, bLowLatency);
+        // bool bLowLatency = true;
+        // GetParam(PARAM_NAME_LOWLATENCY, bLowLatency);
         m_pSourceZCam->SetProperty(ZCAMLIVE_LOWLATENCY, isStreamingEnabled ? 1 : 0); //streaming to youtube needs evenly spaced timestamp 
 
         if (CAMLIVE_MODE_THETAS == modeZCam)

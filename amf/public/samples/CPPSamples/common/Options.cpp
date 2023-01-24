@@ -259,7 +259,6 @@ AMF_RESULT Options::GetParameterInt64(const wchar_t *section, const wchar_t *nam
     {
         return res;
     }
-    amf_int64 paraValue = 0;
     amf::AMFVariant tmp(valueStr.c_str());
     value = amf_int64(tmp);
     return AMF_OK;
@@ -273,11 +272,9 @@ AMF_RESULT Options::GetParameterDouble(const wchar_t *section, const wchar_t *na
     {
         return res;
     }
-    amf_int64 paraValue = 0;
     amf::AMFVariant tmp(valueStr.c_str());
     value = amf_double(tmp);
     return AMF_OK;
-
 }
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT Options::GetParameterStorage(const wchar_t *section, ParametersStorage* value)

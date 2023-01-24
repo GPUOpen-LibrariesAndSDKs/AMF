@@ -59,6 +59,11 @@ enum NALU_TYPE
     NALU_TYPE_VDRD     = 24  // View and Dependency Representation Delimiter NAL Unit
 };
 
+#if defined(_MSC_VER)
+#   pragma warning(push)
+#   pragma warning(disable : 4201) // nonstandard extension used: nameless struct/union
+#endif
+
 #pragma pack( push )
 #pragma pack(1)
 
@@ -95,6 +100,11 @@ union NaluHeaderExt
 };
 
 #pragma pack( pop )
+
+#if defined(_MSC_VER)
+#   pragma warning(pop)
+#endif
+    
 
 SVCSplitter::SVCSplitter(void) :
     m_pParser(NULL)

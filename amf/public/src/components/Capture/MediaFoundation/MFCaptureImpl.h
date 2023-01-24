@@ -90,7 +90,7 @@ namespace amf
             virtual AMF_RESULT  AMF_STD_CALL    Stop();
             virtual AMF_RESULT  AMF_STD_CALL    Drain();
         protected:
-            virtual AMF_RESULT  AMF_STD_CALL    GetInitAttributes(IMFAttributes** ppAttributes) {return AMF_OK;}
+            virtual AMF_RESULT  AMF_STD_CALL    GetInitAttributes(IMFAttributes** /* ppAttributes */) { return AMF_OK; }
             virtual AMF_RESULT  AMF_STD_CALL    SelectSource(IMFMediaSource* pMediaSource) = 0;
             virtual AMF_RESULT  AMF_STD_CALL    ConvertData(IMFSample* pSample, IMFMediaBuffer* pMediaBufffer, AMFData **ppData);
 
@@ -137,7 +137,7 @@ namespace amf
                 InputSampleTracker(IMFSample* sample) : m_Sample(sample){}
                 virtual ~InputSampleTracker(){}
             protected:
-                virtual void AMF_STD_CALL OnSurfaceDataRelease(AMFSurface* pSurface){delete this;}
+                virtual void AMF_STD_CALL OnSurfaceDataRelease(AMFSurface* /* pSurface */) { delete this; }
 
             private:
                 CComPtr<IMFSample>  m_Sample;
@@ -199,18 +199,18 @@ namespace amf
         virtual AMF_RESULT  AMF_STD_CALL  Drain();
         virtual AMF_RESULT  AMF_STD_CALL  Flush();
 
-        virtual AMF_RESULT  AMF_STD_CALL  SubmitInput(AMFData* pData)                               { return AMF_NOT_SUPPORTED;  };
-        virtual AMF_RESULT  AMF_STD_CALL  QueryOutput(AMFData** ppData)                             { return AMF_NOT_SUPPORTED;  };
-        virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* callback)    { return AMF_OK; };
-        virtual AMF_RESULT  AMF_STD_CALL  GetCaps(AMFCaps** ppCaps)                                 { return AMF_NOT_SUPPORTED;  };
-        virtual AMF_RESULT  AMF_STD_CALL  Optimize(AMFComponentOptimizationCallback* pCallback)     { return AMF_OK;  };
-        virtual AMFContext* AMF_STD_CALL  GetContext()                                              { return m_pContext; };
+        virtual AMF_RESULT  AMF_STD_CALL  SubmitInput(AMFData* /* pData */)                             { return AMF_NOT_SUPPORTED; };
+        virtual AMF_RESULT  AMF_STD_CALL  QueryOutput(AMFData** /* ppData */)                           { return AMF_NOT_SUPPORTED; };
+        virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* /* callback */)  { return AMF_OK; };
+        virtual AMF_RESULT  AMF_STD_CALL  GetCaps(AMFCaps** /* ppCaps */)                               { return AMF_NOT_SUPPORTED; };
+        virtual AMF_RESULT  AMF_STD_CALL  Optimize(AMFComponentOptimizationCallback* /* pCallback */)   { return AMF_OK; };
+        virtual AMFContext* AMF_STD_CALL  GetContext()                                                  { return m_pContext; };
 
         // AMFComponentEx interface
-        virtual amf_int32   AMF_STD_CALL  GetInputCount()                                           {  return 0;  };
+        virtual amf_int32   AMF_STD_CALL  GetInputCount()                                               {  return 0;  };
         virtual amf_int32   AMF_STD_CALL  GetOutputCount();
 
-        virtual AMF_RESULT  AMF_STD_CALL  GetInput(amf_int32 index, AMFInput** ppInput)             {  return AMF_NOT_SUPPORTED;  };
+        virtual AMF_RESULT  AMF_STD_CALL  GetInput(amf_int32 /* index */, AMFInput** /* ppInput */)     { return AMF_NOT_SUPPORTED; };
         virtual AMF_RESULT  AMF_STD_CALL  GetOutput(amf_int32 index, AMFOutput** ppOutput);
 
         // AMFCaptureDevice

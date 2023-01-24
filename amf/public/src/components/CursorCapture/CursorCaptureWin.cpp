@@ -140,6 +140,9 @@ AMF_RESULT AMF_STD_CALL AMFCursorCaptureWin::AcquireCursor(AMFSurface** pSurface
             // mark the cursor as monochrome
             (*pSurface)->SetProperty(L"Monochrome", useXor);
 
+            AMFSize screenSize = AMFConstructSize(GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));
+            (*pSurface)->SetProperty(L"Resolution", screenSize);
+
             DeleteObject(iconInfo.hbmColor);
             DeleteObject(iconInfo.hbmMask);
 

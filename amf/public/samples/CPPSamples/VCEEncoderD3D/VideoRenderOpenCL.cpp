@@ -47,7 +47,7 @@ VideoRenderOpenCL::~VideoRenderOpenCL()
     Terminate();
 }
 
-AMF_RESULT      VideoRenderOpenCL::Init(amf_handle hWnd, amf_handle hDisplay, bool bFullScreen)
+AMF_RESULT      VideoRenderOpenCL::Init(amf_handle /* hWnd */, amf_handle /* hDisplay */, bool /* bFullScreen */)
 {
     return AMF_OK;
 }

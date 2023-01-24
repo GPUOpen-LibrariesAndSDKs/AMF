@@ -147,7 +147,7 @@ static const AMFEnumDescriptionEntry AMF_COMPUTE_DEVICE_ENUM_DESCRIPTION[] =
 };
 
 //-------------------------------------------------------------------------------------------------
-AMFChromaKeyImpl::AMFChromaKeyInputImpl::AMFChromaKeyInputImpl(AMFChromaKeyImpl* pHost, amf_int32 index) :
+AMFChromaKeyImpl::AMFChromaKeyInputImpl::AMFChromaKeyInputImpl(AMFChromaKeyImpl* pHost, amf_int32 /* index */) :
 m_pHost(pHost)
 {
 }
@@ -196,7 +196,7 @@ AMF_RESULT  AMF_STD_CALL AMFChromaKeyImpl::AMFChromaKeyInputImpl::SubmitInput(AM
 }
 
 //-------------------------------------------------------------------------------------------------
-void AMF_STD_CALL AMFChromaKeyImpl::AMFChromaKeyInputImpl::OnPropertyChanged(const wchar_t* pName)
+void AMF_STD_CALL AMFChromaKeyImpl::AMFChromaKeyInputImpl::OnPropertyChanged(const wchar_t* /* pName */)
 {
     AMFLock lock(&m_pHost->m_sync);
 }
@@ -257,7 +257,7 @@ AMFChromaKeyImpl::~AMFChromaKeyImpl()
 }
 
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL AMFChromaKeyImpl::Init(AMF_SURFACE_FORMAT format, amf_int32 width, amf_int32 height)
+AMF_RESULT AMF_STD_CALL AMFChromaKeyImpl::Init(AMF_SURFACE_FORMAT /* format */, amf_int32 width, amf_int32 height)
 {
     AMFLock lock(&m_sync);
 
@@ -338,7 +338,7 @@ AMF_RESULT AMF_STD_CALL AMFChromaKeyImpl::Optimize(AMFComponentOptimizationCallb
         amf_uint                            m_lastTotalPercent;
     public:
         Callback(AMFComponentOptimizationCallback* pCallback, amf_uint total)
-            :m_pCallback(pCallback), m_total(total), m_completed(0), m_lastTotalPercent(-1)
+            :m_pCallback(pCallback), m_total(total), m_completed(0), m_lastTotalPercent(static_cast<amf_uint>(-1))
         {
         }
         virtual AMF_RESULT AMF_STD_CALL OnComponentOptimizationProgress(amf_uint percent)
@@ -392,7 +392,6 @@ AMF_RESULT AMF_STD_CALL AMFChromaKeyImpl::Optimize(AMFComponentOptimizationCallb
     {
         deviceTypes.insert(AMF_MEMORY_OPENCL);
     }
-    amf_uint count = 0;
     Callback callback(pCallback, (amf_uint)deviceTypes.size());
     for(amf_set<AMF_MEMORY_TYPE>::iterator it = deviceTypes.begin(); it != deviceTypes.end(); ++it)
     {
@@ -404,7 +403,7 @@ AMF_RESULT AMF_STD_CALL AMFChromaKeyImpl::Optimize(AMFComponentOptimizationCallb
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL AMFChromaKeyImpl::ReInit(amf_int32 width,amf_int32 height)
+AMF_RESULT AMF_STD_CALL AMFChromaKeyImpl::ReInit(amf_int32 /* width */, amf_int32 /* height */)
 {
     return Flush();
 }
@@ -459,7 +458,7 @@ AMF_RESULT AMF_STD_CALL AMFChromaKeyImpl::GetInput(amf_int32 index, AMFInput** p
 }
 
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL AMFChromaKeyImpl::GetOutput(amf_int32 index, AMFOutput** ppOutput)
+AMF_RESULT AMF_STD_CALL AMFChromaKeyImpl::GetOutput(amf_int32 /* index */, AMFOutput** /* ppOutput */)
 {
     return AMF_OK;
 }
@@ -1482,9 +1481,6 @@ AMF_RESULT AMFChromaKeyImpl::UpdateKeyColor(AMFSurfacePtr pSurfaceIn)
         iKeyColor = ((keyColor[0] << 14) & 0x3FF00000) | ((keyColor[1] << 4) & 0x000FFC00) | ((keyColor[2] >> 6) & 0x000003FF);
     }
 
-    //for verification
-    float keycolorU = (float)((iKeyColor & 0x000FF300) >> 10);
-    float keycolorV = (float)(iKeyColor & 0x000003FF);
  
     pSurface.Release();
     bool ctrlDown = (GetKeyState(VK_CONTROL)  & (1 << 16)) != 0;
@@ -1528,7 +1524,6 @@ AMF_RESULT AMFChromaKeyImpl::ReadData(AMFBufferPtr pBufferIn, amf_uint32 length,
     if (m_deviceMemoryType == AMF_MEMORY_DX11)
     {
         AMFBufferPtr pBuffer;
-        amf_size sizeIn = pBufferIn->GetSize();
         res = m_pContext->AllocBuffer(pBufferIn->GetMemoryType(), length, &pBuffer);
         AMF_RETURN_IF_FAILED(res, L"AMFChromaKeyImpl::ReadData, AllocBuffer failed!");
 
@@ -1875,7 +1870,6 @@ AMF_RESULT AMFChromaKeyImpl::SaveToBmp(amf_uint8* pData, std::wstring fileName, 
 
         if (channels == 1)
         {
-            amf_uint32 lenLine = channels * width;
             for (amf_int32 y = 0; y < height; y++, pData += pitch)
             {
                 amf_uint8* pDataLine = pData;
@@ -1919,8 +1913,6 @@ AMF_RESULT AMFChromaKeyImpl::DumpSurface(AMFSurfacePtr pSurfaceIn)
 
     res = pSurface->Convert(AMF_MEMORY_HOST);
     AMF_RETURN_IF_FAILED(res, L"AMFChromaKeyImpl::DumpSurface, Convert failed!");
-    amf_uint8*  pDataY = (amf_uint8*)pSurface->GetPlane(AMF_PLANE_Y)->GetNative();
-    amf_int32 pitch = pSurfaceIn->GetPlane(AMF_PLANE_Y)->GetHPitch();
 
     pSurface.Release();
     return AMF_OK;
@@ -1944,7 +1936,7 @@ AMF_RESULT AMFChromaKeyImpl::DumpBuffer(AMFBufferPtr pBufferIn)
 
     res = pBuffer->Convert(AMF_MEMORY_HOST);
     AMF_RETURN_IF_FAILED(res, L"AMFChromaKeyImpl::DumpBuffer, Convert failed!");
-    amf_uint8*  pDataY = (amf_uint8*)pBuffer->GetNative();
+
     pBuffer.Release();
     return AMF_OK;
 }
@@ -2116,9 +2108,6 @@ amf_uint32 AMFChromaKeyImpl::GetColorTransferModeDst(
     //0=linear, 1=gamma 2.2, 2=PQ
     amf_uint32 iColorTransfer = 0;
 
-    bool bIs8bitSrc = Is8bit(pSurfaceOut);
-
-    amf_uint32 uiDeGamma = 0;
     if (pSurfaceOut->GetFormat() == AMF_SURFACE_RGBA_F16)
     {
         //follow the tranfer functions of source

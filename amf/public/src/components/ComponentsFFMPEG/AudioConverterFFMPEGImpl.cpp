@@ -396,7 +396,6 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::QueryOutput(AMFData** ppDa
         }
         else
         {
-            m_bEof = false;
             m_bDrained = true;
         }
         iSamplesOut = writtenSamples;

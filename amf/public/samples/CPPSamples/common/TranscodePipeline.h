@@ -83,14 +83,15 @@ public:
 
     double GetProgressSize();
     double GetProgressPosition();
+    AMF_RESULT SetRecommendedDecoderPoolSize(ParametersStorage* pParams);
 
     AMF_RESULT Run();
 
 protected:
-    virtual AMF_RESULT  InitAudio(amf::AMFOutput* pOutput);
+    virtual AMF_RESULT  InitAudio(amf::AMFOutput* pOutput, ParametersStorage* pParams);
     virtual AMF_RESULT  InitVideo(BitStreamParserPtr pParser, RawStreamReaderPtr pRawReader, amf::AMFOutput* pOutput, amf::AMF_MEMORY_TYPE presenterEngine, amf_handle previewTarget, amf_handle display, ParametersStorage* pParams);
 
-    virtual AMF_RESULT  InitVideoDecoder(const wchar_t *pDecoderID, amf_int64 codecID, amf_int32 videoWidth, amf_int32 videoHeight, AMFRate frameRate, amf::AMFBuffer* pExtraData);
+    virtual AMF_RESULT  InitVideoDecoder(const wchar_t *pDecoderID, amf_int64 codecID, amf_int32 videoWidth, amf_int32 videoHeight, AMFRate frameRate, amf::AMFBuffer* pExtraData, ParametersStorage* pParams, amf_bool enableSmartAccess = false, amf_bool enableLowLatency = false);
     virtual AMF_RESULT  InitVideoProcessor(amf::AMF_MEMORY_TYPE presenterEngine, amf_int32 inWidth, amf_int32 inHeight, amf_int32 outWidth, amf_int32 outHeight, amf_int64 scaleType);
 
     virtual AMF_RESULT  InitPreProcessFilter(ParametersStorage* pParams);
@@ -126,5 +127,6 @@ protected:
     amf::AMFComponentPtr        m_pConverter2;
     amf::AMFComponentPtr        m_pPreProcFilter;
     BackBufferPresenterPtr      m_pPresenter;
-    amf::AMF_SURFACE_FORMAT     m_eDecoderFormat;
+    amf::AMF_SURFACE_FORMAT     m_eDecoderFormat; //< output of Decoder, and input to VideoConverter
+    amf::AMF_SURFACE_FORMAT     m_eEncoderFormat; //< output of VideoConverter and input into Encoder
 };

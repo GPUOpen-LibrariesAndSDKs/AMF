@@ -374,7 +374,7 @@ void AMFMFCaptureImpl::AMFOutputBase::PollingThread::Run()
     }
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT  AMF_STD_CALL    AMFMFCaptureImpl::AMFOutputBase::ConvertData(IMFSample* pSample, IMFMediaBuffer* pMediaBufffer, AMFData **ppData)
+AMF_RESULT  AMF_STD_CALL    AMFMFCaptureImpl::AMFOutputBase::ConvertData(IMFSample* /* pSample */, IMFMediaBuffer* pMediaBufffer, AMFData** ppData)
 {
     HRESULT hr = S_OK;
     AMF_RESULT res = AMF_OK;
@@ -636,7 +636,8 @@ AMF_RESULT AMF_STD_CALL   AMFMFCaptureImpl::AMFVideoOutput::SelectSource(IMFMedi
             if(framesizeRequested.width != 0 && framesizeRequested.height != 0)
                 
             {
-                if(framesizeRequested.width != width || framesizeRequested.height != height)
+                if(static_cast<amf_uint32>(framesizeRequested.width) != width || 
+                   static_cast<amf_uint32>(framesizeRequested.height) != height)
                 { 
                     continue;
                 }
@@ -648,7 +649,8 @@ AMF_RESULT AMF_STD_CALL   AMFMFCaptureImpl::AMFVideoOutput::SelectSource(IMFMedi
 
             for(int k = 0; k < amf_countof(StandardResolutions); k++)
             {
-                if(StandardResolutions[k].width == width && StandardResolutions[k].height == height)
+                if(static_cast<amf_uint32>(StandardResolutions[k].width) == width && 
+                   static_cast<amf_uint32>(StandardResolutions[k].height) == height)
                 {
                     if(double(numerator) / denominator > double(StandardResolutionsFound[k].m_FrameRate.num) / StandardResolutionsFound[k].m_FrameRate.den) // maximum frame rate
                     {
@@ -898,7 +900,7 @@ AMF_RESULT AMF_STD_CALL   AMFMFCaptureImpl::AMFAudioOutput::SelectSource(IMFMedi
         }
 
         amf_int64 maxSampleRate = 0;
-        UINT32 selection = -1;
+        amf_int32 selection = -1;
 
         //find the best resolution
         for (DWORD j = 0; j < typeCount ; j++)
@@ -1083,7 +1085,6 @@ AMF_RESULT AMF_STD_CALL  AMFMFCaptureImpl::Init(AMF_SURFACE_FORMAT /*format*/, a
 {
     Terminate();
     AMFLock lock(&m_sync);
-    AMF_RESULT res = AMF_OK;
 
     for(amf_vector<AMFOutputBasePtr>::iterator it = m_OutputStreams.begin(); it != m_OutputStreams.end(); it++)
     {
@@ -1125,7 +1126,7 @@ AMF_RESULT AMF_STD_CALL  AMFMFCaptureImpl::UpdateDevice(IMFActivate *pActivateVi
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL  AMFMFCaptureImpl::ReInit(amf_int32 width, amf_int32 height)
+AMF_RESULT AMF_STD_CALL  AMFMFCaptureImpl::ReInit(amf_int32 /* width */, amf_int32 /* height */)
 {
     AMFLock lock(&m_sync);
     for (amf_vector<AMFOutputBasePtr>::iterator it = m_OutputStreams.begin(); it != m_OutputStreams.end(); it++)

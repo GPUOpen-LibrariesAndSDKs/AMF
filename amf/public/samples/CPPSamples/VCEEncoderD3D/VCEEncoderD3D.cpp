@@ -103,7 +103,7 @@ static AMF_RESULT RegisterParams(ParametersStorage* pParams)
 }
 
 #if defined(_WIN32)
-int _tmain(int argc, _TCHAR* argv[])
+int _tmain(int /* argc */, _TCHAR* /* argv */[])
 #else
 int main(int argc, char* argv[])
 #endif
@@ -220,7 +220,7 @@ int main(int argc, char* argv[])
     for(amf_int32 i = 0 ; i < threadCount; i++)
     {
         RenderEncodePipeline *pipeline= new RenderEncodePipeline();
-        AMF_RESULT res = pipeline->Init(&params, threadCount ==1 ? -1 : counter);
+        res = pipeline->Init(&params, threadCount ==1 ? -1 : counter);
         if(res == AMF_OK)
         {
             threads.push_back(pipeline);

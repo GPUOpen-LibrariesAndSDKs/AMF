@@ -59,7 +59,6 @@ ATL::CComPtr<ID3D11Device>      DeviceDX11::GetDevice()
 AMF_RESULT DeviceDX11::Init(amf_uint32 adapterID, bool onlyWithOutputs, bool bCheckForAMD)
 {
     HRESULT hr = S_OK;
-    AMF_RESULT err = AMF_OK;
     // find adapter
     ATL::CComPtr<IDXGIAdapter> pAdapter;
 
@@ -132,9 +131,6 @@ AMF_RESULT DeviceDX11::Init(amf_uint32 adapterID, bool onlyWithOutputs, bool bCh
 #ifdef _DEBUG
     createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
-
-    HMONITOR hMonitor = NULL;
-    DWORD vp = 0;
 
     D3D_FEATURE_LEVEL featureLevels[] =
     {

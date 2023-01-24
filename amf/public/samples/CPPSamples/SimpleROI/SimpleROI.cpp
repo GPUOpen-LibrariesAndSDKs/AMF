@@ -400,8 +400,6 @@ static void WaitDecoder(amf::AMFContext *context, amf::AMFSurface *surface)
         break;
     case amf::AMF_MEMORY_DX11:
         {
-            HRESULT hr = S_OK;
-    
             ID3D11Device *deviceDX11 = (ID3D11Device*)context->GetDX11Device(); // no reference counting - do not Release()
             ID3D11Texture2D *textureDX11src = (ID3D11Texture2D*)surface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
             ID3D11Texture2D *textureDX11dst = (ID3D11Texture2D*)outputSurface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
@@ -431,9 +429,9 @@ DecPollingThread::DecPollingThread(amf::AMFContext *context, amf::AMFComponent *
 {
     if(bWriteDecOutToFile)
     {
-        std::wstring wStr(pFileName);
-        std::string str(wStr.begin(), wStr.end()); 
-        m_pFile = std::ofstream(str, std::ofstream::binary | std::ofstream::out);
+        amf_wstring wStr(pFileName);
+        amf_string str(amf::amf_from_unicode_to_utf8(wStr));
+        m_pFile = std::ofstream(str.c_str(), std::ofstream::binary | std::ofstream::out);
 
         if(!m_pFile.is_open())
         {
@@ -491,8 +489,10 @@ void DecPollingThread::Run()
 			//Allocate ROI map surface
             amf::AMFSurfacePtr pROIMapSurface;
 			amf::AMFContext1Ptr  spContext1(m_pContext);
-            AMF_RESULT res = spContext1->AllocSurfaceEx(amf::AMF_MEMORY_HOST, ROIMapformat, num_blocks_x, num_blocks_y,
-				amf::AMF_SURFACE_USAGE_DEFAULT | amf::AMF_SURFACE_USAGE_LINEAR, amf::AMF_MEMORY_CPU_DEFAULT, &pROIMapSurface);
+            res = spContext1->AllocSurfaceEx(amf::AMF_MEMORY_HOST, ROIMapformat, num_blocks_x, num_blocks_y,
+			    static_cast<amf::AMF_SURFACE_USAGE>(amf::AMF_SURFACE_USAGE_DEFAULT | amf::AMF_SURFACE_USAGE_LINEAR), 
+                static_cast<amf::AMF_MEMORY_CPU_ACCESS>(amf::AMF_MEMORY_CPU_DEFAULT), &pROIMapSurface);
+
 			if (res != AMF_OK)
 			{
 				printf("AMFContext::AllocSurface(amf::AMF_MEMORY_HOST) for ROI map failed!\n");
@@ -546,9 +546,9 @@ void DecPollingThread::Run()
 
 EncPollingThread::EncPollingThread(amf::AMFContext *context, amf::AMFComponent *encoder, const wchar_t *pFileName) : m_pContext(context), m_pEncoder(encoder)
 {
-	std::wstring wStr(pFileName);
-	std::string str(wStr.begin(), wStr.end());
-	m_pFile = std::ofstream(str, std::ios::binary);
+    amf_wstring wStr(pFileName);
+    amf_string str(amf::amf_from_unicode_to_utf8(wStr));
+	m_pFile = std::ofstream(str.c_str(), std::ios::binary);
 }
 
 EncPollingThread::~EncPollingThread()

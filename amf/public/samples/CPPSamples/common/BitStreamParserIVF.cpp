@@ -52,7 +52,7 @@ public:
 	virtual int                     GetAlignedWidth() const;
 	virtual int                     GetAlignedHeight() const;
 
-	virtual void                    SetMaxFramesNumber(amf_size num) { return; };
+	virtual void                    SetMaxFramesNumber(amf_size /* num */) { return; };
 
 	virtual const unsigned char*    GetExtraData() const;
 	virtual size_t                  GetExtraDataSize() const;
@@ -203,22 +203,22 @@ int IVFParser::GetAlignedHeight() const
 //-------------------------------------------------------------------------------------------------
 const unsigned char*    IVFParser::GetExtraData() const
 {
-	AMFByteArray   m_ReadData;
-	return m_ReadData.GetData();
+	AMFByteArray   readData;
+	return readData.GetData();
 }
 //-------------------------------------------------------------------------------------------------
 size_t                  IVFParser::GetExtraDataSize() const
 {
-	AMFByteArray   m_ReadData;
-	return m_ReadData.GetSize();
+	AMFByteArray   readData;
+	return readData.GetSize();
 }
 //-------------------------------------------------------------------------------------------------
-void                    IVFParser::SetUseStartCodes(bool bUse)
+void                    IVFParser::SetUseStartCodes(bool /* bUse */)
 {
 	return;
 }
 //-------------------------------------------------------------------------------------------------
-void                    IVFParser::SetFrameRate(double fps)
+void                    IVFParser::SetFrameRate(double /* fps */)
 {
 	return;
 }
@@ -228,7 +228,7 @@ double                  IVFParser::GetFrameRate()  const
 	return 0;
 }
 //-------------------------------------------------------------------------------------------------
-void                    IVFParser::GetFrameRate(AMFRate *frameRate) const
+void                    IVFParser::GetFrameRate(AMFRate * /* frameRate */) const
 {
 	return;
 }
@@ -270,10 +270,7 @@ AMF_RESULT IVFParser::QueryOutput(amf::AMFData** ppData)
 	}
 
 	size_t packetSize = 12;
-	size_t readSize = 0;
-	size_t dataOffset = 0;
 	size_t currentOutputSize = 0;
-	bool bSliceFound = false;
 
 	size_t ready = m_ReadData.GetSize();
 	if (ready == 0)
@@ -337,7 +334,14 @@ AMF_RESULT IVFParser::QueryOutput(amf::AMFData** ppData)
 
 	//copy to decoder
 	amf::AMFBufferPtr pictureBuffer;
-	AMF_RESULT ar = m_pContext->AllocBuffer(amf::AMF_MEMORY_HOST, currentOutputSize, &pictureBuffer);
+	AMF_RESULT res = m_pContext->AllocBuffer(amf::AMF_MEMORY_HOST, currentOutputSize, &pictureBuffer);
+
+	if (res != AMF_OK) 
+	{
+		return res;
+	}
+
+
 	amf_uint8 *data = (amf_uint8*)pictureBuffer->GetNative();
 
 	memcpy(data, m_ReadData.GetData(), m_CurrentFrameSize);

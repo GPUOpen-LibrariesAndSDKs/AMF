@@ -38,6 +38,7 @@
 #include <d3d11.h>
 #endif
 #include "public/common/AMFFactory.h"
+#include "public/common/AMFSTL.h"
 #include "public/include/components/VideoDecoderUVD.h"
 #include "public/common/DataStream.h"
 #include "../common/BitStreamParser.h"
@@ -289,9 +290,7 @@ static void WaitDecoder(amf::AMFContext *context, amf::AMFSurface *surface)
         }
         break;
     case amf::AMF_MEMORY_DX11:
-        {
-            HRESULT hr = S_OK;
-    
+        {    
             ID3D11Device *deviceDX11 = (ID3D11Device*)context->GetDX11Device(); // no reference counting - do not Release()
             ID3D11Texture2D *textureDX11src = (ID3D11Texture2D*)surface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
             ID3D11Texture2D *textureDX11dst = (ID3D11Texture2D*)outputSurface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
@@ -331,9 +330,9 @@ PollingThread::PollingThread(amf::AMFContext *context, amf::AMFComponent *decode
 {
     if(bWriteToFile)
     {
-        std::wstring wStr(pFileName);
-        std::string str(wStr.begin(), wStr.end()); 
-        m_pFile = std::ofstream(str, std::ofstream::binary | std::ofstream::out);
+        amf_wstring wStr(pFileName);
+        amf_string str(amf::amf_from_unicode_to_utf8(wStr));
+        m_pFile = std::ofstream(str.c_str(), std::ofstream::binary | std::ofstream::out);
 
         if(!m_pFile.is_open())
         {

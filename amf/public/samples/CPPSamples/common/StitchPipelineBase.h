@@ -296,13 +296,13 @@ protected:
     SplitterPtr             m_pSplitterAudio;
     amf_int32               m_streamAudioPinIndex;
     ParamAudioCodec         m_paramsAudioOutput;
-    virtual AMF_RESULT  InitAudio(bool enableEncode) { return AMF_NOT_IMPLEMENTED; };
+    virtual AMF_RESULT  InitAudio(bool /* enableEncode */) { return AMF_NOT_IMPLEMENTED; };
     virtual AMF_RESULT  InitAudioSource() { return AMF_NOT_IMPLEMENTED; };
     virtual AMF_RESULT  InitAudioDecoder() { return AMF_NOT_IMPLEMENTED; };
     virtual AMF_RESULT  InitAudioAmbisonicRender() { return AMF_NOT_IMPLEMENTED; };
     virtual AMF_RESULT  InitAudioEncoder() { return AMF_NOT_IMPLEMENTED; };
-    virtual AMF_RESULT  InitAudioMuxer(amf::AMFInputPtr pInput) { return AMF_NOT_IMPLEMENTED; };
-    virtual AMF_RESULT  InitAudioPipeline(PipelineElementPtr pMuxer = NULL)  { return AMF_NOT_IMPLEMENTED; };
+    virtual AMF_RESULT  InitAudioMuxer(amf::AMFInputPtr /* pInput */) { return AMF_NOT_IMPLEMENTED; };
+    virtual AMF_RESULT  InitAudioPipeline(PipelineElementPtr /* pMuxer */ = NULL) { return AMF_NOT_IMPLEMENTED; };
     virtual AMF_RESULT  InitAudioPresenter() { return AMF_NOT_IMPLEMENTED; };
     virtual AMF_RESULT  CreateAudioPresenter() { return AMF_NOT_IMPLEMENTED; };
 

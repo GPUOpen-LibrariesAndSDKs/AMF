@@ -56,10 +56,16 @@ const std::array<StreamTypeInfo, 5> StreamTypeAssociations = {
     StreamTypeInfo(L".vc1", StreamType::VC1, VC1::CreateParser)
 };
 */
+
+inline wchar_t toUpperWchar(int C)
+{
+    return static_cast<wchar_t>(toupper(C));
+}
+
 inline std::wstring toUpper(const std::wstring& str)
 {
     std::wstring result;
-    std::transform(str.begin(), str.end(), std::back_inserter(result), toupper);
+    std::transform(str.begin(), str.end(), std::back_inserter(result), toUpperWchar);
     return result;
 }
 

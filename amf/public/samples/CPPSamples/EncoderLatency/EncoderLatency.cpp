@@ -298,10 +298,10 @@ AMF_RESULT ValidateParams(ParametersStorage * pParams)
 };
 
 
-AMF_RESULT SetEncoderDefaults(ParametersStorage* pParams, amf::AMFComponent* encoder, const  amf_wstring& codec)
+AMF_RESULT SetEncoderDefaults(ParametersStorage* pParams, amf::AMFComponent* encoder, const  amf_wstring& codecStr)
 {
     AMF_RESULT res;
-    if (codec == amf_wstring(AMFVideoEncoderVCE_AVC))
+    if (codecStr == amf_wstring(AMFVideoEncoderVCE_AVC))
     {
         // usage parameters come first
         AMF_RETURN_IF_FAILED(PushParamsToPropertyStorage(pParams, ParamEncoderUsage, encoder));
@@ -347,7 +347,7 @@ AMF_RESULT SetEncoderDefaults(ParametersStorage* pParams, amf::AMFComponent* enc
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_QUERY_TIMEOUT, 50); //ms
         AMF_RETURN_IF_FAILED(res, L"encoder->SetProperty(AMF_VIDEO_ENCODER_QUERY_TIMEOUT, 50) failed");
     }
-    else if (codec == amf_wstring(AMFVideoEncoder_HEVC))
+    else if (codecStr == amf_wstring(AMFVideoEncoder_HEVC))
     {
         // usage parameters come first
         AMF_RETURN_IF_FAILED(PushParamsToPropertyStorage(pParams, ParamEncoderUsage, encoder));
@@ -391,7 +391,7 @@ AMF_RESULT SetEncoderDefaults(ParametersStorage* pParams, amf::AMFComponent* enc
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_QUERY_TIMEOUT, 50); //ms
         AMF_RETURN_IF_FAILED(res, L"encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_QUERY_TIMEOUT, 50) failed");
     }
-    else if (codec == amf_wstring(AMFVideoEncoder_AV1))
+    else if (codecStr == amf_wstring(AMFVideoEncoder_AV1))
     {
         // usage parameters come first
         AMF_RETURN_IF_FAILED(PushParamsToPropertyStorage(pParams, ParamEncoderUsage, encoder));
@@ -439,7 +439,7 @@ AMF_RESULT SetEncoderDefaults(ParametersStorage* pParams, amf::AMFComponent* enc
 }
 
 
-static void printTime(amf_pts total_time, amf_pts latency_time, amf_pts write_duration, amf_pts first_frame, amf_pts min_latency, amf_pts max_latency)
+static void printTime(amf_pts total_time, amf_pts latency_time, amf_pts first_frame, amf_pts min_latency, amf_pts max_latency)
 {
     fprintf(stderr, "Total  : Frames = %i Duration = %.2fms FPS = %.2fframes\n" \
            "Latency: First,Min,Max = %.2fms, %.2fms, %.2fms\n" \
@@ -547,7 +547,7 @@ void PollingThread::Run()
         }
     }
     amf_pts end_time = amf_high_precision_clock();
-    printTime(end_time - begin_time, latency_time, write_duration, first_frame, min_latency, max_latency);
+    printTime(end_time - begin_time, latency_time, first_frame, min_latency, max_latency);
 
     m_pEncoder = NULL;
     m_pContext = NULL;
@@ -562,7 +562,7 @@ void CheckAndRestartReader(RawStreamReader *pRawStreamReader)
 }
 
 #if defined(_WIN32)
-int _tmain(int argc, _TCHAR * argv[])
+int _tmain(int /* argc */, _TCHAR* /* argv */[])
 #else
 int main(int argc, char* argv[])
 #endif
@@ -835,7 +835,7 @@ int main(int argc, char* argv[])
             }
         }
         amf_pts end_time = amf_high_precision_clock();
-        printTime(end_time - begin_time, latency_time, write_duration, first_frame, min_latency, max_latency);
+        printTime(end_time - begin_time, latency_time, first_frame, min_latency, max_latency);
     }
 
     // clear any pre-rendered frames

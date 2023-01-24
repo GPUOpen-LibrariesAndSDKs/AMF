@@ -487,6 +487,9 @@ AMF_RESULT RegisterEncoderParamsAV1(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_MAX_NUM_TEMPORAL_LAYERS, ParamEncoderStatic, L" Max Of LTR frames (integer, default = depends on USAGE)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_MAX_LTR_FRAMES, ParamEncoderStatic, L" Max Of LTR frames (integer, default = depends on USAGE)", ParamConverterInt64);
 
+    // AAA properties
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_ENABLE_SMART_ACCESS_VIDEO, ParamEncoderStatic, L"Enable encoder smart access video feature (bool, default = false)", ParamConverterBoolean);
+
     // AV1 Alignment mode
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE, ParamEncoderStatic, L"AV1 Alignment mode. (64X16ONLY=1, 64X16A1080P=2, NORESTRICTIONS=3, default = 1)", ParamConverterAlignmentModeAV1);
 

@@ -55,7 +55,7 @@ VideoRenderDX9::~VideoRenderDX9()
     Terminate();
 }
 
-AMF_RESULT VideoRenderDX9::Init(amf_handle hWnd, amf_handle hDisplay, bool bFullScreen)
+AMF_RESULT VideoRenderDX9::Init(amf_handle hWnd, amf_handle /* hDisplay */, bool bFullScreen)
 {
     AMF_RESULT res = AMF_OK;
     HRESULT hr = S_OK;

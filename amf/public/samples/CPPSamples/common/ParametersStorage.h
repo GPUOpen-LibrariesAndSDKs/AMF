@@ -78,10 +78,15 @@ AMF_RESULT ParamConverterPAQMode(const std::wstring& value, amf::AMFVariant& val
 
 std::wstring AddIndexToPath(const std::wstring& path, amf_int32 index);
 
+inline wchar_t toUpperWchar(int C)
+{
+    return static_cast<wchar_t>(toupper(C));
+}
+
 inline std::wstring toUpper(const std::wstring& str)
 {
     std::wstring result;
-    std::transform(str.begin(), str.end(), std::back_inserter(result), toupper);
+    std::transform(str.begin(), str.end(), std::back_inserter(result), toUpperWchar);
     return result;
 }
 

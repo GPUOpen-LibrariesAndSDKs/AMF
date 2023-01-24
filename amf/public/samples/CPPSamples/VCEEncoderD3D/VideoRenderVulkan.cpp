@@ -169,8 +169,6 @@ AMF_RESULT VideoRenderVulkan::Terminate()
 
 AMF_RESULT VideoRenderVulkan::CreatePipelineInput()
 {
-    amf::AMFVulkanDevice* pVulkanDev = (amf::AMFVulkanDevice*)m_hVulkanDev;    
-
     return AMF_OK;
 }
 AMF_RESULT VideoRenderVulkan::CreateDescriptorSetLayout()
@@ -486,11 +484,6 @@ AMF_RESULT VideoRenderVulkan::CreateCommands()
 
 AMF_RESULT VideoRenderVulkan::CreateVertexBuffers()
 {
-    amf::AMFVulkanDevice* pVulkanDev = (amf::AMFVulkanDevice*)m_hVulkanDev;    
-
-	VkResult res = VK_INCOMPLETE;
-
-	
     // Create vertex buffer
     
     Vertex vertexes[] =
@@ -616,8 +609,6 @@ AMF_RESULT VideoRenderVulkan::UpdateMVP()
 AMF_RESULT VideoRenderVulkan::Render(amf::AMFData** ppData)
 {
 	UpdateMVP();
-
-    amf::AMFVulkanDevice* pVulkanDev = (amf::AMFVulkanDevice*)m_hVulkanDev;    
 
 	VkResult res = VK_INCOMPLETE;
     AMF_RESULT resAMF = AMF_OK;

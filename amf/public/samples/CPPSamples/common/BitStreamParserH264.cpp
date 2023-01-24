@@ -220,7 +220,7 @@ protected:
 
         AccessUnitSigns() :
             FrameNum(0),
-            PicParameterSetId(-1), // flag that not -init
+            PicParameterSetId(static_cast<amf_uint32>(-1)), // flag that not -init
             FieldPicFlag(0),
             BottomFieldFlag(0),
             NalRefIdc(0),
@@ -278,7 +278,7 @@ BitStreamParser* CreateAnnexBParser(amf::AMFDataStream* stream, amf::AMFContext*
 }
 //-------------------------------------------------------------------------------------------------
 
-BitStreamParser* CreateAvcCParser(amf::AMFDataStream* stream, amf::AMFContext* pContext)
+BitStreamParser* CreateAvcCParser(amf::AMFDataStream* /* stream */, amf::AMFContext* /* pContext */)
 {
     return NULL;
 }
@@ -576,7 +576,7 @@ AMF_RESULT AvcParser::QueryOutput(amf::AMFData** ppData)
 
 
     amf::AMFBufferPtr pictureBuffer;
-    AMF_RESULT ar = m_pContext->AllocBuffer(amf::AMF_MEMORY_HOST, packetSize, &pictureBuffer);
+    m_pContext->AllocBuffer(amf::AMF_MEMORY_HOST, packetSize, &pictureBuffer);
 
     amf_uint8 *data = (amf_uint8*)pictureBuffer->GetNative();
     if(m_bUseStartCodes)
@@ -590,8 +590,8 @@ AMF_RESULT AvcParser::QueryOutput(amf::AMFData** ppData)
             // copy size
             amf_uint32 naluSize= (amf_uint32)naluSizes[i];
             *data++ = (naluSize >> 24);
-            *data++ = ((naluSize & 0x00FF0000) >> 16);
-            *data++ = ((naluSize & 0x0000FF00) >> 8);
+            *data++ = ((naluSize >> 16) & 0x000000FF);
+            *data++ = ((naluSize >> 8) & 0x000000FF);
             *data++ = ((naluSize & 0x000000FF));
 
             memcpy(data, m_ReadData.GetData() + naluStarts[i], naluSize);
@@ -698,7 +698,6 @@ void    AvcParser::FindSPSandPPS()
         
         size_t naluSize = 0;
         size_t naluOffset = 0;
-        size_t naluAnnexBOffset = dataOffset;
         NalUnitType   naluType = ReadNextNaluUnit(&dataOffset, &naluOffset, &naluSize);
 
         if (naluType == NalUnitTypeUnspecified )
@@ -748,8 +747,11 @@ void    AvcParser::FindSPSandPPS()
     // It will fail if SPS or PPS are absent
     extraDataBuilder.GetExtradata(m_Extradata);
 }
+
 //-------------------------------------------------------------------------------------------------
-bool AvcParser::SpsData::Parse(amf_uint8 *nalu, size_t size)
+#pragma warning (push)
+#pragma warning (disable : 4189) // local variable is initialized but not referenced
+bool AvcParser::SpsData::Parse(amf_uint8 *nalu, size_t /* size */)
 {
     ProfileIdc = nalu[1];
     LevelIdc = nalu[3];
@@ -859,11 +861,11 @@ bool AvcParser::SpsData::Parse(amf_uint8 *nalu, size_t size)
         bool aspect_ratio_info_present_flag = Parser::getBit(nalu, offset);
         if (aspect_ratio_info_present_flag)
         {
-            amf_uint8 aspect_ratio_idc             = Parser::readBits(nalu, offset, 8);
+            amf_uint8 aspect_ratio_idc             = static_cast<amf_uint8>(Parser::readBits(nalu, offset, 8));
             if (255==aspect_ratio_idc)
             {
-                amf_uint16 sar_width                  = Parser::readBits(nalu, offset, 16);
-                amf_uint16 sar_height                 = Parser::readBits(nalu, offset, 16);
+                amf_uint16 sar_width                  = static_cast<amf_uint16>(Parser::readBits(nalu, offset, 16));
+                amf_uint16 sar_height                 = static_cast<amf_uint16>(Parser::readBits(nalu, offset, 16));
             }
         }
         bool overscan_info_present_flag     = Parser::getBit(nalu, offset);
@@ -874,14 +876,14 @@ bool AvcParser::SpsData::Parse(amf_uint8 *nalu, size_t size)
         bool video_signal_type_present_flag = Parser::getBit(nalu, offset);
         if (video_signal_type_present_flag)
         {
-            amf_uint8 video_format              = Parser::readBits(nalu, offset, 3);
+            amf_uint8 video_format              = static_cast<amf_uint8>(Parser::readBits(nalu, offset, 3));
             bool video_full_range_flag           = Parser::getBit(nalu, offset);
             bool colour_description_present_flag = Parser::getBit(nalu, offset);
             if(colour_description_present_flag)
             {
-                amf_uint8 colour_primaries              = Parser::readBits(nalu, offset, 8);
-                amf_uint8 transfer_characteristics      = Parser::readBits(nalu, offset, 8);
-                amf_uint8 matrix_coefficients           = Parser::readBits(nalu, offset, 8);
+                amf_uint8 colour_primaries              = static_cast<amf_uint8>(Parser::readBits(nalu, offset, 8));
+                amf_uint8 transfer_characteristics      = static_cast<amf_uint8>(Parser::readBits(nalu, offset, 8));
+                amf_uint8 matrix_coefficients           = static_cast<amf_uint8>(Parser::readBits(nalu, offset, 8));
             }
         }
         bool chroma_location_info_present_flag = Parser::getBit(nalu, offset);;
@@ -901,8 +903,9 @@ bool AvcParser::SpsData::Parse(amf_uint8 *nalu, size_t size)
     }
     return true;
 }
+#pragma warning(pop)
 //-------------------------------------------------------------------------------------------------
-bool AvcParser::PpsData::Parse(amf_uint8 *nalu, size_t size)
+bool AvcParser::PpsData::Parse(amf_uint8 *nalu, size_t /* size */)
 {
     size_t offset = 8; // 1 byte
 
@@ -912,8 +915,11 @@ bool AvcParser::PpsData::Parse(amf_uint8 *nalu, size_t size)
     BottomFieldPicOrderInFramePresent = Parser::getBit(nalu, offset);
     return true;
 }
+
 //-------------------------------------------------------------------------------------------------
-bool AvcParser::AccessUnitSigns::Parse(amf_uint8 *nalu, size_t size, std::map<amf_uint32,SpsData> &spsMap, std::map<amf_uint32,PpsData> &ppsMap)
+#pragma warning (push)
+#pragma warning (disable : 4189) // local variable is initialized but not referenced
+bool AvcParser::AccessUnitSigns::Parse(amf_uint8 *nalu, size_t /* size */, std::map<amf_uint32, SpsData>& spsMap, std::map<amf_uint32, PpsData>& ppsMap)
 {
     size_t offset = 8;
 
@@ -991,6 +997,8 @@ bool AvcParser::AccessUnitSigns::Parse(amf_uint8 *nalu, size_t size, std::map<am
     PicOrderCntType = spsIt->second.PicOrderCntType;
     return true;
 }
+#pragma warning(pop)
+
 //-------------------------------------------------------------------------------------------------
 bool AvcParser::AccessUnitSigns::IsNewPicture(const AccessUnitSigns &newSigns)
 {
@@ -1197,7 +1205,7 @@ size_t AvcParser::EBSPtoRBSP(amf_uint8 *streamBuffer,size_t begin_bytepos, size_
                 //check the 4th amf_uint8 after 0x000003, except when cabac_zero_word is used, in which case the last three bytes of this NAL unit must be 0x000003
                 if((streamBuffer_i+1 != streamBuffer_end) && (streamBuffer_i[1] > 0x03))
                 {
-                    return -1;
+                    return static_cast<size_t>(-1);
                 }
                 //if cabac_zero_word is used, the final amf_uint8 of this NAL unit(0x03) is discarded, and the last two bytes of RBSP must be 0x0000
                 if(streamBuffer_i+1 == streamBuffer_end)

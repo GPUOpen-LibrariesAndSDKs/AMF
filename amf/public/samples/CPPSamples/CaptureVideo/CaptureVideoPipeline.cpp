@@ -91,8 +91,8 @@ AMF_RESULT CaptureVideoPipeline::InitContext(amf::AMF_MEMORY_TYPE type)
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT CaptureVideoPipeline::CreateVideoPresenter(
     amf::AMF_MEMORY_TYPE type, 
-    amf_int32 compositedWidth, 
-    amf_int32 compositedHeight)
+    amf_int32 /* compositedWidth */,
+    amf_int32 /* compositedHeight */ )
 {
     BackBufferPresenterPtr pBackBufferPresenter;
     AMF_RESULT res = BackBufferPresenter::Create(pBackBufferPresenter, type, m_hwnd, m_pContext);

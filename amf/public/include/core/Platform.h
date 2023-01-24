@@ -382,13 +382,10 @@ static AMF_INLINE struct AMFRatio AMFConstructRatio(amf_uint32 num, amf_uint32 d
 #pragma pack(push, 1)
 #if defined(_MSC_VER)
     #pragma warning( push )
-#endif
-#if defined(WIN32)
-#if defined(_MSC_VER)
     #pragma warning(disable : 4200)
     #pragma warning(disable : 4201)
 #endif
-#endif
+
 typedef struct AMFColor
 {
     union

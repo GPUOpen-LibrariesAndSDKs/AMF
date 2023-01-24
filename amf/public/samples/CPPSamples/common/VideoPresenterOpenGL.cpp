@@ -77,7 +77,7 @@ AMF_RESULT VideoPresenterOpenGL::Present(amf::AMFSurface* pSurface)
     amf::AMFPlane* pPlane = pSurface->GetPlane(amf::AMF_PLANE_PACKED);
 
     AMFRect srcRect = {pPlane->GetOffsetX(), pPlane->GetOffsetY(), pPlane->GetOffsetX() + pPlane->GetWidth(), pPlane->GetOffsetY() + pPlane->GetHeight()};
-    AMFRect outputRect;
+    AMFRect outputRect = {0};
 
     if(err == AMF_OK)
     {
@@ -110,7 +110,7 @@ AMF_RESULT VideoPresenterOpenGL::Present(amf::AMFSurface* pSurface)
     }
 
 #if defined(_WIN32)
-    BOOL swapResult = ::SwapBuffers((HDC)m_pContext->GetOpenGLDrawable());
+    ::SwapBuffers((HDC)m_pContext->GetOpenGLDrawable());
 #elif defined(__linux)
     Display *pXDisplay = static_cast<Display*>(m_hDisplay);
     GLXWindow window = reinterpret_cast<GLXWindow>(m_hwnd);

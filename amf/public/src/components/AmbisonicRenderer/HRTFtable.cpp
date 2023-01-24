@@ -151,7 +151,6 @@ bool getIR(float srate, int idx, float *elevation, float *azimuth, int IRlength,
         return(false);
     }
 
-    size_t count = 0;
     do {
         memcpy(&(fhd.wave.name), pdata, 4);
         pdata += 4;
@@ -194,7 +193,6 @@ bool getIR(float srate, int idx, float *elevation, float *azimuth, int IRlength,
 
     /* get the data size */
     int nChannels = fhd.wave.fmt.info.nChannels;
-    int samplesPerSec = fhd.wave.fmt.info.nSamplesPerSec;
     int bitsPerSam = fhd.wave.fmt.info.nBitsPerSample;
     int nSamples = (fhd.wave.data.length * 8) / (bitsPerSam*nChannels);
 

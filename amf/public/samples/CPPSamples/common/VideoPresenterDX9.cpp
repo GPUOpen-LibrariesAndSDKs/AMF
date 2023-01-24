@@ -162,8 +162,9 @@ AMF_RESULT VideoPresenterDX9::Present(amf::AMFSurface* pSurface)
     }
 
     
-    if(rectClient.Width() > 0 &&  rectClient.Height() > 0 && ((presentationParameters.BackBufferHeight != rectClient.bottom - rectClient.top) ||
-       (presentationParameters.BackBufferWidth != rectClient.right - rectClient.left)))
+    if(rectClient.Width() > 0 &&  rectClient.Height() > 0 && 
+      ((presentationParameters.BackBufferHeight != static_cast<amf_uint32>(rectClient.Height())) ||
+      (presentationParameters.BackBufferWidth != static_cast<amf_uint32>(rectClient.Width()))))
     {
         if(m_bRenderToBackBuffer)
         {
@@ -251,8 +252,8 @@ AMF_RESULT VideoPresenterDX9::BitBlt(IDirect3DSurface9* pSrcSurface, AMFRect* pS
     return SUCCEEDED(m_pDevice->StretchRect(pSrcSurface, &srcRect, pDstSurface, &dstRect,D3DTEXF_LINEAR)) ? AMF_OK : AMF_DIRECTX_FAILED;
 }
 
-AMF_RESULT AMF_STD_CALL VideoPresenterDX9::AllocSurface(amf::AMF_MEMORY_TYPE type, amf::AMF_SURFACE_FORMAT format,
-            amf_int32 width, amf_int32 height, amf_int32 hPitch, amf_int32 vPitch, amf::AMFSurface** ppSurface)
+AMF_RESULT AMF_STD_CALL VideoPresenterDX9::AllocSurface(amf::AMF_MEMORY_TYPE /* type */, amf::AMF_SURFACE_FORMAT /* format */,
+            amf_int32 /* width */, amf_int32 /* height */, amf_int32 /* hPitch */, amf_int32 /* vPitch */, amf::AMFSurface** ppSurface)
 {
     if(!m_bRenderToBackBuffer)
     {

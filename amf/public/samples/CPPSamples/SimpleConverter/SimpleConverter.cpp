@@ -81,9 +81,9 @@ protected:
 public:
     PollingThread(amf::AMFComponent *converter, const wchar_t *pFileName) : m_pConverter(converter)
     {
-        std::wstring wStr(pFileName);
-        std::string str(wStr.begin(), wStr.end()); 
-        m_pFile.open(str, std::ios::binary);
+        amf_wstring wStr(pFileName);
+        amf_string str(amf::amf_from_unicode_to_utf8(wStr));
+        m_pFile.open(str.c_str(), std::ios::binary);
     }
     ~PollingThread()
     {
@@ -102,7 +102,6 @@ public:
         amf_pts write_duration = 0;
 
         AMF_RESULT res = AMF_OK; // error checking can be added later
-        amf_pts last_poll_time = 0;
         while(true)
         {
             amf::AMFDataPtr data;
@@ -157,9 +156,9 @@ public:
 };
 
 #ifdef _WIN32
-int _tmain(int argc, _TCHAR* argv[])
+int _tmain(int /* argc */, _TCHAR* /* argv */[])
 #else
-int main(int argc, char* argv[])
+int main(int /* argc */, char* /* argv */[])
 #endif
 {
     AMF_RESULT res = AMF_OK; // error checking can be added later

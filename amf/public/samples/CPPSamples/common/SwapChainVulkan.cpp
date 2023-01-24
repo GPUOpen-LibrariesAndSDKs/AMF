@@ -174,6 +174,8 @@ AMF_RESULT SwapChainVulkan::Terminate()
 }
 AMF_RESULT SwapChainVulkan::CreateSwapChain(amf_handle hWnd, amf_handle hDisplay, amf_uint32 format, bool bFullScreen)
 {
+    hDisplay; // Suppress unreferenced parameter warning (C4100)
+
     amf::AMFVulkanDevice* pVulkanDev = (amf::AMFVulkanDevice*)m_hVulkanDev;    
     VkResult res = VK_INCOMPLETE;
 
@@ -256,7 +258,6 @@ AMF_RESULT SwapChainVulkan::CreateSwapChain(amf_handle hWnd, amf_handle hDisplay
     GetVulkan()->vkGetPhysicalDeviceQueueFamilyProperties(pVulkanDev->hPhysicalDevice, &queueFamilyPropertyCount, queueFamilyProperties.data());
     for (uint32_t i = 0; i < queueFamilyPropertyCount; i++)
     {
-        VkQueueFamilyProperties &queueFamilyProperty = queueFamilyProperties[i];
         VkBool32 presentSupport = false;
         res = GetVulkan()->vkGetPhysicalDeviceSurfaceSupportKHR(pVulkanDev->hPhysicalDevice, i, m_hSurfaceKHR, &presentSupport);
 
@@ -377,7 +378,7 @@ AMF_RESULT SwapChainVulkan::CreateSwapChain(amf_handle hWnd, amf_handle hDisplay
         backbuffer.m_Surface.cbSizeof = sizeof(amf::AMFVulkanSurface);    // sizeof(AMFVulkanSurface)
         // surface properties
         backbuffer.m_Surface.hImage = images[i];
-        backbuffer.m_Surface.eUsage = amf::AMF_SURFACE_USAGE_DEFAULT;
+        backbuffer.m_Surface.eUsage = static_cast<amf_uint32>(amf::AMF_SURFACE_USAGE_DEFAULT);
         backbuffer.m_Surface.hMemory = 0;
         backbuffer.m_Surface.iSize = 0;      // memory size
         backbuffer.m_Surface.eFormat = m_eSwapChainImageFormat;    // VkFormat
@@ -560,9 +561,9 @@ AMF_RESULT              SwapChainVulkan::Present(amf_uint32 imageIndex, bool Wai
 
 }
 
-AMF_RESULT SwapChainVulkan::TransitionSurface(amf::AMFVulkanSurface    *surface, amf_int32 layout)
+AMF_RESULT SwapChainVulkan::TransitionSurface(amf::AMFVulkanSurface *surface, amf_int32 layout)
 {
-    if(surface->eCurrentLayout == layout)
+    if(layout >= 0 && surface->eCurrentLayout == static_cast<amf_uint32>(layout))
     {
         return AMF_OK;
     }
@@ -695,7 +696,7 @@ AMF_RESULT SwapChainVulkan::MakeBuffer(void * data, amf_size size, amf_uint32 us
     VkPhysicalDeviceMemoryProperties memProps;
     GetVulkan()->vkGetPhysicalDeviceMemoryProperties(pVulkanDev->hPhysicalDevice, &memProps);
 
-    uint32_t memType = -1;
+    uint32_t memType = static_cast<uint32_t>(-1);
     for (uint32_t i = 0; i < memProps.memoryTypeCount; i++)
     {
         if (memReqs.memoryTypeBits & (1 << i))
@@ -708,7 +709,7 @@ AMF_RESULT SwapChainVulkan::MakeBuffer(void * data, amf_size size, amf_uint32 us
         }
     }
 
-    CHECK_RETURN(memType != ((uint32_t)-1), AMF_FAIL, L"vkGetPhysicalDeviceMemoryProperties() failed to provide memory type");
+    CHECK_RETURN(memType != static_cast<uint32_t>(-1), AMF_FAIL, L"vkGetPhysicalDeviceMemoryProperties() failed to provide memory type");
 
     VkMemoryAllocateInfo allocInfo = {};
         allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;

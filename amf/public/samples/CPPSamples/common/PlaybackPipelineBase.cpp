@@ -59,6 +59,7 @@ const wchar_t* PlaybackPipelineBase::PARAM_NAME_HQ_SCALER_RGB = L"HQSCALERRGB";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_HQ_SCALER_RATIO = L"HQSCALERRATIO";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_ENABLE_AUDIO = L"ENABLEAUDIO";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_HQSCALER_SHARPNESS = L"HQSCALERSHARPNESS";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_FRAME_RATE = L"FRAMERATE";
 
 PlaybackPipelineBase::PlaybackPipelineBase() :
     m_iVideoWidth(0),
@@ -82,7 +83,7 @@ PlaybackPipelineBase::PlaybackPipelineBase() :
     SetParamDescription(PARAM_NAME_LOWLATENCY, ParamCommon, L"Low latency mode, boolean, default = false", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_FULLSCREEN, ParamCommon, L"Specifies fullscreen mode, true, false, default false", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_SW_DECODER, ParamCommon, L"Forces sw decoder, true, false, default false", ParamConverterBoolean);
-    SetParamDescription(PARAM_NAME_HQ_SCALER, ParamCommon,  L"Use HQ Scaler (OFF, Bilinear, Bicubic, FSR, POINT, default = OFF)", ParamConverterHQScalerAlgorithm);
+    SetParamDescription(PARAM_NAME_HQ_SCALER, ParamCommon,  L"Use HQ Scaler (OFF, Bilinear, Bicubic, VideoSR1.0, POINT, VideoSR1.1, default = OFF)", ParamConverterHQScalerAlgorithm);
     SetParamDescription(PARAM_NAME_PIP, ParamCommon, L"Specifies Picture in Picture mode, true, false, default false", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_PIP_ZOOM_FACTOR, ParamCommon, L"Specifies magnification ratio of PIP image, int, default 8", ParamConverterDouble);
     SetParamDescription(PARAM_NAME_PIP_FOCUS_X, ParamCommon, L"H position of foreground image, int, default 0", ParamConverterInt64);
@@ -92,6 +93,7 @@ PlaybackPipelineBase::PlaybackPipelineBase() :
     SetParamDescription(PARAM_NAME_HQ_SCALER_RATIO, ParamCommon, L"Scaling Ratio (1.3x, 1.5x, 1.7x, 2.0x), default 2.0x", ParamConverterRatio);
     SetParamDescription(PARAM_NAME_ENABLE_AUDIO, ParamCommon, L"Enables audio playback, boolean, default = true", ParamConverterDouble);
     SetParamDescription(PARAM_NAME_HQSCALER_SHARPNESS, ParamCommon, L"Specifies FSR RCAS attenuation, double, default 0.75", ParamConverterDouble);
+    SetParamDescription(PARAM_NAME_FRAME_RATE, ParamCommon, L"Frame Rate (off, 15fps, 30fps, 60fps), default off", ParamConverterInt64);
 
     SetParam(PARAM_NAME_LISTEN_FOR_CONNECTION, false);
     SetParam(PARAM_NAME_FULLSCREEN, false);
@@ -104,6 +106,7 @@ PlaybackPipelineBase::PlaybackPipelineBase() :
     SetParam(PARAM_NAME_HQ_SCALER_RATIO, AMFRatio({ 20, 10 }));
     SetParam(PARAM_NAME_ENABLE_AUDIO, true);
     SetParam(PARAM_NAME_HQSCALER_SHARPNESS, 0.75);
+    SetParam(PARAM_NAME_FRAME_RATE, 0);
 
 #if defined(_WIN32)
     SetParam(PlaybackPipelineBase::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_DX11);
@@ -339,8 +342,6 @@ AMF_RESULT PlaybackPipelineBase::Init()
 
         if(m_bURL)
         {
-            bool bListen = false;
-            GetParam(PlaybackPipelineBase::PARAM_NAME_LISTEN_FOR_CONNECTION, bListen);
             m_pDemuxerVideo->SetProperty(FFMPEG_DEMUXER_LISTEN, bListen);
         }
         res = m_pDemuxerVideo->SetProperty(m_bURL ? FFMPEG_DEMUXER_URL : FFMPEG_DEMUXER_PATH, inputPath.c_str());
@@ -348,11 +349,11 @@ AMF_RESULT PlaybackPipelineBase::Init()
         res = m_pDemuxerVideo->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
         CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxerVideo->Init(" << inputPath << ") failed");
 
-        amf_int32 outputs = m_pDemuxerVideo->GetOutputCount();
-        for(amf_int32 output = 0; output < outputs; output++)
+        amf_int32 videoOutputCount = m_pDemuxerVideo->GetOutputCount();
+        for(amf_int32 videoOutput = 0; videoOutput < videoOutputCount; videoOutput++)
         {
             amf::AMFOutputPtr pOutput;
-            res = m_pDemuxerVideo->GetOutput(output, &pOutput);
+            res = m_pDemuxerVideo->GetOutput(videoOutput, &pOutput);
             CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxerVideo->GetOutput() failed");
 
             amf_int64 eStreamType = AMF_STREAM_UNKNOWN;
@@ -361,13 +362,13 @@ AMF_RESULT PlaybackPipelineBase::Init()
 
             if(iVideoStreamIndex < 0 && eStreamType == AMF_STREAM_VIDEO)
             {
-                iVideoStreamIndex = output;
+                iVideoStreamIndex = videoOutput;
                 pVideoOutput = pOutput;
             }
 
             if(iAudioStreamIndex < 0 && eStreamType == AMF_STREAM_AUDIO)
             {
-                iAudioStreamIndex = output;
+                iAudioStreamIndex = videoOutput;
                 pAudioOutput = pOutput;
             }
         }
@@ -383,11 +384,11 @@ AMF_RESULT PlaybackPipelineBase::Init()
             res = m_pDemuxerAudio->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
             CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxerAudio->Init() failed");
 
-            amf_int32 outputs = m_pDemuxerAudio->GetOutputCount();
-            for(amf_int32 output = 0; output < outputs; output++)
+            amf_int32 audioOutputCount = m_pDemuxerAudio->GetOutputCount();
+            for(amf_int32 audioOutput = 0; audioOutput < audioOutputCount; audioOutput++)
             {
                 amf::AMFOutputPtr pOutput;
-                res = m_pDemuxerAudio->GetOutput(output, &pOutput);
+                res = m_pDemuxerAudio->GetOutput(audioOutput, &pOutput);
                 CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxerAudio->GetOutput() failed");
 
                 amf_int64 eStreamType = AMF_STREAM_UNKNOWN;
@@ -396,13 +397,13 @@ AMF_RESULT PlaybackPipelineBase::Init()
 
                 if(iVideoStreamIndex < 0 && eStreamType == AMF_STREAM_VIDEO)
                 {
-                    iVideoStreamIndex = output;
+                    iVideoStreamIndex = audioOutput;
                     pVideoOutput = pOutput;
                 }
 
                 if(iAudioStreamIndex < 0 && eStreamType == AMF_STREAM_AUDIO)
                 {
-                    iAudioStreamIndex = output;
+                    iAudioStreamIndex = audioOutput;
                     pAudioOutput = pOutput;
                 }
             }
@@ -501,7 +502,7 @@ AMF_RESULT PlaybackPipelineBase::InitAudioPipeline(amf_uint32 iAudioStreamIndex,
 	return AMF_OK;
 }
 
-AMF_RESULT PlaybackPipelineBase::InitVideoPipeline(amf_uint32 iVideoStreamIndex, PipelineElementPtr pVideoSourceStream)
+AMF_RESULT PlaybackPipelineBase::InitVideoPipeline(amf_uint32 /* iVideoStreamIndex */, PipelineElementPtr pVideoSourceStream)
 {
     bool bLowlatency = false;
     GetParam(PARAM_NAME_LOWLATENCY, bLowlatency);
@@ -602,10 +603,14 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoProcessor()
         amf_double fHQScalerSharpness = 0;
         GetParam(PARAM_NAME_HQSCALER_SHARPNESS, fHQScalerSharpness);
 
+        amf_int64 oFrameRate = 0;
+        GetParam(PARAM_NAME_FRAME_RATE, oFrameRate);
+
         m_pScaler->SetProperty(AMF_HQ_SCALER_OUTPUT_SIZE, ::AMFConstructSize(oVideoWidth, oVideoHeight));
         m_pScaler->SetProperty(AMF_HQ_SCALER_ENGINE_TYPE, m_pVideoPresenter->GetMemoryType());
         m_pScaler->SetProperty(AMF_HQ_SCALER_ALGORITHM, hqScalerMode);
         m_pScaler->SetProperty(AMF_HQ_SCALER_SHARPNESS, fHQScalerSharpness);
+        m_pScaler->SetProperty(AMF_HQ_SCALER_FRAME_RATE, oFrameRate);
 
         /*
         // If enabled side-by-side, create a separate HQ Scaler
@@ -1109,6 +1114,16 @@ void PlaybackPipelineBase::OnParamChanged(const wchar_t* name)
                 m_pScaler->SetProperty(AMF_HQ_SCALER_SHARPNESS, fHQScalerSharpness);
             }
         }
+        else if (std::wstring(name) == std::wstring(PARAM_NAME_FRAME_RATE))
+        {
+            if (m_pScaler != nullptr)
+            {
+                amf_int64 oFrameRate = 0;
+                GetParam(PARAM_NAME_FRAME_RATE, oFrameRate);
+
+                m_pScaler->SetProperty(AMF_HQ_SCALER_FRAME_RATE, oFrameRate);
+            }
+        }
     }
     if(m_pVideoProcessor == NULL)
     {
@@ -1139,11 +1154,11 @@ void PlaybackPipelineBase::UpdateVideoProcessorProperties(const wchar_t* name)
     {
         for(amf_size i = 0; i < GetParamCount(); ++i)
         {
-            std::wstring name;
+            std::wstring nameStr;
             amf::AMFVariant value;
-            GetParamAt(i, name, &value);
+            GetParamAt(i, nameStr, &value);
             ParamDescription description;
-            GetParamDescription(name.c_str(), description);
+            GetParamDescription(nameStr.c_str(), description);
             if(description.m_Type == ParamVideoProcessor)
             {
                 m_pVideoProcessor->SetProperty(description.m_Name.c_str(), value);
