@@ -52,6 +52,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
       - [2.2.6 Picture Transfer Mode](#226-picture-transfer-mode)
       - [2.2.7 SVC Properties](#227-svc-properties)
       - [2.2.8 LTR Properties](#228-ltr-properties)
+      - [2.2.9 SmartAccess Video](#229-smartaccess-video)
 3. [Sample Applications](#3-sample-applications)
    - [3.1 List of Parameters](#31-list-of-parameters)
    - [3.2 Command line example](#32-command-line-example)
@@ -215,6 +216,10 @@ When there are multiple bits are enabled, for example: `0b1111` (`=decimal 15`),
 When we encode a key frame or switch frame, all save LTR slots will be cleared.
 
 Referring to a LTR frame not exiting in LTR slot will generate an Intra only frame.
+
+#### 2.2.9 SmartAccess Video
+
+On supported APU + GPU systems, there is an opportunity to use SmartAccess Video. SmartAccess Video - an optimization logic which enables the parallelization of encode and decode streams across multiple Video Codec Engine (VCN) hardware instances – empowers apps to process streams faster through seamless job distribution across available hardware. With a simple enablement of the encoder and decoder control flags, the SmartAccess Video logic will optimally use hardware resources to benefit media apps. Follow the `SMART_ACCESS_VIDEO` tag in the documentation to search for the property flags to set. On systems without SmartAccess Video support, the `SMART_ACCESS_VIDEO` properties have no effect.
 
 ## 3 Sample Applications
 
@@ -775,6 +780,20 @@ Enables the pre-analysis module. Some features require this to be enabled. Refer
 
 **Description:**
 Sets the maximum number of temporal layers. It shall not be exceeded by the number of temporal layers. The maximum number of temporal layers supported is determined by the corresponding encoder capability.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_ENABLE_SMART_ACCESS_VIDEO`
+
+**Values:**
+`true`, `false`
+
+**Default Value:**
+`false`
+
+**Description:**
+When set to `true`, enables the SmartAccess Video feature, which optimally allocates the encoding task on supported APU/GPU pairings.
 
 ---
 

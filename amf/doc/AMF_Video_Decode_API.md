@@ -109,19 +109,23 @@ Table 1. AMF components IDs depending on codec selection
 
 AMF Decoder can be configured using the following properties that need to be set before initialization:
 
-| Name                                         | Type         |
-| :------------------------------------------- | :----------- |
-| AMF_VIDEO_DECODER_SURFACE_COPY               | amf_bool     |
-| AMF_VIDEO_DECODER_EXTRADATA                  | AMFBufferPtr |
-| AMF_VIDEO_DECODER_FRAME_RATE                 | amf_double   |
-| AMF_TIMESTAMP_MODE                           | amf_int64    |
-| AMF_VIDEO_DECODER_ADAPTIVE_RESOLUTION_CHANGE | amf_bool     |
-| AMF_VIDEO_DECODER_REORDER_MODE               | amf_int64    |
-| AMF_VIDEO_DECODER_DPB_SIZE                   | amf_int64    |
+| Name                                               | Type         |
+| :------------------------------------------------- | :----------- |
+| AMF_VIDEO_DECODER_SURFACE_COPY                     | amf_bool     |
+| AMF_VIDEO_DECODER_EXTRADATA                        | AMFBufferPtr |
+| AMF_VIDEO_DECODER_FRAME_RATE                       | amf_double   |
+| AMF_TIMESTAMP_MODE                                 | amf_int64    |
+| AMF_VIDEO_DECODER_ADAPTIVE_RESOLUTION_CHANGE       | amf_bool     |
+| AMF_VIDEO_DECODER_REORDER_MODE                     | amf_int64    |
+| AMF_VIDEO_DECODER_DPB_SIZE                         | amf_int64    |
+| AMF_VIDEO_DECODER_ENABLE_SMART_ACCESS_VIDEO        | amf_bool     |
+| AMF_VIDEO_DECODER_SKIP_TRANSFER_SMART_ACCESS_VIDEO | amf_bool     |
 
 <p align="center">
-Table 2. AMF Video Converter parameters which configure input and output
+Table 2. AMF Video Decoder pre-initialization properties
 </p>
+
+On supported APU + GPU systems, there is an opportunity to use SmartAccess Video. SmartAccess Video - an optimization logic which enables the parallelization of encode and decode streams across multiple Video Codec Engine (VCN) hardware instances – empowers apps to process streams faster through seamless job distribution across available hardware. With a simple enablement of the encoder and decoder control flags, the SmartAccess Video logic will optimally use hardware resources to benefit media apps. Follow the `SMART_ACCESS_VIDEO` tag in the documentation to search for the property flags to set. On systems without SmartAccess Video support, the `SMART_ACCESS_VIDEO` properties have no effect.
 
 ---
 
@@ -228,6 +232,34 @@ The minimum required number of surfaces for frame reordering.
 
 ---
 
+**Name:**
+`AMF_VIDEO_DECODER_ENABLE_SMART_ACCESS_VIDEO`
+
+**Values:**
+`true`, `false`
+
+**Default Value:**
+`false`
+
+**Description:**
+When set to `true`, enables the SmartAccess Video feature, which optimally allocates the decoding task on supported APU/GPU pairings.
+
+---
+
+**Name:**
+`AMF_VIDEO_DECODER_SKIP_TRANSFER_SMART_ACCESS_VIDEO`
+
+**Values:**
+`true`, `false`
+
+**Default Value:**
+`false`
+
+**Description:**
+When set to `false` and the SmartAccess Video feature is enabled, decoded frames are transferred back to the initial APU/GPU. When this is set to `true`, surfaces remain on the decoder device, which may not be the same as the initial APU/GPU.
+
+---
+
 The following read-only properties can be read to obtain information about the current stream, as well as decoder capabilities:
 
 | Name                                 | Type      |
@@ -237,7 +269,7 @@ The following read-only properties can be read to obtain information about the c
 | AMF_VIDEO_DECODER_CAP_NUM_OF_STREAMS | amf_int64 |
 
 <p align="center">
-Table 2. AMF Video Converter read-only properties
+Table 3. AMF Video Decoder read-only properties
 </p>
 
 ---

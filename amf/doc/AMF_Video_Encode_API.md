@@ -52,17 +52,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
    - [2.2.6 Encoder Statistics Feedback](#226-encoder-statistics-feedback)
    - [2.2.7 Picture Transfer Mode](#227-picture-transfer-mode)
    - [2.2.8 LTR Properties](#228-ltr-properties)
+   - [2.2.9 SmartAccess Video](#229-smartaccess-video)
 3. [Sample Applications](#3-sample-applications)
    - [3.1 List of Parameters](#31-list-of-parameters)
    - [3.2 Command line example](#32-command-line-example)
       - [3.2.1 Transcoding application (TranscodingHW.exe)](#321-transcoding-application-transcodinghwexe)
-      - [3.2.2	D3D application (VCEEncoderD3D.exe)](#322d3d-application-vceencoderd3dexe)
+      - [3.2.2	D3D application (VCEEncoderD3D.exe)](#322-d3d-application-vceencoderd3dexe)
 4. [Annex A: Encoding & frame parameters description](#4-annex-a-encoding--frame-parameters-description)
-   - [Table A-1. Encoder configuration parameters](#table-a---1-encoder-configuration-parameters)
-   - [Table A-2. Input frame and encoded data parameters](#table-a---2-input-frame-and-encoded-data-parameters)
+   - [Table A-1. Encoder configuration parameters](#table-a-1-encoder-configuration-parameters)
+   - [Table A-2. Input frame and encoded data parameters](#table-a-2-input-frame-and-encoded-data-parameters)
    - [Table A-3. Default values of parameters](#table-a---3-default-values-of-parameters)
-   - [Table A-4. Encoder statistics feedback](#table-a---4-encoder-statistics-feedback)
-   - [Table A-5. Encoder PSNR/SSIM feedback](#table-a---5-encoder-psnr-/-ssim-feedback)
+   - [Table A-4. Encoder statistics feedback](#table-a-4-encoder-statistics-feedback)
+   - [Table A-5. Encoder PSNR/SSIM feedback](#table-a-5-encoder-psnrssim-feedback)
 
 
 ## 1 Introduction
@@ -216,6 +217,10 @@ When there are multiple bits are enabled, for example: `0b1111` (`=decimal 15`),
 When we encode a key frame or switch frame, all save LTR slots will be cleared.
 
 Referring to a LTR frame not exiting in LTR slot will generate an Intra only frame.
+
+#### 2.2.9 SmartAccess Video
+
+On supported APU + GPU systems, there is an opportunity to use SmartAccess Video. SmartAccess Video - an optimization logic which enables the parallelization of encode and decode streams across multiple Video Codec Engine (VCN) hardware instances – empowers apps to process streams faster through seamless job distribution across available hardware. With a simple enablement of the encoder and decoder control flags, the SmartAccess Video logic will optimally use hardware resources to benefit media apps. Follow the `SMART_ACCESS_VIDEO` tag in the documentation to search for the property flags to set. On systems without SmartAccess Video support, the `SMART_ACCESS_VIDEO` properties have no effect.
 
 ## 3 Sample Applications
 
@@ -611,6 +616,7 @@ This command encodes `400` frames through D3D renderer and creates an output fil
 | PRE_ANALYSIS_ENABLE                | amf_bool  |
 | COLOR_BIT_DEPTH                    | amf_int64 |
 | MAX_NUM_TEMPORAL_LAYERS            | amf_int64 |
+| ENABLE_SMART_ACCESS_VIDEO          | amf_bool  |
 
 
 <p align="center">
@@ -829,6 +835,20 @@ Sets the number of bits in each pixel’s color component in the encoder’s com
 
 **Description:**
 Sets the maximum number of temporal layers. It shall not be exceeded by the number of temporal enhancement layers. The maximum number of temporal layers supported is determined by the corresponding encoder capability. This property is not supported on GPUs prior to Radeon RX 5000 Series or APUs prior to Ryzen 2000 U/H series.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_ENABLE_SMART_ACCESS_VIDEO`
+
+**Values:**
+`true`, `false`
+
+**Default Value:**
+`false`
+
+**Description:**
+When set to `true`, enables the SmartAccess Video feature, which optimally allocates the encoding task on supported APU/GPU pairings.
 
 ---
 
