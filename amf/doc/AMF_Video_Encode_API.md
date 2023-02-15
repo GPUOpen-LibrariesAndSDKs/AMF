@@ -61,9 +61,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 4. [Annex A: Encoding & frame parameters description](#4-annex-a-encoding--frame-parameters-description)
    - [Table A-1. Encoder configuration parameters](#table-a-1-encoder-configuration-parameters)
    - [Table A-2. Input frame and encoded data parameters](#table-a-2-input-frame-and-encoded-data-parameters)
-   - [Table A-3. Default values of parameters](#table-a---3-default-values-of-parameters)
-   - [Table A-4. Encoder statistics feedback](#table-a-4-encoder-statistics-feedback)
-   - [Table A-5. Encoder PSNR/SSIM feedback](#table-a-5-encoder-psnrssim-feedback)
+   - [Table A-3. Encoder statistics feedback](#table-a-3-encoder-statistics-feedback)
+   - [Table A-4. Encoder PSNR/SSIM feedback](#table-a-4-encoder-psnrssim-feedback)
 
 
 ## 1 Introduction
@@ -180,7 +179,7 @@ If an application enables `AMF_VIDEO_ENCODER_PICTURE_TRANSFER_MODE` for a specif
 
 LTR (Long Term Reference) is to manually select a reference frame which can be far away to encode current frame. Normally, the encoder selects last frame as reference or a frame at lower layer in the SVC case.
 
-In AV1, maximum of `16` reference frames are supported according to the spec. These `16` reference frames are shared by SVC and LTR.
+In AVC, maximum of `16` reference frames are supported according to the spec. These `16` reference frames are shared by SVC and LTR.
 
 To use LTR, you need to set these properties as Static Properties:
 
@@ -275,7 +274,7 @@ File name, relative or absolute path
 `NULL`
 
 **Description:**
-Output HEVC file for encoded data.
+Output file for encoded data.
 
 ---
 
@@ -289,7 +288,7 @@ File name, relative or absolute path
 `NULL`
 
 **Description:**
-Input file with frames (AVC or HEVC).
+Input file with frames.
 
 ---
 
@@ -424,7 +423,7 @@ Table 3. Miscellaneous parameters of VCEEncoderD3D application
 `AVC`
 
 **Description:**
-Codec name
+Codec name.
 
 ---
 
@@ -480,7 +479,7 @@ Frame height
 `720`
 
 **Description:**
-Frame height
+Frame height.
 
 ---
 
@@ -586,7 +585,7 @@ Render frame rate.
 
 #### 3.2.1 Transcoding application (TranscodingHW.exe)
 
-`TranscodeHW.exe -input input.h264 -output out.h265 –codec HEVC -width 1280 -height 720`
+`TranscodeHW.exe -input input.h264 -output out.h264 –codec AVC -width 1280 -height 720`
 
 This command transcodes H264 elementary stream to H.264 video. Encoder is created with “Transcoding” usage.
 
@@ -981,6 +980,7 @@ Color space primaries for the compressed output surface which are the maximum re
 | REF_B_PIC_DELTA_QP                 | amf_int64 |
 | PREENCODE_ENABLE                   | amf_int64 |
 | FILLER_DATA_ENABLE                 | amf_bool  |
+| ENABLE_VBAQ                        | amf_bool  |
 
 <p align="center">
 Table 6. Encoder rate-control parameters
@@ -1213,10 +1213,29 @@ Sets the initial VBV buffer fullness.
    - HQLL: `false`
 
 **Description:**
- - Disables/enables constraints on QP variation within a picture to meet HRD requirement(s)
- - Enables/disables VBAQ
+ Disables/enables constraints on rate control to meet HRD model requirement(s) with peak_bitrate, VBV buffer size and VBV buffer fullness settings.
+
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_ENABLE_VBAQ`
+
+**Values:**
+`true`, `false` (`On`, `Off`)
+
+**Default Value associated with usages:**
+   - Transcoding: `false`
+   - Ultra low latency: `false`
+   - Low latency: `false`
+   - Webcam: `false`
+   - HQ: `true`
+   - HQLL: `true`
+
+**Description:**
+Note: Cannot use when `RATE_CONTROL_METHOD` is CQP.
  - VBAQ stands for *Variance Based Adaptive Quantization*.
- - The basic idea of VBAQ: Human visual system is typically less sensitive to artifacts in highly textured area. In VBAQ mode, we use pixel variance to indicate the complexity of spatial texture. This allows us to allocate more bits to smoother areas. Enabling such feature leads to improvements in subjective visual quality with some content.Note: Cannot use when RATE_CONTROL_METHOD is CQP.
+ - The basic idea of VBAQ: Human visual system is typically less sensitive to artifacts in highly textured area. In VBAQ mode, we use pixel variance to indicate the complexity of spatial texture. This allows us to allocate more bits to smoother areas. Enabling such feature leads to improvements in subjective visual quality with some content.Note: Cannot use when `RATE_CONTROL_METHOD` is CQP.
 
 ---
 
@@ -1555,7 +1574,7 @@ Selects progressive or interlaced scan.
    - HQLL: `AMF_VIDEO_ENCODER_QUALITY_PRESET_QUALITY`
 
 **Description:**
-Selects the quality preset.
+Selects the quality preset in HW to balance between encoding speed and video quality.
 
 ---
 
@@ -2094,7 +2113,7 @@ Reconstructed picture. Valid with `AMF_VIDEO_ENCODER_PICTURE_TRANSFER_MODE` turn
 
 ---
 
-### Table A-4. Encoder statistics feedback
+### Table A-3. Encoder statistics feedback
 
 | Name (prefix "AMF_VIDEO_ENCODER_")  | Type      |
 | :---------------------------------- | :-------- |
@@ -2145,7 +2164,7 @@ Average QP of all encoded macroblocks in a picture.
 `AMF_VIDEO_ENCODER_STATISTIC_MAX_QP`
 
 **Description:**
-Max QP among all encoded macroblocks in a picture
+Max QP among all encoded macroblocks in a picture.
 
 ---
 
@@ -2153,7 +2172,7 @@ Max QP among all encoded macroblocks in a picture
 `AMF_VIDEO_ENCODER_STATISTIC_MIN_QP`
 
 **Description:**
-Min QP among all encoded macroblocks in a picture
+Min QP among all encoded macroblocks in a picture.
 
 ---
 
@@ -2161,7 +2180,7 @@ Min QP among all encoded macroblocks in a picture
 `AMF_VIDEO_ENCODER_STATISTIC_PIX_NUM_INTRA`
 
 **Description:**
-Number of intra-coded pixels
+Number of intra-coded pixels.
 
 ---
 
@@ -2169,7 +2188,7 @@ Number of intra-coded pixels
 `AMF_VIDEO_ENCODER_STATISTIC_PIX_NUM_INTER`
 
 **Description:**
-Number of inter-coded pixels
+Number of inter-coded pixels.
 
 ---
 
@@ -2177,7 +2196,7 @@ Number of inter-coded pixels
 `AMF_VIDEO_ENCODER_STATISTIC_PIX_NUM_SKIP`
 
 **Description:**
-Number of skip-coded pixels
+Number of skip-coded pixels.
 
 ---
 
@@ -2185,7 +2204,7 @@ Number of skip-coded pixels
 `AMF_VIDEO_ENCODER_STATISTIC_BITCOUNT_RESIDUAL`
 
 **Description:**
-Frame level bit count of residual data
+Frame level bit count of residual data.
 
 ---
 
@@ -2193,7 +2212,7 @@ Frame level bit count of residual data
 `AMF_VIDEO_ENCODER_STATISTIC_BITCOUNT_MOTION`
 
 **Description:**
-Frame level bit count of motion vectors
+Frame level bit count of motion vectors.
 
 ---
 
@@ -2201,7 +2220,7 @@ Frame level bit count of motion vectors
 `AMF_VIDEO_ENCODER_STATISTIC_BITCOUNT_INTER`
 
 **Description:**
-Frame level bit count of inter macroblocks
+Frame level bit count of inter macroblocks.
 
 ---
 
@@ -2209,7 +2228,7 @@ Frame level bit count of inter macroblocks
 `AMF_VIDEO_ENCODER_STATISTIC_BITCOUNT_INTRA`
 
 **Description:**
-Frame level bit count of intra macroblocks
+Frame level bit count of intra macroblocks.
 
 ---
 
@@ -2217,7 +2236,7 @@ Frame level bit count of intra macroblocks
 `AMF_VIDEO_ENCODER_STATISTIC_BITCOUNT_ALL_MINUS_HEADER`
 
 **Description:**
-Frame level bit count of the bitstream excluding header
+Frame level bit count of the bitstream excluding header.
 
 ---
 
@@ -2225,7 +2244,7 @@ Frame level bit count of the bitstream excluding header
 `AMF_VIDEO_ENCODER_STATISTIC_MV_X`
 
 **Description:**
-Accumulated absolute values of MVX
+Accumulated absolute values of MVX.
 
 ---
 
@@ -2233,7 +2252,7 @@ Accumulated absolute values of MVX
 `AMF_VIDEO_ENCODER_STATISTIC_MV_Y`
 
 **Description:**
-Accumulated absolute values of MVY
+Accumulated absolute values of MVY.
 
 ---
 
@@ -2241,7 +2260,7 @@ Accumulated absolute values of MVY
 `AMF_VIDEO_ENCODER_STATISTIC_RD_COST_FINAL`
 
 **Description:**
-Frame level final RD cost
+Frame level final RD cost.
 
 ---
 
@@ -2249,7 +2268,7 @@ Frame level final RD cost
 `AMF_VIDEO_ENCODER_STATISTIC_RD_COST_INTRA`
 
 **Description:**
-Frame level RD cost for intra mode
+Frame level RD cost for intra mode.
 
 ---
 
@@ -2257,7 +2276,7 @@ Frame level RD cost for intra mode
 `AMF_VIDEO_ENCODER_STATISTIC_RD_COST_INTER`
 
 **Description:**
-Frame level RD cost for inter mode
+Frame level RD cost for inter mode.
 
 ---
 
@@ -2265,7 +2284,7 @@ Frame level RD cost for inter mode
 `AMF_VIDEO_ENCODER_STATISTIC_SATD_FINAL`
 
 **Description:**
-Frame level final SATD
+Frame level final SATD.
 
 ---
 
@@ -2273,7 +2292,7 @@ Frame level final SATD
 `AMF_VIDEO_ENCODER_STATISTIC_SATD_INTRA`
 
 **Description:**
-Frame level SATD for intra mode
+Frame level SATD for intra mode.
 
 ---
 
@@ -2281,11 +2300,11 @@ Frame level SATD for intra mode
 `AMF_VIDEO_ENCODER_STATISTIC_SATD_INTER`
 
 **Description:**
-Frame level SATD for inter mode
+Frame level SATD for inter mode.
 
 ---
 
-### Table A-5. Encoder PSNR/SSIM feedback
+### Table A-4. Encoder PSNR/SSIM feedback
 
 | Name (prefix "AMF_VIDEO_ENCODER_") | Type   |
 | :--------------------------------- | :----- |
