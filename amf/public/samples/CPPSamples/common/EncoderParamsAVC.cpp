@@ -146,7 +146,7 @@ static AMF_RESULT ParamConverterProfileLevelAVC(const std::wstring& value, amf::
         paramValue = PV13;
     } else if(uppValue == L"2.0" || uppValue == L"20" || uppValue == L"2") {
         paramValue = PV2;
-    } else if(uppValue == L"2.1" || uppValue == L"2.1") {
+    } else if(uppValue == L"2.1" || uppValue == L"21") {
         paramValue = PV21;
     } else if(uppValue == L"2.2" || uppValue == L"22") {
         paramValue = PV22;
