@@ -55,7 +55,7 @@ namespace amf
         amf_size            cbSizeof;           // sizeof(AMFVulkanSync)
         void*               pNext;              // reserved for extensions
         VkSemaphore         hSemaphore;         // VkSemaphore; can be nullptr
-        bool                bSubmitted;         // if true - wait for hSemaphore. re-submit hSemaphore if not synced by other ways and set to true
+        amf_bool            bSubmitted;         // if true - wait for hSemaphore. re-submit hSemaphore if not synced by other ways and set to true
         VkFence             hFence;             // To sync on CPU; can be nullptr. Submitted in vkQueueSubmit. If waited for hFence, null it, do not delete or reset.
     } AMFVulkanSync;
 
