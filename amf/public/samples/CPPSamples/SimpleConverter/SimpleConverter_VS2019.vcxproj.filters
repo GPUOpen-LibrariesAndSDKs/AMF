@@ -26,6 +26,9 @@
     <ClCompile Include="..\..\..\common\TraceAdapter.cpp">
       <Filter>public\common</Filter>
     </ClCompile>
+    <ClCompile Include="..\common\SurfaceUtils.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="public">
@@ -33,6 +36,9 @@
     </Filter>
     <Filter Include="public\common">
       <UniqueIdentifier>{10a9700f-e306-4001-be78-c5f57742b726}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common">
+      <UniqueIdentifier>{69eb4c63-41bd-49fe-8c1e-97750ea2031f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -53,6 +59,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\common\TraceAdapter.h">
       <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\SurfaceUtils.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\PollingThread.h">
+      <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -148,6 +148,27 @@
     <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\VideoDecoderFFMPEGImpl.h">
       <Filter>public\src\components</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\include\components\FFMPEGEncoderH264.h">
+      <Filter>public\include\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\components\FFMPEGEncoderHEVC.h">
+      <Filter>public\include\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\BaseEncoderFFMPEGImpl.h">
+      <Filter>public\src\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\H264EncoderFFMPEGImpl.h">
+      <Filter>public\src\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\HEVCEncoderFFMPEGImpl.h">
+      <Filter>public\src\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\AV1EncoderFFMPEGImpl.h">
+      <Filter>public\src\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\components\FFMPEGEncoderAV1.h">
+      <Filter>public\include\components</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\public\common\AMFFactory.cpp">
@@ -205,6 +226,18 @@
       <Filter>public\src\components</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\VideoDecoderFFMPEGImpl.cpp">
+      <Filter>public\src\components</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\BaseEncoderFFMPEGImpl.cpp">
+      <Filter>public\src\components</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\H264EncoderFFMPEGImpl.cpp">
+      <Filter>public\src\components</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\HEVCEncoderFFMPEGImpl.cpp">
+      <Filter>public\src\components</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\AV1EncoderFFMPEGImpl.cpp">
       <Filter>public\src\components</Filter>
     </ClCompile>
   </ItemGroup>

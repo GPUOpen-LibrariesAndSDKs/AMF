@@ -73,10 +73,10 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LinkIncremental>true</LinkIncremental>
+    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>true</LinkIncremental>
+    <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\..\bin\vs2019x$(PlatformArchitecture)$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\..\bin\obj\vs2019x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
@@ -202,6 +202,8 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\common\MiscHelpers.cpp" />
+    <ClCompile Include="..\common\SurfaceGenerator.cpp" />
     <ClCompile Include="SimpleEncoder.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -211,6 +213,9 @@
     <ClInclude Include="..\..\..\common\DataStreamMemory.h" />
     <ClInclude Include="..\..\..\common\Thread.h" />
     <ClInclude Include="..\..\..\common\TraceAdapter.h" />
+    <ClInclude Include="..\common\MiscHelpers.h" />
+    <ClInclude Include="..\common\PollingThread.h" />
+    <ClInclude Include="..\common\SurfaceGenerator.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

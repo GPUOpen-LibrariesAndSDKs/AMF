@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -146,7 +146,7 @@ AMF_RESULT ParametersStorage::SetParamAsString(const std::wstring& name, const s
     if(found->second.m_Converter != NULL)
     {
         amf::AMFVariant valueConverted;
-        
+
         AMF_RESULT res = found->second.m_Converter(value, valueConverted);
         if(res != AMF_OK)
         {
@@ -219,7 +219,18 @@ std::wstring  ParametersStorage::GetParamUsage(ParamType type)
     return options;
 }
 
-
+AMF_RESULT  ParametersStorage::CopyTo(ParametersStorage* params)
+{
+    amf_size   count = GetParamCount();
+    for (amf_size i = 0; i < count; i++)
+    {
+        std::wstring name;
+        amf::AMFVariant value;
+        GetParamAt(i, name, &value);
+        params->SetParam(name.c_str(), value);
+    }
+    return AMF_OK;
+}
 
 AMF_RESULT ParamConverterVideoPresenter(const std::wstring& value, amf::AMFVariant& valueOut)
 {
@@ -241,7 +252,7 @@ AMF_RESULT ParamConverterVideoPresenter(const std::wstring& value, amf::AMFVaria
     if(uppValue == L"OPENGL"  || uppValue == L"5")
     {
         paramValue = amf::AMF_MEMORY_OPENGL;
-    }else 
+    }else
     if(uppValue == L"VULKAN"  || uppValue == L"10")
     {
         paramValue = amf::AMF_MEMORY_VULKAN;
@@ -322,7 +333,7 @@ AMF_RESULT ParamConverterFormat(const std::wstring& value, amf::AMFVariant& valu
     }else if (uppValue == L"R10G10B10A2" || uppValue == L"13") {
         paramValue = amf::AMF_SURFACE_R10G10B10A2;
     } else {
-        
+
             LOG_ERROR(L"AMF_SURFACE_FORMAT hasn't \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
     }
@@ -568,7 +579,7 @@ AMF_RESULT ParamConverterCodec(const std::wstring& value, amf::AMFVariant& value
     else if (uppValue == L"AVC" || uppValue == L"H264" || uppValue == L"H.264")
     {
         paramValue = AMFVideoEncoderVCE_AVC;
-    } 
+    }
     else if(uppValue == L"HEVC" || uppValue == L"H265" || uppValue == L"H.265")
     {
         paramValue = AMFVideoEncoder_HEVC;
@@ -577,7 +588,7 @@ AMF_RESULT ParamConverterCodec(const std::wstring& value, amf::AMFVariant& value
     {
         paramValue = AMFVideoEncoder_AV1;
     }
-    else 
+    else
     {
         LOG_ERROR(L"Invalid codec name \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
@@ -592,12 +603,12 @@ const wchar_t *StreamCodecIDtoDecoderID(AMF_STREAM_CODEC_ID_ENUM eCodec)
     {
     case AMF_STREAM_CODEC_ID_UNKNOWN: return L"";
     case AMF_STREAM_CODEC_ID_MPEG2: return AMFVideoDecoderUVD_MPEG2;
-    case AMF_STREAM_CODEC_ID_MPEG4: return AMFVideoDecoderUVD_MPEG4;      
-    case AMF_STREAM_CODEC_ID_WMV3: return AMFVideoDecoderUVD_WMV3;       
-    case AMF_STREAM_CODEC_ID_VC1: return AMFVideoDecoderUVD_VC1;        
+    case AMF_STREAM_CODEC_ID_MPEG4: return AMFVideoDecoderUVD_MPEG4;
+    case AMF_STREAM_CODEC_ID_WMV3: return AMFVideoDecoderUVD_WMV3;
+    case AMF_STREAM_CODEC_ID_VC1: return AMFVideoDecoderUVD_VC1;
     case AMF_STREAM_CODEC_ID_H264_AVC: return AMFVideoDecoderUVD_H264_AVC;
-    case AMF_STREAM_CODEC_ID_H264_MVC: return AMFVideoDecoderUVD_H264_MVC;  
-    case AMF_STREAM_CODEC_ID_H264_SVC: return AMFVideoDecoderUVD_H264_SVC;  
+    case AMF_STREAM_CODEC_ID_H264_MVC: return AMFVideoDecoderUVD_H264_MVC;
+    case AMF_STREAM_CODEC_ID_H264_SVC: return AMFVideoDecoderUVD_H264_SVC;
     case AMF_STREAM_CODEC_ID_MJPEG: return AMFVideoDecoderUVD_MJPEG;
     case AMF_STREAM_CODEC_ID_H265_HEVC: return AMFVideoDecoderHW_H265_HEVC;
     case AMF_STREAM_CODEC_ID_H265_MAIN10: return AMFVideoDecoderHW_H265_MAIN10;

@@ -63,130 +63,124 @@
 //
 // The pipeline setup is the following:
 //
-//	DisplayCapture -> Converter -> Encoder
-//											-> Muxer(writes out file)
-//	AudioCapture -> Converter -> Encoder
+//    DisplayCapture -> Converter -> Encoder
+//                                            -> Muxer(writes out file)
+//    AudioCapture -> Converter -> Encoder
 //
 // A video will still be generated if no audio is available
 //
 class DisplayDvrPipeline : public Pipeline, public ParametersStorage
 {
-	class PipelineElementEncoder;
+    class PipelineElementEncoder;
 
 public:
-	DisplayDvrPipeline();
-	virtual ~DisplayDvrPipeline();
+    DisplayDvrPipeline();
+    virtual ~DisplayDvrPipeline();
 
 public:
-	// Codec
-	static const wchar_t* PARAM_NAME_CODEC;
-	// File to write media information to
-	static const wchar_t* PARAM_NAME_OUTPUT;
+    // Codec
+    static const wchar_t* PARAM_NAME_CODEC;
+    // File to write media information to
+    static const wchar_t* PARAM_NAME_OUTPUT;
     static const wchar_t* PARAM_NAME_URL;
 
-	// GPU adapter ID
-	static const wchar_t* PARAM_NAME_ADAPTERID;
-	// Monitor index on GPU
-	static const wchar_t* PARAM_NAME_MONITORID;
+    // GPU adapter ID
+    static const wchar_t* PARAM_NAME_ADAPTERID;
+    // Monitor index on GPU
+    static const wchar_t* PARAM_NAME_MONITORID;
+    static const wchar_t* PARAM_NAME_MULTI_MONITOR;
 
-	// Video dimensions
-	static const wchar_t* PARAM_NAME_VIDEO_HEIGHT;
-	static const wchar_t* PARAM_NAME_VIDEO_WIDTH;
+    // Video dimensions
+    static const wchar_t* PARAM_NAME_VIDEO_HEIGHT;
+    static const wchar_t* PARAM_NAME_VIDEO_WIDTH;
 
-	// OpenCL Converter
-	static const wchar_t* PARAM_NAME_OPENCL_CONVERTER;
+    // OpenCL Converter
+    static const wchar_t* PARAM_NAME_OPENCL_CONVERTER;
 
-	// Capture Component
-	static const wchar_t* PARAM_NAME_CAPTURE_COMPONENT;
+    // Capture Component
+    static const wchar_t* PARAM_NAME_CAPTURE_COMPONENT;
 
 #if !defined(METRO_APP)
-	AMF_RESULT Init();
+    AMF_RESULT Init();
 #else
-	AMF_RESULT Init(const wchar_t* path, IRandomAccessStream^ inputStream, IRandomAccessStream^ outputStream,
-		ISwapChainBackgroundPanelNative* previewTarget, AMFSize swapChainPanelSize, ParametersStorage* pParams);
+    AMF_RESULT Init(const wchar_t* path, IRandomAccessStream^ inputStream, IRandomAccessStream^ outputStream,
+        ISwapChainBackgroundPanelNative* previewTarget, AMFSize swapChainPanelSize, ParametersStorage* pParams);
 #endif
 
-	// AMFComponent interface
-	virtual AMF_RESULT Stop();
-	virtual void Terminate();
+    // AMFComponent interface
+    virtual AMF_RESULT Stop();
+    virtual void Terminate();
 
-	// Method to provide a common pts for the pipeline
-	amf_pts GetCurrentPts();
+    // Method to provide a common pts for the pipeline
+    amf_pts GetCurrentPts();
 
-	// Info message for failures
-	const wchar_t*		GetErrorMsg() const { return (m_errorMsg.empty()) ? NULL : m_errorMsg.c_str(); }
+    // Info message for failures
+    const wchar_t*        GetErrorMsg() const { return (m_errorMsg.empty()) ? NULL : m_errorMsg.c_str(); }
 
-	// Format
-	amf::AMF_SURFACE_FORMAT GetConverterFormat() const;
-	void SetConverterFormat(amf::AMF_SURFACE_FORMAT format);
-
-	// Pipeline format can change
-	AMF_RESULT SwitchConverterFormat(amf::AMF_SURFACE_FORMAT format);
-
+    // Pipeline format can change
+    AMF_RESULT SwitchConverterFormat(amf_int32 index, amf::AMF_SURFACE_FORMAT format);
+    AMF_RESULT GetMonitorIDs(std::vector<amf_uint32> &monitorIDs);
+    AMF_RESULT SetMonitorIDs(const std::vector<amf_uint32>& monitorIDs);
 protected:
-	virtual void OnParamChanged(const wchar_t* name);
+    virtual void OnParamChanged(const wchar_t* name);
 
 private:
-	AMF_RESULT			InitContext(
-							const std::wstring& engineStr,
-							amf::AMF_MEMORY_TYPE engineMemoryType,
-							amf_uint32 adapterID);
+    AMF_RESULT            InitContext(
+                            const std::wstring& engineStr,
+                            amf::AMF_MEMORY_TYPE engineMemoryType,
+                            amf_uint32 adapterID);
 
-	AMF_RESULT			InitVideo(
-							amf::AMF_MEMORY_TYPE engineMemoryType,
-							amf_int32 videoWidth, amf_int32 videoHeight);
+    AMF_RESULT            InitVideo(amf_uint32 monitorID,
+                            amf::AMF_MEMORY_TYPE engineMemoryType,
+                            amf_int32 videoWidth, amf_int32 videoHeight);
 
-	AMF_RESULT			InitAudio();
+    AMF_RESULT            InitAudio();
 
-	AMF_RESULT			InitMuxer(
-							amf_bool hasDDVideoStream, amf_bool hasSessionAudioStream,
-							amf_int32& outVideoStreamIndex, amf_int32& outAudioStreamIndex);
+    AMF_RESULT            InitMuxer(
+                            amf_bool hasDDVideoStream, amf_bool hasSessionAudioStream,
+                            amf_int32& outVideoStreamIndex, amf_int32& outAudioStreamIndex);
 
-	AMF_RESULT			ConnectPipeline();
+    AMF_RESULT            ConnectPipeline();
 
-	void				SetErrorMessage(wchar_t* msg) { m_errorMsg = msg; }
+    void                SetErrorMessage(wchar_t* msg) { m_errorMsg = msg; }
+
+    AMF_RESULT            UpdateMuxerFileName();
 
 #if !defined(METRO_APP)
-	DeviceDX9                       m_deviceDX9;
+    DeviceDX9                       m_deviceDX9;
 #endif//#if !defined(METRO_APP)
-	DeviceDX11                      m_deviceDX11;
-	DeviceOpenCL                    m_deviceOpenCL;
+    DeviceDX11                      m_deviceDX11;
+    DeviceOpenCL                    m_deviceOpenCL;
 
-	amf::AMFContextPtr              m_pContext;
+    amf::AMFContextPtr              m_pContext;
 
-	// Video side
-	amf::AMFComponentPtr            m_pDisplayCapture;
-	amf::AMFComponentPtr            m_pConverter;
-	amf::AMFComponentPtr            m_pEncoder;
-	std::wstring                    m_szEncoderID;
+    // Video side
+    std::vector<amf::AMFComponentPtr>            m_pDisplayCapture;
+    std::vector<amf::AMFComponentPtr>            m_pConverter;
+    std::vector<amf::AMFComponentPtr>            m_pEncoder;
+    std::wstring                    m_szEncoderID;
 
-	// Audio side
-	amf::AMFComponentPtr            m_pAudioCapture;
-	amf::AMFComponentPtr            m_pAudioDecoder;
-	amf::AMFComponentPtr            m_pAudioConverter;
-	amf::AMFComponentPtr            m_pAudioEncoder;
+    // Audio side
+    amf::AMFComponentPtr            m_pAudioCapture;
+    amf::AMFComponentPtr            m_pAudioDecoder;
+    amf::AMFComponentPtr            m_pAudioConverter;
+    amf::AMFComponentPtr            m_pAudioEncoder;
 
-	// Muxer to bring audio and video together
-	amf::AMFComponentExPtr          m_pMuxer;
+    // Muxer to bring audio and video together
+    std::vector<amf::AMFComponentExPtr>          m_pMuxer;
 
-	// Error string
-	std::wstring                    m_errorMsg;
+    // Error string
+    std::wstring                    m_errorMsg;
 
-	// Current time for the pipeline
-	amf::AMFCurrentTimePtr          m_pCurrentTime;
+    // Current time for the pipeline
+    amf::AMFCurrentTimePtr          m_pCurrentTime;
 
-	// Converted surface format
-	amf::AMF_SURFACE_FORMAT         m_converterSurfaceFormat;
+    // Muxer indices
+    amf_int32                        m_outVideoStreamMuxerIndex;
+    amf_int32                        m_outAudioStreamMuxerIndex;
 
-	// Muxer indices
-	amf_int32	                    m_outVideoStreamMuxerIndex;
-	amf_int32	                    m_outAudioStreamMuxerIndex;
+    mutable amf::AMFCriticalSection m_sync;
 
-	void*                           m_converterInterceptor;
-
-	mutable amf::AMFCriticalSection m_sync;
-
-	bool                            m_useOpenCLConverter;
+    bool                            m_useOpenCLConverter;
 
 };
-

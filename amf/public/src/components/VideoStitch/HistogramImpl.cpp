@@ -57,27 +57,27 @@ inline static amf_uint32 AlignValue(amf_uint32 value, amf_uint32 alignment)
     return ((value + (alignment - 1)) & ~(alignment - 1));
 }
 
-static amf::AMF_KERNEL_ID   m_KernelHistogramId = -1;
-static amf::AMF_KERNEL_ID   m_KernelColorId = -1;
-static amf::AMF_KERNEL_ID   m_KernelNV12toRGBId = -1;
-static amf::AMF_KERNEL_ID   m_KernelBuildLUTId = -1;
-static amf::AMF_KERNEL_ID   m_KernelBuildLUTCenterId = -1;
-static amf::AMF_KERNEL_ID   m_KernelBuildShiftsId = -1;
+static amf::AMF_KERNEL_ID   m_KernelHistogramId = static_cast<amf::AMF_KERNEL_ID>(-1);
+static amf::AMF_KERNEL_ID   m_KernelColorId = static_cast<amf::AMF_KERNEL_ID>(-1);
+static amf::AMF_KERNEL_ID   m_KernelNV12toRGBId = static_cast<amf::AMF_KERNEL_ID>(-1);
+static amf::AMF_KERNEL_ID   m_KernelBuildLUTId = static_cast<amf::AMF_KERNEL_ID>(-1);
+static amf::AMF_KERNEL_ID   m_KernelBuildLUTCenterId = static_cast<amf::AMF_KERNEL_ID>(-1);
+static amf::AMF_KERNEL_ID   m_KernelBuildShiftsId = static_cast<amf::AMF_KERNEL_ID>(-1);
 
-static amf::AMF_KERNEL_ID   m_KernelHistogramIdBin = -1;
-static amf::AMF_KERNEL_ID   m_KernelColorIdBin = -1;
-static amf::AMF_KERNEL_ID   m_KernelNV12toRGBIdBin = -1;
-static amf::AMF_KERNEL_ID   m_KernelBuildLUTIdBin = -1;
-static amf::AMF_KERNEL_ID   m_KernelBuildLUTCenterIdBin = -1;
-static amf::AMF_KERNEL_ID   m_KernelBuildShiftsIdBin = -1;
+static amf::AMF_KERNEL_ID   m_KernelHistogramIdBin = static_cast<amf::AMF_KERNEL_ID>(-1);
+static amf::AMF_KERNEL_ID   m_KernelColorIdBin = static_cast<amf::AMF_KERNEL_ID>(-1);
+static amf::AMF_KERNEL_ID   m_KernelNV12toRGBIdBin = static_cast<amf::AMF_KERNEL_ID>(-1);
+static amf::AMF_KERNEL_ID   m_KernelBuildLUTIdBin = static_cast<amf::AMF_KERNEL_ID>(-1);
+static amf::AMF_KERNEL_ID   m_KernelBuildLUTCenterIdBin = static_cast<amf::AMF_KERNEL_ID>(-1);
+static amf::AMF_KERNEL_ID   m_KernelBuildShiftsIdBin = static_cast<amf::AMF_KERNEL_ID>(-1);
 
 
-amf::AMF_KERNEL_ID   m_KernelHistogramIdDX11 = -1;
-amf::AMF_KERNEL_ID   m_KernelColorIdDX11 = -1;
-amf::AMF_KERNEL_ID   m_KernelNV12toRGBIdDX11 = -1;
-amf::AMF_KERNEL_ID   m_KernelBuildLUTIdDX11 = -1;
-amf::AMF_KERNEL_ID   m_KernelBuildLUTCenterIdDX11 = -1;
-amf::AMF_KERNEL_ID   m_KernelBuildShiftsIdDX11 = -1;
+amf::AMF_KERNEL_ID   m_KernelHistogramIdDX11 = static_cast<amf::AMF_KERNEL_ID>(-1);
+amf::AMF_KERNEL_ID   m_KernelColorIdDX11 = static_cast<amf::AMF_KERNEL_ID>(-1);
+amf::AMF_KERNEL_ID   m_KernelNV12toRGBIdDX11 = static_cast<amf::AMF_KERNEL_ID>(-1);
+amf::AMF_KERNEL_ID   m_KernelBuildLUTIdDX11 = static_cast<amf::AMF_KERNEL_ID>(-1);
+amf::AMF_KERNEL_ID   m_KernelBuildLUTCenterIdDX11 = static_cast<amf::AMF_KERNEL_ID>(-1);
+amf::AMF_KERNEL_ID   m_KernelBuildShiftsIdDX11 = static_cast<amf::AMF_KERNEL_ID>(-1);
 
 //#define RGB_COLORSPACE
 #define LUT_CURVE_TABLE_SIZE    20
@@ -101,14 +101,13 @@ static amf_int32 CrossCorrelation(amf_int32 *data1, amf_int32 *data2, amf_int32 
 static float OneCrossCorrelation(
     __global amf_int32 *data1,    // [in]
     __global amf_int32 *data2,    // [in]
-    amf_int32 col,
     amf_int32 delay,
     amf_int32 maxdelay,
     __global HistogramParameters *params
     );
 
 // static parameters
-static HistogramParameters params = {
+static HistogramParameters histogramParams = {
     {90 , 20, 20},     // maxDistanceBetweenPeaks[3]
     217,                // whiteCutOffY
     20,                 // blackCutOffY
@@ -135,15 +134,11 @@ HistogramImpl::~HistogramImpl()
     Terminate();
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL HistogramImpl::CompileKernels(AMFCompute* pDevice, AMFComponentOptimizationCallback* pCallback)
+AMF_RESULT AMF_STD_CALL HistogramImpl::CompileKernels(AMFCompute* pDevice, AMFComponentOptimizationCallback* /* pCallback */)
 {
-    AMF_RESULT res = AMF_OK;
     static int registered = 0;
     if(!registered)
-    {
-         int count = 0;
-         int total  = 12;
-        
+    {        
          AMFPrograms *pPrograms = NULL;
          g_AMFFactory.GetFactory()->GetPrograms(&pPrograms);
         AMF_RETURN_IF_FAILED(pPrograms->RegisterKernelSource(&m_KernelHistogramId,       L"StitchHistogramMapNV12"        , "StitchHistogramMapNV12"          , HistogramCount, Histogram, 0));
@@ -203,9 +198,9 @@ AMF_RESULT AMF_STD_CALL HistogramImpl::Init(AMFCompute* pDevice, AMFContext* pCo
         AMF_RETURN_IF_FAILED(pDevice->GetKernel(m_KernelBuildLUTCenterId, &m_pKernelBuildLUTCenter));
         AMF_RETURN_IF_FAILED(pDevice->GetKernel(m_KernelBuildShiftsId, &m_pKernelBuildShifts));
     }
-    for(int i = 0; i < _countof(params.lutCurveTable); i++)
+    for(int i = 0; i < _countof(histogramParams.lutCurveTable); i++)
     {
-        params.lutCurveTable[i] = float((sin(M_PI_2 + i * M_PI / _countof(params.lutCurveTable)) + 1.0 ) / 2.0 );
+        histogramParams.lutCurveTable[i] = float((sin(M_PI_2 + i * M_PI / _countof(histogramParams.lutCurveTable)) + 1.0 ) / 2.0 );
     }
 
     amf_size histogramSize = count * (HIST_SIZE * 3 * 4 ) * sizeof(amf_uint32);
@@ -225,7 +220,7 @@ AMF_RESULT AMF_STD_CALL HistogramImpl::Init(AMFCompute* pDevice, AMFContext* pCo
             {
                 float* lut = (float*)pBufferLUTNone->GetNative() + channel * 5 * 3 * HIST_SIZE + side * 3 * HIST_SIZE + col * HIST_SIZE;
 
-                BuildOneLUT(col, 0.0f, lut, NULL, &params, 0);
+                BuildOneLUT(col, 0.0f, lut, NULL, &histogramParams, 0);
             }
         }
     }
@@ -338,7 +333,7 @@ AMF_RESULT AMF_STD_CALL HistogramImpl::Init(AMFCompute* pDevice, AMFContext* pCo
     res = m_pContext->AllocBuffer(AMF_MEMORY_HOST, sizeof(HistogramParameters) , &m_pParams);
     AMF_RETURN_IF_FAILED(res, L"AllocBuffer() failed");
 
-    memcpy(m_pParams->GetNative(), &params, m_pParams->GetSize());
+    memcpy(m_pParams->GetNative(), &histogramParams, m_pParams->GetSize());
     res = m_pParams->Convert(m_pDevice->GetMemoryType());
     AMF_RETURN_IF_FAILED(res, L"Convert() failed");
 
@@ -389,11 +384,10 @@ AMF_RESULT AMF_STD_CALL HistogramImpl::Terminate()
 }
 
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL HistogramImpl::Build(amf_int32 channel, AMFSurface* pSrcSurface, AMFRect border, AMFSurface* pBorderMap)
+AMF_RESULT AMF_STD_CALL HistogramImpl::Build(amf_int32 channel, AMFSurface* pSrcSurface, AMFRect /* border */, AMFSurface* pBorderMap)
 {
     AMF_RESULT res = AMF_OK;
     // convert to OpenCL /MCL
-    AMF_MEMORY_TYPE oldType = pSrcSurface->GetMemoryType();
     res = pSrcSurface->Convert(m_pDevice->GetMemoryType());
     AMF_RETURN_IF_FAILED(res, L"Convert(AMF_MEMORY_OPENCL) failed");
 
@@ -469,7 +463,6 @@ AMF_RESULT AMF_STD_CALL HistogramImpl::Convert(bool bColorBalance, amf_int32 cha
     AMF_RESULT res = AMF_OK;
 
     // convert to OpenCL
-    AMF_MEMORY_TYPE oldTypeSrc = pSrcSurface->GetMemoryType();
     AMF_MEMORY_TYPE oldTypeDst = pDstSurface->GetMemoryType();
     res = pSrcSurface->Convert(m_pDevice->GetMemoryType());
     AMF_RETURN_IF_FAILED(res, L"Convert(AMF_MEMORY_OPENCL) failed");
@@ -632,7 +625,7 @@ void BuildShifts(
     __global int *pCorners,
     __global int *pParams,
     amf_int32 corners,
-    amf_int32 frameCount
+    amf_int32 /* frameCount */
 )
 {
     __global struct HistogramParameters *params = (__global struct HistogramParameters *)pParams;
@@ -694,15 +687,12 @@ void BuildShifts(
                 for(amf_int32 delay = 0; delay < params->maxDistanceBetweenPeaks[col] * 2; delay++)
                 {
                     barrier  (CLK_LOCAL_MEM_FENCE);
-                    float shift =  OneCrossCorrelation(pHist[h1], pHist[h2], col, delay, params->maxDistanceBetweenPeaks[col], params);;
+                    float shift =  OneCrossCorrelation(pHist[h1], pHist[h2], delay, params->maxDistanceBetweenPeaks[col], params);;
                     float weight = 1.0f;
                     corrs[delay] = shift * weight;
                     barrier  (CLK_LOCAL_MEM_FENCE);
                 }
-                if(it_corner->index == 1)
-                {
-                    int a = 1;
-                }
+
                 float corrMax = -1.0e5f;
                 for(amf_int32 i = 0; i < params->maxDistanceBetweenPeaks[col] * 2; i++)
                 {
@@ -996,7 +986,7 @@ static AMF_RESULT WriteHistogramFloat(AMFDataStream* file, amf_int32 *data, amf_
 }
 #endif
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL HistogramImpl::Adjust(amf_int32 count, RibList   &ribs, CornerList &corners, float *correction)
+AMF_RESULT AMF_STD_CALL HistogramImpl::Adjust(amf_int32 count, RibList & /* ribs */, CornerList& corners, float* /* correction */)
 {
     AMF_RESULT res = AMF_OK;
 
@@ -1123,9 +1113,9 @@ AMF_RESULT AMF_STD_CALL HistogramImpl::Adjust(amf_int32 count, RibList   &ribs, 
     amf_int32 maxDist = 0;
     for(int i = 0; i < 3; i++)
     {
-        if(maxDist < params.maxDistanceBetweenPeaks[i])
+        if(maxDist < histogramParams.maxDistanceBetweenPeaks[i])
         {
-            maxDist = params.maxDistanceBetweenPeaks[i];
+            maxDist = histogramParams.maxDistanceBetweenPeaks[i];
         }
     }
 
@@ -1249,9 +1239,9 @@ AMF_RESULT AMF_STD_CALL HistogramImpl::Adjust(amf_int32 count, RibList   &ribs, 
     float* pLUT = (float*)m_pBufferLUT->GetNative();
     float* pLUTPrev = (float*)m_pBufferLUTPrev->GetNative();
 
-    BuildShifts(pShifts,pOutHist, (amf_int32 *)m_pCorners->GetNative(), (amf_int32 *)&params, (amf_int32)corners.size(), (amf_int32)m_iFrameCount);
-    BuildLUT(pLUT, pLUTPrev, pBrightness, pShifts, (amf_int32 *)m_pCorners->GetNative(), (amf_int32 *)&params, (amf_int32)corners.size(), (amf_int32)m_iFrameCount);
-    BuildLUTCenter(pLUT,pLUTPrev, pBrightness, (amf_int32 *)&params, count, (amf_int32)m_iFrameCount);
+    BuildShifts(pShifts,pOutHist, (amf_int32 *)m_pCorners->GetNative(), (amf_int32 *)&histogramParams, (amf_int32)corners.size(), (amf_int32)m_iFrameCount);
+    BuildLUT(pLUT, pLUTPrev, pBrightness, pShifts, (amf_int32 *)m_pCorners->GetNative(), (amf_int32 *)&histogramParams, (amf_int32)corners.size(), (amf_int32)m_iFrameCount);
+    BuildLUTCenter(pLUT,pLUTPrev, pBrightness, (amf_int32 *)&histogramParams, count, (amf_int32)m_iFrameCount);
 
     m_pBufferLUT->Convert(m_pDevice->GetMemoryType());
 
@@ -1281,7 +1271,6 @@ AMF_RESULT AMF_STD_CALL HistogramImpl::Adjust(amf_int32 count, RibList   &ribs, 
 static float OneCrossCorrelation(
     __global amf_int32 *data1,    // [in]
     __global amf_int32 *data2,    // [in]
-    amf_int32 col,
     amf_int32 delay,
     amf_int32 maxdelay,
     __global HistogramParameters *params
@@ -1388,10 +1377,10 @@ AMF_RESULT HistogramImpl::CreateBufferFromDX11Native(
 }
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT HistogramImpl::CreateBufferFromDX11Native(
-    const D3D11_BUFFER_DESC* pDesc,
-    D3D11_SUBRESOURCE_DATA* pInitData,
-    amf_uint64 format,
-    AMFBuffer** ppBuffer)
+    const D3D11_BUFFER_DESC* /* pDesc */,
+    D3D11_SUBRESOURCE_DATA* /* pInitData */,
+    amf_uint64 /* format */,
+    AMFBuffer** /* ppBuffer */)
 {
 //this code will be enabled once the context.h is updated.
 #if 0

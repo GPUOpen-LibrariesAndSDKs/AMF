@@ -73,12 +73,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LinkIncremental>true</LinkIncremental>
+    <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\..\bin\vs2019x$(PlatformArchitecture)$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\..\bin\obj\vs2019x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>true</LinkIncremental>
+    <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\..\bin\vs2019x$(PlatformArchitecture)$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\..\bin\obj\vs2019x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
@@ -218,8 +218,8 @@
     <ClCompile Include="..\common\EncoderParamsHEVC.cpp" />
     <ClCompile Include="..\common\ParametersStorage.cpp" />
     <ClCompile Include="..\common\RawStreamReader.cpp" />
+    <ClCompile Include="..\common\SurfaceGenerator.cpp" />
     <ClCompile Include="EncoderLatency.cpp" />
-    <ClCompile Include="SurfaceGenerator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\AMFFactory.h" />
@@ -235,8 +235,9 @@
     <ClInclude Include="..\common\EncoderParamsHEVC.h" />
     <ClInclude Include="..\common\ParametersStorage.h" />
     <ClInclude Include="..\common\PipelineDefines.h" />
+    <ClInclude Include="..\common\PollingThread.h" />
     <ClInclude Include="..\common\RawStreamReader.h" />
-    <ClInclude Include="SurfaceGenerator.h" />
+    <ClInclude Include="..\common\SurfaceGenerator.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

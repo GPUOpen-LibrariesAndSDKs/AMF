@@ -39,9 +39,39 @@
 #include <DirectXMath.h>
 
 #include <vector>
+#include <runtime/include/core/Typedefs.h>
+
 //#define DEBUG_TRANSPARENT
 namespace amf
 {
+
+template<class _Ty, int _Al>
+class amf_aligned_allocator : public std::allocator<_Ty>
+{
+public:
+    amf_aligned_allocator() : std::allocator<_Ty>()
+    {}
+    amf_aligned_allocator(const amf_aligned_allocator<_Ty, _Al>& rhs) : std::allocator<_Ty>(rhs)
+    {}
+    template<class _Other, int _OtherAl> amf_aligned_allocator(const amf_aligned_allocator<_Other, _OtherAl>& rhs) : std::allocator<_Ty>(rhs)
+    {}
+    template<class _Other> struct rebind // convert an allocator<_Ty> to an allocator <_Other>
+    {
+        typedef amf_aligned_allocator<_Other, alignof(_Other)> other;
+    };
+    void deallocate(typename std::allocator<_Ty>::pointer _Ptr, typename std::allocator<_Ty>::size_type)
+    {
+        amf_aligned_free((void*)_Ptr);
+    }
+    typename std::allocator<_Ty>::pointer allocate(typename std::allocator<_Ty>::size_type _Count)
+    { // allocate array of _Count el ements
+        return static_cast<typename std::allocator<_Ty>::pointer>(amf_aligned_alloc(_Count * sizeof(_Ty), _Al));
+    }
+};
+
+template<class _Ty, int _Al>
+using AlignedVector = std::vector<_Ty, amf_aligned_allocator<_Ty, _Al>>;
+
 
 class StitchEngineBase : public AMFInterfaceImpl<AMFInterface>
 {
@@ -113,8 +143,8 @@ protected:
         std::vector<amf_uint32> &verticesRowSize,
         AMFRect &borderRect, 
         DirectX::XMVECTOR &texRect, 
-        std::vector<DirectX::XMVECTOR> &sides,
-        std::vector<DirectX::XMVECTOR> &corners,
+        AlignedVector<DirectX::XMVECTOR, alignof(DirectX::XMVECTOR)> &sides,
+        AlignedVector<DirectX::XMVECTOR, alignof(DirectX::XMVECTOR)> &corners,
         DirectX::XMVECTOR &plane,
         DirectX::XMVECTOR &planeCenter,
         AMFSurface **ppBorderMap

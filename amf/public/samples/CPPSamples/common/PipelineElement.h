@@ -36,6 +36,7 @@
 #include "public/include/components/Component.h"
 #include "public/common/DataStream.h"
 #include "public/common/Thread.h"
+#include "SurfaceUtils.h"
 #include "CmdLogger.h"
 #include <vector>
 
@@ -178,9 +179,7 @@ public:
             for(amf_size i = 0; i < pSurface->GetPlanesCount(); i++)
             {
                 amf::AMFPlanePtr pPlane = pSurface->GetPlaneAt(i);
-                amf_size towrite = ((amf_size)pPlane->GetOffsetY() + (amf_size)pPlane->GetHeight()) * (amf_size)pPlane->GetHPitch();
-                amf_size written = 0;
-               m_pDataStream->Write(pPlane->GetNative(), towrite, &written);
+                res = WritePlane(pPlane, m_pDataStream);
             }
             m_framesWritten++;
         }

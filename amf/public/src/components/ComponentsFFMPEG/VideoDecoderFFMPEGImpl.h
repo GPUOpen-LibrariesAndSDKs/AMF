@@ -34,8 +34,9 @@
 
 #include "public/include/components/Component.h"
 #include "public/include/components/FFMPEGVideoDecoder.h"
-#include "public/common/PropertyStorageExImpl.h"
+#include "public/include/components/ColorSpace.h"
 #include "public/include/core/Context.h"
+#include "public/common/PropertyStorageExImpl.h"
 
 extern "C"
 {
@@ -46,11 +47,15 @@ extern "C"
 
     #include "libavformat/avformat.h"
     #include "libavcodec/avcodec.h"
+    #include "libavutil/imgutils.h"
+    #include "libavutil/mastering_display_metadata.h"
 
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
 }
+
+#include <list>
 
 
 namespace amf
@@ -74,6 +79,7 @@ namespace amf
         AMFVideoDecoderFFMPEGImpl(AMFContext* pContext);
         virtual ~AMFVideoDecoderFFMPEGImpl();
 
+
         // AMFComponent interface
         virtual AMF_RESULT  AMF_STD_CALL  Init(AMF_SURFACE_FORMAT format, amf_int32 width, amf_int32 height);
         virtual AMF_RESULT  AMF_STD_CALL  ReInit(amf_int32 width, amf_int32 height);
@@ -83,8 +89,8 @@ namespace amf
 
         virtual AMF_RESULT  AMF_STD_CALL  SubmitInput(AMFData* pData);
         virtual AMF_RESULT  AMF_STD_CALL  QueryOutput(AMFData** ppData);
-        virtual AMFContext* AMF_STD_CALL  GetContext()                                              {  return m_pContext;  };
-        virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* callback) { m_pOutputDataCallback = callback;  return AMF_OK; };
+        virtual AMFContext* AMF_STD_CALL  GetContext()                                                  {  return m_pContext;  };
+        virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* callback)        {  m_pOutputDataCallback = callback;  return AMF_OK; };
         virtual AMF_RESULT  AMF_STD_CALL  GetCaps(AMFCaps** /*ppCaps*/)                                 {  return AMF_NOT_SUPPORTED;  };
         virtual AMF_RESULT  AMF_STD_CALL  Optimize(AMFComponentOptimizationCallback* /*pCallback*/)     {  return AMF_OK;  };
 
@@ -94,32 +100,53 @@ namespace amf
 
 
     protected:
-        bool       AMF_STD_CALL  ReadAVPacketInfo(AMFBuffer* pBuffer, AVPacket *pPacket);
-        amf_pts    AMF_STD_CALL  GetPtsFromFFMPEG(AMFBuffer* pBuffer, AVFrame *pFrame);
-        AMF_RESULT AMF_STD_CALL  CopyFrameRGB_FP16(amf_uint8* pMemOut, amf_uint8* pMemIn, amf_int32 iPixelFormat,
-                                    amf_size uPitchIn, amf_size uPitchOut, amf_size uWidth, amf_size uHeight);
+        amf_int64  AMF_STD_CALL  GetColorPrimaries(AVColorPrimaries colorPrimaries);
+        amf_int64  AMF_STD_CALL  GetColorTransfer(AVColorTransferCharacteristic colorTransfer);
+        amf_int64  AMF_STD_CALL  GetColorRange(AVColorRange colorRange);
+        AMF_RESULT AMF_STD_CALL  GetHDRInfo(const AVMasteringDisplayMetadata* pInFFmpegMetadata, AMFHDRMetadata* pAMFHDRInfo);
+        AMF_RESULT AMF_STD_CALL  GetColorInfo(AMFSurface* pSurfaceOut, const AVFrame& picture);
+
+        AMF_RESULT AMF_STD_CALL  CopyFrameThreaded(AMFPlane* pPlane, const AVFrame& picture, amf_int threadCount, bool isUVPlane);
+        AMF_RESULT AMF_STD_CALL  CopyFrameYUV422(AMFPlane* pPlane, const AVFrame& picture);
+        AMF_RESULT AMF_STD_CALL  CopyFrameYUV444(AMFPlane* pPlane, const AVFrame& picture);
+        AMF_RESULT AMF_STD_CALL  CopyFrameRGB_FP16(AMFPlane* pPlane, const AVFrame& picture);
+        AMF_RESULT AMF_STD_CALL  CopyFrameUV(AMFPlane* pPlaneUV, const AVFrame& picture, amf_int32 paddedLSB);
+        AMF_RESULT AMF_STD_CALL  CopyLineLSB(amf_uint8* pMemOut, const amf_uint8* pMemIn, amf_size sizeToCopy, amf_int32 paddedLSB);
+
+
+        virtual AMF_RESULT AMF_STD_CALL  SubmitDebug(AVCodecContext* /*pCodecContext*/, AVPacket& /*avpkt*/)                                            {  return AMF_OK;  };
+        virtual AMF_RESULT AMF_STD_CALL  RetrieveDebug(const AVCodecContext* /*pCodecContext*/, const AVFrame& /*picture*/, AMFData* /*pOutputData*/)   {  return AMF_OK;  };
+
 
     private:
         mutable AMFCriticalSection  m_sync;
 
-        AMFContextPtr           m_pContext;
-        bool                    m_bDecodingEnabled;
-        bool                    m_bForceEof;
 
-        AVPacket                m_avpkt;
-        AVCodecContext*         m_pCodecContext;
-        amf_pts                 m_SeekPts;
+      // in QueryOutput, we want to make sure that we match the 
+      // input frame that went in with what's coming out, so we 
+      // copy the right properties to the right data going out 
+      struct AMFTransitFrame
+      {
+          AMFDataPtr  pData;
+          amf_int64   id;
+      };
 
-        AMFBufferPtr            pExtraData;
-        AMFBufferPtr            m_pInputData;
-        amf_size                m_iLastDataOffset;
-        amf_pts                 m_ptsLastDataOffset;
 
-        amf_int64               m_videoFrameSubmitCount;
-        amf_int64               m_videoFrameQueryCount;
+        AMFContextPtr               m_pContext;
+        bool                        m_bDecodingEnabled;
+        bool                        m_bEof;
 
-        AMF_SURFACE_FORMAT      m_eFormat;
-        AMFRate                 m_FrameRate;
+        AVCodecContext*             m_pCodecContext;
+        amf_pts                     m_SeekPts;
+
+        AMFBufferPtr                m_pExtraData;
+        std::list<AMFTransitFrame>  m_inputData;
+
+        amf_int64                   m_videoFrameSubmitCount;
+        amf_int64                   m_videoFrameQueryCount;
+
+        AMF_SURFACE_FORMAT          m_eFormat;
+        AMFRate                     m_FrameRate;
 
         AMFDataAllocatorCBPtr       m_pOutputDataCallback;
 

@@ -38,6 +38,12 @@
     <ClCompile Include="..\common\BitStreamParserIVF.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="..\common\MiscHelpers.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\SurfaceUtils.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\common\BitStreamParser.h">
@@ -72,6 +78,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\common\ByteArray.h">
       <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\MiscHelpers.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\SurfaceUtils.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\PollingThread.h">
+      <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

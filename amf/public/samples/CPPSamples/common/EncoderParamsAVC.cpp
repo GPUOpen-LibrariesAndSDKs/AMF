@@ -332,6 +332,7 @@ AMF_RESULT RegisterEncoderParamsAVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD, ParamEncoderStatic, L"Rate Control Method (CQP, CBR, VBR, VBR_LAT, QVBR default = depends on USAGE)", ParamConverterRateControlAVC);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_LOWLATENCY_MODE, ParamEncoderStatic, L"Enables low latency mode and POC mode 2 in the encoder (bool, default = false)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_QVBR_QUALITY_LEVEL, ParamEncoderStatic, L"QVBR Quality Level (integer, default = 23)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_INTRA_PERIOD, ParamEncoderStatic, L"The distance between two intra frames (in frames, default = 0)", ParamConverterInt64);
 
     // color conversion
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_COLOR_BIT_DEPTH, ParamEncoderStatic, L"8 bit (integer, default = 8)", ParamConverterInt64);
@@ -348,7 +349,7 @@ AMF_RESULT RegisterEncoderParamsAVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_MAX_AU_SIZE, ParamEncoderDynamic, L"Max AU Size (in bits, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_TARGET_BITRATE, ParamEncoderDynamic, L"Target bit rate (in bits, default = depends on USAGE)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_PEAK_BITRATE, ParamEncoderDynamic, L"Peak bit rate (in bits, default = depends on USAGE)", ParamConverterInt64);
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_B_PIC_PATTERN, ParamEncoderDynamic, L"B-picture Pattern (number of B-Frames, default = 3)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_B_PIC_PATTERN, ParamEncoderDynamic, L"B-picture Pattern (number of B-Frames, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_SLICES_PER_FRAME, ParamEncoderDynamic, L"Slices Per Frame (integer, default = 1)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_INTRA_REFRESH_NUM_MBS_PER_SLOT, ParamEncoderDynamic, L"Intra Refresh MBs Number Per Slot (in Macroblocks, default = depends on USAGE)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_INITIAL_VBV_BUFFER_FULLNESS, ParamEncoderDynamic, L"Initial VBV Buffer Fullness (integer, 0=0% 64=100% , default = 64)", ParamConverterInt64);

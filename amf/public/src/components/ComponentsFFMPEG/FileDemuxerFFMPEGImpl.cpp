@@ -31,6 +31,22 @@
 // THE SOFTWARE.
 //
 
+extern "C"
+{
+#if defined(_MSC_VER)
+    #pragma warning(push)
+    #pragma warning(disable:4244) // possible loss of data with conversion
+#endif
+
+    // This includes winsock2.h first so windows.h cannot be
+    // included first otherwise there will be linker errors
+    #include "libavformat/internal.h"
+
+#if defined(_MSC_VER)
+    #pragma warning(pop)
+#endif
+}
+
 #include "FileDemuxerFFMPEGImpl.h"
 #include "UtilsFFMPEG.h"
 #include <float.h>
@@ -41,7 +57,6 @@
 #include "public/common/TraceAdapter.h"
 #include "public/common/AMFFactory.h"
 #include "public/common/DataStream.h"
-
 
 #define AMF_FACILITY L"AMFFileDemuxerFFMPEGImpl"
 
@@ -64,6 +79,7 @@ static const AMFEnumDescriptionEntry VIDEO_CODEC_IDS_ENUM[] =
     { AMF_STREAM_CODEC_ID_VP9, AMFVideoDecoderHW_VP9},
     { AMF_STREAM_CODEC_ID_VP9_10BIT, AMFVideoDecoderHW_VP9_10BIT},
 	{ AMF_STREAM_CODEC_ID_AV1, AMFVideoDecoderHW_AV1},
+    { AMF_STREAM_CODEC_ID_AV1_12BIT, AMFVideoDecoderHW_AV1_12BIT},
     { 0, 0 }
 };
 
@@ -110,42 +126,6 @@ const AMFEnumDescriptionEntry AMF_STREAM_TYPE_ENUM_DESCRIPTION[] =
     {AMF_STREAM_AUDIO,     L"Audio"},
     {AMF_STREAM_DATA,      L"Data"},
     { AMF_STREAM_UNKNOWN   , 0 }  // This is end of description mark
-};
-
-struct FormatMap
-{
-    AVPixelFormat ffmpegFormat;
-    amf::AMF_SURFACE_FORMAT amfFormat;
-    FormatMap(AVPixelFormat ffmpeg,
-        amf::AMF_SURFACE_FORMAT amf) :ffmpegFormat(ffmpeg), amfFormat(amf){}
-}
-
-static const sFormatMap[] =
-{
-    FormatMap(AV_PIX_FMT_NONE,    AMF_SURFACE_UNKNOWN),
-    FormatMap(AV_PIX_FMT_NV12,    AMF_SURFACE_NV12),
-    FormatMap(AV_PIX_FMT_YUV420P, AMF_SURFACE_NV12),
-    FormatMap(AV_PIX_FMT_BGRA,    AMF_SURFACE_BGRA),
-    FormatMap(AV_PIX_FMT_ARGB,    AMF_SURFACE_ARGB),
-    FormatMap(AV_PIX_FMT_RGBA,    AMF_SURFACE_RGBA),
-    FormatMap(AV_PIX_FMT_GRAY8,   AMF_SURFACE_GRAY8),
-    FormatMap(AV_PIX_FMT_YUV420P, AMF_SURFACE_NV12),
-    FormatMap(AV_PIX_FMT_BGR0,    AMF_SURFACE_BGRA),
-    FormatMap(AV_PIX_FMT_YUV420P, AMF_SURFACE_YV12),
-
-    FormatMap(AV_PIX_FMT_YUYV422,     AMF_SURFACE_YUY2),
-    FormatMap(AV_PIX_FMT_P010,        AMF_SURFACE_P010),
-    FormatMap(AV_PIX_FMT_YUV420P10,   AMF_SURFACE_P010),
-    FormatMap(AV_PIX_FMT_YUV420P12,   AMF_SURFACE_P012),
-    FormatMap(AV_PIX_FMT_YUV420P16,   AMF_SURFACE_P016),
-    FormatMap(AV_PIX_FMT_YUV422P10LE, AMF_SURFACE_Y210),
-    FormatMap(AV_PIX_FMT_YUV444P10LE, AMF_SURFACE_Y416),
-    FormatMap(AV_PIX_FMT_RGBA64LE,    AMF_SURFACE_RGBA_F16), //EXR
-    FormatMap(AV_PIX_FMT_RGB48LE,     AMF_SURFACE_RGBA_F16), //EXR
-    FormatMap(AV_PIX_FMT_RGB48BE,     AMF_SURFACE_RGBA_F16), //PNG
-
-    //FormatMap(PIX_FMT_YUV422P, AMF_SURFACE_YUV422P),
-    //FormatMap(PIX_FMT_YUVJ422P, AMF_SURFACE_YUV422P)
 };
 
 
@@ -294,7 +274,7 @@ AMFFileDemuxerFFMPEGImpl::AMFVideoOutputDemuxerImpl::AMFVideoOutputDemuxerImpl(A
 
     // determine codec ID
     amf_int  codecID = AV_CODEC_ID_NONE;
-    switch (ist->codec->codec_id)
+    switch (ist->codecpar->codec_id)
     {
         case AV_CODEC_ID_MPEG2VIDEO :
         case AV_CODEC_ID_MPEG4 :
@@ -305,7 +285,7 @@ AMFFileDemuxerFFMPEGImpl::AMFVideoOutputDemuxerImpl::AMFVideoOutputDemuxerImpl(A
         case AV_CODEC_ID_HEVC :
         case AV_CODEC_ID_VP9 :
 		case AV_CODEC_ID_AV1:
-            codecID = ist->codec->codec_id;
+            codecID = ist->codecpar->codec_id;
             break;
 
         default:
@@ -319,35 +299,27 @@ AMFFileDemuxerFFMPEGImpl::AMFVideoOutputDemuxerImpl::AMFVideoOutputDemuxerImpl(A
     {
         pixelAspectRatio = (amf_double)ist->sample_aspect_ratio.num / (amf_double)ist->sample_aspect_ratio.den;
     }
-    else if (ist->codec->sample_aspect_ratio.den != 0 && ist->codec->sample_aspect_ratio.num != 0)
+    else if (ist->codecpar->sample_aspect_ratio.den != 0 && ist->codecpar->sample_aspect_ratio.num != 0)
     {
-        pixelAspectRatio = (amf_double)ist->codec->sample_aspect_ratio.num / (amf_double)ist->codec->sample_aspect_ratio.den;
+        pixelAspectRatio = (amf_double)ist->codecpar->sample_aspect_ratio.num / (amf_double)ist->codecpar->sample_aspect_ratio.den;
     }
 
     // allocate a buffer to store the extra data
     AMFBufferPtr spBuffer;
-    if(ist->codec->extradata_size > 0)
+    if(ist->codecpar->extradata_size > 0)
     { 
-        AMF_RESULT err = m_pHost->m_pContext->AllocBuffer(AMF_MEMORY_HOST, ist->codec->extradata_size, &spBuffer);
+        AMF_RESULT err = m_pHost->m_pContext->AllocBuffer(AMF_MEMORY_HOST, ist->codecpar->extradata_size, &spBuffer);
         if ((err == AMF_OK) && spBuffer->GetNative())
         {
-            memcpy(spBuffer->GetNative(), ist->codec->extradata, ist->codec->extradata_size);
+            memcpy(spBuffer->GetNative(), ist->codecpar->extradata, ist->codecpar->extradata_size);
         }
     }
 
     //handle h264, NV12
-    AVPixelFormat pix_fmt = (ist->codec->pix_fmt == AV_PIX_FMT_NONE) ? AV_PIX_FMT_NV12 : ist->codec->pix_fmt;
+    AVPixelFormat pix_fmt = (ist->codecpar->format == AV_PIX_FMT_NONE) ? AV_PIX_FMT_NV12 : (AVPixelFormat)ist->codecpar->format;
 
     // figure out the surface format conversion
-    AMF_SURFACE_FORMAT  surfaceFormat = AMF_SURFACE_UNKNOWN;
-    for (amf_size i = 0; i < amf_countof(sFormatMap); i += 1)
-    {
-        if (sFormatMap[i].ffmpegFormat == pix_fmt)
-        {
-            surfaceFormat = sFormatMap[i].amfFormat;
-            break;
-        }
-    }
+    AMF_SURFACE_FORMAT  surfaceFormat = GetAMFSurfaceFormat(pix_fmt);
 
     if(surfaceFormat == AMF_SURFACE_P010 && codecID == AV_CODEC_ID_HEVC)
     {
@@ -357,8 +329,12 @@ AMFFileDemuxerFFMPEGImpl::AMFVideoOutputDemuxerImpl::AMFVideoOutputDemuxerImpl(A
     {
          codecID = AMF_CODEC_VP9_10BIT;
     }
+    if (surfaceFormat == AMF_SURFACE_P012 && codecID == AV_CODEC_ID_AV1)
+    {
+        codecID = AMF_CODEC_AV1_12BIT;
+    }
 
-    AMFSize frame = AMFConstructSize(ist->codec->width, ist->codec->height);
+    AMFSize frame = AMFConstructSize(ist->codecpar->width, ist->codecpar->height);
 
     AMFPrimitivePropertyInfoMapBegin
         AMFPropertyInfoEnum(AMF_STREAM_TYPE, L"Stream Type", AMF_STREAM_VIDEO, AMF_STREAM_TYPE_ENUM_DESCRIPTION, false),
@@ -370,16 +346,16 @@ AMFFileDemuxerFFMPEGImpl::AMFVideoOutputDemuxerImpl::AMFVideoOutputDemuxerImpl(A
         AMFPropertyInfoSize(AMF_STREAM_VIDEO_FRAME_SIZE, L"Frame Size", frame, AMFConstructSize(0, 0), AMFConstructSize(INT_MAX, INT_MAX), false),
         AMFPropertyInfoEnum(AMF_STREAM_VIDEO_FORMAT, L"Surface Format", surfaceFormat, AMF_OUTPUT_FORMATS_ENUM, false),
         AMFPropertyInfoDouble(FFMPEG_DEMUXER_VIDEO_PIXEL_ASPECT_RATIO, L"Pixel Aspect Ratio", pixelAspectRatio, 0, DBL_MAX, false),
-        AMFPropertyInfoInt64(FFMPEG_DEMUXER_VIDEO_CODEC,    L"FFMPEG codec", ist->codec->codec_id, AV_CODEC_ID_NONE, AV_CODEC_ID_WRAPPED_AVFRAME, false),
+        AMFPropertyInfoInt64(FFMPEG_DEMUXER_VIDEO_CODEC,    L"FFMPEG codec", ist->codecpar->codec_id, AV_CODEC_ID_NONE, AV_CODEC_ID_WRAPPED_AVFRAME, false),
         AMFPrimitivePropertyInfoMapEnd
 
     SetProperty(AMF_STREAM_CODEC_ID, GetAMFVideoFormat(AVCodecID(codecID)));
-    SetProperty(AMF_STREAM_BIT_RATE, ist->codec->bit_rate);
+    SetProperty(AMF_STREAM_BIT_RATE, ist->codecpar->bit_rate);
     SetProperty(AMF_STREAM_VIDEO_FRAME_RATE, AMFConstructRate(ist->r_frame_rate.num, ist->r_frame_rate.den));
     SetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, frame);
     SetProperty(AMF_STREAM_VIDEO_FORMAT, surfaceFormat);
     SetProperty(FFMPEG_DEMUXER_VIDEO_PIXEL_ASPECT_RATIO, pixelAspectRatio);
-    SetProperty(FFMPEG_DEMUXER_VIDEO_CODEC, ist->codec->codec_id);
+    SetProperty(FFMPEG_DEMUXER_VIDEO_CODEC, ist->codecpar->codec_id);
     AMFPropertyStorage::SetProperty(AMF_STREAM_EXTRA_DATA, spBuffer);
 }
 
@@ -397,50 +373,50 @@ AMFFileDemuxerFFMPEGImpl::AMFAudioOutputDemuxerImpl::AMFAudioOutputDemuxerImpl(A
 {
     const AVStream* ist = pHost->m_pInputContext->streams[index];
 
-//    AMF_ASSERT_OK(ist->codec->codec_type == AVMEDIA_TYPE_AUDIO);
+//    AMF_ASSERT_OK(ist->codecpar->codec_type == AVMEDIA_TYPE_AUDIO);
 
 
     // allocate a buffer to store the extra data
     AMFBufferPtr spBuffer;
-    if(ist->codec->extradata_size != 0)
+    if(ist->codecpar->extradata_size != 0)
     { 
-    AMF_RESULT err = m_pHost->m_pContext->AllocBuffer(AMF_MEMORY_HOST, ist->codec->extradata_size, &spBuffer);
+    AMF_RESULT err = m_pHost->m_pContext->AllocBuffer(AMF_MEMORY_HOST, ist->codecpar->extradata_size, &spBuffer);
     if ((err == AMF_OK) && spBuffer->GetNative())
     {
-        memcpy(spBuffer->GetNative(), ist->codec->extradata, ist->codec->extradata_size);
+        memcpy(spBuffer->GetNative(), ist->codecpar->extradata, ist->codecpar->extradata_size);
     }
     }
     // figure out the surface format conversion
-    AMF_AUDIO_FORMAT  audioFormat = GetAMFAudioFormat(ist->codec->sample_fmt);
+    AMF_AUDIO_FORMAT  audioFormat = GetAMFAudioFormat((AVSampleFormat)ist->codecpar->format);
 
-    if(ist->codec->channels == 0) // ffmpeg return 0 for some AAC files 
+    if(ist->codecpar->channels == 0) // ffmpeg return 0 for some AAC files 
     {
-        ist->codec->channels = 2;
+        ist->codecpar->channels = 2;
     }
 
 
     AMFPrimitivePropertyInfoMapBegin
         AMFPropertyInfoEnum(AMF_STREAM_TYPE, L"Stream Type", AMF_STREAM_AUDIO, AMF_STREAM_TYPE_ENUM_DESCRIPTION, false),
         AMFPropertyInfoBool(AMF_STREAM_ENABLED, L"Enabled", false, true),
-        AMFPropertyInfoInt64(AMF_STREAM_CODEC_ID, L"Codec ID", ist->codec->codec_id, AV_CODEC_ID_NONE, INT_MAX, false),
-        AMFPropertyInfoInt64(AMF_STREAM_BIT_RATE, L"Bit Rate", ist->codec->bit_rate, 0, INT_MAX, false),
+        AMFPropertyInfoInt64(AMF_STREAM_CODEC_ID, L"Codec ID", ist->codecpar->codec_id, AV_CODEC_ID_NONE, INT_MAX, false),
+        AMFPropertyInfoInt64(AMF_STREAM_BIT_RATE, L"Bit Rate", ist->codecpar->bit_rate, 0, INT_MAX, false),
         AMFPropertyInfoInterface(AMF_STREAM_EXTRA_DATA, L"Extra Data", NULL, false),
-        AMFPropertyInfoInt64(AMF_STREAM_AUDIO_SAMPLE_RATE, L"Sample Rate", ist->codec->sample_rate, 0, INT_MAX, false),
-        AMFPropertyInfoInt64(AMF_STREAM_AUDIO_CHANNELS, L"Channels", ist->codec->channels, 0, 100, false),
+        AMFPropertyInfoInt64(AMF_STREAM_AUDIO_SAMPLE_RATE, L"Sample Rate", ist->codecpar->sample_rate, 0, INT_MAX, false),
+        AMFPropertyInfoInt64(AMF_STREAM_AUDIO_CHANNELS, L"Channels", ist->codecpar->channels, 0, 100, false),
         AMFPropertyInfoEnum(AMF_STREAM_AUDIO_FORMAT, L"Sample Format", audioFormat, AMF_SAMPLE_FORMAT_ENUM_DESCRIPTION, false),
-        AMFPropertyInfoInt64(AMF_STREAM_AUDIO_CHANNEL_LAYOUT, L"Channel Layout", ist->codec->channel_layout, 0, INT_MAX, false),
-        AMFPropertyInfoInt64(AMF_STREAM_AUDIO_BLOCK_ALIGN, L"Block Align", ist->codec->block_align, 0, INT_MAX, false),
-        AMFPropertyInfoInt64(AMF_STREAM_AUDIO_FRAME_SIZE, L"Frame Size", ist->codec->frame_size, 0, INT_MAX, false),
+        AMFPropertyInfoInt64(AMF_STREAM_AUDIO_CHANNEL_LAYOUT, L"Channel Layout", ist->codecpar->channel_layout, 0, INT_MAX, false),
+        AMFPropertyInfoInt64(AMF_STREAM_AUDIO_BLOCK_ALIGN, L"Block Align", ist->codecpar->block_align, 0, INT_MAX, false),
+        AMFPropertyInfoInt64(AMF_STREAM_AUDIO_FRAME_SIZE, L"Frame Size", ist->codecpar->frame_size, 0, INT_MAX, false),
     AMFPrimitivePropertyInfoMapEnd
 
-    SetProperty(AMF_STREAM_CODEC_ID, ist->codec->codec_id);
-    SetProperty(AMF_STREAM_BIT_RATE, ist->codec->bit_rate);
-    SetProperty(AMF_STREAM_AUDIO_SAMPLE_RATE, ist->codec->sample_rate);
-    SetProperty(AMF_STREAM_AUDIO_CHANNELS, ist->codec->channels);
+    SetProperty(AMF_STREAM_CODEC_ID, ist->codecpar->codec_id);
+    SetProperty(AMF_STREAM_BIT_RATE, ist->codecpar->bit_rate);
+    SetProperty(AMF_STREAM_AUDIO_SAMPLE_RATE, ist->codecpar->sample_rate);
+    SetProperty(AMF_STREAM_AUDIO_CHANNELS, ist->codecpar->channels);
     SetProperty(AMF_STREAM_AUDIO_FORMAT, audioFormat);
-    SetProperty(AMF_STREAM_AUDIO_CHANNEL_LAYOUT, ist->codec->channel_layout);
-    SetProperty(AMF_STREAM_AUDIO_BLOCK_ALIGN, ist->codec->block_align);
-    SetProperty(AMF_STREAM_AUDIO_FRAME_SIZE, ist->codec->frame_size);
+    SetProperty(AMF_STREAM_AUDIO_CHANNEL_LAYOUT, ist->codecpar->channel_layout);
+    SetProperty(AMF_STREAM_AUDIO_BLOCK_ALIGN, ist->codecpar->block_align);
+    SetProperty(AMF_STREAM_AUDIO_FRAME_SIZE, ist->codecpar->frame_size);
 
     AMFPropertyStorage::SetProperty(AMF_STREAM_EXTRA_DATA, spBuffer);
 }
@@ -841,7 +817,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
 
     amf_string convertedfilename;
     bool bListen = false;
-    AVInputFormat* file_iformat = NULL;
+    const AVInputFormat* file_iformat = NULL;
     bool bStreaming = false;
     if(Url.length() >0)
     { 
@@ -918,16 +894,16 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
     {
         const AVStream* ist = m_pInputContext->streams[i];
         AMFOutputDemuxerImplPtr newOutput;
-        if (ist->codec->codec_type == AVMEDIA_TYPE_VIDEO && m_iVideoStreamIndexFFmpeg == i)
+        if (ist->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && m_iVideoStreamIndexFFmpeg == i)
         {
-            if (ist->codec->pix_fmt == AV_PIX_FMT_BGR24)
+            if (ist->codecpar->format == AV_PIX_FMT_BGR24)
                 continue;
 
             newOutput = new AMFVideoOutputDemuxerImpl(this, i);
             videoIndex = i;
         }
         
-        if (ist->codec->codec_type == AVMEDIA_TYPE_AUDIO && m_iAudioStreamIndexFFmpeg == i)
+        if (ist->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && m_iAudioStreamIndexFFmpeg == i)
         {
             newOutput = new AMFAudioOutputDemuxerImpl(this, i);
         }
@@ -948,7 +924,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
 
     
     
-    if (m_iVideoStreamIndexFFmpeg >= 0 && m_pInputContext->streams[m_iVideoStreamIndexFFmpeg]->codec->codec_id == AV_CODEC_ID_H264)
+    if (m_iVideoStreamIndexFFmpeg >= 0 && m_pInputContext->streams[m_iVideoStreamIndexFFmpeg]->codecpar->codec_id == AV_CODEC_ID_H264)
     {
         bool checkMVC = true;
         GetProperty(FFMPEG_DEMUXER_CHECK_MVC, &checkMVC);
@@ -1032,11 +1008,12 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::ReadPacket(AVPacket **packet)
 //    amf_pts readDuration = amf_high_precision_clock() - currTime;
 
     AVStream *ist = m_pInputContext->streams[pkt.stream_index];
+    FFStream* fst = ffstream(ist);
     int64_t wrap = 1LL << ist->pts_wrap_bits;
 
 //    AMFTraceWarning(AMF_FACILITY, L"ReadPacket() %s pts=%" LPRId64 L", dts=% " LPRId64 L" first_dts=%" LPRId64, 
 //        pkt.stream_index == m_iVideoStreamIndexFFmpeg ? L"video" : L"audio",
-//        pkt.pts, pkt.dts, ist->first_dts);
+//        pkt.pts, pkt.dts, fst->first_dts);
 
     if (pkt.stream_index == m_iVideoStreamIndexFFmpeg)
     {
@@ -1052,9 +1029,9 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::ReadPacket(AVPacket **packet)
             {
                 pkt.dts += wrap;
             }
-            if (ist->first_dts != AV_NOPTS_VALUE)
+            if (fst->first_dts != AV_NOPTS_VALUE)
             {
-                pkt.dts -= ist->first_dts;
+                pkt.dts -= fst->first_dts;
             }
         }
         m_iPacketCount++;
@@ -1067,9 +1044,9 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::ReadPacket(AVPacket **packet)
             pkt.dts += wrap;
         }
 
-        if (ist->first_dts != AV_NOPTS_VALUE && pkt.dts != AV_NOPTS_VALUE)
+        if (fst->first_dts != AV_NOPTS_VALUE && pkt.dts != AV_NOPTS_VALUE)
         {
-            pkt.dts -= ist->first_dts;
+            pkt.dts -= fst->first_dts;
         }
     }
 
@@ -1246,24 +1223,16 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::UpdateBufferProperties(AMFBuf
     const AVStream*  ist = m_pInputContext->streams[pPacket->stream_index];
     AMF_RETURN_IF_FALSE(ist != NULL, AMF_UNEXPECTED, L"UpdateBufferProperties() - stream not available");
 
-    if (ist->first_dts != AV_NOPTS_VALUE)
+    amf_int64 first_dts = cffstream(ist)->first_dts;
+    if (first_dts != AV_NOPTS_VALUE)
     {
-        ((AVPacket*)pPacket)->dts += ist->first_dts;
+        ((AVPacket*)pPacket)->dts += first_dts;
     }
 
     const amf_int64  pts = av_rescale_q(pPacket->dts, ist->time_base, AMF_TIME_BASE_Q);
     pBuffer->SetPts(pts - GetMinPosition());
 
-    if (pPacket != NULL)
-    {
-        pBuffer->SetProperty(L"FFMPEG:pts", AMFVariant(pPacket->pts));
-        pBuffer->SetProperty(L"FFMPEG:dts", AMFVariant(pPacket->dts));
-        pBuffer->SetProperty(L"FFMPEG:stream_index", AMFVariant(pPacket->stream_index));
-        pBuffer->SetProperty(L"FFMPEG:flags", AMFVariant(pPacket->flags));
-        pBuffer->SetProperty(L"FFMPEG:duration", AMFVariant(pPacket->duration));
-        pBuffer->SetProperty(L"FFMPEG:pos", AMFVariant(pPacket->pos));
-        pBuffer->SetProperty(L"FFMPEG:convergence_duration", AMFVariant(pPacket->convergence_duration));
-    }
+    AttachAVPacketInfo(pBuffer, pPacket);
 
     pBuffer->SetProperty(L"FFMPEG:FirstPtsOffset", AMFVariant(m_ptsInitialMinPosition));
 
@@ -1304,14 +1273,14 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::UpdateBufferProperties(AMFBuf
 
     amf_int32 outputIndex = FromFFmpegToOutputIndex(pPacket->stream_index);
     // update buffer duration, based on the type if info stored
-    if (ist->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+    if (ist->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
     {
         pBuffer->SetProperty(FFMPEG_DEMUXER_BUFFER_TYPE, AMFVariant(AMF_STREAM_VIDEO));
         UpdateBufferVideoDuration(pBuffer, pPacket, ist);
 //        AMFTraceWarning(AMF_FACILITY, L"Video count=%lld size=%d PTS=%5.2f", m_OutputStreams[outputIndex]->GetPacketCount(), (int)pBuffer->GetSize(), pBuffer->GetPts() / 10000.);
 
     }
-    else if (ist->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+    else if (ist->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
     {
         pBuffer->SetProperty(FFMPEG_DEMUXER_BUFFER_TYPE, AMFVariant(AMF_STREAM_AUDIO));
         UpdateBufferAudioDuration(pBuffer, pPacket, ist);
@@ -1464,12 +1433,12 @@ bool AMF_STD_CALL AMFFileDemuxerFFMPEGImpl::CheckH264MVC()
 //    }
 
 
-    if (ist->codec->extradata != NULL)
+    if (ist->codecpar->extradata != NULL)
     {
         bool sps = false;
         bool mvc = false;
-        m_H264Mp4ToAnnexB.ProcessExtradata(ist->codec->extradata, ist->codec->extradata_size);
-        FindSPSAndMVC(ist->codec->extradata, ist->codec->extradata_size, sps, mvc);
+        m_H264Mp4ToAnnexB.ProcessExtradata(ist->codecpar->extradata, ist->codecpar->extradata_size);
+        FindSPSAndMVC(ist->codecpar->extradata, ist->codecpar->extradata_size, sps, mvc);
         if (mvc)
         {
             return true;
@@ -1676,7 +1645,7 @@ AMF_RESULT AMFFileDemuxerFFMPEGImpl::OpenFile(
     {
         const AVStream* ist = m_pInputContext->streams[i];
 
-        if (ist->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+        if (ist->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
         {
             if (ist->metadata != nullptr)
             {
@@ -1692,13 +1661,13 @@ AMF_RESULT AMFFileDemuxerFFMPEGImpl::OpenFile(
                 }
             }
 
-            if ((ist->codec->codec_id == AV_CODEC_ID_EXR) ||
-                (ist->codec->codec_id == AV_CODEC_ID_PNG))
+            if ((ist->codecpar->codec_id == AV_CODEC_ID_EXR) ||
+                (ist->codecpar->codec_id == AV_CODEC_ID_PNG))
             {
                 bIsImage = true;
             }
 
-            if (ist->codec->pix_fmt == AV_PIX_FMT_BGR24)
+            if (ist->codecpar->format == AV_PIX_FMT_BGR24)
             {
                 AMFTraceError(AMF_FACILITY, L"Picture format PIX_FMT_BGR24 is not supported.");
                 return AMF_INVALID_FORMAT;
@@ -1711,13 +1680,13 @@ AMF_RESULT AMFFileDemuxerFFMPEGImpl::OpenFile(
             else
             { // find biggest
                 const AVStream *ist_prev = m_pInputContext->streams[m_iVideoStreamIndexFFmpeg];
-                if (ist->codec->width > ist_prev->codec->width && ist->codec->height > ist_prev->codec->height)
+                if (ist->codecpar->width > ist_prev->codecpar->width && ist->codecpar->height > ist_prev->codecpar->height)
                 {
                     m_iVideoStreamIndexFFmpeg = i;
                 }
             }
         }
-        if (ist->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+        if (ist->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
         {
             if (m_iAudioStreamIndexFFmpeg<0)
             {
@@ -1726,7 +1695,7 @@ AMF_RESULT AMFFileDemuxerFFMPEGImpl::OpenFile(
             else
             { // find biggest
                 const AVStream *ist_prev = m_pInputContext->streams[m_iAudioStreamIndexFFmpeg];
-                if (ist->codec->sample_rate >ist_prev->codec->sample_rate)
+                if (ist->codecpar->sample_rate >ist_prev->codecpar->sample_rate)
                 {
                     m_iAudioStreamIndexFFmpeg = i;
                 }

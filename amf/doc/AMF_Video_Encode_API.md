@@ -61,8 +61,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 4. [Annex A: Encoding & frame parameters description](#4-annex-a-encoding--frame-parameters-description)
    - [Table A-1. Encoder configuration parameters](#table-a-1-encoder-configuration-parameters)
    - [Table A-2. Input frame and encoded data parameters](#table-a-2-input-frame-and-encoded-data-parameters)
-   - [Table A-3. Encoder statistics feedback](#table-a-3-encoder-statistics-feedback)
-   - [Table A-4. Encoder PSNR/SSIM feedback](#table-a-4-encoder-psnrssim-feedback)
+   - [Table A-3. Encoder capabilities exposed in AMFCaps interface](#table-a-3-encoder-capabilities-exposed-in-amfcaps-interface)
+   - [Table A-4. Encoder statistics feedback](#table-a-4-encoder-statistics-feedback)
+   - [Table A-5. Encoder PSNR/SSIM feedback](#table-a-5-encoder-psnrssim-feedback)
 
 
 ## 1 Introduction
@@ -74,7 +75,7 @@ This document provides a complete description of the AMD Advanced Media Framewor
 Figure 1 provides a system overview of the AMF Video Encoder Component.
 
 <p align="center">
-    <img src="AMF_Video_Encode_API.png">
+    <img src="./image/AMF_Video_Encode_API.png">
 
 <p align="center">
 Figure 1 — System overview of the AMF Video Encode SDK
@@ -386,7 +387,7 @@ Number of session run ip parallel.
 `false`
 
 **Description:**
-Preview Mode .
+Preview Mode.
 
 ---
 
@@ -801,11 +802,16 @@ Disable/Enable Adaptive MiniGOP, can enable with PA enabled.
 **Values:**
 `true`, `false`
 
-**Default Value:**
-`false`
+**Default Value associated with usages:**
+   - Transcoding: `false`
+   - Ultra low latency: `false`
+   - Low latency: `false`
+   - Webcam: `false`
+   - HQ: `true`
+   - HQLL: `false`
 
 **Description:**
-Some encoder properties require this property been set. Enables the pre-analysis module. Refer to *AMF Video PreAnalysis API* reference for more details.
+Some encoder properties require this property to be set. Enables the pre-analysis module. Refer to *AMF Video PreAnalysis API* reference for more details on the pre-analysis module and its settings under different usages.
 
 ---
 
@@ -980,7 +986,7 @@ Color space primaries for the compressed output surface which are the maximum re
 | REF_B_PIC_DELTA_QP                 | amf_int64 |
 | PREENCODE_ENABLE                   | amf_int64 |
 | FILLER_DATA_ENABLE                 | amf_bool  |
-| ENABLE_VBAQ                        | amf_bool  |
+| ENABLE_VBAQ                 | amf_bool  |
 
 <p align="center">
 Table 6. Encoder rate-control parameters
@@ -1535,6 +1541,7 @@ Enable High motion quality boost mode. It pre-analysis the motion of the video a
 | CURRENT_QUEUE                      | amf_int64 |
 | PICTURE_TRANSFER_MODE              | amf_int64 |
 | QUERY_TIMEOUT                      | amf_int64 |
+| OUTPUT_MODE                      | amf_int64 |
 | PSNR_FEEDBACK                      | amf_bool  |
 | SSIM_FEEDBACK                      | amf_bool  |
 | BLOCK_QP_FEEDBACK                  | amf_bool  |
@@ -1664,6 +1671,20 @@ The application can turn on this flag for a specific input picture to allow dump
 
 **Description:**
 Timeout for QueryOutput call in ms.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_OUTPUT_MODE`
+
+**Values:**
+`AMF_VIDEO_ENCODER_OUTPUT_MODE_ENUM`: `AMF_VIDEO_ENCODER_OUTPUT_MODE_FRAME`,   `AMF_VIDEO_ENCODER_OUTPUT_MODE_TILE`
+
+**Default Value:**
+`AMF_VIDEO_ENCODER_OUTPUT_MODE_FRAME`
+
+**Description:**
+Defines encoder output mode.
 
 ---
 
@@ -2034,6 +2055,7 @@ Injected reference picture. Valid with `AMF_VIDEO_ENCODER_PICTURE_TRANSFER_MODE`
 | OUTPUT_MARKED_LTR_INDEX              | amf_int64  |
 | OUTPUT_REFERENCED_LTR_INDEX_BITFIELD | amf_int64  |
 | OUTPUT_TEMPORAL_LAYER                | amf_int64  |
+| OUTPUT_BUFFER_TYPE                   | amf_int64  |
 | RECONSTRUCTED_PICTURE                | AMFSurface |
 
 <p align="center">
@@ -2100,6 +2122,20 @@ Temporal layer of the encoded picture.
 ---
 
 **Name:**
+`AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE`
+
+**Values:**
+`AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_ENUM`: `AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_FRAME`,`AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_TILE`, `AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_TILE_LAST`
+
+**Default Value:**
+`N\A`
+
+**Description:**
+Encoder output buffer type.
+
+---
+
+**Name:**
 `AMF_VIDEO_ENCODER_RECONSTRUCTED_PICTURE`
 
 **Values:**
@@ -2113,7 +2149,230 @@ Reconstructed picture. Valid with `AMF_VIDEO_ENCODER_PICTURE_TRANSFER_MODE` turn
 
 ---
 
-### Table A-3. Encoder statistics feedback
+### Table A-3. Encoder capabilities exposed in AMFCaps interface
+
+| Name (prefix with AMF_VIDEO_ENCODER_CAP_) | Type      |
+| :-------------------------------------------- | :-------- |
+|MAX_BITRATE                      |amf_int64|
+|NUM_OF_STREAMS                   |amf_int64|
+|MAX_PROFILE                      |amf_int64|
+|MAX_LEVEL                        |amf_int64|
+|BFRAMES                     |amf_bool|
+|MIN_REFERENCE_FRAMES             |amf_int64|
+|MAX_REFERENCE_FRAMES             |amf_int64|
+|MAX_TEMPORAL_LAYERS              |amf_int64|
+|FIXED_SLICE_MODE                     |amf_bool|
+|NUM_OF_HW_INSTANCES              |amf_int64|
+|COLOR_CONVERSION                 |amf_int64|
+|PRE_ANALYSIS                     |amf_bool|
+|ROI                              |amf_bool|
+|MAX_THROUGHPUT                   |amf_int64|
+|REQUESTED_THROUGHPUT             |amf_int64|
+|QUERY_TIMEOUT_SUPPORT           |amf_bool|
+|SUPPORT_SLICE_OUTPUT             |amf_bool|
+
+
+<p align="center">
+Table 14. Encoder capabilities exposed in AMFCaps interface
+</p>
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_CAP_MAX_BITRATE`
+
+**Values:**
+Integers, >=0
+
+**Description:**
+Maximum bit rate in bits.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_CAP_NUM_OF_STREAMS`
+
+**Values:**
+Integers, >=0
+
+**Description:**
+Maximum number of encode streams supported.
+
+---
+
+
+**Name:**
+`AMF_VIDEO_ENCODER_CAP_MAX_PROFILE`
+
+**Values:**
+`AMF_VIDEO_ENCODER_PROFILE_ENUM`: `AMF_VIDEO_ENCODER_PROFILE_BASELINE`, `AMF_VIDEO_ENCODER_PROFILE_MAIN`,`AMF_VIDEO_ENCODER_PROFILE_HIGH`, `AMF_VIDEO_ENCODER_PROFILE_CONSTRAINED_BASELINE`,`AMF_VIDEO_ENCODER_PROFILE_CONSTRAINED_HIGH`
+
+
+**Description:**
+Maximum value of encoder profile.
+
+---
+
+
+**Name:**
+`AMF_VIDEO_ENCODER_CAP_MAX_LEVEL`
+
+**Values:**
+`AMF_VIDEO_ENCODER_H264_LEVEL_ENUM`:
+`AMF_LEVEL_1`, `AMF_LEVEL_1_1`, `AMF_LEVEL_1_2`, `AMF_LEVEL_1_3`, `AMF_LEVEL_2`, `AMF_LEVEL_2_1`,`AMF_LEVEL_2_2`, `AMF_LEVEL_3`, `AMF_LEVEL_3_1`,`AMF_LEVEL_3_2`, `AMF_LEVEL_4`, `AMF_LEVEL_4_1`, `AMF_LEVEL_4_2`,`AMF_LEVEL_5`, `AMF_LEVEL_5_1`, `AMF_LEVEL_5_2`, `AMF_LEVEL_6`, `AMF_LEVEL_6_1`, `AMF_LEVEL_6_2`
+
+
+**Description:**
+Maximum value of codec level.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_CAP_BFRAMES`
+
+**Values:**
+`true`, `false`
+
+
+**Description:**
+Are B-Frames supported?
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_CAP_MIN_REFERENCE_FRAMES`
+
+**Description:**
+Minimum number of reference frames.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_CAP_MAX_REFERENCE_FRAMES`
+
+**Description:**
+Maximum number of reference frames.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_CAP_MAX_NUM_TEMPORAL_LAYERS`
+
+**Values:**
+`1` … `Maximum number of temporal layers supported`
+
+
+**Description:**
+The cap of maximum number of temporal layers.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_CAP_FIXED_SLICE_MODE`
+
+**Values:**
+`true`, `false`
+
+
+**Description:**
+Is fixed slice mode supported?
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_CAP_NUM_OF_HW_INSTANCES`
+
+**Values:**
+`0`... `number of instances - 1`
+
+**Description:**
+Number of HW encoder instances.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_CAP_COLOR_CONVERSION`
+
+**Values:**
+`AMF_ACCELERATION_TYPE`
+
+
+**Description:**
+Type of supported color conversion.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_CAP_PRE_ANALYSIS`
+
+**Values:**
+`true`, `false`
+
+
+**Description:**
+Pre analysis module is available.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_CAP_ROI`
+
+**Values:**
+`true`, `false`
+
+
+**Description:**
+ROI map support is available for H264 UVE encoder, n/a for the other encoders.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_CAP_MAX_THROUGHPUT`
+
+**Values:**
+Integers, >=0
+
+**Description:**
+Maximum throughput for encoder in MB (16 x 16 pixels).
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_CAP_REQUESTED_THROUGHPUT`
+
+**Values:**
+Integers, >=0
+
+**Description:**
+Current total requested throughput for encoder in MB (16 x 16 pixels).
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_CAP_QUERY_TIMEOUT_SUPPORT`
+
+**Values:**
+`true`, `false`
+
+
+**Description:**
+Timeout supported for QueryOutout call.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_CAP_SUPPORT_SLICE_OUTPUT`
+
+**Values:**
+`true`, `false`
+
+
+**Description:**
+If tile output is supported.
+
+---
+
+### Table A-4. Encoder statistics feedback
 
 | Name (prefix "AMF_VIDEO_ENCODER_")  | Type      |
 | :---------------------------------- | :-------- |
@@ -2137,9 +2396,10 @@ Reconstructed picture. Valid with `AMF_VIDEO_ENCODER_PICTURE_TRANSFER_MODE` turn
 | STATISTIC_SATD_FINAL                | amf_int64 |
 | STATISTIC_SATD_INTRA                | amf_int64 |
 | STATISTIC_SATD_INTER                | amf_int64 |
+| STATISTIC_VARIANCE                  | amf_int64 |
 
 <p align="center">
-Table 14. Encoder statistics feedback
+Table 15. Encoder statistics feedback
 </p>
 
 ---
@@ -2304,22 +2564,30 @@ Frame level SATD for inter mode.
 
 ---
 
-### Table A-4. Encoder PSNR/SSIM feedback
+**Name:**
+`AMF_VIDEO_ENCODER_STATISTIC_VARIANCE`
 
-| Name (prefix "AMF_VIDEO_ENCODER_") | Type   |
-| :--------------------------------- | :----- |
-| STATISTIC_PSNR_Y                   | double |
-| STATISTIC_PSNR_U                   | double |
-| STATISTIC_PSNR_V                   | double |
-| STATISTIC_PSNR_ALL                 | double |
-| STATISTIC_SSIM_Y                   | double |
-| STATISTIC_SSIM_U                   | double |
-| STATISTIC_SSIM_V                   | double |
-| STATISTIC_SSIM_ALL                 | double |
+**Description:**
+Frame level variance for full encoding.
+
+---
+
+### Table A-5. Encoder PSNR/SSIM feedback
+
+| Name (prefix "AMF_VIDEO_ENCODER_") | Type       |
+| :--------------------------------- | :--------- |
+| STATISTIC_PSNR_Y                   | amf_double |
+| STATISTIC_PSNR_U                   | amf_double |
+| STATISTIC_PSNR_V                   | amf_double |
+| STATISTIC_PSNR_ALL                 | amf_double |
+| STATISTIC_SSIM_Y                   | amf_double |
+| STATISTIC_SSIM_U                   | amf_double |
+| STATISTIC_SSIM_V                   | amf_double |
+| STATISTIC_SSIM_ALL                 | amf_double |
 
 
 <p align="center">
-Table 15. Encoder PSNR/SSIM feedback
+Table 16. Encoder PSNR/SSIM feedback
 </p>
 
 ---
@@ -2328,7 +2596,7 @@ Table 15. Encoder PSNR/SSIM feedback
 `AMF_VIDEO_ENCODER_STATISTIC_PSNR_Y`
 
 **Description:**
-PSNR Y
+PSNR Y.
 
 ---
 
@@ -2336,7 +2604,7 @@ PSNR Y
 `AMF_VIDEO_ENCODER_STATISTIC_PSNR_U`
 
 **Description:**
-PSNY U
+PSNY U.
 
 ---
 
@@ -2344,7 +2612,7 @@ PSNY U
 `AMF_VIDEO_ENCODER_STATISTIC_PSNR_V`
 
 **Description:**
-PSNR V
+PSNR V.
 
 ---
 
@@ -2352,7 +2620,7 @@ PSNR V
 `AMF_VIDEO_ENCODER_STATISTIC_PSNR_ALL`
 
 **Description:**
-PSNR YUV
+PSNR YUV.
 
 ---
 
@@ -2360,7 +2628,7 @@ PSNR YUV
 `AMF_VIDEO_ENCODER_STATISTIC_SSIM_Y`
 
 **Description:**
-SSIM Y
+SSIM Y.
 
 ---
 
@@ -2368,7 +2636,7 @@ SSIM Y
 `AMF_VIDEO_ENCODER_STATISTIC_SSIM_U`
 
 **Description:**
-SSIM U
+SSIM U.
 
 ---
 
@@ -2376,7 +2644,7 @@ SSIM U
 `AMF_VIDEO_ENCODER_STATISTIC_SSIM_V`
 
 **Description:**
-SSIM V
+SSIM V.
 
 ---
 
@@ -2384,7 +2652,7 @@ SSIM V
 `AMF_VIDEO_ENCODER_STATISTIC_SSIM_ALL`
 
 **Description:**
-SSIM YUV
+SSIM YUV.
 
 ---
 

@@ -37,6 +37,7 @@
 
 #include <timeapi.h>
 #include <windows.h>
+#include <memory>
 //----------------------------------------------------------------------------------------
 // threading
 //----------------------------------------------------------------------------------------
@@ -382,7 +383,35 @@ void AMF_CDECL_CALL amf_virtual_free(void* ptr)
 {
     VirtualFree(ptr, NULL, MEM_RELEASE);
 }
-#endif //#if !defined(METRO_APP)//----------------------------------------------------------------------------------------
+#endif //#if !defined(METRO_APP)
+//----------------------------------------------------------------------------------------
+// cpu
+//----------------------------------------------------------------------------------------
+amf_int32 AMF_STD_CALL amf_get_cpu_cores()
+{
+    //query the number of CPU HW cores
+    DWORD len = 0;
+    GetLogicalProcessorInformation(NULL, &len);
+
+    amf_uint32 count = len / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
+    std::unique_ptr<SYSTEM_LOGICAL_PROCESSOR_INFORMATION[]>  pBuffer(new SYSTEM_LOGICAL_PROCESSOR_INFORMATION[count]);
+    if (pBuffer)
+    {
+        GetLogicalProcessorInformation(pBuffer.get(), &len);
+        count = len / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
+        amf_int32 iCores = 0;
+        for (amf_uint32 idx = 0; idx < count; idx++)
+        {
+            if (pBuffer[idx].Relationship == RelationProcessorCore)
+            {
+                iCores++;
+            }
+        }
+        return iCores;
+    }
+
+    return 1;
+}
 //----------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------
 #endif // _WIN32

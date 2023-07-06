@@ -37,7 +37,7 @@ uname_p := $(shell uname -p)
   platform_name=lnx
 endif
 
-ffmpeg_dir = $(amf_root)/../Thirdparty/ffmpeg/ffmpeg-4.3.2/$(platform_name)$(host_bits)/release
+ffmpeg_dir = $(amf_root)/../Thirdparty/ffmpeg/ffmpeg-5.1.2/$(platform_name)$(host_bits)/release
 
 pp_defines += \
   AMF_COMPONENT_FFMPEG_EXPORTS
@@ -51,14 +51,13 @@ pp_include_dirs = $(amf_root) \
   $(ffmpeg_dir)/include
 
 ffmpeg_libs = \
-  libavcodec.so.58 \
-  libavdevice.so.58 \
-  libavfilter.so.7 \
-  libavformat.so.58 \
-  libavresample.so.4 \
-  libavutil.so.56 \
-  libswresample.so.3 \
-  libswscale.so.5
+  libavcodec.so.59 \
+  libavdevice.so.59 \
+  libavfilter.so.8 \
+  libavformat.so.59 \
+  libavutil.so.57 \
+  libswresample.so.4 \
+  libswscale.so.6
 
 linker_libs += $(patsubst %,:"%",$(ffmpeg_libs))
 
@@ -80,6 +79,10 @@ src_files = \
     public/src/components/ComponentsFFMPEG/AudioDecoderFFMPEGImpl.cpp \
     public/src/components/ComponentsFFMPEG/AudioEncoderFFMPEGImpl.cpp \
     public/src/components/ComponentsFFMPEG/VideoDecoderFFMPEGImpl.cpp \
+	public/src/components/ComponentsFFMPEG/BaseEncoderFFMPEGImpl.cpp \
+    public/src/components/ComponentsFFMPEG/H264EncoderFFMPEGImpl.cpp \
+    public/src/components/ComponentsFFMPEG/HEVCEncoderFFMPEGImpl.cpp \
+    public/src/components/ComponentsFFMPEG/AV1EncoderFFMPEGImpl.cpp \
     public/src/components/ComponentsFFMPEG/ComponentFactory.cpp \
     public/src/components/ComponentsFFMPEG/FileDemuxerFFMPEGImpl.cpp \
     public/src/components/ComponentsFFMPEG/FileMuxerFFMPEGImpl.cpp \

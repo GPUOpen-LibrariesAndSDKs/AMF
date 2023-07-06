@@ -43,6 +43,8 @@
 #include "public/common/AMFFactory.h"
 #include "public/include/components/VideoConverter.h"
 #include "public/common/Thread.h"
+#include "public/samples/CPPSamples/common/SurfaceUtils.h"
+#include "public/samples/CPPSamples/common/PollingThread.h"
 #include <fstream>
 #include <iostream>
 
@@ -68,91 +70,51 @@ static amf::AMF_SURFACE_FORMAT formatOut  = amf::AMF_SURFACE_NV12;
 static amf_int32 widthOut                 = 1920;
 static amf_int32 heightOut                = 1080;
 
-static void WritePlane(amf::AMFPlane *plane, std::ofstream& f);
 static void FillSurface(amf::AMFContext *context, amf::AMFSurface *surface, amf_int32 i);
 
-#define MILLISEC_TIME     10000
-
-class PollingThread : public amf::AMFThread
+class ConverterPollingThread : public PollingThread
 {
-protected:
-    amf::AMFComponentPtr    m_pConverter;
-    std::ofstream           m_pFile;
 public:
-    PollingThread(amf::AMFComponent *converter, const wchar_t *pFileName) : m_pConverter(converter)
+    ConverterPollingThread(amf::AMFComponent *pConverter, const wchar_t *pFileName)
+        : PollingThread(NULL, pConverter, pFileName, true), m_StartTime(0)
+    {}
+protected:
+    void SetUp() override
     {
-        amf_wstring wStr(pFileName);
-        amf_string str(amf::amf_from_unicode_to_utf8(wStr));
-        m_pFile.open(str.c_str(), std::ios::binary);
+        m_StartTime = amf_high_precision_clock();
+        PollingThread::SetUp();
     }
-    ~PollingThread()
+    void ProcessData(amf::AMFData* pData) override
     {
-        if(m_pFile)
+        AMF_RESULT res = AMF_OK;
+        amf_pts poll_time = amf_high_precision_clock();
+        if (m_LatencyTime == 0)
         {
-            m_pFile.close();
+            m_LatencyTime = poll_time - m_StartTime;
         }
+
+        // this operation is slow nneed to remove it from stat
+        res = pData->Convert(amf::AMF_MEMORY_HOST); // convert to system memory
+
+        amf_pts convert_time = amf_high_precision_clock();
+        m_ComponentDuration += amf_high_precision_clock() - poll_time;
+
+        amf::AMFSurfacePtr pSurface(pData); // query for surface interface
+
+        res = WritePlane(pSurface->GetPlane(amf::AMF_PLANE_Y), m_pFile); // get y-plane pixels
+        res = WritePlane(pSurface->GetPlane(amf::AMF_PLANE_UV), m_pFile); // get uv-plane pixels
+
+        m_WriteDuration += amf_high_precision_clock() - convert_time;
     }
-    virtual void Run()
+    void PrintResults() override
     {
-        RequestStop();
-
-        amf_pts start_time = amf_high_precision_clock();
-        amf_pts latency_time = 0;
-        amf_pts convert_duration = 0;
-        amf_pts write_duration = 0;
-
-        AMF_RESULT res = AMF_OK; // error checking can be added later
-        while(true)
-        {
-            amf::AMFDataPtr data;
-            res = m_pConverter->QueryOutput(&data);
-            if(res == AMF_EOF)
-            {
-                break; // Drain complete
-            }
-			if ((res != AMF_OK) && (res != AMF_REPEAT))
-			{
-				// trace possible error message
-				break; // Drain complete
-			}
-            if(data != NULL)
-            {
-                amf_pts poll_time = amf_high_precision_clock();
-                if(latency_time == 0)
-                {
-                    latency_time = poll_time - start_time;
-                }
-               
-                // this operation is slow nneed to remove it from stat
-                res = data->Convert(amf::AMF_MEMORY_HOST); // convert to system memory
-
-                amf_pts convert_time = amf_high_precision_clock();
-                convert_duration += amf_high_precision_clock() - poll_time;
-
-                amf::AMFSurfacePtr surface(data); // query for surface interface
-        
-                WritePlane(surface->GetPlane(amf::AMF_PLANE_Y), m_pFile); // get y-plane pixels
-                WritePlane(surface->GetPlane(amf::AMF_PLANE_UV), m_pFile); // get uv-plane pixels
-                
-                write_duration += amf_high_precision_clock() - convert_time;
-            }
-            else
-            {
-                amf_sleep(1);
-            }
-
-        }
-        amf_pts exec_duration = amf_high_precision_clock()- start_time;
-        printf("latency           = %.4fms\nprocess per frame = %.4fms\nconvert per frame = %.4fms\nwrite per frame   = %.4fms\nexecute per frame = %.4fms\n", 
-            double(latency_time)/MILLISEC_TIME,
-            double(exec_duration)/MILLISEC_TIME/frameCount, 
-            double(convert_duration )/MILLISEC_TIME/frameCount, 
-            double(write_duration)/MILLISEC_TIME/frameCount, 
-            double(exec_duration - write_duration - convert_duration)/MILLISEC_TIME/frameCount);
-
-        m_pConverter = NULL;
-
+        amf_pts exec_duration = amf_high_precision_clock() - m_StartTime;
+        PrintTimes("convert", frameCount);
+        printf("process per frame = %.4fms\nexecute per frame = %.4fms\n",
+            double(exec_duration) / AMF_MILLISECOND / frameCount,
+            double(exec_duration - m_WriteDuration - m_ComponentDuration) / AMF_MILLISECOND / frameCount);
     }
+    amf_pts m_StartTime;
 };
 
 #ifdef _WIN32
@@ -208,7 +170,7 @@ int main(int /* argc */, char* /* argv */[])
     res = converter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, ::AMFConstructSize(widthOut, heightOut));
     res = converter->Init(formatIn, widthIn, heightIn);
 
-    PollingThread thread(converter, fileNameOutWidthSize);
+    ConverterPollingThread thread(converter, fileNameOutWidthSize);
     thread.Start();
 
     // convert some frames
@@ -250,23 +212,6 @@ int main(int /* argc */, char* /* argv */[])
     return 0;
 }
 
-static void WritePlane(amf::AMFPlane *plane, std::ofstream &f)
-{
-    // write NV12 surface removing offsets and alignments
-    amf_uint8 *data     = reinterpret_cast<amf_uint8*>(plane->GetNative());
-    amf_int32 offsetX   = plane->GetOffsetX();
-    amf_int32 offsetY   = plane->GetOffsetY();
-    amf_int32 pixelSize = plane->GetPixelSizeInBytes();
-    amf_int32 height    = plane->GetHeight();
-    amf_int32 width     = plane->GetWidth();
-    amf_int32 pitchH    = plane->GetHPitch();
-
-    for( amf_int32 y = 0; y < height; y++)
-    {
-        amf_uint8 *line = data + (y + offsetY) * pitchH;
-        f.write(reinterpret_cast<char*>(line) + offsetX * pixelSize, pixelSize * width);
-    }
-}
 static void FillSurface(amf::AMFContext *context, amf::AMFSurface *surface, amf_int32 i)
 {
 #ifdef _WIN32

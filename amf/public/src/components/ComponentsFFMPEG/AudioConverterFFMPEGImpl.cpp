@@ -85,10 +85,10 @@ AMFAudioConverterFFMPEGImpl::AMFAudioConverterFFMPEGImpl(AMFContext* pContext)
     m_inChannels(0),
     m_outChannels(0),
     m_bEof(false),
-    m_bDrained(true),
     m_audioFrameSubmitCount(0),
     m_audioFrameQueryCount(0),
-    m_ptsNext(0)
+    m_ptsNext(-1LL),
+    m_ptsPrevEnd(-1LL)
 {
     g_AMFFactory.Init();
 
@@ -127,47 +127,35 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*
     Terminate();
 
     m_bEof = false;
-    m_bDrained = true;
-    m_ptsNext = 0;
+    m_ptsNext = -1LL;
+    m_ptsPrevEnd = -1LL;
 
-    amf_int64  inChannelLayout  = 0;
-    amf_int64  outChannelLayout = 0;
     amf_int64  inSampleFormat = AMFAF_UNKNOWN;
     amf_int64  outSampleFormat = AMFAF_UNKNOWN;
-    GetProperty(AUDIO_CONVERTER_IN_AUDIO_CHANNEL_LAYOUT, &inChannelLayout);
-    GetProperty(AUDIO_CONVERTER_IN_AUDIO_SAMPLE_FORMAT, &inSampleFormat);
-    GetProperty(AUDIO_CONVERTER_IN_AUDIO_SAMPLE_RATE, &m_inSampleRate);
-    GetProperty(AUDIO_CONVERTER_IN_AUDIO_CHANNELS, &m_inChannels);
+    AMF_RETURN_IF_FAILED(GetProperty(AUDIO_CONVERTER_IN_AUDIO_CHANNEL_LAYOUT, &m_inChannelLayout), L"Init() - Failed to get in channel layout property");
+    AMF_RETURN_IF_FAILED(GetProperty(AUDIO_CONVERTER_IN_AUDIO_SAMPLE_FORMAT, &inSampleFormat), L"Init() - Failed to get in sample format property");
+    AMF_RETURN_IF_FAILED(GetProperty(AUDIO_CONVERTER_IN_AUDIO_SAMPLE_RATE, &m_inSampleRate), L"Init() - Failed to get in sample rate property");
+    AMF_RETURN_IF_FAILED(GetProperty(AUDIO_CONVERTER_IN_AUDIO_CHANNELS, &m_inChannels), L"Init() - Failed to get in channel count property");
     m_inSampleFormat = (AMF_AUDIO_FORMAT)inSampleFormat;
 
-    GetProperty(AUDIO_CONVERTER_OUT_AUDIO_CHANNEL_LAYOUT, &outChannelLayout);
-    GetProperty(AUDIO_CONVERTER_OUT_AUDIO_SAMPLE_FORMAT, &outSampleFormat);
-    GetProperty(AUDIO_CONVERTER_OUT_AUDIO_SAMPLE_RATE, &m_outSampleRate);
-    GetProperty(AUDIO_CONVERTER_OUT_AUDIO_CHANNELS, &m_outChannels);
+    AMF_RETURN_IF_FAILED(GetProperty(AUDIO_CONVERTER_OUT_AUDIO_CHANNEL_LAYOUT, &m_outChannelLayout), L"Init() - Failed to get out channel layout property");
+    AMF_RETURN_IF_FAILED(GetProperty(AUDIO_CONVERTER_OUT_AUDIO_SAMPLE_FORMAT, &outSampleFormat), L"Init() - Failed to get out sample format property");
+    AMF_RETURN_IF_FAILED(GetProperty(AUDIO_CONVERTER_OUT_AUDIO_SAMPLE_RATE, &m_outSampleRate), L"Init() - Failed to get out sample rate property");
+    AMF_RETURN_IF_FAILED(GetProperty(AUDIO_CONVERTER_OUT_AUDIO_CHANNELS, &m_outChannels), L"Init() - Failed to get out channel count property");
     m_outSampleFormat = (AMF_AUDIO_FORMAT)outSampleFormat;
 
+    // If there is a mismatch between input and output formats, sample rate and channels, a converter is required
     if ((m_outSampleFormat != m_inSampleFormat) || (m_outSampleRate != m_inSampleRate) || (m_outChannels != m_inChannels))
     {
+        m_pResampler = swr_alloc();
+        AMF_RETURN_IF_FALSE(m_pResampler != NULL, AMF_FAIL, L"Init() - m_pResampler alloc failed")
 
-        m_pResampler = avresample_alloc_context();
-        av_opt_set_int(m_pResampler, "in_channel_count", (int)m_inChannels, 0);
-        av_opt_set_int(m_pResampler, "out_channel_count", (int)m_outChannels, 0);
-
-        av_opt_set_int(m_pResampler, "in_channel_layout", (int) inChannelLayout, 0);
-        av_opt_set_int(m_pResampler, "out_channel_layout", (int) outChannelLayout, 0);
-        av_opt_set_int(m_pResampler, "in_sample_fmt", GetFFMPEGAudioFormat(m_inSampleFormat), 0);
-        av_opt_set_int(m_pResampler, "out_sample_fmt", GetFFMPEGAudioFormat(m_outSampleFormat), 0);
-        av_opt_set_int(m_pResampler, "in_sample_rate", m_inSampleRate, 0);
-        av_opt_set_int(m_pResampler, "out_sample_rate", m_outSampleRate, 0);
-
-
-        if (avresample_open(m_pResampler) == 0)
+        AMF_RESULT res = InitResampler();
+        if (res != AMF_OK)
         {
-        }
-        else
-        {
-            avresample_free(&m_pResampler);
+            swr_free(&m_pResampler);
             m_pResampler = NULL;
+            return res;
         }
     }
 
@@ -192,11 +180,11 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::Terminate()
     
     if (m_pResampler != NULL)
     {
-        if (avresample_is_open(m_pResampler))
+        if (swr_is_initialized(m_pResampler))
         {
-            avresample_close(m_pResampler);
+            swr_close(m_pResampler);
         }
-        avresample_free(&m_pResampler);
+        swr_free(&m_pResampler);
         m_pResampler = NULL;
     }
 
@@ -210,7 +198,10 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::Terminate()
     m_audioFrameQueryCount = 0;
 
     m_uiTempBufferSize = 0;
+
     m_bEof = false;
+    m_ptsNext = -1LL;
+    m_ptsPrevEnd = -1LL;
 
     return AMF_OK;
 }
@@ -220,7 +211,6 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::Drain()
     AMFLock lock(&m_sync);
 
     m_bEof = true;
-    m_bDrained = false;
 
     return AMF_OK;
 }
@@ -231,7 +221,29 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::Flush()
 
     // clear the internally stored buffer
     m_pInputData = nullptr;
-    m_bDrained = true;
+
+    // clear the pts values
+    m_ptsNext = -1LL;
+    m_ptsPrevEnd = -1LL;
+
+    // we need to dump everything that's stored in the resampler
+    // and re-init it - draining the last buffered information in
+    // the resampler will not continue if not reinitialized
+    if (m_pResampler != nullptr)
+    {
+        // close the resampler as we got the last bits out
+        swr_close(m_pResampler);
+
+        // re-initialize the resampler to start fresh for the
+        // next input sample
+        AMF_RESULT res = InitResampler();
+        if (res != AMF_OK)
+        {
+            swr_free(&m_pResampler);
+            m_pResampler = NULL;
+            return res;
+        }
+    }
 
     return AMF_OK;
 }
@@ -240,42 +252,41 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::SubmitInput(AMFData* pData
 {
     AMFLock lock(&m_sync);
 
-    // if the buffer is already full, we can't set more data
-    if (m_pInputData && pData)
-    {
-        return AMF_INPUT_FULL;
-    }
-    if(m_bEof)
-    {
-        return AMF_EOF;
-    }
-
-    // if the internal buffer is empty and the in buffer is also empty,
-    // we reached the end of the available input...
-    if (!m_pInputData && !pData)
+    // if input data is null, we reached EOF
+    if (!pData)
     {
         m_bEof = true;
         return AMF_EOF;
     }
 
+    // if we reached EOF, we shouldn't accept more input
+    if (m_bEof)
+    {
+        return AMF_EOF;
+    }
+
+    // if the buffer is already full, we can't set more data
+    if (m_pInputData)
+    {
+        return AMF_INPUT_FULL;
+    }
+
+    // update the first frame pts offset
+    if (m_ptsNext == -1)
+    {
+        m_ptsNext = pData->GetPts();
+    }
+
     // if the internal buffer is empty and we got new data coming in
     // update internal buffer with new information
-    if (!m_pInputData && pData)
-    {
-        m_pInputData = AMFAudioBufferPtr(pData);
-        AMF_RETURN_IF_FALSE(m_pInputData != 0, AMF_INVALID_ARG, L"SubmitInput() - Input should be AudioBuffer");
+    m_pInputData = AMFAudioBufferPtr(pData);
+    AMF_RETURN_IF_FALSE(m_pInputData != 0, AMF_INVALID_DATA_TYPE, L"SubmitInput() - Input should be AudioBuffer");
 
-        AMF_RESULT err = m_pInputData->Convert(AMF_MEMORY_HOST);
-        AMF_RETURN_IF_FAILED(err, L"SubmitInput() - Convert(AMF_MEMORY_HOST) failed");
+    // ffmpeg only handles data in host memory
+    AMF_RESULT err = m_pInputData->Convert(AMF_MEMORY_HOST);
+    AMF_RETURN_IF_FAILED(err, L"SubmitInput() - Convert(AMF_MEMORY_HOST) failed");
 
-        m_audioFrameSubmitCount++;
-
-        // just pass through
-        if (m_pResampler == NULL) 
-        {
-            return AMF_OK;
-        }
-    }
+    m_audioFrameSubmitCount++;
                 
     return AMF_OK;
 }
@@ -291,166 +302,298 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::QueryOutput(AMFData** ppDa
     // initialize output
     *ppData = NULL;
 
-    // if the input buffer is empty, we need more data or drain
-    if (m_pInputData == NULL && m_bEof && m_bDrained)
+
+    //
+    // If no conversion is required, just pass through
+    if (m_pResampler == nullptr)
     {
-        return AMF_EOF;
+        if (m_pInputData != nullptr)
+        {
+            *ppData = m_pInputData.Detach();
+            m_audioFrameQueryCount++;
+        }
+
+        return m_bEof ? AMF_EOF : AMF_OK;
     }
-    if(m_pInputData == NULL && !m_bEof)
+
+
+    //
+    // if the input buffer is empty and drain hasn't been triggered yet then more input is required
+    if (m_pInputData == nullptr && !m_bEof)
     {
         return AMF_REPEAT;
     }
 
-    // just pass through
-    if (m_pResampler == NULL) 
+
+    //
+    // If there is input, prepare buffer for converter input
+    // If there is no input, then that means m_bEof is true and we are draining
+    amf_int64       sampleCountIn = 0;
+    const uint8_t*  ibuf[12]      = { nullptr };
+    if (m_pInputData != nullptr)
     {
-        if (m_pInputData == NULL)
+        // retrieve how many samples are in the input audio buffer
+        sampleCountIn = m_pInputData->GetSampleCount();
+
+        // Set pointers for each channel - if data is packed, there's only one 
+        // plane so the loop will set the pointer to the beginning of the plane
+        const uint8_t*   pMemIn     = static_cast<uint8_t*>(m_pInputData->GetNative());
+        const amf_int32  planes     = m_pInputData->GetChannelCount();
+        const amf_int32  sampleSize = m_pInputData->GetSampleSize();
+        for (amf_int32 ch = 0; ch < planes; ch++)
         {
-            m_bEof = false;
-            m_bDrained = true;
-            return AMF_EOF;
+            ibuf[ch] = pMemIn + ch * (sampleSize * sampleCountIn);
         }
-
-        *ppData = m_pInputData;
-        (*ppData)->Acquire();
-        m_pInputData.Release();
-        m_audioFrameQueryCount++;
-
-        return AMF_OK;
     }
 
-    int       iSampleSizeIn  = GetAudioSampleSize(m_inSampleFormat);
-    int       iSampleSizeOut = GetAudioSampleSize(m_outSampleFormat);
-    amf_int64 iSamplesIn     = 0;
-    uint8_t* pMemIn = NULL;
 
-    if (m_pInputData != NULL)
-    {
+    //
+    // Get the upper limit on the number of samples that we can get
+    // NOTE: keep variables in 64 bit to avoid 
+    //       overflow due to multiplications
+    const amf_int64  sampleCountOutMax = swr_get_out_samples(m_pResampler, (int) sampleCountIn);
+    AMF_RETURN_IF_FALSE(sampleCountOutMax >= 0, AMF_FAIL, L"QueryOutput() - swr_get_out_samples() failed - sampleCountOutMax = %" LPRId64 L"", sampleCountOutMax);
 
-        AMF_RETURN_IF_FALSE(m_pInputData->GetSize() != 0, AMF_INVALID_ARG, L"QueryOutput() - Invalid Param");
-        iSamplesIn     = (amf_int64) m_pInputData->GetSize() / (m_inChannels * iSampleSizeIn);
-        pMemIn   = static_cast<uint8_t*>(m_pInputData->GetNative());
-    }
-
-    amf_int64 iSamplesOut    = 0;
-    if (NULL != m_pResampler)
+    // if there are no more samples, we have drained
+    if (sampleCountOutMax == 0 && m_bEof == true)
     {
-        iSamplesOut = avresample_get_out_samples(m_pResampler, (int)iSamplesIn);
-    }
-    else
-    {
-        iSamplesOut = iSamplesIn;
-    }
-
-    //if there are no more samples, we have drained
-    if (iSamplesOut == 0 && m_bEof == true)
-    {
-        m_bDrained = true;
         return AMF_EOF;
     }
 
-    amf_int64 new_size       = (amf_int64) iSamplesOut * m_outChannels * iSampleSizeOut;
-    if (m_uiTempBufferSize < (amf_uint) new_size)
+
+    //
+    // Prepare output to retrieve the resampled data
+    const amf_int64  sampleSizeOut = GetAudioSampleSize(m_outSampleFormat);
+    
+    // Create output buffer to store converter output temporarily
+    // the reason we need the temporary buffer is because the max 
+    // required buffer size, might be more than what we get in the 
+    // end from actually doing the conversion as swr_get_out_samples
+    // gives us an upper bound, not the exact size
+    const amf_int64  requiredSize = sampleCountOutMax * m_outChannels * sampleSizeOut;
+    if (m_uiTempBufferSize < (amf_size) requiredSize)
     {
-        m_uiTempBufferSize = ((((amf_size)new_size) + (64 - 1)) & ~(64 - 1));
-        m_pTempBuffer = (short *) realloc(m_pTempBuffer, m_uiTempBufferSize);
+        m_uiTempBufferSize = ((((amf_size)requiredSize) + (64 - 1)) & ~(64 - 1));
+        m_pTempBuffer = (amf_uint8*) realloc(m_pTempBuffer, m_uiTempBufferSize);
     }
     AMF_RETURN_IF_FALSE(m_pTempBuffer != NULL, AMF_OUT_OF_MEMORY, L"QueryOutput() - No memory m_uiTempBufferSize = %" LPRId64 L"", (amf_int64)m_uiTempBufferSize);
 
-    uint8_t *ibuf[12] = { pMemIn };
-    uint8_t *obuf[12] = { (uint8_t*) m_pTempBuffer };
-
-    int istride[12] = { iSampleSizeIn };
-    int ostride[12] = { iSampleSizeOut };
-
-
-    if (IsAudioPlanar(m_inSampleFormat) && pMemIn != NULL)
+    // Set the pointers for each channel - if data is packed, there's only one 
+    // plane so the loop will set the pointer to the beginning of the plane
+    const amf_int64  channelsOut = IsAudioPlanar(m_outSampleFormat) ? m_outChannels : 1;
+          uint8_t*   obuf[12]    = { m_pTempBuffer };
+    for (amf_int64 ch = 0; ch < channelsOut; ch++)
     {
-        for (amf_int32 ch = 0; ch < m_inChannels; ch++)
-        {
-            ibuf[ch] = (amf_uint8*) pMemIn + ch * (iSampleSizeIn * iSamplesIn);
-            istride[ch] = iSampleSizeIn;
-        }
+        obuf[ch] = m_pTempBuffer + ch * (sampleSizeOut * sampleCountOutMax);
     }
-    if (IsAudioPlanar(m_outSampleFormat))
-    {
-        for (amf_int32 ch = 0; ch < m_outChannels; ch++)
-        {
-            obuf[ch] = (amf_uint8*) m_pTempBuffer + ch * (iSampleSizeOut * iSamplesOut);
-            ostride[ch] = iSampleSizeOut;
-        }
-    }
-    if (m_pResampler != NULL)
-    {
-        int  writtenSamples = avresample_convert(m_pResampler,
-                                        obuf, (int) (iSampleSizeOut * iSamplesOut), (int) iSamplesOut,
-                                        pMemIn != NULL ? ibuf : NULL, (int) (iSampleSizeIn * iSamplesIn), (int) iSamplesIn);
 
-        if(pMemIn != NULL)
-        { 
-            if (writtenSamples == 0)
-            {
-                return AMF_FAIL;
-            }
-            m_bDrained = false;
-        }
-        else
-        {
-            m_bDrained = true;
-        }
-        iSamplesOut = writtenSamples;
-    }
-    if(iSamplesOut == 0)
+
+    //
+    // Convert audio
+    // NOTE: we need to be careful if we find a gap in the audio stream
+    //       in that case we want to dump any remaining frames which are
+    //       still in the buffer and keep the input frame to start fresh
+    //       from a new pts next time around
+    // NOTE: comparison for the gap needs to be "greater than 1" 
+    //       not "greater than 0" because sometimes due to roundoff
+    //       you can have the current frame pts - end of last frame do
+    //       come out to 1, and it's not really a gap
+    const amf_pts    currGap        = (m_pInputData != NULL) ? m_pInputData->GetPts() - m_ptsPrevEnd : 0;
+    const bool       gapFound       = (m_ptsPrevEnd != -1LL) && (currGap > 1);
+    const amf_int64  sampleCountOut = swr_convert(m_pResampler, obuf, (int) sampleCountOutMax, 
+                                                 ((m_pInputData != NULL) && (gapFound == false)) ? ibuf : NULL, (gapFound == true) ? 0 : (int) sampleCountIn);
+    
+    char errBuf[AV_ERROR_MAX_STRING_SIZE] = { 0 };
+    AMF_RETURN_IF_FALSE(sampleCountOut >= 0, AMF_FAIL, L"QueryOutput() - conversion failed - %s", av_make_error_string(errBuf, amf_countof(errBuf), (int) sampleCountOut));
+
+    if (sampleCountOut == 0)
     { 
-        if(m_bEof)
+        // it turns out that it is possible to have no samples come out
+        // from the converter in cases where the input and output rates
+        // are the same (but format might be different for example) and
+        // still have a gap from the previous frame to the new frame
+        // in this case there are no frames buffered so there's nothing
+        // to output, but we have forced the converter to finish so we
+        // need to reinitialize the converter as we know there are
+        // more frames to be processed
+        // NOTE: we know the resampler exists, because if we don't have
+        //       it, the component just acts as pass-through, returning 
+        //       the input frames (if no conversion necessary)
+        if (gapFound == true)
         {
-            return AMF_EOF;
+            AMF_RETURN_IF_FAILED(ReInitOnGap(), L"QueryOutput - ReInitOnGap failed");
+            return AMF_REPEAT;
         }
-        return AMF_REPEAT;
+
+        return (m_pInputData != NULL) ? AMF_FAIL
+                                      : (m_bEof) ? AMF_EOF : AMF_REPEAT;
     }
 
+
+    //
     // allocate output buffer
     AMFAudioBufferPtr pOutputAudioBuffer;
-    AMF_RESULT  err = m_pContext->AllocAudioBuffer(AMF_MEMORY_HOST, m_outSampleFormat, 
-                                     (amf_int32) iSamplesOut, (amf_int32) m_outSampleRate, (amf_int32) m_outChannels, &pOutputAudioBuffer);
+    AMF_RESULT  err = m_pContext->AllocAudioBuffer(AMF_MEMORY_HOST, m_outSampleFormat, (amf_int32) sampleCountOut, 
+                                                   (amf_int32) m_outSampleRate, (amf_int32) m_outChannels, &pOutputAudioBuffer);
     AMF_RETURN_IF_FAILED(err, L"QueryOutput() - AllocAudioBuffer failed");
 
-
+    // copy the data from the temporary buffer
     amf_uint8* pMemOut = static_cast<amf_uint8*>(pOutputAudioBuffer->GetNative());
     if (IsAudioPlanar(m_outSampleFormat))
     {
+        const amf_size  copySize = (amf_size)(sampleCountOut * sampleSizeOut);
         for (amf_int32 ch = 0; ch < m_outChannels; ch++)
         {
-            memcpy(pMemOut + ch * (iSamplesOut * iSampleSizeOut), obuf[ch], (size_t)(iSamplesOut * iSampleSizeOut));
+            memcpy(pMemOut + ch * copySize, obuf[ch], copySize);
         }
     }
     else
     { 
-        memcpy(pMemOut, m_pTempBuffer, (size_t)(iSamplesOut * m_outChannels * iSampleSizeOut));
+        memcpy(pMemOut, obuf[0], (size_t)(sampleCountOut * m_outChannels * sampleSizeOut));
     }
-    if(m_pInputData != NULL)
-    { 
-        pOutputAudioBuffer->SetPts(m_pInputData->GetPts());
-        m_pInputData->CopyTo(pOutputAudioBuffer, false);
-    }
-    else
+
+
+    //
+    // update the output buffer with new pts and duration
+    // m_ptsNext is set on the first piece of data coming in 
+    // and because of resizing, to get continuous values we 
+    // increment from the first pts we got
+    // 
+    // there's a reason behind this - for example when converting 
+    // from 48000 to 44100, 1024 samples coming in should get 
+    // converted to 941 samples coming out, but the first frame 
+    // is not coming out as 941 - it's coming out as 931, so some 
+    // samples are buffered depending on the XX-tap filter being used 
+    // and they're coming with the next frame, hence the pts out is 
+    // not exactly the same as the frame coming in
+    // 
+    // in the end, the converted output compared to the input will
+    // look something like this:
+    // 
+    // in:   --------  --------  --------  --------
+    // out:  ------  -------  --------  -------  --
+    //
+    // if there are gaps, the desired behaviour is shown below
+    // 
+    // in:   --------  --------  --------         --------  --------
+    // out:  ------  -------  -------  --         ------  ------  --
+    //
+    pOutputAudioBuffer->SetPts(m_ptsNext);
+    pOutputAudioBuffer->SetDuration(AMF_SECOND * sampleCountOut / m_outSampleRate);
+    m_ptsNext += pOutputAudioBuffer->GetDuration();
+
+    // if we found a gap, leave the input frame alone as it was not sent for 
+    // conversion - we just drained the remaining data in the conversion buffer
+    // but reset the last pts position so we start fresh next time around
+    if (gapFound == true)
     {
-        pOutputAudioBuffer->SetPts(m_ptsNext);
+        AMF_RETURN_IF_FAILED(ReInitOnGap(), L"QueryOutput - ReInitOnGap failed");
     }
-    pOutputAudioBuffer->SetDuration(AMF_SECOND * iSamplesOut / m_outSampleRate);
-    m_ptsNext = pOutputAudioBuffer->GetPts() + pOutputAudioBuffer->GetDuration();
+    else if (m_pInputData != nullptr)
+    { 
+        // copy properties to output buffer
+        m_pInputData->CopyTo(pOutputAudioBuffer, false);
 
-    *ppData = pOutputAudioBuffer;
-    (*ppData)->Acquire();
+        // update last pts position
+        m_ptsPrevEnd = m_pInputData->GetPts() + m_pInputData->GetDuration();
 
-    m_pInputData.Release();
+        // release frame so the next one can come in
+        m_pInputData = nullptr;
+    }
+
+    *ppData = pOutputAudioBuffer.Detach();
+
     m_audioFrameQueryCount++;
 
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
-void AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::OnPropertyChanged(const wchar_t* pName)
+AMF_RESULT AMF_STD_CALL AMFAudioConverterFFMPEGImpl::InitResampler()
 {
-    AMFLock lock(&m_sync);
-    const amf_wstring  name(pName);
+    AMF_RETURN_IF_INVALID_POINTER(m_pResampler, L"SetResamplerOptions() - m_pResampler == NULL");
+    
+    if (swr_is_initialized(m_pResampler))
+    {
+        return AMF_OK;
+    }
+
+    int err = 0;
+    err = av_opt_set_int(m_pResampler, "in_channel_count", (int)m_inChannels, 0);
+    AMF_RETURN_IF_FALSE(err == 0, AMF_FAIL, L"InitResampler() - Failed to set resampler in_channel_count to %" LPRId64 L"", m_inChannels);
+
+    err = av_opt_set_int(m_pResampler, "out_channel_count", (int)m_outChannels, 0);
+    AMF_RETURN_IF_FALSE(err == 0, AMF_FAIL, L"InitResampler() - Failed to set resampler out_channel_count to %" LPRId64 L"", m_outChannels);
+
+    err = av_opt_set_int(m_pResampler, "in_channel_layout", (int)m_inChannelLayout, 0);
+    AMF_RETURN_IF_FALSE(err == 0, AMF_FAIL, L"InitResampler() - Failed to set resampler in_channel_layout to %" LPRId64 L"", m_inChannelLayout);
+
+    err = av_opt_set_int(m_pResampler, "out_channel_layout", (int)m_outChannelLayout, 0);
+    AMF_RETURN_IF_FALSE(err == 0, AMF_FAIL, L"InitResampler() - Failed to set resampler out_channel_layout to %" LPRId64 L"", m_outChannelLayout);
+
+    AVSampleFormat ffmpegInSampleFormat = GetFFMPEGAudioFormat(m_inSampleFormat);
+    err = av_opt_set_int(m_pResampler, "in_sample_fmt", ffmpegInSampleFormat, 0);
+    AMF_RETURN_IF_FALSE(err == 0, AMF_FAIL, L"InitResampler() - Failed to set resampler in_sample_fmt to %" LPRId64 L"", ffmpegInSampleFormat);
+
+    AVSampleFormat ffmpegOutSampleFormat = GetFFMPEGAudioFormat(m_outSampleFormat);
+    err = av_opt_set_int(m_pResampler, "out_sample_fmt", ffmpegOutSampleFormat, 0);
+    AMF_RETURN_IF_FALSE(err == 0, AMF_FAIL, L"InitResampler() - Failed to set resampler out_sample_fmt to %" LPRId64 L"", ffmpegOutSampleFormat);
+
+    err = av_opt_set_int(m_pResampler, "in_sample_rate", m_inSampleRate, 0);
+    AMF_RETURN_IF_FALSE(err == 0, AMF_FAIL, L"InitResampler() - Failed to set resampler in_sample_rate to %" LPRId64 L"", m_inSampleRate);
+
+    err = av_opt_set_int(m_pResampler, "out_sample_rate", m_outSampleRate, 0);
+    AMF_RETURN_IF_FALSE(err == 0, AMF_FAIL, L"InitResampler() - Failed to set resampler out_sample_rate to %" LPRId64 L"", m_outSampleRate);
+
+    //
+    // The options below are not required to be set. The converter used to use the FFmpeg AVResample library however
+    // that became depracated and was replaced by the swresample library. Since there were some differences between
+    // the default settings for the two libraries, the settings below are set to keep the settings the same as before
+    const amf_int64 linearInterp = 0, filterSize = 16;
+    const amf_double cutoff = 0.8;
+
+    err = av_opt_set_int(m_pResampler, "linear_interp", linearInterp, 0);
+    AMF_RETURN_IF_FALSE(err == 0, AMF_FAIL, L"InitResampler() - Failed to set resampler linear_interp to %" LPRId64 L"", linearInterp);
+
+    err = av_opt_set_int(m_pResampler, "filter_size", filterSize, 0);
+    AMF_RETURN_IF_FALSE(err == 0, AMF_FAIL, L"InitResampler() - Failed to set resampler filter_size to %" LPRId64 L"", filterSize);
+
+    err = av_opt_set_double(m_pResampler, "cutoff", cutoff, 0);
+    AMF_RETURN_IF_FALSE(err == 0, AMF_FAIL, L"InitResampler() - Failed to set resampler cutoff to %f", cutoff);
+
+    // Init the resampler
+    err = swr_init(m_pResampler);
+    AMF_RETURN_IF_FALSE(err == 0, AMF_FAIL, L"InitResampler() - resampler init() failed");
+
+    return AMF_OK;
+}
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT AMF_STD_CALL AMFAudioConverterFFMPEGImpl::ReInitOnGap()
+{
+    AMF_RETURN_IF_INVALID_POINTER(m_pResampler, L"ReInitOnGap() - m_pResampler == NULL");
+
+    // the previous pts will no longer be valid, due to the gap
+    m_ptsPrevEnd = -1LL;
+
+    // close the resampler as we got the last bits out
+    swr_close(m_pResampler);
+
+    // re-initialize the resampler to start fresh for the
+    // next input sample
+    AMF_RESULT res = InitResampler();
+    if (res != AMF_OK)
+    {
+        swr_free(&m_pResampler);
+        m_pResampler = NULL;
+        return res;
+    }
+
+    // update the next pts to take the gap into consideration
+    // this is the frame with the gap so take its PTS as the 
+    // start for the next audio stream
+    if (m_pInputData != nullptr)
+    {
+        m_ptsNext = m_pInputData->GetPts();
+    }
+
+    return AMF_OK;
 }

@@ -37,10 +37,10 @@ using namespace amf;
 using namespace DirectX;
 
 #define AMF_FACILITY L"StitchEngineBase"
-static XMVECTOR CorrectLensCircularFishEye(XMVECTOR src, double hfov, double f, double kz, float &transparency);
+static XMVECTOR CorrectLensCircularFishEye(XMVECTOR src, double hfov, double f, float &transparency);
 static XMVECTOR CorrectLensRadial(XMVECTOR src, double a, double b, double c);
 static XMVECTOR CorrectLensRadialInverse(XMVECTOR src, double a, double b, double c);
-static float CalcTransparencyTex(float posx, float posy, bool bFullImage, float zoom_z);
+static float CalcTransparencyTex(float posx, float posy, float zoom_z);
 static XMVECTOR CartesianToEquirectangular(XMVECTOR src);
 
 //-------------------------------------------------------------------------------------------------
@@ -59,19 +59,19 @@ StitchEngineBase::~StitchEngineBase()
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL StitchEngineBase::PrepareMesh(
     amf_int32 widthInput, amf_int32 heightInput, 
-    amf_int32 widthOutput, amf_int32 heightOutput, 
+    amf_int32 /* widthOutput */, amf_int32 /* heightOutput */,
     AMFPropertyStorage *pStorage,
     AMFPropertyStorage *pStorageMain,
-    int channel, 
+    int /* channel */,
     std::vector<TextureVertex> &vertices,
     std::vector<amf_uint32> &verticesRowSize,
     AMFRect &borderRect,
     DirectX::XMVECTOR &texRect,
-    std::vector<DirectX::XMVECTOR> &sides,
-    std::vector<DirectX::XMVECTOR> &corners,
+    AlignedVector<XMVECTOR, alignof(XMVECTOR)> &sides,
+    AlignedVector<XMVECTOR, alignof(XMVECTOR)> &corners,
     DirectX::XMVECTOR &plane,
     DirectX::XMVECTOR &planeCenter,
-    AMFSurface **ppBorderMap
+    AMFSurface ** /* ppBorderMap */
     )
 {
     vertices.clear();
@@ -143,7 +143,6 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::PrepareMesh(
 
     offset_z = 1.0 - ((double)widthInput/ heightInput) * offset_z;
 
-    double zoom1 = 1.02;
     double fishEyeZoom = 1.0;
     switch(lensCorrectionMode)
     {
@@ -175,14 +174,10 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::PrepareMesh(
 
     float w = 2.0f;
     float h = 2.0f;
-    float d = 2.0f;
 
     float l = -1.0f;
     float t = -1.0f;
     float f = -1.0f;
-    float r = 1.0f;
-    float b = 1.0f;
-    float e = 1.0f;
 
     if(crop.Width() > 0 && crop.Height() > 0)
     {
@@ -342,7 +337,7 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::PrepareMesh(
                 continue;
             }
 
-          v.Tex[2] = CalcTransparencyTex(v.Tex[0], v.Tex[1], true, 1.0f);
+          v.Tex[2] = CalcTransparencyTex(v.Tex[0], v.Tex[1], 1.0f);
           XMVECTOR vec= XMVectorSet(posx, posy, posz, 0.0f);
 
           vec = XMVector3Transform(vec, textureReverse);
@@ -357,11 +352,11 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::PrepareMesh(
               break;
           case AMF_VIDEO_STITCH_LENS_FISHEYE_FULLFRAME:
               vec = CorrectLensRadialInverse(vec, lensCorrK1, lensCorrK2, lensCorrK3);
-              vec = CorrectLensCircularFishEye(vec, hfov, 1.0, 1.0, v.Tex[2]);
+              vec = CorrectLensCircularFishEye(vec, hfov, 1.0, v.Tex[2]);
               break;
           case AMF_VIDEO_STITCH_LENS_FISHEYE_CIRCULAR:
               vec = CorrectLensRadialInverse(vec, lensCorrK1, lensCorrK2, lensCorrK3);
-              vec = CorrectLensCircularFishEye(vec, hfov, 1.0, 1.0, v.Tex[2]);
+              vec = CorrectLensCircularFishEye(vec, hfov, 1.0, v.Tex[2]);
               break;
           default:
               break;
@@ -386,9 +381,8 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::PrepareMesh(
 }
 
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL StitchEngineBase::GetTransform(amf_int32 widthInput, amf_int32 heightInput, amf_int32 widthOutput, amf_int32 heightOutput, AMFPropertyStorage *pStorage, Transform &camera, Transform &transform, Transform *cubemap)
+AMF_RESULT AMF_STD_CALL StitchEngineBase::GetTransform(amf_int32 /* widthInput */, amf_int32 /* heightInput */, amf_int32 widthOutput, amf_int32 heightOutput, AMFPropertyStorage* pStorage, Transform& camera, Transform& transform, Transform* cubemap)
 {
-    AMF_RESULT res = AMF_OK;
     amf_int32 streamCount=0;
     pStorage->GetProperty(AMF_VIDEO_STITCH_INPUTCOUNT, &streamCount);
     amf_int64 modeTmp = AMF_VIDEO_STITCH_OUTPUT_MODE_PREVIEW;
@@ -406,9 +400,6 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::GetTransform(amf_int32 widthInput, amf
         {
             XMVECTOR Eye = XMVectorSet(0.0f ,0.0f, 0.0f, 0.0f);
             XMVECTOR At = XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f);
-            float orientationX = 0;
-            float orientationY = 0;
-            float orientationZ = 0;
             XMMATRIX correction = XMMatrixRotationZ(XM_PI) * XMMatrixRotationY(XM_PI);
             XMMATRIX rotation = XMMatrixIdentity();
             switch(f)
@@ -436,8 +427,8 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::GetTransform(amf_int32 widthInput, amf
             XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
             XMMATRIX orientation = XMMatrixLookToLH(Eye, At, Up);
             XMMATRIX projection = XMMatrixPerspectiveFovLH(XM_PIDIV2, (float)1 / 1, 0.1f, 10.0f);
-            XMMATRIX &worldViewProjection = *((XMMATRIX*)&cubemap[f]);
-            worldViewProjection = XMMatrixTranspose(orientation * correction * rotation * projection); 
+            XMMATRIX &cubeMapWorldViewProjection = *((XMMATRIX*)&cubemap[f]);
+            cubeMapWorldViewProjection = XMMatrixTranspose(orientation * correction * rotation * projection);
        }
     }
         break;
@@ -547,20 +538,10 @@ static void SetMatrix( double a, double b, double c , double m[3][3], int cl )
     matrix_matrix_mult( dummy, my, m);
 }
 
-static XMVECTOR CorrectLensCircularFishEye(XMVECTOR src , double hfov, double f , double kz, float &transparency)
+static XMVECTOR CorrectLensCircularFishEye(XMVECTOR src , double hfov, double f, float &transparency)
 {
     double x = XMVectorGetX(src);
     double y = XMVectorGetY(src);
-    double z = XMVectorGetZ(src);
-
-    if( fabs(x - 1.0) < 0.001 && fabs(y - 0.0) < 0.001)
-    {
-        int a = 1;
-    }
-    if( fabs(x - 0.0) < 0.001 && fabs(y - 1.0) < 0.001)
-    {
-        int a = 1;
-    }
 
     double fov2 = hfov / 2.0;
     double pheta = atan2(y , x);
@@ -691,7 +672,7 @@ void StitchEngineBase::MakeSphere(TextureVertex &v, float centerX,float centerY,
 }
 
 //-------------------------------------------------------------------------------------------------
-float CalcTransparencyTex(float posx, float posy, bool bFullImage, float zoom_z)
+static float CalcTransparencyTex(float posx, float posy, float zoom_z)
 {
     float transparency = 0.01f;
     float transparencyBorder = 1.0f;
@@ -760,7 +741,7 @@ float CalcTransparencyTex(float posx, float posy, bool bFullImage, float zoom_z)
 #define EPSILON 0.00001f
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL StitchEngineBase::ApplyMode(
-    amf_int32 widthOutput, amf_int32 heightOutput,
+    amf_int32 /* widthOutput */ , amf_int32 /* heightOutput */,
     std::vector<TextureVertex> &vertices, 
     std::vector<amf_uint32> &verticesRowSize,
     std::vector<TextureVertex> &verticesProjected, 
@@ -806,18 +787,16 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::ApplyMode(
     case AMF_VIDEO_STITCH_OUTPUT_MODE_EQUIRECTANGULAR:
         {
         // make vertical plane along Z
-        XMVECTOR point1 = XMVectorSet( 0.0f, 0.0f, 0.0f, 0.0f);
-        XMVECTOR point2 = XMVectorSet( 0.0f, 0.0f, 1.0f, 0.0f);
-        XMVECTOR point3 = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f);
-        XMVECTOR plane = XMPlaneFromPoints(point1, point2, point3);
+        XMVECTOR planePoint1 = XMVectorSet( 0.0f, 0.0f, 0.0f, 0.0f);
+        XMVECTOR planePoint2 = XMVectorSet( 0.0f, 0.0f, 1.0f, 0.0f);
+        XMVECTOR planePoint3 = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f);
+        XMVECTOR plane = XMPlaneFromPoints(planePoint1, planePoint2, planePoint3);
 
         float a = XMVectorGetX(plane);
         float b = XMVectorGetY(plane);
         float c = XMVectorGetZ(plane);
         float d = XMVectorGetW(plane);
         float sqrtabsd = sqrtf(a * a + b * b + c * c + d * d);
-
-        float heightPixelSize = 2.0f / (float)heightOutput;
 
         for(amf_uint32 y = 0; y < (amf_uint32)verticesRowSize.size() - 1; y++)
         {

@@ -49,11 +49,12 @@ const wchar_t* DisplayDvrPipeline::PARAM_NAME_CODEC             = L"CODEC";
 const wchar_t* DisplayDvrPipeline::PARAM_NAME_OUTPUT            = L"OUTPUT";
 const wchar_t* DisplayDvrPipeline::PARAM_NAME_URL               = L"URL";
 
-const wchar_t* DisplayDvrPipeline::PARAM_NAME_ADAPTERID			= L"ADAPTERID";
-const wchar_t* DisplayDvrPipeline::PARAM_NAME_MONITORID			= L"MONITORID";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_ADAPTERID         = L"ADAPTERID";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_MONITORID         = L"MONITORID";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_MULTI_MONITOR     = L"MULTIMONITOR";
 
-const wchar_t* DisplayDvrPipeline::PARAM_NAME_VIDEO_HEIGHT		= L"VIDEOHEIGHT";
-const wchar_t* DisplayDvrPipeline::PARAM_NAME_VIDEO_WIDTH		= L"VIDEOWIDTH";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_VIDEO_HEIGHT      = L"VIDEOHEIGHT";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_VIDEO_WIDTH       = L"VIDEOWIDTH";
 
 const wchar_t* DisplayDvrPipeline::PARAM_NAME_OPENCL_CONVERTER  = L"OPENCLCONVERTER";
 
@@ -66,8 +67,6 @@ const unsigned kFFMPEG_AUDIO_LAYOUT_STEREO = 0x00000003;
 
 const unsigned kFrameRate = 60;
 
-bool bLowLatency = true;
-
 // DVR.exe streaming command line:
 //-URL rtmp://192.168.50.247  -VIDEOWIDTH 3840 -VIDEOHEIGHT 2160 -TargetBitrate 48000000 -PeakBitrate 50000000 -VBVBufferSize 1000000 -QualityPreset 1 -FrameRate 60,1 -LowLatencyInternal true -IDRPeriod 0 -ProfileLevel 51 -CAPTURE dd
 
@@ -75,117 +74,132 @@ bool bLowLatency = true;
 // -UrlVideo rtmp://0.0.0.0 -LISTEN true -LOWLATENCY true
 namespace
 {
-	// Helper for changing the surface format on the display capture connection
-	class AMFComponentElementDisplayCaptureInterceptor : public AMFComponentElement
-	{
-	public:
-		AMFComponentElementDisplayCaptureInterceptor(DisplayDvrPipeline* pDisplayDvrPipeline, amf::AMFComponent *pComponent)
-			: AMFComponentElement(pComponent)
-			, m_pDisplayDvrPipeline(pDisplayDvrPipeline)
-		{
-		}
+    // Helper for changing the surface format on the display capture connection
+    class AMFComponentElementConverterInterceptor : public AMFComponentElement
+    {
+    public:
+        AMFComponentElementConverterInterceptor(DisplayDvrPipeline* pDisplayDvrPipeline, amf::AMFComponent* pComponent)
+            : AMFComponentElement(pComponent)
+            , m_pDisplayDvrPipeline(pDisplayDvrPipeline)
+            , m_bBlock(false)
+            , m_blockStartTime(-1)
+        {
+        }
 
-		virtual ~AMFComponentElementDisplayCaptureInterceptor()
-		{
-			m_pDisplayDvrPipeline = NULL;
-		}
+        virtual ~AMFComponentElementConverterInterceptor()
+        {
+            m_pDisplayDvrPipeline = NULL;
+        }
+
+        virtual AMF_RESULT SubmitInput(amf::AMFData* pData)
+        {
+            amf::AMFLock lock(&m_sync);
+
+            AMF_RESULT res = AMF_OK;
+            amf::AMFDataPtr pDataPtr(pData);
+            if (pDataPtr->GetPts() <= m_blockStartTime)
+            {
+                // Discard any old data
+                res = AMF_OK;
+            }
+            else
+            {
+                // Process normally
+                res = AMFComponentElement::SubmitInput(pData);
+            }
+            return res;
+        }
+
+        virtual AMF_RESULT QueryOutput(amf::AMFData** ppData)
+        {
+            amf::AMFLock lock(&m_sync);
+
+            AMF_RESULT res = AMF_OK;
+            if (m_bBlock)
+            {
+                return AMF_REPEAT;
+            }
+            //
+            res = AMFComponentElement::QueryOutput(ppData);
+            CHECK_AMF_ERROR_RETURN(res, "AMFComponentElement::QueryOutput() failed");
+            //
+            return res;
+        }
+
+        void SetBlock(bool state)
+        {
+            amf::AMFLock lock(&m_sync);
+
+            m_bBlock = state;
+            if (state)
+            {
+                m_blockStartTime = m_pDisplayDvrPipeline->GetCurrentPts();
+            }
+        }
+
+    private:
+        DisplayDvrPipeline* m_pDisplayDvrPipeline;
+        mutable amf::AMFCriticalSection    m_sync;
+        bool                               m_bBlock;
+        amf_pts                            m_blockStartTime;
+    };
+
+    // Helper for changing the surface format on the display capture connection
+    class AMFComponentElementDisplayCaptureInterceptor : public AMFComponentElement
+    {
+    public:
+        AMFComponentElementDisplayCaptureInterceptor(amf_int32 index,
+            AMFComponentElementConverterInterceptor* converterInterceptor,
+            DisplayDvrPipeline* pDisplayDvrPipeline, amf::AMFComponent *pComponent)
+            : m_iIndex(index)
+            , m_pConverterInterceptor(converterInterceptor)
+            , AMFComponentElement(pComponent)
+            , m_pDisplayDvrPipeline(pDisplayDvrPipeline)
+        {
+            amf_int64 eCurrentFormat = amf::AMF_SURFACE_UNKNOWN;
+            pComponent->GetProperty(AMF_DISPLAYCAPTURE_FORMAT, &eCurrentFormat);
+            m_eLastFormat = (amf::AMF_SURFACE_FORMAT) eCurrentFormat;
+        }
+
+        virtual ~AMFComponentElementDisplayCaptureInterceptor()
+        {
+            m_pDisplayDvrPipeline = NULL;
+        }
 
         virtual amf_int32 GetInputSlotCount() const { return 0; }
 
-		virtual AMF_RESULT QueryOutput(amf::AMFData** ppData)
-		{
-			AMF_RESULT res = AMFComponentElement::QueryOutput(ppData);
-			CHECK_AMF_ERROR_RETURN(res, "AMFComponentElement::QueryOutput() failed");
-			// Get the surface format
-			amf::AMFSurfacePtr pSurfPtr(*ppData);
-			if (pSurfPtr)
-			{
-				AMF_RESULT res2 = AMF_OK;
+        virtual AMF_RESULT QueryOutput(amf::AMFData** ppData)
+        {
+            AMF_RESULT res = AMFComponentElement::QueryOutput(ppData);
+            CHECK_AMF_ERROR_RETURN(res, "AMFComponentElement::QueryOutput() failed");
+            // Get the surface format
+            amf::AMFSurfacePtr pSurfPtr(*ppData);
+            if (pSurfPtr)
+            {
+                AMF_RESULT res2 = AMF_OK;
 
-				amf::AMF_SURFACE_FORMAT format = pSurfPtr->GetFormat();
-				// Was there a format switch?
-				if (format != m_pDisplayDvrPipeline->GetConverterFormat())
-				{
-					res2 = m_pDisplayDvrPipeline->SwitchConverterFormat(format);
-					CHECK_AMF_ERROR_RETURN(res2, "m_pDisplayDvrPipeline->SwitchConverterFormat() failed");
-				}
-			}
-			return res;
-		}
+                amf::AMF_SURFACE_FORMAT format = pSurfPtr->GetFormat();
+                // Was there a format switch?
+                if (format != m_eLastFormat)
+                {
+                    m_pConverterInterceptor->SetBlock(true);
+                    res2 = m_pDisplayDvrPipeline->SwitchConverterFormat(m_iIndex, format);
+                    m_pConverterInterceptor->SetBlock(false);
+                    CHECK_AMF_ERROR_RETURN(res2, "m_pDisplayDvrPipeline->SwitchConverterFormat() failed");
+                    m_eLastFormat = format;
+                }
+            }
+            return res;
+        }
 
-	private:
-		DisplayDvrPipeline*                         m_pDisplayDvrPipeline;
-	};
+    private:
+        DisplayDvrPipeline*                         m_pDisplayDvrPipeline;
+        amf::AMF_SURFACE_FORMAT                     m_eLastFormat;
+        amf_int32                                   m_iIndex;
+        AMFComponentElementConverterInterceptor*    m_pConverterInterceptor;
 
-	// Helper for changing the surface format on the display capture connection
-	class AMFComponentElementConverterInterceptor : public AMFComponentElement
-	{
-	public:
-		AMFComponentElementConverterInterceptor(DisplayDvrPipeline* pDisplayDvrPipeline, amf::AMFComponent *pComponent)
-			: AMFComponentElement(pComponent)
-			, m_pDisplayDvrPipeline(pDisplayDvrPipeline)
-			, m_bBlock(false)
-			, m_blockStartTime(-1)
-		{
-		}
+    };
 
-		virtual ~AMFComponentElementConverterInterceptor()
-		{
-			m_pDisplayDvrPipeline = NULL;
-		}
-
-		virtual AMF_RESULT SubmitInput(amf::AMFData* pData)
-		{
-			amf::AMFLock lock(&m_sync);
-
-			AMF_RESULT res = AMF_OK;
-			amf::AMFDataPtr pDataPtr(pData);
-			if (pDataPtr->GetPts() <= m_blockStartTime)
-			{
-				// Discard any old data
-				res = AMF_OK;
-			}
-			else
-			{
-				// Process normally
-				res = AMFComponentElement::SubmitInput(pData);
-			}
-			return res;
-		}
-
-		virtual AMF_RESULT QueryOutput(amf::AMFData** ppData)
-		{
-			amf::AMFLock lock(&m_sync);
-
-			AMF_RESULT res = AMF_OK;
-			if (m_bBlock)
-			{
-				return AMF_REPEAT;
-			}
-			//
-			res = AMFComponentElement::QueryOutput(ppData);
-			CHECK_AMF_ERROR_RETURN(res, "AMFComponentElement::QueryOutput() failed");
-			//
-			return res;
-		}
-
-		void SetBlock(bool state)
-		{
-			amf::AMFLock lock(&m_sync);
-
-			m_bBlock = state;
-			if (state)
-			{
-				m_blockStartTime = m_pDisplayDvrPipeline->GetCurrentPts();
-			}
-		}
-
-	private:
-		DisplayDvrPipeline*                m_pDisplayDvrPipeline;
-		mutable amf::AMFCriticalSection    m_sync;
-		bool                               m_bBlock;
-		amf_pts                            m_blockStartTime;
-	};
 
 }
 
@@ -194,49 +208,49 @@ namespace
 class DisplayDvrPipeline::PipelineElementEncoder : public AMFComponentElement
 {
 public:
-	//-------------------------------------------------------------------------------------------------
-	PipelineElementEncoder(amf::AMFComponentPtr pComponent, DisplayDvrPipeline* pParams, amf_int64 frameParameterFreq, amf_int64 dynamicParameterFreq)
-		:AMFComponentElement(pComponent),
-		m_pDisplayDvrPipeline(pParams),
-		m_framesSubmitted(0),
-		m_frameParameterFreq(frameParameterFreq),
-		m_dynamicParameterFreq(dynamicParameterFreq)
-	{
-	}
+    //-------------------------------------------------------------------------------------------------
+    PipelineElementEncoder(amf::AMFComponentPtr pComponent, DisplayDvrPipeline* pParams, amf_int64 frameParameterFreq, amf_int64 dynamicParameterFreq)
+        :AMFComponentElement(pComponent),
+        m_pDisplayDvrPipeline(pParams),
+        m_framesSubmitted(0),
+        m_frameParameterFreq(frameParameterFreq),
+        m_dynamicParameterFreq(dynamicParameterFreq)
+    {
+    }
 
-	//-------------------------------------------------------------------------------------------------
-	virtual ~PipelineElementEncoder()
-	{
-	}
+    //-------------------------------------------------------------------------------------------------
+    virtual ~PipelineElementEncoder()
+    {
+    }
 
-	//-------------------------------------------------------------------------------------------------
-	AMF_RESULT SubmitInput(amf::AMFData* pData)
-	{
-		AMF_RESULT res = AMF_OK;
-		if(pData == NULL) // EOF
-		{
-			res = m_pComponent->Drain();
-		}
-		else
-		{
-			if(m_frameParameterFreq != 0 && m_framesSubmitted !=0 && (m_framesSubmitted % m_frameParameterFreq) == 0)
-			{ // apply frame-specific properties to the current frame
-				PushParamsToPropertyStorage(m_pDisplayDvrPipeline, ParamEncoderFrame, pData);
-			}
-			if(m_dynamicParameterFreq != 0 && m_framesSubmitted !=0 && (m_framesSubmitted % m_dynamicParameterFreq) == 0)
-			{ // apply dynamic properties to the encoder
-				PushParamsToPropertyStorage(m_pDisplayDvrPipeline, ParamEncoderDynamic, m_pComponent);
-			}
+    //-------------------------------------------------------------------------------------------------
+    AMF_RESULT SubmitInput(amf::AMFData* pData)
+    {
+        AMF_RESULT res = AMF_OK;
+        if(pData == NULL) // EOF
+        {
+            res = m_pComponent->Drain();
+        }
+        else
+        {
+            if(m_frameParameterFreq != 0 && m_framesSubmitted !=0 && (m_framesSubmitted % m_frameParameterFreq) == 0)
+            { // apply frame-specific properties to the current frame
+                PushParamsToPropertyStorage(m_pDisplayDvrPipeline, ParamEncoderFrame, pData);
+            }
+            if(m_dynamicParameterFreq != 0 && m_framesSubmitted !=0 && (m_framesSubmitted % m_dynamicParameterFreq) == 0)
+            { // apply dynamic properties to the encoder
+                PushParamsToPropertyStorage(m_pDisplayDvrPipeline, ParamEncoderDynamic, m_pComponent);
+            }
 
-			res = m_pComponent->SubmitInput(pData);
-			if(res == AMF_DECODER_NO_FREE_SURFACES)
-			{
-				return AMF_INPUT_FULL;
-			}
-			m_framesSubmitted++;
-		}
-		return res;
-	}
+            res = m_pComponent->SubmitInput(pData);
+            if(res == AMF_DECODER_NO_FREE_SURFACES)
+            {
+                return AMF_INPUT_FULL;
+            }
+            m_framesSubmitted++;
+        }
+        return res;
+    }
     virtual AMF_RESULT QueryOutput(amf::AMFData** ppData)
     {
         AMF_RESULT res = AMFComponentElement::QueryOutput(ppData);
@@ -244,8 +258,8 @@ public:
         /*
         if(res == AMF_OK && *ppData != nullptr)
         {
-			amf_pts capturePts = (*ppData)->GetPts();
-			amf_pts encodedPts = m_pDisplayDvrPipeline->m_pCurrentTime->Get();
+            amf_pts capturePts = (*ppData)->GetPts();
+            amf_pts encodedPts = m_pDisplayDvrPipeline->m_pCurrentTime->Get();
             AMFTraceInfo(L"Latency", L"latency = %5.2f", (encodedPts - capturePts) / 10000. );
         }
         */
@@ -253,10 +267,10 @@ public:
         return res;
     }
 protected:
-	DisplayDvrPipeline*      m_pDisplayDvrPipeline;
-	amf_int                 m_framesSubmitted;
-	amf_int64               m_frameParameterFreq;
-	amf_int64               m_dynamicParameterFreq;
+    DisplayDvrPipeline*      m_pDisplayDvrPipeline;
+    amf_int                 m_framesSubmitted;
+    amf_int64               m_frameParameterFreq;
+    amf_int64               m_dynamicParameterFreq;
 };
 
 // DisplayDvrPipeline implementation
@@ -264,672 +278,740 @@ protected:
 
 //-------------------------------------------------------------------------------------------------
 DisplayDvrPipeline::DisplayDvrPipeline()
-	: m_pContext()
-	, m_pCurrentTime(new amf::AMFCurrentTimeImpl())
-	, m_converterSurfaceFormat(amf::AMF_SURFACE_BGRA)
-	, m_outVideoStreamMuxerIndex(-1)
-	, m_outAudioStreamMuxerIndex(-1)
-	, m_converterInterceptor(nullptr)
-	, m_useOpenCLConverter(false)
+    : m_pContext()
+    , m_pCurrentTime(new amf::AMFCurrentTimeImpl())
+    , m_outVideoStreamMuxerIndex(-1)
+    , m_outAudioStreamMuxerIndex(-1)
+    , m_useOpenCLConverter(false)
 {
-	SetParamDescription(PARAM_NAME_CODEC, ParamCommon, L"Codec name (AVC or H264, HEVC or H265)", ParamConverterCodec);
-	SetParamDescription(PARAM_NAME_OUTPUT, ParamCommon, L"Output file name", NULL);
+    SetParamDescription(PARAM_NAME_CODEC, ParamCommon, L"Codec name (AVC or H264, HEVC or H265)", ParamConverterCodec);
+    SetParamDescription(PARAM_NAME_OUTPUT, ParamCommon, L"Output file name", NULL);
     SetParamDescription(PARAM_NAME_URL, ParamCommon, L"Output URL name", NULL);
-	SetParamDescription(PARAM_NAME_ADAPTERID, ParamCommon, L"Index of GPU adapter (number, default = 0)", NULL);
-	SetParamDescription(PARAM_NAME_MONITORID, ParamCommon, L"Index of monitor on GPU (number, default = 0)", NULL);
-	SetParamDescription(PARAM_NAME_VIDEO_HEIGHT, ParamCommon, L"Video height (number, default = 1080)", NULL);
-	SetParamDescription(PARAM_NAME_VIDEO_WIDTH, ParamCommon, L"Video width (number, default = 1920)", NULL);
-	SetParamDescription(PARAM_NAME_OPENCL_CONVERTER, ParamCommon, L"Use OpenCL Converter (bool, default = false)", NULL);
-	SetParamDescription(PARAM_NAME_CAPTURE_COMPONENT, ParamCommon, L"Display capture component (AMD or DD)", NULL);
+    SetParamDescription(PARAM_NAME_ADAPTERID, ParamCommon, L"Index of GPU adapter (number, default = 0)", NULL);
+    SetParamDescription(PARAM_NAME_MONITORID, ParamCommon, L"List of indexes of monitors on GPU with comma separator (number, default = 0)", NULL);
+    SetParamDescription(PARAM_NAME_MULTI_MONITOR, ParamCommon, L"Capture several monitors(boolean, default = false", ParamConverterBoolean);
+    SetParamDescription(PARAM_NAME_VIDEO_HEIGHT, ParamCommon, L"Video height (number, default = 1080)", NULL);
+    SetParamDescription(PARAM_NAME_VIDEO_WIDTH, ParamCommon, L"Video width (number, default = 1920)", NULL);
+    SetParamDescription(PARAM_NAME_OPENCL_CONVERTER, ParamCommon, L"Use OpenCL Converter (bool, default = false)", ParamConverterBoolean);
+    SetParamDescription(PARAM_NAME_CAPTURE_COMPONENT, ParamCommon, L"Display capture component (AMD or DD)", NULL);
 
-	// to demo frame-specific properties - will be applied to each N-th frame (force IDR)
-	SetParam(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, amf_int64(AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR));
+    // to demo frame-specific properties - will be applied to each N-th frame (force IDR)
+    SetParam(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, amf_int64(AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR));
 }
 
 //-------------------------------------------------------------------------------------------------
 DisplayDvrPipeline::~DisplayDvrPipeline()
 {
-	Terminate();
+    Terminate();
 }
 
 //-------------------------------------------------------------------------------------------------
 void DisplayDvrPipeline::Terminate()
 {
-	Stop();
-	m_pContext = NULL;
+    Stop();
+    m_pContext = NULL;
 }
 
 //-------------------------------------------------------------------------------------------------
 amf_pts DisplayDvrPipeline::GetCurrentPts()
 {
-	return m_pCurrentTime->Get();
+    return m_pCurrentTime->Get();
 }
 
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT DisplayDvrPipeline::InitContext(const std::wstring& /*engineStr*/, amf::AMF_MEMORY_TYPE engineMemoryType, amf_uint32 adapterID)
 {
-	m_pCurrentTime = (new amf::AMFCurrentTimeImpl());
+    m_pCurrentTime = (new amf::AMFCurrentTimeImpl());
+    AMF_RESULT res = AMF_OK;
 
-	AMF_RESULT res = AMF_OK;
+    res = g_AMFFactory.GetFactory()->CreateContext(&m_pContext);
+    CHECK_AMF_ERROR_RETURN(res, "Create AMF context");
 
-	res = g_AMFFactory.GetFactory()->CreateContext(&m_pContext);
-	CHECK_AMF_ERROR_RETURN(res, "Create AMF context");
+    // Check to see if we need to initialize OpenCL
+    GetParam(PARAM_NAME_OPENCL_CONVERTER, m_useOpenCLConverter);
 
-	// Check to see if we need to initialize OpenCL
-	GetParam(PARAM_NAME_OPENCL_CONVERTER, m_useOpenCLConverter);
-
-	switch (engineMemoryType)
-	{
+    switch (engineMemoryType)
+    {
 #if !defined(METRO_APP)
-	case amf::AMF_MEMORY_DX9:
-		res = m_deviceDX9.Init(true, adapterID, false, 1, 1);
-		CHECK_AMF_ERROR_RETURN(res, L"m_deviceDX9.Init() failed");
+    case amf::AMF_MEMORY_DX9:
+        res = m_deviceDX9.Init(true, adapterID, false, 1, 1);
+        CHECK_AMF_ERROR_RETURN(res, L"m_deviceDX9.Init() failed");
 
-		res = m_pContext->InitDX9(m_deviceDX9.GetDevice());
-		CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX9() failed");
-		break;
+        res = m_pContext->InitDX9(m_deviceDX9.GetDevice());
+        CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX9() failed");
+        break;
 #endif//#if !defined(METRO_APP)
-	case amf::AMF_MEMORY_DX11:
-		res = m_deviceDX11.Init(adapterID);
-		CHECK_AMF_ERROR_RETURN(res, L"m_deviceDX11.Init() failed");
+    case amf::AMF_MEMORY_DX11:
+        res = m_deviceDX11.Init(adapterID);
+        CHECK_AMF_ERROR_RETURN(res, L"m_deviceDX11.Init() failed");
 
-		res = m_pContext->InitDX11(m_deviceDX11.GetDevice());
-		CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX11() failed");
-		break;
-	}
+        res = m_pContext->InitDX11(m_deviceDX11.GetDevice());
+        CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX11() failed");
+        break;
+    }
 
-	if (m_useOpenCLConverter)
-	{
-		res = m_deviceOpenCL.Init(m_deviceDX9.GetDevice(), m_deviceDX11.GetDevice(), NULL, NULL);
-		CHECK_AMF_ERROR_RETURN(res, L"m_deviceOpenCL.Init() failed");
+    if (m_useOpenCLConverter)
+    {
+        res = m_deviceOpenCL.Init(m_deviceDX9.GetDevice(), m_deviceDX11.GetDevice(), NULL, NULL);
+        CHECK_AMF_ERROR_RETURN(res, L"m_deviceOpenCL.Init() failed");
 
-		res = m_pContext->InitOpenCL(m_deviceOpenCL.GetCommandQueue());
-		CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitOpenCL() failed");
-	}
+        res = m_pContext->InitOpenCL(m_deviceOpenCL.GetCommandQueue());
+        CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitOpenCL() failed");
+    }
 
-	return res;
+    return res;
 }
 
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT DisplayDvrPipeline::InitVideo(amf::AMF_MEMORY_TYPE engineMemoryType, amf_int32 videoWidth, amf_int32 videoHeight)
+AMF_RESULT DisplayDvrPipeline::InitVideo(amf_uint32 monitorID, amf::AMF_MEMORY_TYPE engineMemoryType,
+    amf_int32 videoWidth, amf_int32 videoHeight)
 {
-	AMF_RESULT res = AMF_OK;
+    AMF_RESULT res = AMF_OK;
 
-	// Get monitor ID
-	amf_uint32 monitorID = 0;
-	GetParam(PARAM_NAME_MONITORID, monitorID);
-
-	// Init dvr capture component
+    // Get monitor ID
+    // Init dvr capture component
     // create capture component here
-	std::wstring captureComp = L"AMD";
-	GetParamWString(DisplayDvrPipeline::PARAM_NAME_CAPTURE_COMPONENT, captureComp);
-	if (captureComp == L"AMD")
-	{
-		// Create AMD capture component
-		res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFDisplayCapture, &m_pDisplayCapture);
-		CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << L"CreateComponent()" << L") failed");
-	}
-	else
-	{
-		// Create DD capture component
-		res = AMFCreateComponentDisplayCapture(m_pContext, nullptr, &m_pDisplayCapture);
-		CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << L"AMFCreateComponentDisplayCapture()" << L") failed");
-	}
+    std::wstring captureComp = L"AMD";
+    GetParamWString(DisplayDvrPipeline::PARAM_NAME_CAPTURE_COMPONENT, captureComp);
+    amf::AMFComponentPtr pDisplayCapture;
+    if (captureComp == L"AMD")
+    {
+        // Create AMD capture component
+        res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFDisplayCapture, &pDisplayCapture);
+        CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << L"CreateComponent()" << L") failed");
+    }
+    else
+    {
+        // Create DD capture component
+        res = AMFCreateComponentDisplayCapture(m_pContext, nullptr, &pDisplayCapture);
+        CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << L"AMFCreateComponentDisplayCapture()" << L") failed");
+    }
+    m_pDisplayCapture.push_back(pDisplayCapture);
 
-	res = m_pDisplayCapture->SetProperty(AMF_DISPLAYCAPTURE_MONITOR_INDEX, monitorID);
-	CHECK_AMF_ERROR_RETURN(res, L"Failed to set Dvr component monitor ID");
-	res = m_pDisplayCapture->SetProperty(AMF_DISPLAYCAPTURE_CURRENT_TIME_INTERFACE, m_pCurrentTime);
-	CHECK_AMF_ERROR_RETURN(res, L"Failed to set Dvr component current time interface");
-	res = m_pDisplayCapture->SetProperty(AMF_DISPLAYCAPTURE_FRAMERATE, AMFConstructRate(kFrameRate, 1));
-	CHECK_AMF_ERROR_RETURN(res, L"Failed to set Dvr component frame rate");
+    res = pDisplayCapture->SetProperty(AMF_DISPLAYCAPTURE_MONITOR_INDEX, monitorID);
+    CHECK_AMF_ERROR_RETURN(res, L"Failed to set Dvr component monitor ID");
+    res = pDisplayCapture->SetProperty(AMF_DISPLAYCAPTURE_CURRENT_TIME_INTERFACE, m_pCurrentTime);
+    CHECK_AMF_ERROR_RETURN(res, L"Failed to set Dvr component current time interface");
+    res = pDisplayCapture->SetProperty(AMF_DISPLAYCAPTURE_FRAMERATE, AMFConstructRate(kFrameRate, 1));
+    CHECK_AMF_ERROR_RETURN(res, L"Failed to set Dvr component frame rate");
 
-	res = m_pDisplayCapture->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
-	CHECK_AMF_ERROR_RETURN(res, L"Failed to make Dvr component");
+    res = pDisplayCapture->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
+    CHECK_AMF_ERROR_RETURN(res, L"Failed to make Dvr component");
 
-	AMFSize resolution = {};
-	m_pDisplayCapture->GetProperty(AMF_DISPLAYCAPTURE_RESOLUTION, &resolution);
+    AMFSize resolution = {};
+    pDisplayCapture->GetProperty(AMF_DISPLAYCAPTURE_RESOLUTION, &resolution);
 
-	// Init converter
-	res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFVideoConverter, &m_pConverter);
-	CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFVideoConverter << L") failed");
+    amf_int64 eCurrentFormat = amf::AMF_SURFACE_UNKNOWN;
+    pDisplayCapture->GetProperty(AMF_DISPLAYCAPTURE_FORMAT, &eCurrentFormat);
 
-	m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_COMPUTE_DEVICE,
-		(m_useOpenCLConverter) ? amf::AMF_MEMORY_OPENCL : engineMemoryType);
-	m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_MEMORY_TYPE, engineMemoryType);
-	m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, amf::AMF_SURFACE_NV12);
-	m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, AMFConstructSize(videoWidth, videoHeight));
+    // Init converter
+    amf::AMFComponentPtr pConverter;
+    res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFVideoConverter, &pConverter);
+    CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFVideoConverter << L") failed");
+    m_pConverter.push_back(pConverter);
 
-	m_pConverter->Init(m_converterSurfaceFormat, resolution.width,resolution.height);
+    pConverter->SetProperty(AMF_VIDEO_CONVERTER_COMPUTE_DEVICE,
+        (m_useOpenCLConverter) ? amf::AMF_MEMORY_OPENCL : engineMemoryType);
+    pConverter->SetProperty(AMF_VIDEO_CONVERTER_MEMORY_TYPE, engineMemoryType);
+    pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, amf::AMF_SURFACE_NV12);
+    pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, AMFConstructSize(videoWidth, videoHeight));
 
-	// Init encoder
-	m_szEncoderID = AMFVideoEncoderVCE_AVC;
-	GetParamWString(DisplayDvrPipeline::PARAM_NAME_CODEC, m_szEncoderID);
+    pConverter->Init((amf::AMF_SURFACE_FORMAT)eCurrentFormat, resolution.width, resolution.height);
 
-	if (m_szEncoderID == AMFVideoEncoderVCE_AVC)
-	{
-		amf_int64 usage = 0;
-		if (GetParam(AMF_VIDEO_ENCODER_USAGE, usage) == AMF_OK)
-		{
-			if (usage == amf_int64(AMF_VIDEO_ENCODER_USAGE_WEBCAM))
-			{
-				m_szEncoderID = AMFVideoEncoderVCE_SVC;
-			}
-		}
-	}
+    // Init encoder
+    m_szEncoderID = AMFVideoEncoderVCE_AVC;
+    GetParamWString(DisplayDvrPipeline::PARAM_NAME_CODEC, m_szEncoderID);
 
-	res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, m_szEncoderID.c_str(), &m_pEncoder);
-	CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << m_szEncoderID << L") failed");
+    if (m_szEncoderID == AMFVideoEncoderVCE_AVC)
+    {
+        amf_int64 usage = 0;
+        if (GetParam(AMF_VIDEO_ENCODER_USAGE, usage) == AMF_OK)
+        {
+            if (usage == amf_int64(AMF_VIDEO_ENCODER_USAGE_WEBCAM))
+            {
+                m_szEncoderID = AMFVideoEncoderVCE_SVC;
+            }
+        }
+    }
 
-	AMFRate frameRate = { kFrameRate, 1 };
-	if (m_szEncoderID == AMFVideoEncoderVCE_AVC || m_szEncoderID == AMFVideoEncoderVCE_SVC)
-	{
-		res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, frameRate);
-		CHECK_AMF_ERROR_RETURN(res, L"Failed to set video encoder frame rate");
-	}
-	else if (m_szEncoderID == AMFVideoEncoder_AV1)
-	{
-		res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_AV1_FRAMERATE, frameRate);
-		CHECK_AMF_ERROR_RETURN(res, L"Failed to set video encoder frame rate");
-	}
-	else
-	{
-		res = m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, frameRate);
-		CHECK_AMF_ERROR_RETURN(res, L"Failed to set video encoder frame rate");
-	}
+    amf::AMFComponentPtr pEncoder;
+    res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, m_szEncoderID.c_str(), &pEncoder);
+    CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << m_szEncoderID << L") failed");
+    m_pEncoder.push_back(pEncoder);
+
+    AMFRate frameRate = { kFrameRate, 1 };
+    if (m_szEncoderID == AMFVideoEncoderVCE_AVC || m_szEncoderID == AMFVideoEncoderVCE_SVC)
+    {
+        res = pEncoder->SetProperty(AMF_VIDEO_ENCODER_FRAMERATE, frameRate);
+        CHECK_AMF_ERROR_RETURN(res, L"Failed to set video encoder frame rate");
+    }
+    else if (m_szEncoderID == AMFVideoEncoder_AV1)
+    {
+        res = pEncoder->SetProperty(AMF_VIDEO_ENCODER_AV1_FRAMERATE, frameRate);
+        CHECK_AMF_ERROR_RETURN(res, L"Failed to set video encoder frame rate");
+    }
+    else
+    {
+        res = pEncoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, frameRate);
+        CHECK_AMF_ERROR_RETURN(res, L"Failed to set video encoder frame rate");
+    }
 
 
     // Usage is preset that will set many parameters
-	PushParamsToPropertyStorage(this, ParamEncoderUsage, m_pEncoder);
+    PushParamsToPropertyStorage(this, ParamEncoderUsage, pEncoder);
 
-	// override some usage parameters
-	PushParamsToPropertyStorage(this, ParamEncoderStatic, m_pEncoder);
+    // override some usage parameters
+    PushParamsToPropertyStorage(this, ParamEncoderStatic, pEncoder);
 
-    PushParamsToPropertyStorage(this, ParamEncoderDynamic, m_pEncoder);
+    PushParamsToPropertyStorage(this, ParamEncoderDynamic, pEncoder);
 
-    if (bLowLatency)
+    if (m_szEncoderID == AMFVideoEncoderVCE_AVC || m_szEncoderID == AMFVideoEncoderVCE_SVC)
     {
-		if (m_szEncoderID == AMFVideoEncoderVCE_AVC || m_szEncoderID == AMFVideoEncoderVCE_SVC)
-		{
-			m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_LOWLATENCY_MODE, true);
-		}
-		else if (m_szEncoderID == AMFVideoEncoder_AV1)
-		{
-			m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE, AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE_LOWEST_LATENCY);
-		}
-		else
-		{
-			m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE, true);
-		}
+        pEncoder->SetProperty(AMF_VIDEO_ENCODER_LOWLATENCY_MODE, true);
+    }
+    else if (m_szEncoderID == AMFVideoEncoder_AV1)
+    {
+        pEncoder->SetProperty(AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE, AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE_LOWEST_LATENCY);
+    }
+    else
+    {
+        pEncoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE, true);
     }
 
-	res = m_pEncoder->Init(amf::AMF_SURFACE_NV12, videoWidth, videoHeight);
-	CHECK_AMF_ERROR_RETURN(res, L"m_pEncoder->Init() failed");
+    res = pEncoder->Init(amf::AMF_SURFACE_NV12, videoWidth, videoHeight);
+    CHECK_AMF_ERROR_RETURN(res, L"m_pEncoder->Init() failed");
 
-//	PushParamsToPropertyStorage(this, ParamEncoderDynamic, m_pEncoder);
+//    PushParamsToPropertyStorage(this, ParamEncoderDynamic, m_pEncoder);
 
-	return res;
+    return res;
 }
 
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT DisplayDvrPipeline::InitAudio()
 {
-	AMF_RESULT res = AMF_OK;
+    AMF_RESULT res = AMF_OK;
 
-	// Audio state
-	amf_int64 codecID = 0;
-	amf_int64 streamBitRate = 0;
-	amf_int64 streamSampleRate = 0;
-	amf_int64 streamChannels = 0;
-	amf_int64 streamFormat = 0;
-	amf_int64 streamLayout = 0;
-	amf_int64 streamBlockAlign = 0;
-	amf_int64 streamFrameSize = 0;
-	amf::AMFInterfacePtr pExtradata;
+    // Audio state
+    amf_int64 codecID = 0;
+    amf_int64 streamBitRate = 0;
+    amf_int64 streamSampleRate = 0;
+    amf_int64 streamChannels = 0;
+    amf_int64 streamFormat = 0;
+    amf_int64 streamLayout = 0;
+    amf_int64 streamBlockAlign = 0;
+    amf_int64 streamFrameSize = 0;
+    amf::AMFInterfacePtr pExtradata;
 
-	// Create the audio capture component
-	res = AMFCreateComponentAudioCapture(m_pContext, &m_pAudioCapture);
-	CHECK_AMF_ERROR_RETURN(res, L"Audio capture component creation failed");
-	// Put the audio session component into loopback render mode
-	res = m_pAudioCapture->SetProperty(AUDIOCAPTURE_SOURCE, false);
-	CHECK_AMF_ERROR_RETURN(res, L"Audio capture component did not enter loopback render mode");
-	// Set the current time interface
-	res = m_pAudioCapture->SetProperty(AUDIOCAPTURE_CURRENT_TIME_INTERFACE, m_pCurrentTime);
-	CHECK_AMF_ERROR_RETURN(res, L"Audio capture component failed to set current time interface");
-	// Initialize the audio session component
-	res = m_pAudioCapture->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
-	CHECK_AMF_ERROR_RETURN(res, L"Audio capture component initialization failed");
+    // Create the audio capture component
+    res = AMFCreateComponentAudioCapture(m_pContext, &m_pAudioCapture);
+    CHECK_AMF_ERROR_RETURN(res, L"Audio capture component creation failed");
+    // Put the audio session component into loopback render mode
+    res = m_pAudioCapture->SetProperty(AUDIOCAPTURE_SOURCE, false);
+    CHECK_AMF_ERROR_RETURN(res, L"Audio capture component did not enter loopback render mode");
+    // Set the current time interface
+    res = m_pAudioCapture->SetProperty(AUDIOCAPTURE_CURRENT_TIME_INTERFACE, m_pCurrentTime);
+    CHECK_AMF_ERROR_RETURN(res, L"Audio capture component failed to set current time interface");
+    // Initialize the audio session component
+    res = m_pAudioCapture->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
+    CHECK_AMF_ERROR_RETURN(res, L"Audio capture component initialization failed");
 
-	// Read the setup of the audio capture component so that its state can be
-	// passed into the audio decoder
-	m_pAudioCapture->GetProperty(AUDIOCAPTURE_CODEC, &codecID);
-	m_pAudioCapture->GetProperty(AUDIOCAPTURE_BITRATE, &streamBitRate);
-	m_pAudioCapture->GetProperty(AUDIOCAPTURE_SAMPLERATE, &streamSampleRate);
-	m_pAudioCapture->GetProperty(AUDIOCAPTURE_CHANNELS, &streamChannels);
-	m_pAudioCapture->GetProperty(AUDIOCAPTURE_FORMAT, &streamFormat);
-	m_pAudioCapture->GetProperty(AUDIOCAPTURE_BLOCKALIGN, &streamBlockAlign);
-	m_pAudioCapture->GetProperty(AUDIOCAPTURE_FRAMESIZE, &streamFrameSize);
+    // Read the setup of the audio capture component so that its state can be
+    // passed into the audio decoder
+    m_pAudioCapture->GetProperty(AUDIOCAPTURE_CODEC, &codecID);
+    m_pAudioCapture->GetProperty(AUDIOCAPTURE_BITRATE, &streamBitRate);
+    m_pAudioCapture->GetProperty(AUDIOCAPTURE_SAMPLERATE, &streamSampleRate);
+    m_pAudioCapture->GetProperty(AUDIOCAPTURE_CHANNELS, &streamChannels);
+    m_pAudioCapture->GetProperty(AUDIOCAPTURE_FORMAT, &streamFormat);
+    m_pAudioCapture->GetProperty(AUDIOCAPTURE_BLOCKALIGN, &streamBlockAlign);
+    m_pAudioCapture->GetProperty(AUDIOCAPTURE_FRAMESIZE, &streamFrameSize);
 
-	// Audio converter
-	res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_AUDIO_CONVERTER, &m_pAudioConverter);
-	CHECK_AMF_ERROR_RETURN(res, L"LoadExternalComponent(" << FFMPEG_AUDIO_CONVERTER << L") failed");
+    // Audio converter
+    res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_AUDIO_CONVERTER, &m_pAudioConverter);
+    CHECK_AMF_ERROR_RETURN(res, L"LoadExternalComponent(" << FFMPEG_AUDIO_CONVERTER << L") failed");
 
-	m_pAudioConverter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_BIT_RATE, streamBitRate);
-	m_pAudioConverter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_SAMPLE_RATE, streamSampleRate);
-	m_pAudioConverter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_CHANNELS, streamChannels);
-	m_pAudioConverter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_SAMPLE_FORMAT, streamFormat);
-	m_pAudioConverter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_CHANNEL_LAYOUT, kFFMPEG_AUDIO_LAYOUT_STEREO);
-	m_pAudioConverter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_BLOCK_ALIGN, streamBlockAlign);
+    m_pAudioConverter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_BIT_RATE, streamBitRate);
+    m_pAudioConverter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_SAMPLE_RATE, streamSampleRate);
+    m_pAudioConverter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_CHANNELS, streamChannels);
+    m_pAudioConverter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_SAMPLE_FORMAT, streamFormat);
+    m_pAudioConverter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_CHANNEL_LAYOUT, kFFMPEG_AUDIO_LAYOUT_STEREO);
+    m_pAudioConverter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_BLOCK_ALIGN, streamBlockAlign);
 
-	// Audio encoder
-	res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_AUDIO_ENCODER, &m_pAudioEncoder);
-	CHECK_AMF_ERROR_RETURN(res, L"LoadExternalComponent(" << FFMPEG_AUDIO_ENCODER << L") failed");
+    // Audio encoder
+    res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_AUDIO_ENCODER, &m_pAudioEncoder);
+    CHECK_AMF_ERROR_RETURN(res, L"LoadExternalComponent(" << FFMPEG_AUDIO_ENCODER << L") failed");
 
-	m_pAudioEncoder->SetProperty(AUDIO_ENCODER_AUDIO_CODEC_ID, kFFMPEG_AAC_CODEC_ID);
-	res = m_pAudioEncoder->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
-	CHECK_AMF_ERROR_RETURN(res, L"m_pAudioEncoder->Init() failed");
+    m_pAudioEncoder->SetProperty(AUDIO_ENCODER_AUDIO_CODEC_ID, kFFMPEG_AAC_CODEC_ID);
+    res = m_pAudioEncoder->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
+    CHECK_AMF_ERROR_RETURN(res, L"m_pAudioEncoder->Init() failed");
 
-	m_pAudioEncoder->GetProperty(AUDIO_ENCODER_IN_AUDIO_SAMPLE_RATE, &streamSampleRate);
-	m_pAudioEncoder->GetProperty(AUDIO_ENCODER_IN_AUDIO_CHANNELS, &streamChannels);
-	m_pAudioEncoder->GetProperty(AUDIO_ENCODER_IN_AUDIO_SAMPLE_FORMAT, &streamFormat);
-	m_pAudioEncoder->GetProperty(AUDIO_ENCODER_IN_AUDIO_CHANNEL_LAYOUT, &streamLayout);
-	m_pAudioEncoder->GetProperty(AUDIO_ENCODER_IN_AUDIO_BLOCK_ALIGN, &streamBlockAlign);
+    m_pAudioEncoder->GetProperty(AUDIO_ENCODER_IN_AUDIO_SAMPLE_RATE, &streamSampleRate);
+    m_pAudioEncoder->GetProperty(AUDIO_ENCODER_IN_AUDIO_CHANNELS, &streamChannels);
+    m_pAudioEncoder->GetProperty(AUDIO_ENCODER_IN_AUDIO_SAMPLE_FORMAT, &streamFormat);
+    m_pAudioEncoder->GetProperty(AUDIO_ENCODER_IN_AUDIO_CHANNEL_LAYOUT, &streamLayout);
+    m_pAudioEncoder->GetProperty(AUDIO_ENCODER_IN_AUDIO_BLOCK_ALIGN, &streamBlockAlign);
 
-	m_pAudioConverter->SetProperty(AUDIO_CONVERTER_OUT_AUDIO_BIT_RATE, streamBitRate);
-	m_pAudioConverter->SetProperty(AUDIO_CONVERTER_OUT_AUDIO_SAMPLE_RATE, streamSampleRate);
-	m_pAudioConverter->SetProperty(AUDIO_CONVERTER_OUT_AUDIO_CHANNELS, streamChannels);
-	m_pAudioConverter->SetProperty(AUDIO_CONVERTER_OUT_AUDIO_SAMPLE_FORMAT, streamFormat);
-	m_pAudioConverter->SetProperty(AUDIO_CONVERTER_OUT_AUDIO_CHANNEL_LAYOUT, streamLayout);
-	m_pAudioConverter->SetProperty(AUDIO_CONVERTER_OUT_AUDIO_BLOCK_ALIGN, streamBlockAlign);
+    m_pAudioConverter->SetProperty(AUDIO_CONVERTER_OUT_AUDIO_BIT_RATE, streamBitRate);
+    m_pAudioConverter->SetProperty(AUDIO_CONVERTER_OUT_AUDIO_SAMPLE_RATE, streamSampleRate);
+    m_pAudioConverter->SetProperty(AUDIO_CONVERTER_OUT_AUDIO_CHANNELS, streamChannels);
+    m_pAudioConverter->SetProperty(AUDIO_CONVERTER_OUT_AUDIO_SAMPLE_FORMAT, streamFormat);
+    m_pAudioConverter->SetProperty(AUDIO_CONVERTER_OUT_AUDIO_CHANNEL_LAYOUT, streamLayout);
+    m_pAudioConverter->SetProperty(AUDIO_CONVERTER_OUT_AUDIO_BLOCK_ALIGN, streamBlockAlign);
 
-	res = m_pAudioConverter->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
-	CHECK_AMF_ERROR_RETURN(res, L"m_pAudioConverter->Init() failed");
+    res = m_pAudioConverter->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
+    CHECK_AMF_ERROR_RETURN(res, L"m_pAudioConverter->Init() failed");
 
-	return res;
+    return res;
 }
 
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT DisplayDvrPipeline::InitMuxer(
-	amf_bool hasDDVideoStream, amf_bool hasSessionAudioStream,
-	amf_int32& outVideoStreamMuxerIndex, amf_int32& outAudioStreamMuxerIndex)
+    amf_bool hasDDVideoStream, amf_bool hasSessionAudioStream,
+    amf_int32& outVideoStreamMuxerIndex, amf_int32& outAudioStreamMuxerIndex)
 {
-	AMF_RESULT res = AMF_OK;
+    AMF_RESULT res = AMF_OK;
 
-	amf::AMFComponentPtr  pMuxer;
-	res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_MUXER, &pMuxer);
-	CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << FFMPEG_DEMUXER << L") failed");
-	m_pMuxer = amf::AMFComponentExPtr(pMuxer);
+    amf::AMFComponentPtr  pMuxer;
+    res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_MUXER, &pMuxer);
+    CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << FFMPEG_DEMUXER << L") failed");
+    amf::AMFComponentExPtr  pMuxerEx(pMuxer);
+    amf_int32 streamIdx = (amf_int32)m_pMuxer.size();
+    m_pMuxer.push_back(pMuxerEx);
 
     std::wstring outputURL = L"";
     res = GetParamWString(PARAM_NAME_URL, outputURL);
     if (outputURL.length() > 0)
     {
-        m_pMuxer->SetProperty(FFMPEG_MUXER_URL, outputURL.c_str());
+        pMuxerEx->SetProperty(FFMPEG_MUXER_URL, outputURL.c_str());
     }
     else
     {
         std::wstring outputPath = L"";
         res = GetParamWString(PARAM_NAME_OUTPUT, outputPath);
         CHECK_AMF_ERROR_RETURN(res, L"Output Path");
+        if (m_pEncoder.size() > 1)
+        {
+            wchar_t buf[100];
+            swprintf(buf, amf_countof(buf), L"_%d", (int)m_pMuxer.size() - 1);
+            std::wstring::size_type pos = outputPath.find_last_of(L'.');
+            std::wstring tmp = outputPath.substr(0, pos);
+            tmp += buf;
+            tmp += outputPath.substr(pos);
+            outputPath = tmp;
+        }
 
-
-        m_pMuxer->SetProperty(FFMPEG_MUXER_PATH, outputPath.c_str());
+        pMuxerEx->SetProperty(FFMPEG_MUXER_PATH, outputPath.c_str());
     }
-	if (hasDDVideoStream)
-	{
-		m_pMuxer->SetProperty(FFMPEG_MUXER_ENABLE_VIDEO, true);
-	}
-	if (hasSessionAudioStream)
-	{
-		m_pMuxer->SetProperty(FFMPEG_MUXER_ENABLE_AUDIO, true);
-	}
+    if (hasDDVideoStream)
+    {
+        pMuxerEx->SetProperty(FFMPEG_MUXER_ENABLE_VIDEO, true);
+    }
+    if (hasSessionAudioStream)
+    {
+        pMuxerEx->SetProperty(FFMPEG_MUXER_ENABLE_AUDIO, true);
+    }
 
-    m_pMuxer->SetProperty(FFMPEG_MUXER_CURRENT_TIME_INTERFACE, m_pCurrentTime);
+    pMuxerEx->SetProperty(FFMPEG_MUXER_CURRENT_TIME_INTERFACE, m_pCurrentTime);
 
-	amf_int32 inputs = m_pMuxer->GetInputCount();
-	for (amf_int32 input = 0; input < inputs; input++)
-	{
-		amf::AMFInputPtr pInput;
-		res = m_pMuxer->GetInput(input, &pInput);
-		CHECK_AMF_ERROR_RETURN(res, L"m_pMuxer->GetInput() failed");
+    amf_int32 inputs = pMuxerEx->GetInputCount();
+    for (amf_int32 input = 0; input < inputs; input++)
+    {
+        amf::AMFInputPtr pInput;
+        res = pMuxerEx->GetInput(input, &pInput);
+        CHECK_AMF_ERROR_RETURN(res, L"m_pMuxer->GetInput() failed");
 
-		amf_int64 eStreamType = AMF_STREAM_UNKNOWN;
-		pInput->GetProperty(AMF_STREAM_TYPE, &eStreamType);
+        amf_int64 eStreamType = AMF_STREAM_UNKNOWN;
+        pInput->GetProperty(AMF_STREAM_TYPE, &eStreamType);
 
-		if (eStreamType == AMF_STREAM_VIDEO)
-		{
-			outVideoStreamMuxerIndex = input;
+        if (eStreamType == AMF_STREAM_VIDEO)
+        {
+            outVideoStreamMuxerIndex = input;
 
-			pInput->SetProperty(AMF_STREAM_ENABLED, true);
-			amf_int32 bitrate = 0;
-			if (m_szEncoderID == AMFVideoEncoderVCE_AVC || m_szEncoderID == AMFVideoEncoderVCE_SVC)
-			{
-				pInput->SetProperty(AMF_STREAM_CODEC_ID, AMF_STREAM_CODEC_ID_H264_AVC); // default
-				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, &bitrate);
-				pInput->SetProperty(AMF_STREAM_BIT_RATE, bitrate);
-				amf::AMFInterfacePtr pExtraData;
-				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_EXTRADATA, &pExtraData);
-				pInput->SetProperty(AMF_STREAM_EXTRA_DATA, pExtraData);
+            pInput->SetProperty(AMF_STREAM_ENABLED, true);
+            amf_int32 bitrate = 0;
+            if (m_szEncoderID == AMFVideoEncoderVCE_AVC || m_szEncoderID == AMFVideoEncoderVCE_SVC)
+            {
+                pInput->SetProperty(AMF_STREAM_CODEC_ID, AMF_STREAM_CODEC_ID_H264_AVC); // default
+                m_pEncoder[streamIdx]->GetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, &bitrate);
+                pInput->SetProperty(AMF_STREAM_BIT_RATE, bitrate);
+                amf::AMFInterfacePtr pExtraData;
+                m_pEncoder[streamIdx]->GetProperty(AMF_VIDEO_ENCODER_EXTRADATA, &pExtraData);
+                pInput->SetProperty(AMF_STREAM_EXTRA_DATA, pExtraData);
 
-				AMFSize frameSize;
-				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, &frameSize);
-				pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, frameSize);
+                AMFSize frameSize;
+                m_pEncoder[streamIdx]->GetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, &frameSize);
+                pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, frameSize);
 
-				AMFRate frameRate;
-				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_FRAMERATE, &frameRate);
-				pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_RATE, frameRate);
-			}
-			else if (m_szEncoderID == AMFVideoEncoder_AV1)
-			{
-				pInput->SetProperty(AMF_STREAM_CODEC_ID, AMF_STREAM_CODEC_ID_AV1);
-				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_AV1_TARGET_BITRATE, &bitrate);
-				pInput->SetProperty(AMF_STREAM_BIT_RATE, bitrate);
-				amf::AMFInterfacePtr pExtraData;
-				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_AV1_EXTRA_DATA, &pExtraData);
-				pInput->SetProperty(AMF_STREAM_EXTRA_DATA, pExtraData);
+                AMFRate frameRate;
+                m_pEncoder[streamIdx]->GetProperty(AMF_VIDEO_ENCODER_FRAMERATE, &frameRate);
+                pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_RATE, frameRate);
+            }
+            else if (m_szEncoderID == AMFVideoEncoder_AV1)
+            {
+                pInput->SetProperty(AMF_STREAM_CODEC_ID, AMF_STREAM_CODEC_ID_AV1);
+                m_pEncoder[streamIdx]->GetProperty(AMF_VIDEO_ENCODER_AV1_TARGET_BITRATE, &bitrate);
+                pInput->SetProperty(AMF_STREAM_BIT_RATE, bitrate);
+                amf::AMFInterfacePtr pExtraData;
+                m_pEncoder[streamIdx]->GetProperty(AMF_VIDEO_ENCODER_AV1_EXTRA_DATA, &pExtraData);
+                pInput->SetProperty(AMF_STREAM_EXTRA_DATA, pExtraData);
 
-				AMFSize frameSize;
-				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_AV1_FRAMESIZE, &frameSize);
-				pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, frameSize);
+                AMFSize frameSize;
+                m_pEncoder[streamIdx]->GetProperty(AMF_VIDEO_ENCODER_AV1_FRAMESIZE, &frameSize);
+                pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, frameSize);
 
-				AMFRate frameRate;
-				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_AV1_FRAMERATE, &frameRate);
-				pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_RATE, frameRate);
-			}
-			else
-			{
-				pInput->SetProperty(AMF_STREAM_CODEC_ID, AMF_STREAM_CODEC_ID_H265_HEVC);
-				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE, &bitrate);
-				pInput->SetProperty(AMF_STREAM_BIT_RATE, bitrate);
-				amf::AMFInterfacePtr pExtraData;
-				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_HEVC_EXTRADATA, &pExtraData);
-				pInput->SetProperty(AMF_STREAM_EXTRA_DATA, pExtraData);
+                AMFRate frameRate;
+                m_pEncoder[streamIdx]->GetProperty(AMF_VIDEO_ENCODER_AV1_FRAMERATE, &frameRate);
+                pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_RATE, frameRate);
+            }
+            else
+            {
+                pInput->SetProperty(AMF_STREAM_CODEC_ID, AMF_STREAM_CODEC_ID_H265_HEVC);
+                m_pEncoder[streamIdx]->GetProperty(AMF_VIDEO_ENCODER_HEVC_TARGET_BITRATE, &bitrate);
+                pInput->SetProperty(AMF_STREAM_BIT_RATE, bitrate);
+                amf::AMFInterfacePtr pExtraData;
+                m_pEncoder[streamIdx]->GetProperty(AMF_VIDEO_ENCODER_HEVC_EXTRADATA, &pExtraData);
+                pInput->SetProperty(AMF_STREAM_EXTRA_DATA, pExtraData);
 
-				AMFSize frameSize;
-				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE, &frameSize);
-				pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, frameSize);
+                AMFSize frameSize;
+                m_pEncoder[streamIdx]->GetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMESIZE, &frameSize);
+                pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, frameSize);
 
-				AMFRate frameRate;
-				m_pEncoder->GetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, &frameRate);
-				pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_RATE, frameRate);
-			}
-		}
-		else if (eStreamType == AMF_STREAM_AUDIO)
-		{
-			outAudioStreamMuxerIndex = input;
-			pInput->SetProperty(AMF_STREAM_ENABLED, true);
+                AMFRate frameRate;
+                m_pEncoder[streamIdx]->GetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, &frameRate);
+                pInput->SetProperty(AMF_STREAM_VIDEO_FRAME_RATE, frameRate);
+            }
+        }
+        else if (eStreamType == AMF_STREAM_AUDIO)
+        {
+            outAudioStreamMuxerIndex = input;
+            pInput->SetProperty(AMF_STREAM_ENABLED, true);
 
-			amf_int64 codecID = 0;
-			amf_int64 streamBitRate = 0;
-			amf_int64 streamSampleRate = 0;
-			amf_int64 streamChannels = 0;
-			amf_int64 streamFormat = 0;
-			amf_int64 streamLayout = 0;
-			amf_int64 streamBlockAlign = 0;
-			amf_int64 streamFrameSize = 0;
+            amf_int64 codecID = 0;
+            amf_int64 streamBitRate = 0;
+            amf_int64 streamSampleRate = 0;
+            amf_int64 streamChannels = 0;
+            amf_int64 streamFormat = 0;
+            amf_int64 streamLayout = 0;
+            amf_int64 streamBlockAlign = 0;
+            amf_int64 streamFrameSize = 0;
 
-			m_pAudioEncoder->GetProperty(AUDIO_ENCODER_AUDIO_CODEC_ID, &codecID);
-			m_pAudioEncoder->GetProperty(AUDIO_ENCODER_OUT_AUDIO_BIT_RATE, &streamBitRate);
-			m_pAudioEncoder->GetProperty(AUDIO_ENCODER_OUT_AUDIO_SAMPLE_RATE, &streamSampleRate);
-			m_pAudioEncoder->GetProperty(AUDIO_ENCODER_OUT_AUDIO_CHANNELS, &streamChannels);
-			m_pAudioEncoder->GetProperty(AUDIO_ENCODER_OUT_AUDIO_SAMPLE_FORMAT, &streamFormat);
-			m_pAudioEncoder->GetProperty(AUDIO_ENCODER_OUT_AUDIO_CHANNEL_LAYOUT, &streamLayout);
-			m_pAudioEncoder->GetProperty(AUDIO_ENCODER_OUT_AUDIO_BLOCK_ALIGN, &streamBlockAlign);
-			m_pAudioEncoder->GetProperty(AUDIO_ENCODER_OUT_AUDIO_FRAME_SIZE, &streamFrameSize);
+            m_pAudioEncoder->GetProperty(AUDIO_ENCODER_AUDIO_CODEC_ID, &codecID);
+            m_pAudioEncoder->GetProperty(AUDIO_ENCODER_OUT_AUDIO_BIT_RATE, &streamBitRate);
+            m_pAudioEncoder->GetProperty(AUDIO_ENCODER_OUT_AUDIO_SAMPLE_RATE, &streamSampleRate);
+            m_pAudioEncoder->GetProperty(AUDIO_ENCODER_OUT_AUDIO_CHANNELS, &streamChannels);
+            m_pAudioEncoder->GetProperty(AUDIO_ENCODER_OUT_AUDIO_SAMPLE_FORMAT, &streamFormat);
+            m_pAudioEncoder->GetProperty(AUDIO_ENCODER_OUT_AUDIO_CHANNEL_LAYOUT, &streamLayout);
+            m_pAudioEncoder->GetProperty(AUDIO_ENCODER_OUT_AUDIO_BLOCK_ALIGN, &streamBlockAlign);
+            m_pAudioEncoder->GetProperty(AUDIO_ENCODER_OUT_AUDIO_FRAME_SIZE, &streamFrameSize);
 
-			amf::AMFInterfacePtr pExtraData;
-			m_pAudioEncoder->GetProperty(AUDIO_ENCODER_OUT_AUDIO_EXTRA_DATA, &pExtraData);
-			pInput->SetProperty(AMF_STREAM_EXTRA_DATA, pExtraData);
+            amf::AMFInterfacePtr pExtraData;
+            m_pAudioEncoder->GetProperty(AUDIO_ENCODER_OUT_AUDIO_EXTRA_DATA, &pExtraData);
+            pInput->SetProperty(AMF_STREAM_EXTRA_DATA, pExtraData);
 
-			pInput->SetProperty(AMF_STREAM_CODEC_ID, codecID);
-			pInput->SetProperty(AMF_STREAM_BIT_RATE, streamBitRate);
-			pInput->SetProperty(AMF_STREAM_AUDIO_SAMPLE_RATE, streamSampleRate);
-			pInput->SetProperty(AMF_STREAM_AUDIO_CHANNELS, streamChannels);
-			pInput->SetProperty(AMF_STREAM_AUDIO_FORMAT, streamFormat);
-			pInput->SetProperty(AMF_STREAM_AUDIO_CHANNEL_LAYOUT, streamLayout);
-			pInput->SetProperty(AMF_STREAM_AUDIO_BLOCK_ALIGN, streamBlockAlign);
-			pInput->SetProperty(AMF_STREAM_AUDIO_FRAME_SIZE, streamFrameSize);
-		}
-	}
+            pInput->SetProperty(AMF_STREAM_CODEC_ID, codecID);
+            pInput->SetProperty(AMF_STREAM_BIT_RATE, streamBitRate);
+            pInput->SetProperty(AMF_STREAM_AUDIO_SAMPLE_RATE, streamSampleRate);
+            pInput->SetProperty(AMF_STREAM_AUDIO_CHANNELS, streamChannels);
+            pInput->SetProperty(AMF_STREAM_AUDIO_FORMAT, streamFormat);
+            pInput->SetProperty(AMF_STREAM_AUDIO_CHANNEL_LAYOUT, streamLayout);
+            pInput->SetProperty(AMF_STREAM_AUDIO_BLOCK_ALIGN, streamBlockAlign);
+            pInput->SetProperty(AMF_STREAM_AUDIO_FRAME_SIZE, streamFrameSize);
+        }
+    }
 
-	res = m_pMuxer->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
-	CHECK_AMF_ERROR_RETURN(res, L"m_pMuxer->Init() failed");
+    res = pMuxerEx->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
+    CHECK_AMF_ERROR_RETURN(res, L"m_pMuxer->Init() failed");
 
-	return res;
+    return res;
 }
-
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT DisplayDvrPipeline::Init()
 {
-	// Shut down an running pipeline
-	Terminate();
+    // Shut down an running pipeline
+    Terminate();
 
-	AMF_RESULT res = AMF_OK;
+    AMF_RESULT res = AMF_OK;
 
-	//---------------------------------------------------------------------------------------------
-	// State setup and declarations
-	amf_bool hasDDVideoStream = false;
-	amf_bool hasSessionAudioStream = false;
+    //---------------------------------------------------------------------------------------------
+    // State setup and declarations
+    amf_bool hasDDVideoStream = false;
+    amf_bool hasSessionAudioStream = false;
 
-	amf_int32 videoWidth = 1920;
-	amf_int32 videoHeight = 1080;
-	GetParam(PARAM_NAME_VIDEO_WIDTH, videoWidth);
-	GetParam(PARAM_NAME_VIDEO_HEIGHT, videoHeight);
+    amf_int32 videoWidth = 1920;
+    amf_int32 videoHeight = 1080;
+    GetParam(PARAM_NAME_VIDEO_WIDTH, videoWidth);
+    GetParam(PARAM_NAME_VIDEO_HEIGHT, videoHeight);
 
-	amf_uint32 adapterID = 0;
-	GetParam(PARAM_NAME_ADAPTERID, adapterID);
+    amf_uint32 adapterID = 0;
+    GetParam(PARAM_NAME_ADAPTERID, adapterID);
 
-	// The duplicate display functionality used by the DisplayDvr
-	// component requires DX11
-	std::wstring engineStr = L"DX11";
-	amf::AMF_MEMORY_TYPE engineMemoryType = amf::AMF_MEMORY_DX11;
+    // The duplicate display functionality used by the DisplayDvr
+    // component requires DX11
+    std::wstring engineStr = L"DX11";
+    amf::AMF_MEMORY_TYPE engineMemoryType = amf::AMF_MEMORY_DX11;
 
-	//---------------------------------------------------------------------------------------------
-	// Init context and devices
-	res = InitContext(engineStr, engineMemoryType, adapterID);
-	if (AMF_OK != res)
-	{
-		return res;
-	}
+    //---------------------------------------------------------------------------------------------
+    // Init context and devices
+    res = InitContext(engineStr, engineMemoryType, adapterID);
+    if (AMF_OK != res)
+    {
+        return res;
+    }
 
-	//---------------------------------------------------------------------------------------------
-	// Init video except the muxer
-	res = InitVideo(engineMemoryType, videoWidth, videoHeight);
-	if (AMF_OK == res)
-	{
-		hasDDVideoStream = true;
-	}
-	else if (AMF_UNEXPECTED == res)
-	{
-		SetErrorMessage(L"Unsupported OS.");
-		return AMF_FAIL;
-	}
+    std::vector<amf_uint32> monitorIDs;
+    GetMonitorIDs(monitorIDs);
 
-	//---------------------------------------------------------------------------------------------
-	// Init audio except the muxer. If audio fails to init then we still allow video to
-	// be captured.
-	res = InitAudio();
-	if (AMF_OK == res)
-	{
-		hasSessionAudioStream = true;
-	}
+    for (std::vector<amf_uint32>::iterator it = monitorIDs.begin(); it != monitorIDs.end(); it++)
+    {
+        //---------------------------------------------------------------------------------------------
+        // Init video except the muxer
+        res = InitVideo(*it, engineMemoryType, videoWidth, videoHeight);
+        if (AMF_OK == res)
+        {
+            hasDDVideoStream = true;
+        }
+        else if (AMF_UNEXPECTED == res)
+        {
+            SetErrorMessage(L"Unsupported OS.");
+            return AMF_FAIL;
+        }
+    }
+    //---------------------------------------------------------------------------------------------
+    // Init audio except the muxer. If audio fails to init then we still allow video to
+    // be captured.
+    res = InitAudio();
+    if (AMF_OK == res)
+    {
+        hasSessionAudioStream = true;
+    }
 
-	// Check that we have at least video
-	if (!hasDDVideoStream)
-	{
-		SetErrorMessage(L"No video stream available.");
-		return AMF_FAIL;
-	}
+    // Check that we have at least video
+    if (!hasDDVideoStream)
+    {
+        SetErrorMessage(L"No video stream available.");
+        return AMF_FAIL;
+    }
 
-	//---------------------------------------------------------------------------------------------
-	// Init muxer which brings audio and video together
-	res = InitMuxer(hasDDVideoStream, hasSessionAudioStream, m_outVideoStreamMuxerIndex, m_outAudioStreamMuxerIndex);
-	if (AMF_OK != res)
-	{
-		return res;
-	}
-
-	return ConnectPipeline();
+    //---------------------------------------------------------------------------------------------
+    // Init muxer which brings audio and video together
+    for (std::vector<amf_uint32>::iterator it = monitorIDs.begin(); it != monitorIDs.end(); it++)
+    {
+        res = InitMuxer(hasDDVideoStream, hasSessionAudioStream, m_outVideoStreamMuxerIndex, m_outAudioStreamMuxerIndex);
+        if (AMF_OK != res)
+        {
+            return res;
+        }
+    }
+    return ConnectPipeline();
 }
 
 AMF_RESULT DisplayDvrPipeline::ConnectPipeline()
 {
-	amf_int frameParameterFreq = 0;
-	amf_int dynamicParameterFreq = 0;
-
-	// Connect components of the video pipeline together
-	PipelineElementPtr pPipelineElementVideoEncoder = PipelineElementPtr(new PipelineElementEncoder(m_pEncoder, this, frameParameterFreq, dynamicParameterFreq));
-	PipelineElementPtr pPipelineElementMuxer = PipelineElementPtr(new AMFComponentExElement(m_pMuxer));
-
-	Connect(PipelineElementPtr(new AMFComponentElementDisplayCaptureInterceptor(this, m_pDisplayCapture)), 1, CT_Direct);
-	AMFComponentElementConverterInterceptor* interceptor = new AMFComponentElementConverterInterceptor(this, m_pConverter);
-	m_converterInterceptor = interceptor;
-
-    if(bLowLatency)
+    PipelineElementPtr nextAudio;
+    for (size_t i = 0; i != m_pDisplayCapture.size(); i++)
     {
-    	Connect(PipelineElementPtr(interceptor), 0, CT_Direct);
-	    Connect(pPipelineElementVideoEncoder, 0, CT_Direct);
+
+        amf_int frameParameterFreq = 0;
+        amf_int dynamicParameterFreq = 0;
+
+        // Connect components of the video pipeline together
+        PipelineElementPtr pPipelineElementVideoEncoder = PipelineElementPtr(new PipelineElementEncoder(m_pEncoder[i], this, frameParameterFreq, dynamicParameterFreq));
+        PipelineElementPtr pPipelineElementMuxer = PipelineElementPtr(new AMFComponentExElement(m_pMuxer[i]));
+
+        AMFComponentElementConverterInterceptor* interceptorConverter = new AMFComponentElementConverterInterceptor(this, m_pConverter[i]);
+        AMFComponentElementDisplayCaptureInterceptor* interseptorCapture = new AMFComponentElementDisplayCaptureInterceptor((amf_int32)i, interceptorConverter, this, m_pDisplayCapture[i]);
+
+        Connect(PipelineElementPtr(interseptorCapture), 1, CT_Direct);
+        Connect(PipelineElementPtr(interceptorConverter), 0, CT_Direct);
+        Connect(pPipelineElementVideoEncoder, 0, CT_Direct);
+        Connect(pPipelineElementMuxer, m_outVideoStreamMuxerIndex, pPipelineElementVideoEncoder, 0, 10, CT_ThreadQueue);
+
+        if (m_outAudioStreamMuxerIndex >= 0)
+        {
+            if (i == 0)
+            {
+                Connect(PipelineElementPtr(new AMFComponentElement(m_pAudioCapture)), 100, CT_ThreadQueue);
+                // Connect components of the audio pipeline together
+                PipelineElementPtr pPipelineElementAudioEncoder =
+                    PipelineElementPtr(new AMFComponentElement(m_pAudioEncoder));
+
+                Connect(PipelineElementPtr(new AMFComponentElement(m_pAudioConverter)), 4, CT_ThreadQueue);
+                Connect(pPipelineElementAudioEncoder, 10, CT_Direct);
+                if (m_pDisplayCapture.size() > 1)
+                {
+                    PipelineElementPtr splitter = PipelineElementPtr(new Splitter(true, (amf_int32)m_pDisplayCapture.size(), 1));
+                    nextAudio = splitter;
+                    Connect(splitter, 2, CT_Direct);
+                }
+                else
+                {
+                    nextAudio = pPipelineElementAudioEncoder;
+                }
+            }
+
+            Connect(pPipelineElementMuxer, m_outAudioStreamMuxerIndex, nextAudio, (amf_int32)i, 10, CT_ThreadQueue);
+        }
     }
-    else
-    {
-    	Connect(PipelineElementPtr(interceptor), 4, CT_ThreadQueue);
-	    Connect(pPipelineElementVideoEncoder, 10, CT_ThreadQueue);
-    }
-    Connect(pPipelineElementMuxer, m_outVideoStreamMuxerIndex, pPipelineElementVideoEncoder, 0, 10, CT_ThreadQueue);
-
-	if (m_outAudioStreamMuxerIndex >= 0)
-	{
-		// Connect components of the audio pipeline together
-		PipelineElementPtr pPipelineElementAudioEncoder =
-			PipelineElementPtr(new AMFComponentElement(m_pAudioEncoder));
-
-		Connect(PipelineElementPtr(new AMFComponentElement(m_pAudioCapture)), 100, CT_ThreadQueue);
-		Connect(PipelineElementPtr(new AMFComponentElement(m_pAudioConverter)), 4, CT_ThreadQueue);
-		Connect(pPipelineElementAudioEncoder, 10, CT_Direct);
-		Connect(pPipelineElementMuxer, m_outAudioStreamMuxerIndex, pPipelineElementAudioEncoder, 0, 10, CT_ThreadQueue);
-	}
-
-	return AMF_OK;
+    return AMF_OK;
 }
 
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT DisplayDvrPipeline::Stop()
 {
-	Pipeline::Stop();
+    Pipeline::Stop();
 
-	if (m_pAudioCapture != NULL)
-	{
-		m_pAudioCapture->Terminate();
-		m_pAudioCapture.Release();
-	}
-	if (m_pAudioDecoder != NULL)
-	{
-		m_pAudioDecoder->Terminate();
-		m_pAudioDecoder.Release();
-	}
-	if (m_pAudioConverter != NULL)
-	{
-		m_pAudioConverter->Terminate();
-		m_pAudioConverter.Release();
-	}
-	if (m_pAudioEncoder != NULL)
-	{
-		m_pAudioEncoder->Terminate();
-		m_pAudioEncoder.Release();
-	}
-	if (m_pConverter != NULL)
-	{
-		m_pConverter->Terminate();
-		m_pConverter.Release();
-	}
-	if (m_pDisplayCapture != NULL)
-	{
-		m_pDisplayCapture->Terminate();
-		m_pDisplayCapture.Release();
-	}
-	if (m_pEncoder != NULL)
-	{
-		m_pEncoder->Terminate();
-		m_pEncoder.Release();
-	}
-	if (m_pMuxer != NULL)
-	{
-		m_pMuxer->Terminate();
-		m_pMuxer.Release();
-	}
-	if (m_pContext != NULL)
-	{
-		m_pContext->Terminate();
-		m_pContext.Release();
-	}
+    if (m_pAudioCapture != NULL)
+    {
+        m_pAudioCapture->Terminate();
+        m_pAudioCapture.Release();
+    }
+    if (m_pAudioDecoder != NULL)
+    {
+        m_pAudioDecoder->Terminate();
+        m_pAudioDecoder.Release();
+    }
+    if (m_pAudioConverter != NULL)
+    {
+        m_pAudioConverter->Terminate();
+        m_pAudioConverter.Release();
+    }
+    if (m_pAudioEncoder != NULL)
+    {
+        m_pAudioEncoder->Terminate();
+        m_pAudioEncoder.Release();
+    }
+
+    for (size_t i = 0; i != m_pConverter.size(); i++)
+    {
+        m_pConverter[i]->Terminate();
+    }
+    m_pConverter.clear();
+
+    for (size_t i = 0; i != m_pDisplayCapture.size(); i++)
+    {
+        m_pDisplayCapture[i]->Terminate();
+    }
+    m_pDisplayCapture.clear();
+    for (size_t i = 0; i != m_pEncoder.size(); i++)
+    {
+        m_pEncoder[i]->Terminate();
+    }
+    m_pEncoder.clear();
+    for (size_t i = 0; i != m_pMuxer.size(); i++)
+    {
+        m_pMuxer[i]->Terminate();
+    }
+    m_pMuxer.clear();
+    if (m_pContext != NULL)
+    {
+        m_pContext->Terminate();
+        m_pContext.Release();
+    }
 #if !defined(METRO_APP)
-	m_deviceDX9.Terminate();
+    m_deviceDX9.Terminate();
 #endif // !defined(METRO_APP)
-	m_deviceDX11.Terminate();
+    m_deviceDX11.Terminate();
 
-	if (m_useOpenCLConverter)
-	{
-		m_deviceOpenCL.Terminate();
-	}
+    if (m_useOpenCLConverter)
+    {
+        m_deviceOpenCL.Terminate();
+    }
 
-	return AMF_OK;
+    return AMF_OK;
 }
 
 //-------------------------------------------------------------------------------------------------
 void DisplayDvrPipeline::OnParamChanged(const wchar_t* name)
 {
-	if (m_pMuxer == NULL)
-	{
-		return;
-	}
-	if (name != NULL)
-	{
-		if (0 != wcscmp(name, PARAM_NAME_OUTPUT))
-		{
-			const wchar_t* value;
-			GetParamWString(name, value);
-			m_pMuxer->SetProperty(FFMPEG_MUXER_PATH, value);
-		}
-	}
+    if (m_pMuxer.size() == 0)
+    {
+        return;
+    }
+    if (name != NULL)
+    {
+        if (0 != wcscmp(name, PARAM_NAME_OUTPUT))
+        {
+            UpdateMuxerFileName();
+        }
+    }
 }
-
 //-------------------------------------------------------------------------------------------------
-amf::AMF_SURFACE_FORMAT DisplayDvrPipeline::GetConverterFormat() const
+AMF_RESULT DisplayDvrPipeline::SwitchConverterFormat(amf_int32 index, amf::AMF_SURFACE_FORMAT format)
 {
-	amf::AMFLock lock(&m_sync);
+    amf::AMFLock lock(&m_sync);
 
-	return m_converterSurfaceFormat;
+    // Terminate first
+    m_pConverter[index]->Terminate();
+    amf_int32 videoWidth = 1920;
+    amf_int32 videoHeight = 1080;
+    GetParam(PARAM_NAME_VIDEO_WIDTH, videoWidth);
+    GetParam(PARAM_NAME_VIDEO_HEIGHT, videoHeight);
+    // Init the converter
+    m_pConverter[index]->Init(format, videoWidth, videoHeight);
+    //
+    return  AMF_OK;
 }
-
 //-------------------------------------------------------------------------------------------------
-void DisplayDvrPipeline::SetConverterFormat(amf::AMF_SURFACE_FORMAT format)
+AMF_RESULT DisplayDvrPipeline::GetMonitorIDs(std::vector<amf_uint32>& monitorIDs)
 {
-	amf::AMFLock lock(&m_sync);
+    monitorIDs.clear();
 
-	m_converterSurfaceFormat = format;
+    std::wstring sIDs;
+    GetParamWString(PARAM_NAME_MONITORID, sIDs);
+    // parse
+    if (sIDs.length() == 0)
+    {
+        return AMF_OK;
+    }
+    std::wstring::size_type pos = 0;
+    while (pos != std::wstring::npos)
+    {
+        std::wstring::size_type old_pos = pos;
+        pos = sIDs.find(L',', pos);
+        std::wstring::size_type end = pos == std::wstring::npos ? sIDs.length() : pos;
+        std::wstring tmp = sIDs.substr(old_pos, end - old_pos);
+        amf_uint32 id = _wtoi(tmp.c_str());
+        monitorIDs.push_back(id);
+        if (pos != std::wstring::npos)
+        {
+            pos++;
+        }
+    }
+    return AMF_OK;
 }
-
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT DisplayDvrPipeline::SwitchConverterFormat(amf::AMF_SURFACE_FORMAT format)
+AMF_RESULT DisplayDvrPipeline::SetMonitorIDs(const std::vector<amf_uint32>& monitorIDs)
 {
-	amf::AMFLock lock(&m_sync);
-
-	AMF_RESULT res = AMF_FAIL;
-	if (format != m_converterSurfaceFormat)
-	{
-		m_converterSurfaceFormat = format;
-		// Terminate first
-		((AMFComponentElementConverterInterceptor*)m_converterInterceptor)->SetBlock(true);
-		m_pConverter->Terminate();
-		amf_int32 videoWidth = 1920;
-		amf_int32 videoHeight = 1080;
-		GetParam(PARAM_NAME_VIDEO_WIDTH, videoWidth);
-		GetParam(PARAM_NAME_VIDEO_HEIGHT, videoHeight);
-		// Init the converter
-		m_pConverter->Init(m_converterSurfaceFormat, videoWidth, videoHeight);
-		((AMFComponentElementConverterInterceptor*)m_converterInterceptor)->SetBlock(false);
-		//
-		res = AMF_OK;
-	}
-	return res;
+    std::wstringstream result;
+    for (std::vector<amf_uint32>::const_iterator it = monitorIDs.begin(); it != monitorIDs.end(); it++)
+    {
+        result << *it;
+        if (it + 1 != monitorIDs.end())
+        {
+            result << L",";
+        }
+    }
+    SetParamAsString(PARAM_NAME_MONITORID, result.str());
+    return AMF_OK;
 }
-
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT                DisplayDvrPipeline::UpdateMuxerFileName()
+{
+    for (int i = 0; i < (int)m_pMuxer.size(); i++)
+    {
+        std::wstring outputPath = L"";
+        AMF_RESULT res = GetParamWString(PARAM_NAME_OUTPUT, outputPath);
+        CHECK_AMF_ERROR_RETURN(res, L"Output Path");
+        if (m_pMuxer.size() > 1)
+        {
+            wchar_t buf[100];
+            swprintf(buf, amf_countof(buf), L"_%d", i);
+            std::wstring::size_type pos = outputPath.find_last_of(L'.');
+            std::wstring tmp = outputPath.substr(0, pos);
+            tmp += buf;
+            tmp += outputPath.substr(pos);
+            outputPath = tmp;
+        }
+        m_pMuxer[i]->SetProperty(FFMPEG_MUXER_PATH, outputPath.c_str());
+    }
+    return AMF_OK;
+}

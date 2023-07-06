@@ -37,7 +37,9 @@
 #include "AudioEncoderFFMPEGImpl.h"
 #include "FileDemuxerFFMPEGImpl.h"
 #include "FileMuxerFFMPEGImpl.h"
-
+#include "H264EncoderFFMPEGImpl.h"
+#include "HEVCEncoderFFMPEGImpl.h"
+#include "AV1EncoderFFMPEGImpl.h"
 
 //define export declaration
 #if defined(_WIN32)
@@ -92,7 +94,18 @@ extern "C"
         {
             *ppComponent = new amf::AMFInterfaceMultiImpl< amf::AMFVideoDecoderFFMPEGImpl, amf::AMFComponent, amf::AMFContext* >(pContext);
         }
-        
+        else if (name == FFMPEG_ENCODER_H264)
+        {
+            *ppComponent = new amf::AMFInterfaceMultiImpl< amf::H264EncoderFFMPEGImpl, amf::AMFComponent, amf::AMFContext* >(pContext);
+        }
+        else if (name == FFMPEG_ENCODER_HEVC)
+        {
+            *ppComponent = new amf::AMFInterfaceMultiImpl< amf::HEVCEncoderFFMPEGImpl, amf::AMFComponent, amf::AMFContext* >(pContext);
+        }
+        else if (name == FFMPEG_ENCODER_AV1)
+        {
+            *ppComponent = new amf::AMFInterfaceMultiImpl< amf::AV1EncoderFFMPEGImpl, amf::AMFComponent, amf::AMFContext* >(pContext);
+        }
 
         if (*ppComponent)
         {

@@ -46,8 +46,8 @@ extern "C"
 
     #include "libavformat/avformat.h"
     #include "libavcodec/avcodec.h"
-    #include "libavresample/avresample.h"
     #include "libavutil/opt.h"
+    #include "libswresample/swresample.h"
 
 #if defined(_MSC_VER)
 #pragma warning(pop)
@@ -85,25 +85,24 @@ namespace amf
 
         virtual AMF_RESULT  AMF_STD_CALL  SubmitInput(AMFData* pData);
         virtual AMF_RESULT  AMF_STD_CALL  QueryOutput(AMFData** ppData);
-        virtual AMFContext* AMF_STD_CALL  GetContext()                                              {  return m_pContext;  };
+        virtual AMFContext* AMF_STD_CALL  GetContext()                                                  {  return m_pContext;  };
         virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* /*callback*/)    {  return AMF_NOT_SUPPORTED;  };
         virtual AMF_RESULT  AMF_STD_CALL  GetCaps(AMFCaps** /*ppCaps*/)                                 {  return AMF_NOT_SUPPORTED;  };
         virtual AMF_RESULT  AMF_STD_CALL  Optimize(AMFComponentOptimizationCallback* /*pCallback*/)     {  return AMF_OK;  };
 
         // AMFPropertyStorageObserver interface
-        virtual void        AMF_STD_CALL  OnPropertyChanged(const wchar_t* pName);
+        virtual void        AMF_STD_CALL  OnPropertyChanged(const wchar_t* /*pName*/)                   {};
 
     private:
       mutable AMFCriticalSection  m_sync;
 
         AMFContextPtr            m_pContext;
 
-        // member variables from AMFAudioConverterFFMPEG
-        AVAudioResampleContext*  m_pResampler;
+        SwrContext*              m_pResampler;
 
         AMFAudioBufferPtr        m_pInputData;
 
-        short*                   m_pTempBuffer;
+        amf_uint8*               m_pTempBuffer;
         amf_size                 m_uiTempBufferSize;
 
         // cache property values and update them on 
@@ -116,12 +115,20 @@ namespace amf
         amf_int64               m_outSampleRate;
         amf_int64               m_inChannels;
         amf_int64               m_outChannels;
+        amf_int64               m_inChannelLayout;
+        amf_int64               m_outChannelLayout;
+
         bool                    m_bEof;
-        bool                    m_bDrained;
         amf_pts                 m_ptsNext;
+        amf_pts                 m_ptsPrevEnd;
 
         amf_int64               m_audioFrameSubmitCount;
         amf_int64               m_audioFrameQueryCount;
+
+
+        AMF_RESULT AMF_STD_CALL InitResampler();
+        AMF_RESULT AMF_STD_CALL ReInitOnGap();
+
 
         AMFAudioConverterFFMPEGImpl(const AMFAudioConverterFFMPEGImpl&);
         AMFAudioConverterFFMPEGImpl& operator=(const AMFAudioConverterFFMPEGImpl&);

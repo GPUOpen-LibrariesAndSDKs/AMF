@@ -80,7 +80,7 @@ AMFAudioCaptureImpl::AMFAudioCaptureImpl(AMFContext* pContext) :
     m_prevPts(0),
     m_bFlush(false),
     m_CurrentPts(0),
-    m_iSamplesFromStream(0xFFFFFFFFFFFFFFFFLL),
+    m_iSamplesFromStream((amf_uint64)0xFFFFFFFFFFFFFFFFLL),
     m_FirstSample(true),
     m_DiffsAcc(0),
     m_StatCount(0)
@@ -236,7 +236,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioCaptureImpl::Init(AMF_SURFACE_FORMAT /*format*/
 		m_audioPollingThread.Start();
 	}
 
-    m_iSamplesFromStream = 0xFFFFFFFFFFFFFFFFLL;
+    m_iSamplesFromStream = (amf_uint64)0xFFFFFFFFFFFFFFFFLL;
     m_DiffsAcc = 0;
     m_StatCount = 0;
 

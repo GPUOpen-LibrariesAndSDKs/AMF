@@ -267,14 +267,14 @@ void  VideoPresenter::UpdateProcessor()
         }
 
         // Need to comment this out for now because it sets the HQScaler resolution to the window size instead of using the scaling ratio
-        //if (m_pHQScaler != NULL)
-        //{
-        //    const amf::AMFPropertyInfo* pParamInfo = nullptr;
-        //    if ((m_pHQScaler->GetPropertyInfo(AMF_HQ_SCALER_OUTPUT_SIZE, &pParamInfo) == AMF_OK) && pParamInfo)
-        //    {
-        //        m_pHQScaler->SetProperty(AMF_HQ_SCALER_OUTPUT_SIZE, ::AMFConstructSize(m_rectClient.Width(), m_rectClient.Height()));
-        //    }
-        //}
+        if (m_pHQScaler != NULL)
+        {
+            const amf::AMFPropertyInfo* pParamInfo = nullptr;
+            if ((m_pHQScaler->GetPropertyInfo(AMF_HQ_SCALER_OUTPUT_SIZE, &pParamInfo) == AMF_OK) && pParamInfo)
+            {
+                m_pHQScaler->SetProperty(AMF_HQ_SCALER_OUTPUT_SIZE, ::AMFConstructSize(m_rectClient.Width(), m_rectClient.Height()));
+            }
+        }
     }
 }
 

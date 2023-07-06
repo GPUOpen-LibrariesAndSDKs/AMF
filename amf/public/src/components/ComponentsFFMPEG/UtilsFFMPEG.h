@@ -33,6 +33,7 @@
 #pragma once
 
 #include "public/include/components/Component.h"
+#include "public/include/core/Buffer.h"
 
 
 extern "C"
@@ -44,26 +45,69 @@ extern "C"
     #include "libavformat/avformat.h"
     #include "libavformat/url.h"
     #include "libavcodec/avcodec.h"
-    #include "libavresample/avresample.h"
     #include "libavutil/opt.h"
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
 }
 
+#include <type_traits>
+
+
+
+class AVFrameEx : public AVFrame
+{
+public:
+    AVFrameEx()
+    {
+        static_assert(std::is_polymorphic<AVFrameEx>::value == false, "AVFrameEx should not have a vTable");
+        memset(this, 0, sizeof(AVFrame));
+    }
+    ~AVFrameEx()
+    {
+        av_frame_unref(this);
+    }
+};
+
+
+
+class AVPacketEx : public AVPacket
+{
+public:
+    AVPacketEx()
+    {
+        static_assert(std::is_polymorphic<AVPacketEx>::value == false, "AVPacketEx should not have a vTable");
+        memset(this, 0, sizeof(AVPacket));
+        av_init_packet(this);
+    }
+    ~AVPacketEx()
+    {
+        av_packet_unref(this);
+    }
+};
+
+
 
 namespace amf
 {
-    void              AMF_STD_CALL   InitFFMPEG();
+    void                      AMF_STD_CALL   InitFFMPEG();
 
-    AMF_AUDIO_FORMAT  AMF_STD_CALL   GetAMFAudioFormat(AVSampleFormat inFormat);
-    AVSampleFormat    AMF_STD_CALL   GetFFMPEGAudioFormat(AMF_AUDIO_FORMAT inFormat);
+    AMF_AUDIO_FORMAT          AMF_STD_CALL   GetAMFAudioFormat(AVSampleFormat inFormat);
+    AVSampleFormat            AMF_STD_CALL   GetFFMPEGAudioFormat(AMF_AUDIO_FORMAT inFormat);
 
-    amf_int32         AMF_STD_CALL   GetAudioSampleSize(AMF_AUDIO_FORMAT inFormat);
-    bool              AMF_STD_CALL   IsAudioPlanar(AMF_AUDIO_FORMAT inFormat);
+    amf_int32                 AMF_STD_CALL   GetAudioSampleSize(AMF_AUDIO_FORMAT inFormat);
+    bool                      AMF_STD_CALL   IsAudioPlanar(AMF_AUDIO_FORMAT inFormat);
 
     AMF_STREAM_CODEC_ID_ENUM  AMF_STD_CALL   GetAMFVideoFormat(AVCodecID inFormat);
-    AVCodecID    AMF_STD_CALL   GetFFMPEGVideoFormat(AMF_STREAM_CODEC_ID_ENUM inFormat);
+    AVCodecID                 AMF_STD_CALL   GetFFMPEGVideoFormat(AMF_STREAM_CODEC_ID_ENUM inFormat);
+
+    bool                      AMF_STD_CALL   ReadAVPacketInfo(AMFBuffer* pBuffer, AVPacket* pPacket);
+    void                      AMF_STD_CALL   AttachAVPacketInfo(AMFBuffer* pBuffer, const AVPacket* pPacket);
+
+    amf_pts                   AMF_STD_CALL   GetPtsFromFFMPEG(AMFBuffer* pBuffer, AVFrame* pFrame);
+
+    AMF_SURFACE_FORMAT        AMF_STD_CALL   GetAMFSurfaceFormat(AVPixelFormat eFormat);
+    AVPixelFormat             AMF_STD_CALL   GetFFMPEGSurfaceFormat(AMF_SURFACE_FORMAT eFormat);
 }
 
 // there is no definition in FFMPEG for H264MVC so create an ID
@@ -71,6 +115,7 @@ namespace amf
 #define AMF_CODEC_H265MAIN10      1005
 #define AV_CODEC_H264MVC          1006
 #define AMF_CODEC_VP9_10BIT       1007
+#define AMF_CODEC_AV1_12BIT       1008
 
 extern AVRational AMF_TIME_BASE_Q;
 extern AVRational FFMPEG_TIME_BASE_Q;

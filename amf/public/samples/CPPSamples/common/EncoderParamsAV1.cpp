@@ -53,6 +53,22 @@ static AMF_RESULT ParamConverterUsageAV1(const std::wstring& value, amf::AMFVari
     {
         paramValue = AMF_VIDEO_ENCODER_AV1_USAGE_LOW_LATENCY;
     }
+    else if(uppValue == L"ULTRALOWLATENCY"|| uppValue == L"2")
+    {
+        paramValue = AMF_VIDEO_ENCODER_AV1_USAGE_ULTRA_LOW_LATENCY;
+    }
+    else if(uppValue == L"WEBCAM"|| uppValue == L"3")
+    {
+        paramValue = AMF_VIDEO_ENCODER_AV1_USAGE_WEBCAM;
+    }
+    else if (uppValue == L"HIGHQUALITY" || uppValue == L"HQ" || uppValue == L"4")
+    {
+        paramValue = AMF_VIDEO_ENCODER_AV1_USAGE_HIGH_QUALITY;
+    }
+    else if (uppValue == L"LOWLATENCYHIGHQUALITY" || uppValue == L"LLHQ" || uppValue == L"5")
+    {
+        paramValue = AMF_VIDEO_ENCODER_AV1_USAGE_LOW_LATENCY_HIGH_QUALITY;
+    }
     else {
         LOG_ERROR(L"AMF_VIDEO_ENCODER_AV1_USAGE_ENUM hasn't \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
@@ -466,7 +482,7 @@ AMF_RESULT RegisterEncoderParamsAV1(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_PROFILE, ParamEncoderStatic, L"AV1 profile (Main, default = Main)", ParamConverterProfileAV1);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_TILES_PER_FRAME, ParamEncoderStatic, L"Number of tiles Per Frame. This is treated as suggestion (integer, default = 1)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_LEVEL, ParamEncoderStatic, L"AV1 profile level (float or integer, default = based on HW", ParamConverterProfileLevelAV1);
-    pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET, ParamEncoderStatic, L"Quality Preset (BALANCED, SPEED, QUALITY default = depends on USAGE)", ParamConverterQualityAV1);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET, ParamEncoderStatic, L"Quality Preset (BALANCED, SPEED, QUALITY, HIGHQUALITY default = depends on USAGE)", ParamConverterQualityAV1);
     // Codec Configuration
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_SCREEN_CONTENT_TOOLS, ParamEncoderStatic, L"Allow enabling screen content tools (true, false default = depends on USAGE)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_ORDER_HINT, ParamEncoderStatic, L"Code order hint (true, false default =  depends on USAGE)", ParamConverterBoolean);
@@ -517,10 +533,12 @@ AMF_RESULT RegisterEncoderParamsAV1(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_SKIP_FRAME, ParamEncoderDynamic, L"Rate Control Based Frame Skip (true, false default =  depends on USAGE)", ParamConverterBoolean);
     // Picture Management Configuration
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_GOP_SIZE, ParamEncoderDynamic, L"GOP Size (in frames, depends on USAGE)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_INTRA_PERIOD, ParamEncoderDynamic, L"The distance between two intra frames (in frames, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_HEADER_INSERTION_MODE, ParamEncoderDynamic, L"Insertion mode (none, gop, idr default = depends on USAGE)", ParamConverterInsertionModeAV1);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_SWITCH_FRAME_INSERTION_MODE, ParamEncoderDynamic, L"Switch frame insertin mode (none, fixed default = depends on USAGE)", ParamConverterSwitchInsertionModeAV1);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_SWITCH_FRAME_INTERVAL, ParamEncoderDynamic, L"The interval between two inserted switch frames (integer, default = depends on USAGE)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_NUM_TEMPORAL_LAYERS, ParamEncoderDynamic, L"Number of temporal layers (integer, default = depends on USAGE)", ParamConverterInt64);
+
     //pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_TEMPORAL_LAYER_SELECT, ParamEncoderDynamic, L"Select temporal layer to apply parameter changes and queries (integer, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_INTRA_REFRESH_MODE, ParamEncoderDynamic, L"Intra Refresh mode (disable, GOP aligned, continuous, default = disable)", ParamConverterIntraRefreshAV1);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_INTRAREFRESH_STRIPES, ParamEncoderDynamic, L"Frame numbers for an Intra Refresh cycle (integer, default = 0)", ParamConverterInt64);

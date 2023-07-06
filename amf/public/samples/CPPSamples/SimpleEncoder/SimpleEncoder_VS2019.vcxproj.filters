@@ -26,6 +26,12 @@
     <ClCompile Include="..\..\..\common\TraceAdapter.cpp">
       <Filter>public\common</Filter>
     </ClCompile>
+    <ClCompile Include="..\common\SurfaceGenerator.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\MiscHelpers.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\AMFFactory.h">
@@ -46,6 +52,15 @@
     <ClInclude Include="..\..\..\common\TraceAdapter.h">
       <Filter>public\common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\SurfaceGenerator.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\MiscHelpers.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\PollingThread.h">
+      <Filter>common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="public">
@@ -53,6 +68,9 @@
     </Filter>
     <Filter Include="public\common">
       <UniqueIdentifier>{3a9e6145-6998-4143-9eb0-b87a3545d9d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common">
+      <UniqueIdentifier>{3f88414d-f136-45fe-96ec-e3b4ec8e8167}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

@@ -27,12 +27,20 @@
 // THE SOFTWARE.
 //
 
-New features are available in
-Driver: Radeon Software Adrenalin 2019 Edition; 19.7.1 Software: 19.30 and later
+
+1.4.30.0 (6.7.2023) version
+--------------------------
+   - Added AMF wrappers for AVC / HEVC / AV1 FFmpeg software encoders
+   - Added frame in, slice / tile output support for AVC / HEVC / AV1 encoders
+   - Added multi-monitor support for DVR app
+   - Added decoder relocation between VCN instances and new capability query for SmartAccess Video
+   - New AV1 usages and encoder feedback
+   - Improvements and cleanup to sample apps
+   - Updated FFmpeg to 5.1.2
 
 1.4.29.0 (24.1.2023) version
 --------------------------
-   - Added Smart Access Video for decoder and AVC / HEVC / AV1 encoders
+   - Added SmartAccess Video for decoder and AVC / HEVC / AV1 encoders
    - New options for VQEnhancer and AV1 encoder components
    - Switched to Markdown based API docs which enable easier open source developer contributions
 

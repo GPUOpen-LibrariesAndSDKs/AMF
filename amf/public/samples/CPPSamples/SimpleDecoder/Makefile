@@ -37,6 +37,8 @@ src_files = \
     $(samples_common_dir)/BitStreamParserH264.cpp \
     $(samples_common_dir)/BitStreamParserH265.cpp \
     $(samples_common_dir)/BitStreamParserIVF.cpp \
+    $(samples_common_dir)/MiscHelpers.cpp \
+    $(samples_common_dir)/SurfaceUtils.cpp \
     $(public_common_dir)/AMFFactory.cpp \
     $(public_common_dir)/AMFSTL.cpp \
     $(public_common_dir)/DataStreamFactory.cpp \

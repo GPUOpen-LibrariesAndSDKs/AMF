@@ -745,7 +745,7 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoDecoder(const wchar_t *pDecoderID, am
             {
                 m_eDecoderFormat = amf::AMF_SURFACE_P010;
             }
-            if (std::wstring(pDecoderID) == AMFVideoDecoderHW_AV1)
+            if (std::wstring(pDecoderID) == AMFVideoDecoderHW_AV1 || std::wstring(pDecoderID) == AMFVideoDecoderHW_AV1_12BIT)
             {
                 m_eDecoderFormat = surfaceFormat;
             }

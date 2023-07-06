@@ -45,6 +45,8 @@
 #include "public/common/Thread.h"
 #include "public/common/AMFSTL.h"
 #include "public/common/TraceAdapter.h"
+#include "public/samples/CPPSamples/common/SurfaceGenerator.h"
+#include "public/samples/CPPSamples/common/PollingThread.h"
 #include <fstream>
 
 #define AMF_FACILITY L"AMFSamplePA"
@@ -69,39 +71,25 @@ static amf_int32 heightIn = 1080;
 #endif
 static amf_int32 frameRateIn = 30;
 static amf_int64 bitRateIn = 5000000L; // in bits, 5MBit
-static amf_int32 rectSize = 50;
+amf_int32 rectSize = 50;
 static amf_int32 frameCount = 500;
 static bool bMaximumSpeed = true;
 
-#define START_TIME_PROPERTY L"StartTimeProperty" // custom property ID to store submission time in a frame - all custom properties are copied from input to output
-
 static const wchar_t *fileNameOut = L"./output.immp";
-
-static amf_int32 xPos = 0;
-static amf_int32 yPos = 0;
-
-#ifdef _WIN32
-static void FillSurfaceDX9(amf::AMFContext *context, amf::AMFSurface *surface);
-static void FillSurfaceDX11(amf::AMFContext *context, amf::AMFSurface *surface);
-#endif
-static void PrepareFillFromHost(amf::AMFContext *context);
-static void FillSurfaceVulkan(amf::AMFContext *context, amf::AMFSurface *surface);
 
 amf::AMFSurfacePtr pColor1;
 amf::AMFSurfacePtr pColor2;
 
-#define MILLISEC_TIME     10000
+amf::AMFSurfacePtr pColor3;
+amf::AMFSurfacePtr pColor4;
 
-class PollingThread : public amf::AMFThread
+class PAPollingThread : public PollingThread
 {
-protected:
-	amf::AMFContextPtr      m_pContext;
-	amf::AMFComponentPtr    m_pPreAnalysis;
-	std::ofstream           m_pFile;
 public:
-	PollingThread(amf::AMFContext *context, amf::AMFComponent *preAnalysis, const wchar_t *pFileName);
-	~PollingThread();
-	virtual void Run();
+	PAPollingThread(amf::AMFContext *pContext, amf::AMFComponent *pPreAnalysis, const wchar_t *pFileName);
+protected:
+	void ProcessData(amf::AMFData* pData) override;
+	void PrintResults() override;
 };
 
 #ifdef _WIN32
@@ -136,7 +124,7 @@ int main(int /* argc */, char* /* argv */[])
 	{
 		res = amf::AMFContext1Ptr(context)->InitVulkan(NULL);
 		AMF_RETURN_IF_FAILED(res, L"InitVulkan(NULL) failed");
-		PrepareFillFromHost(context);
+		PrepareFillFromHost(context, memoryTypeIn, formatIn, widthIn, heightIn, false);
 	}
 #ifdef _WIN32
 	else if (memoryTypeIn == amf::AMF_MEMORY_DX9)
@@ -148,7 +136,7 @@ int main(int /* argc */, char* /* argv */[])
 	{
 		res = context->InitDX11(NULL); // can be DX11 device
 		AMF_RETURN_IF_FAILED(res, L"InitDX11(NULL) failed");
-		PrepareFillFromHost(context);
+		PrepareFillFromHost(context, memoryTypeIn, formatIn, widthIn, heightIn, false);
 	}
 #endif
 
@@ -166,7 +154,7 @@ int main(int /* argc */, char* /* argv */[])
 	AMF_RETURN_IF_FAILED(res, L"pre_analysis->Init() failed");
 
 
-	PollingThread thread(context, pre_analysis, fileNameOut);
+	PAPollingThread thread(context, pre_analysis, fileNameOut);
 	thread.Start();
 
 	// Analyze some frames
@@ -180,16 +168,16 @@ int main(int /* argc */, char* /* argv */[])
 
 			if (memoryTypeIn == amf::AMF_MEMORY_VULKAN)
 			{
-				FillSurfaceVulkan(context, surfaceIn);
+				FillSurfaceVulkan(context, surfaceIn, false);
 			}
 #ifdef _WIN32
 			else if (memoryTypeIn == amf::AMF_MEMORY_DX9)
 			{
-				FillSurfaceDX9(context, surfaceIn);
+				FillSurfaceDX9(context, surfaceIn, false);
 			}
 			else
 			{
-				FillSurfaceDX11(context, surfaceIn);
+				FillSurfaceDX11(context, surfaceIn, false);
 			}
 #endif
 		}
@@ -240,238 +228,41 @@ int main(int /* argc */, char* /* argv */[])
 	return 0;
 }
 
-#ifdef _WIN32
-static void FillSurfaceDX9(amf::AMFContext *context, amf::AMFSurface *surface)
+PAPollingThread::PAPollingThread(amf::AMFContext *pContext, amf::AMFComponent *pPre_analysis, const wchar_t *pFileName)
+	: PollingThread(pContext, pPre_analysis, pFileName, true)
+{}
+
+void PAPollingThread::ProcessData(amf::AMFData* pData)
 {
-	HRESULT hr = S_OK;
-	// fill surface with something something useful. We fill with color and color rect
-    D3DCOLOR color1 = D3DCOLOR_XYUV(0, 255, 128);
-    D3DCOLOR color2 = D3DCOLOR_XYUV(128, 0, 128);
-	// get native DX objects
-	IDirect3DDevice9 *deviceDX9 = (IDirect3DDevice9 *)context->GetDX9Device(); // no reference counting - do not Release()
-	IDirect3DSurface9* surfaceDX9 = (IDirect3DSurface9*)surface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
-	hr = deviceDX9->ColorFill(surfaceDX9, NULL, color1);
+	AMF_RESULT res = AMF_OK;
 
-	if (xPos + rectSize > widthIn)
+	AdjustTimes(pData);
+
+	amf::AMFVariant  activityMapVar;
+	res = pData->GetProperty(AMF_PA_ACTIVITY_MAP, &activityMapVar);
+
+	// Get Activity Map out of data
+	amf::AMFSurfacePtr spSurface(activityMapVar.ToInterface());
+	amf::AMFPlane*     pPlane   = spSurface->GetPlaneAt(0);
+	const amf_int32    xBlocks  = pPlane->GetWidth();
+	const amf_int32    yBlocks  = pPlane->GetHeight();
+	const amf_uint32*  pToWrite = static_cast<amf_uint32*>(pPlane->GetNative());
+	const amf_int32    hPitch   = pPlane->GetHPitch() / pPlane->GetPixelSizeInBytes();
+	const amf_int32    hWidth   = xBlocks * sizeof(amf_uint32);
+
+	if (m_pFile != NULL)
 	{
-		xPos = 0;
-	}
-	if (yPos + rectSize > heightIn)
-	{
-		yPos = 0;
-	}
-	RECT rect = { xPos, yPos, xPos + rectSize, yPos + rectSize };
-	hr = deviceDX9->ColorFill(surfaceDX9, &rect, color2);
-
-	xPos += 2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
-	yPos += 2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
-}
-
-
-
-
-static void FillSurfaceDX11(amf::AMFContext *context, amf::AMFSurface *surface)
-{
-	// fill surface with something something useful. We fill with color and color rect
-	// get native DX objects
-	ID3D11Device *deviceDX11 = (ID3D11Device *)context->GetDX11Device(); // no reference counting - do not Release()
-	ID3D11Texture2D* surfaceDX11 = (ID3D11Texture2D*)surface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
-
-	ID3D11DeviceContext *deviceContextDX11 = NULL;
-	deviceDX11->GetImmediateContext(&deviceContextDX11);
-
-	ID3D11Texture2D* surfaceDX11Color1 = (ID3D11Texture2D*)pColor1->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
-	deviceContextDX11->CopyResource(surfaceDX11, surfaceDX11Color1);
-
-	if (xPos + rectSize > widthIn)
-	{
-		xPos = 0;
-	}
-	if (yPos + rectSize > heightIn)
-	{
-		yPos = 0;
-	}
-	D3D11_BOX rect = { 0, 0, 0, (UINT)rectSize, (UINT)rectSize, 1 };
-
-	ID3D11Texture2D* surfaceDX11Color2 = (ID3D11Texture2D*)pColor2->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
-
-	deviceContextDX11->CopySubresourceRegion(surfaceDX11, 0, xPos, yPos, 0, surfaceDX11Color2, 0, &rect);
-	deviceContextDX11->Flush();
-
-	xPos += 2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
-	yPos += 2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
-
-	deviceContextDX11->Release();
-}
-#endif
-
-static void FillNV12SurfaceWithColor(amf::AMFSurface* surface, amf_uint8 Y, amf_uint8 U, amf_uint8 V)
-{
-	amf::AMFPlane *pPlaneY = surface->GetPlaneAt(0);
-	amf::AMFPlane *pPlaneUV = surface->GetPlaneAt(1);
-
-	amf_int32 widthY = pPlaneY->GetWidth();
-	amf_int32 heightY = pPlaneY->GetHeight();
-	amf_int32 lineY = pPlaneY->GetHPitch();
-
-	amf_uint8 *pDataY = (amf_uint8 *)pPlaneY->GetNative();
-
-	for (amf_int32 y = 0; y < heightY; y++)
-	{
-		amf_uint8 *pDataLine = pDataY + y * lineY;
-		memset(pDataLine, Y, widthY);
-	}
-
-	amf_int32 widthUV = pPlaneUV->GetWidth();
-	amf_int32 heightUV = pPlaneUV->GetHeight();
-	amf_int32 lineUV = pPlaneUV->GetHPitch();
-
-	amf_uint8 *pDataUV = (amf_uint8 *)pPlaneUV->GetNative();
-
-	for (amf_int32 y = 0; y < heightUV; y++)
-	{
-		amf_uint8 *pDataLine = pDataUV + y * lineUV;
-		for (amf_int32 x = 0; x < widthUV; x++)
+		for (amf_int32 y = 0; y < yBlocks; y++)
 		{
-			*pDataLine++ = U;
-			*pDataLine++ = V;
+			m_pFile->Write(pToWrite, hWidth, NULL);
+			pToWrite += hPitch;
 		}
 	}
 
-}
-static void PrepareFillFromHost(amf::AMFContext *context)
-{
-	AMF_RESULT res = AMF_OK; // error checking can be added later
-	res = context->AllocSurface(amf::AMF_MEMORY_HOST, formatIn, widthIn, heightIn, &pColor1);
-	res = context->AllocSurface(amf::AMF_MEMORY_HOST, formatIn, rectSize, rectSize, &pColor2);
-
-	FillNV12SurfaceWithColor(pColor2, 128, 0, 128);
-	FillNV12SurfaceWithColor(pColor1, 0, 255, 128);
-
-	pColor1->Convert(memoryTypeIn);
-	pColor2->Convert(memoryTypeIn);
+	m_WriteDuration += amf_high_precision_clock() - m_LastPollTime;
 }
 
-static void FillSurfaceVulkan(amf::AMFContext *context, amf::AMFSurface *surface)
+void PAPollingThread::PrintResults()
 {
-	amf::AMFComputePtr compute;
-	context->GetCompute(amf::AMF_MEMORY_VULKAN, &compute);
-
-	if (xPos + rectSize > widthIn)
-	{
-		xPos = 0;
-	}
-	if (yPos + rectSize > heightIn)
-	{
-		yPos = 0;
-	}
-
-	for (int p = 0; p < 2; p++)
-	{
-		amf::AMFPlane *plane = pColor1->GetPlaneAt(p);
-		amf_size origin1[3] = { 0, 0 , 0 };
-		amf_size region1[3] = { (amf_size)plane->GetWidth() , (amf_size)plane->GetHeight(), (amf_size)1 };
-		compute->CopyPlane(plane, origin1, region1, surface->GetPlaneAt(p), origin1);
-
-
-		plane = pColor2->GetPlaneAt(p);
-
-		amf_size region2[3] = { (amf_size)plane->GetWidth(), (amf_size)plane->GetHeight(), (amf_size)1 };
-		amf_size origin2[3] = { (amf_size)xPos / (p + 1), (amf_size)yPos / (p + 1) ,     0 };
-
-		compute->CopyPlane(plane, origin1, region2, surface->GetPlaneAt(0), origin2);
-
-	}
-	xPos += 2; // NV12 surfaces do not accept odd positions - do not use ++
-	yPos += 2; // NV12 surfaces do not accept odd positions - do not use ++
-
-}
-
-PollingThread::PollingThread(amf::AMFContext *context, amf::AMFComponent *pre_analysis, const wchar_t *pFileName) : m_pContext(context), m_pPreAnalysis(pre_analysis)
-{
-	amf_wstring wStr(pFileName);
-	amf_string str(amf::amf_from_unicode_to_utf8(wStr));
-	m_pFile.open(str.c_str(), std::ios::binary);
-}
-PollingThread::~PollingThread()
-{
-	if (m_pFile)
-	{
-		m_pFile.close();
-	}
-}
-void PollingThread::Run()
-{
-	RequestStop();
-
-	amf_pts latency_time = 0;
-	amf_pts write_duration = 0;
-	amf_pts pa_duration = 0;
-	amf_pts last_poll_time = 0;
-
-	AMF_RESULT res = AMF_OK; // error checking can be added later
-	while (true)
-	{
-		amf::AMFDataPtr frame;
-		res = m_pPreAnalysis->QueryOutput(&frame);
-
-		if (res == AMF_EOF)
-		{
-			break; // Drain complete
-		}
-		if ((res != AMF_OK) && (res != AMF_REPEAT))
-		{
-			// trace possible error message
-			break; // Drain complete
-		}
-		if (frame != NULL)
-		{
-			amf_pts poll_time = amf_high_precision_clock();
-			amf_pts start_time = 0;
-			frame->GetProperty(START_TIME_PROPERTY, &start_time);
-			if (start_time < last_poll_time) // remove wait time if submission was faster then PA
-			{
-				start_time = last_poll_time;
-			}
-			last_poll_time = poll_time;
-
-			pa_duration += poll_time - start_time;
-
-			if (latency_time == 0)
-			{
-				latency_time = poll_time - start_time;
-			}
-
-			amf::AMFVariant  activityMapVar;
-			res = frame->GetProperty(AMF_PA_ACTIVITY_MAP, &activityMapVar);
-
-			// Get Activity Map out of data
-			amf::AMFSurfacePtr spSurface(activityMapVar.ToInterface());
-			amf::AMFPlane*     pPlane  = spSurface->GetPlaneAt(0);
-			const amf_int32    xBlocks = pPlane->GetWidth();
-			const amf_int32    yBlocks = pPlane->GetHeight();
-			const amf_uint32*  pData   = static_cast<amf_uint32*>(pPlane->GetNative());
-            const amf_int32    hPitch  = pPlane->GetHPitch() / pPlane->GetPixelSizeInBytes();
-            const amf_int32    hWidth  = xBlocks * sizeof(amf_uint32);
-
-			for (amf_int32 y = 0; y < yBlocks; y++)
-			{
-				m_pFile.write(reinterpret_cast<const char*>(pData), hWidth);
-                pData += hPitch;
-			}
-
-			write_duration += amf_high_precision_clock() - poll_time;
-		}
-		else
-		{
-			amf_sleep(1);
-		}
-	}
-	printf("latency           = %.4fms\nPA  per frame = %.4fms\nwrite per frame   = %.4fms\n",
-		double(latency_time) / MILLISEC_TIME,
-		double(pa_duration) / MILLISEC_TIME / frameCount,
-		double(write_duration) / MILLISEC_TIME / frameCount);
-
-	m_pPreAnalysis = NULL;
-	m_pContext = NULL;
+	PrintTimes("PA ", frameCount);
 }

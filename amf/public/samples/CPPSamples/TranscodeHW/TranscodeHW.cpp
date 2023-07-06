@@ -281,6 +281,8 @@ AMF_RESULT RegisterParams(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_DECODER_ENABLE_SMART_ACCESS_VIDEO, ParamCommon, L"Enable decoder smart access video feature (bool, default = false)", ParamConverterBoolean);
 
     pParams->SetParamDescription(AMF_VIDEO_DECODER_LOW_LATENCY, ParamCommon, L"Enable low latency decode, false = regular decode (bool, default = false)", ParamConverterBoolean);
+    // SW encoder enable - require full build version of ffmpeg dlls with shared libs
+    pParams->SetParamDescription(PARAM_NAME_SWENCODE, ParamCommon, L"Enable SW encoder (true, false default =  false)", ParamConverterBoolean);
 
     return AMF_OK;
 }
@@ -341,11 +343,11 @@ int main(int argc, char* argv[])
     }
 
 
-    AMFCustomTraceWriter writer(AMF_TRACE_WARNING);
-
     // check if tracing level change was requested
     amf_int32 traceLevel = AMF_TRACE_WARNING;
     params.GetParam(PARAM_NAME_TRACE_LEVEL, traceLevel);
+
+    AMFCustomTraceWriter writer(traceLevel);
 
 #ifdef _DEBUG
     g_AMFFactory.GetDebug()->AssertsEnable(true);

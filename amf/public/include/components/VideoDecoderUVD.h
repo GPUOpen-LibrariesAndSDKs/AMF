@@ -123,4 +123,12 @@ enum AMF_TIMESTAMP_MODE_ENUM
 #define AMF_VIDEO_DECODER_ENABLE_SMART_ACCESS_VIDEO             L"EnableDecoderSmartAccessVideo"     // amf_bool; default = false; true = enables smart access video feature
 #define AMF_VIDEO_DECODER_SKIP_TRANSFER_SMART_ACCESS_VIDEO      L"SkipTransferSmartAccessVideo"      // amf_bool; default = false; true = keeps output on GPU where it ran
 
+#define AMF_VIDEO_DECODER_CAP_SUPPORT_SMART_ACCESS_VIDEO        L"SupportSmartAccessVideo"           // amf_bool; returns true if system supports SmartAccess Video
+
+#define AMF_VIDEO_DECODER_SURFACE_CPU                           L"SurfaceCpu"                        // amf_bool. default = false, true = hint to decoder that output will be consumed on cpu
+
+#define AMF_VIDEO_DECODER_INSTANCE_INDEX                        L"DecoderInstance"                   // amf_int64; selected HW instance idx
+#define AMF_VIDEO_DECODER_CAP_NUM_OF_HW_INSTANCES               L"NumOfHwDecoderInstances"           // amf_int64 number of HW decoder instances
+
+
 #endif //#ifndef AMF_VideoDecoderUVD_h

@@ -43,6 +43,9 @@
 namespace amf
 {
 
+#pragma warning(push)
+#pragma warning(disable : 4324) // structure was padded due to alignment specifier
+
 class StitchEngineDX11 : public StitchEngineBase, public AMFSurfaceObserver
 {
 public:
@@ -67,25 +70,48 @@ public:
 
 protected:
 friend class Stream;
+
+    //
+    // The DirectX XMVECTOR and XMMATRIX structs require a certain alignment.
+    // When they are declared as the member of another struct, that struct
+    // will automatically require alignment as well, for example the 
+    // Stream class below. 
+    // 
+    // When allocating aligned structs on the heap, the compiler will report a 
+    // C4316 warning: object allocated on the heap may not be aligned.
+    // To remediate this, the stream class is allocated using aligned malloc 
+    // and aligned free. This will ensure the alignment of the entire structure.
+    // The alignment of any XMMATRIX or XMVECTOR members within the struct memory
+    // itself will be aligned and padded automatically by the VS compiler (tested)
+    //
+    // For aligned structs allocated with std::vector, the warning doesn't
+    // pop up but since std::vector uses the default allocator with new, theres no
+    // guarantee that it allocates the structs with the correct alignment. The aligned
+    // allocator must be used with std::vector to ensure the struct allocations are
+    // aligned on the heap.
+
     class Stream // per stream properties
     {
     public:
-
-        ATL::CComPtr<ID3D11Buffer>           m_pVertexBuffer;
-        ATL::CComPtr<ID3D11Buffer>           m_pIndexBuffer;
-        AMFRect                             m_BorderRect;
-        std::vector<DirectX::XMVECTOR>      m_Sides;
-        DirectX::XMVECTOR                   m_TexRect;
-        AMFSurfacePtr                       m_pBorderMap;
-        std::vector<TextureVertex>          m_Vertices;
-        std::vector<amf_uint16>             m_Indexes;
-        DirectX::XMVECTOR                   m_Plane;
-        DirectX::XMVECTOR                   m_PlaneCenter;
-        std::vector<TextureVertex>          m_VerticesProjected;
-        std::vector<amf_uint32>             m_VerticesRowSize;
-        std::vector<DirectX::XMVECTOR>      m_Corners;
+        ATL::CComPtr<ID3D11Buffer>                                      m_pVertexBuffer;
+        ATL::CComPtr<ID3D11Buffer>                                      m_pIndexBuffer;
+        AMFRect                                                         m_BorderRect;
+        AlignedVector<DirectX::XMVECTOR, alignof(DirectX::XMVECTOR)>    m_Sides;
+        DirectX::XMVECTOR                                               m_TexRect;
+        AMFSurfacePtr                                                   m_pBorderMap;
+        std::vector<TextureVertex>                                      m_Vertices;
+        std::vector<amf_uint16>                                         m_Indexes;
+        DirectX::XMVECTOR                                               m_Plane;
+        DirectX::XMVECTOR                                               m_PlaneCenter;
+        std::vector<TextureVertex>                                      m_VerticesProjected;
+        std::vector<amf_uint32>                                         m_VerticesRowSize;
+        AlignedVector<DirectX::XMVECTOR, alignof(DirectX::XMVECTOR)>    m_Corners;
     };
-typedef std::vector<Stream> StreamList;
+
+    // Used aligned vector (std vector with aligned allocator) 
+    // instead of a regular vector since Stream requires aligned 
+    // allocation on the heap
+    typedef AlignedVector<Stream, alignof(Stream)> StreamList;
 
     AMF_RESULT          UpdateRibs(amf_int32 widthInput, amf_int32 heightInput, AMFPropertyStorage *pStorage);
     AMF_RESULT          RecreateBuffers(amf_int32 index);
@@ -116,16 +142,23 @@ typedef std::vector<Stream> StreamList;
     ATL::CComPtr<ID3D11DepthStencilView>    m_pDepthStencilView;
     ATL::CComPtr<ID3D11Buffer>              m_pWorldCB;
     ATL::CComPtr<ID3D11Buffer>              m_pCubemapWorldCB;
-    ATL::CComPtr<ID3D11Query>                m_pQuery;
-    ATL::CComPtr<ID3D11Query>                m_pQueryOcclusion;
+    ATL::CComPtr<ID3D11Query>               m_pQuery;
+    ATL::CComPtr<ID3D11Query>               m_pQueryOcclusion;
 
     bool                                    m_bWireRender;
-    Transform                               m_CameraOrienation;
+
+    // Transform requires alignment which by extension means
+    // this class requires alignment on the heap. Instead of allocating
+    // entire class using aligned malloc, the m_pCameraOrientation transform
+    // is allocated seperately on the heap using aligned malloc.
+    Transform*                              m_pCameraOrientation;
 
     AMF_VIDEO_STITCH_OUTPUT_MODE_ENUM       m_eOutputMode;
 
     std::list< ATL::CComPtr<ID3D11Texture2D> > m_AllocationQueue;
     AMFCriticalSection                      m_Sect;
 };
+
+#pragma warning(pop)
 
 } // namespace amf

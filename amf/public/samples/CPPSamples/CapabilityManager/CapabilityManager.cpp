@@ -33,6 +33,8 @@
 
 
 #include "public/common/AMFFactory.h"
+#include "public/common/CPUCaps.h"
+#include "public/common/AMFSTL.h"
 #include "public/include/components/VideoDecoderUVD.h"
 #include "public/include/components/VideoEncoderVCE.h"
 #include "public/include/components/VideoEncoderHEVC.h"
@@ -202,6 +204,10 @@ bool QueryDecoderForCodec(const wchar_t *componentID, amf::AMFContext* pContext)
         {
             result = QueryIOCaps(outputCaps);
         }
+
+        amf_bool saVideo = false;
+        decoderCaps->GetProperty(AMF_VIDEO_DECODER_CAP_SUPPORT_SMART_ACCESS_VIDEO, &saVideo);
+        std::wcout << L"\t\tSmartAccess Video: " << (saVideo ? L"true" : L"false") << L"\n";
         return true;
     }
     else
@@ -276,6 +282,9 @@ bool QueryEncoderForCodecAVC(const wchar_t *componentID, amf::AMFContext* pConte
                 result = QueryIOCaps(outputCaps);
             }
         }
+        amf_bool saVideo = false;
+        encoderCaps->GetProperty(AMF_VIDEO_ENCODER_CAP_SUPPORT_SMART_ACCESS_VIDEO, &saVideo);
+        std::wcout << L"\t\tSmartAccess Video: " << (saVideo ? L"true" : L"false") << L"\n";
         return true;
     }
     else
@@ -346,6 +355,9 @@ bool QueryEncoderForCodecHEVC(const wchar_t *componentID, amf::AMFContext* pCont
                 result = QueryIOCaps(outputCaps);
             }
         }
+        amf_bool saVideo = false;
+        encoderCaps->GetProperty(AMF_VIDEO_ENCODER_HEVC_CAP_SUPPORT_SMART_ACCESS_VIDEO, &saVideo);
+        std::wcout << L"\t\tSmartAccess Video: " << (saVideo ? L"true" : L"false") << L"\n";
         return true;
     }
     else
@@ -408,6 +420,9 @@ bool QueryEncoderForCodecAV1(const wchar_t* componentID, amf::AMFContext* pConte
                 result = QueryIOCaps(outputCaps);
             }
         }
+        amf_bool saVideo = false;
+        encoderCaps->GetProperty(AMF_VIDEO_ENCODER_AV1_CAP_SUPPORT_SMART_ACCESS_VIDEO, &saVideo);
+        std::wcout << L"\t\tSmartAccess Video: " << (saVideo ? L"true" : L"false") << L"\n";
         return true;
     }
     else
@@ -471,6 +486,86 @@ bool QueryConverterCaps(amf::AMFContext* pContext)
         }
     }
     return result;
+}
+
+const InstructionSet::InstructionSet_Internal InstructionSet::CPU_Rep;
+
+void QueryCPUForSSE()
+{
+    std::wcout << L"\t\tSSE capabilities:" << std::endl;
+
+    if (InstructionSet::SSE() == true)
+    {
+        std::wcout << L"\t\t\tSSE" << std::endl;
+    }
+    if (InstructionSet::SSE2() == true)
+    {
+        std::wcout << L"\t\t\tSSE2" << std::endl;
+    }
+    if (InstructionSet::SSE3() == true)
+    {
+        std::wcout << L"\t\t\tSSE3" << std::endl;
+    }
+    if (InstructionSet::SSSE3() == true)
+    {
+        std::wcout << L"\t\t\tSSSE3" << std::endl;
+    }
+    if (InstructionSet::SSE41() == true)
+    {
+        std::wcout << L"\t\t\tSSE4.1" << std::endl;
+    }
+    if (InstructionSet::SSE42() == true)
+    {
+        std::wcout << L"\t\t\tSSE4.2" << std::endl;
+    }
+    if (InstructionSet::SSE4a() == true)
+    {
+        std::wcout << L"\t\t\tSSE4a" << std::endl;
+    }
+}
+
+void QueryCPUForAVX()
+{
+    std::wcout << L"\t\tAVX capabilities:" << std::endl;
+
+    if (InstructionSet::AVX() == true)
+    {
+        std::wcout << L"\t\t\tAVX" << std::endl;
+    }
+    if (InstructionSet::AVX2() == true)
+    {
+        std::wcout << L"\t\t\tAVX2" << std::endl;
+    }
+    if (InstructionSet::AVX512CD() == true)
+    {
+        std::wcout << L"\t\t\tAVX-512CD" << std::endl;
+    }
+    if (InstructionSet::AVX512ER() == true)
+    {
+        std::wcout << L"\t\t\tAVX-512ER" << std::endl;
+    }
+    if (InstructionSet::AVX512F() == true)
+    {
+        std::wcout << L"\t\t\tAVX-512F" << std::endl;
+    }
+    if (InstructionSet::AVX512PF() == true)
+    {
+        std::wcout << L"\t\t\tAVX-512PF" << std::endl;
+    }
+}
+
+void QueryCPUCaps()
+{
+    std::wcout << std::endl << L"Querying CPU capabilities..." << std::endl;
+
+    std::wstring vendor = amf::amf_from_utf8_to_unicode(amf_string(InstructionSet::Vendor().c_str())).c_str();
+    std::wstring brand = amf::amf_from_utf8_to_unicode(amf_string(InstructionSet::Brand().c_str())).c_str();
+    std::wcout << L"\tVendor: " << vendor << std::endl;
+    std::wcout << L"\tBrand: " << brand << std::endl;
+
+    std::wcout << L"\tSupported Instruction Sets:" << std::endl;
+    QueryCPUForSSE();
+    QueryCPUForAVX();
 }
 
 #if defined(_WIN32)
@@ -646,6 +741,8 @@ int main(int argc, char* argv[])
             break;
         }
     }
+
+    QueryCPUCaps();
 
     g_AMFFactory.Terminate();
     return result ? 0 : 1;

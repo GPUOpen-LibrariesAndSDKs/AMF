@@ -121,6 +121,7 @@ AMF Decoder can be configured using the following properties that need to be set
 | AMF_VIDEO_DECODER_ENABLE_SMART_ACCESS_VIDEO        | amf_bool     |
 | AMF_VIDEO_DECODER_SKIP_TRANSFER_SMART_ACCESS_VIDEO | amf_bool     |
 
+
 <p align="center">
 Table 2. AMF Video Decoder pre-initialization properties
 </p>

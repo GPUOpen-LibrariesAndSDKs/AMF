@@ -46,7 +46,7 @@ AMF_RESULT RegisterPreProcessingParams(ParametersStorage* pParams)
     // PP parameters
     pParams->SetParamDescription(AMF_VIDEO_PRE_ENCODE_FILTER_ENABLE, ParamCommon, L"Enable Edge Filter (true, false default =  false)", ParamConverterBoolean);
 
-    pParams->SetParamDescription(AMF_PP_ENGINE_TYPE, ParamCommon, L"Engine Type (DX11, OPENCL, HOST, Auto default = OPENCL)", ParamConverterMemoryType);
+    pParams->SetParamDescription(AMF_PP_ENGINE_TYPE, ParamCommon, L"Engine Type (DX11, Vulkan, OPENCL, HOST, Auto default = OPENCL)", ParamConverterMemoryType);
 
     pParams->SetParamDescription(AMF_PP_ADAPTIVE_FILTER_STRENGTH, ParamCommon, L"Edge Detect filter strength (0 - 10: the lower the bitrate, the bigger the 'strength')", ParamConverterInt64);
     pParams->SetParamDescription(AMF_PP_ADAPTIVE_FILTER_SENSITIVITY, ParamCommon, L"Edge Detect filter sensitivity (0 - 10: the lower the bitrate, the bigger the 'sensitivity')", ParamConverterInt64);

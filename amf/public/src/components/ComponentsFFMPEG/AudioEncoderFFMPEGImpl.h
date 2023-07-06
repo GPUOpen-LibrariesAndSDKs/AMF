@@ -53,6 +53,8 @@ extern "C"
 #endif
 }
 
+#include <list>
+
 
 namespace amf
 {
@@ -84,7 +86,7 @@ namespace amf
 
         virtual AMF_RESULT  AMF_STD_CALL  SubmitInput(AMFData* pData);
         virtual AMF_RESULT  AMF_STD_CALL  QueryOutput(AMFData** ppData);
-        virtual AMFContext* AMF_STD_CALL  GetContext()                                              {  return m_pContext;  };
+        virtual AMFContext* AMF_STD_CALL  GetContext()                                                  {  return m_pContext;  };
         virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* /*callback*/)    {  return AMF_NOT_SUPPORTED;  };
         virtual AMF_RESULT  AMF_STD_CALL  GetCaps(AMFCaps** /*ppCaps*/)                                 {  return AMF_NOT_SUPPORTED;  };
         virtual AMF_RESULT  AMF_STD_CALL  Optimize(AMFComponentOptimizationCallback* /*pCallback*/)     {  return AMF_OK;  };
@@ -94,35 +96,55 @@ namespace amf
         virtual void        AMF_STD_CALL  OnPropertyChanged(const wchar_t* pName);
 
 
-    private:
-        AMFAudioBufferPtr   CombineBuffers(AMFAudioBuffer *dst, amf_int32 dstOffset, AMFAudioBuffer *src);
+    protected:
+        AMF_RESULT  AMF_STD_CALL  GetNewFrame(AMFAudioBuffer** pNewBuffer, amf_int32 requiredSize);
+        AMF_RESULT  AMF_STD_CALL  SplitOrCombineFrames(AMFAudioBuffer* pInBuffer, amf_int32 requiredSize);
+        AMF_RESULT  AMF_STD_CALL  InitializeFrame(AMFAudioBuffer* pInBuffer, AVFrame& avFrame);
 
+
+    private:
       mutable AMFCriticalSection  m_sync;
 
-        AMFContextPtr           m_pContext;
-        bool                    m_bEncodingEnabled;
+      // in QueryOutput, we want to make sure that we match the 
+      // input frame that went in with what's coming out, so we 
+      // copy the right properties to the right data going out 
+      struct AMFTransitFrame
+      {
+          AMFDataPtr  pData;
+          amf_bool    isOriginal;
+      };
 
-        AVCodecContext*         m_pCodecContext;
+        AMFContextPtr                 m_pContext;
+        amf_bool                      m_bEncodingEnabled;
 
-        AMFDataPtr              m_pInputData;
-        AMFAudioBufferPtr       m_pFrame;
-        amf_int32               m_iFrameOffset;
-        amf_pts                 m_iFirstFramePts;
+        AVCodecContext*               m_pCodecContext;
 
-        amf_uint8*              m_pCompressedBuffer;
-        amf_pts                 m_iSamplesPacked;
-        amf_pts                 m_iSamplesInPackaet;
-        bool                    m_bEof;
-        bool                    m_bDrained;
+        // information in relation to what the encoder was set-up to use
+        AMF_AUDIO_FORMAT              m_inSampleFormat;
+        amf_int32                     m_channelCount;
+        amf_int32                     m_sampleRate;
 
-        AMF_AUDIO_FORMAT        m_inSampleFormat;
-        amf_int32               m_iChannelCount;
-        amf_int32               m_iSampleRate;
+        std::list<AMFTransitFrame>    m_inputData;
+        amf_pts                       m_firstFramePts;
+        amf_pts                       m_samplesPacked;
 
-        amf_int64               m_audioFrameSubmitCount;
-        amf_int64               m_audioFrameQueryCount;
+        // it is possible we need to combine/split input 
+        // frames to get them to what the encoder needs
+        // in which case, we need to keep track of the full
+        // frames ready to send to the encoder and to the 
+        // partial frame that still has data that needs to
+        // be filled with the next frame coming in
+        amf_bool                      m_samplePreProcRequired;
+        std::list<AMFAudioBufferPtr>  m_preparedFrames;
+        std::list<AMFAudioBufferPtr>  m_recycledFrames;
+        AMFAudioBufferPtr             m_pPartialFrame;
+        amf_int32                     m_partialFrameSampleCount;
 
-        amf_pts                 m_PrevPts;
+        amf_bool                      m_bEof;
+
+        amf_int64                     m_audioFrameSubmitCount;
+        amf_int64                     m_audioFrameQueryCount;
+
         
         AMFAudioEncoderFFMPEGImpl(const AMFAudioEncoderFFMPEGImpl&);
         AMFAudioEncoderFFMPEGImpl& operator=(const AMFAudioEncoderFFMPEGImpl&);

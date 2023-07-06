@@ -229,6 +229,8 @@ AMF_RESULT AMFDDAPISourceImpl::AcquireSurface(bool bCopyOutputSurface, amf::AMFS
 //	UINT kAcquireTimeout = UINT(waitTime / 10000); // to ms
     UINT kAcquireTimeout = 0;
 
+    amf_pts prevLastTime = m_lastPts;
+
     if (bWait)
     {
         amf_pts startTime = 0;
@@ -236,6 +238,7 @@ AMF_RESULT AMFDDAPISourceImpl::AcquireSurface(bool bCopyOutputSurface, amf::AMFS
         {
             m_lastPts = amf_high_precision_clock() - m_frameDuration;
         }
+        //AMFTraceInfo(AMF_FACILITY, L"WaitTime=%5.2f", (m_frameDuration - (amf_high_precision_clock() - m_lastPts)) / 10000.f);
 
         while (true)
         {
@@ -272,10 +275,6 @@ AMF_RESULT AMFDDAPISourceImpl::AcquireSurface(bool bCopyOutputSurface, amf::AMFS
             {
                 m_MoveRects.resize(moveRectsRequired);
                 hr = m_displayDuplicator->GetFrameMoveRects((UINT)m_MoveRects.size(), &m_MoveRects[0], &moveRectsRequired);
-            }
-            if (moveRectsRequired != 0)
-            {
-                int a = 1;
             }
             if (SUCCEEDED(hr))
             {
@@ -359,6 +358,8 @@ AMF_RESULT AMFDDAPISourceImpl::AcquireSurface(bool bCopyOutputSurface, amf::AMFS
     }
 	if (DXGI_ERROR_WAIT_TIMEOUT == hr)
 	{
+        //AMFTraceInfo(AMF_FACILITY, L"Timeout");
+        m_lastPts = prevLastTime;
         return AMF_REPEAT;
     }
 	if (DXGI_ERROR_ACCESS_LOST == hr)

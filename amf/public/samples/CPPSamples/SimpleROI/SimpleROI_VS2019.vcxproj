@@ -73,10 +73,10 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LinkIncremental>true</LinkIncremental>
+    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>true</LinkIncremental>
+    <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\..\bin\vs2019x$(PlatformArchitecture)$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\..\bin\obj\vs2019x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
@@ -206,6 +206,8 @@
     <ClCompile Include="..\common\BitStreamParserH264.cpp" />
     <ClCompile Include="..\common\BitStreamParserH265.cpp" />
     <ClCompile Include="..\common\BitStreamParserIVF.cpp" />
+    <ClCompile Include="..\common\MiscHelpers.cpp" />
+    <ClCompile Include="..\common\SurfaceUtils.cpp" />
     <ClCompile Include="SimpleROI.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -220,6 +222,9 @@
     <ClInclude Include="..\common\BitStreamParserH264.h" />
     <ClInclude Include="..\common\BitStreamParserH265.h" />
     <ClInclude Include="..\common\BitStreamParserIVF.h" />
+    <ClInclude Include="..\common\MiscHelpers.h" />
+    <ClInclude Include="..\common\PollingThread.h" />
+    <ClInclude Include="..\common\SurfaceUtils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

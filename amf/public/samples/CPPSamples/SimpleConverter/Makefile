@@ -33,6 +33,7 @@ pp_include_dirs = $(amf_root)
 
 src_files = \
     public/samples/CPPSamples/SimpleConverter/SimpleConverter.cpp \
+    public/samples/CPPSamples/common/SurfaceUtils.cpp \
     $(public_common_dir)/AMFFactory.cpp \
     $(public_common_dir)/AMFSTL.cpp \
     $(public_common_dir)/DataStreamFactory.cpp \

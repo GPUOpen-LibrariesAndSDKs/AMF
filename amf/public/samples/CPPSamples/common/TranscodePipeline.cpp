@@ -40,6 +40,9 @@
 #include "public/include/components/FFMPEGAudioEncoder.h"
 #include "public/include/components/FFMPEGFileDemuxer.h"
 #include "public/include/components/FFMPEGFileMuxer.h"
+#include "public/include/components/FFMPEGEncoderH264.h"
+#include "public/include/components/FFMPEGEncoderHEVC.h"
+#include "public/include/components/FFMPEGEncoderAV1.h"
 
 #pragma warning(disable:4355)
 
@@ -296,6 +299,14 @@ AMF_RESULT TranscodePipeline::SetRecommendedDecoderPoolSize(ParametersStorage* p
             enablePAbyRCmethod = true;
             labDepth = 1; // default LAB depth for QVBR, HQVBR, HQCBR
         }
+
+        // The LAB value from usage setting takes precedence over the LAB value from rate control method
+        pParams->GetParam(AMF_VIDEO_ENCODER_AV1_USAGE, usage);
+        if (usage == AMF_VIDEO_ENCODER_AV1_USAGE_HIGH_QUALITY)
+        {
+            enablePAbyUsage = true;
+            labDepth = 11; // default LAB depth for AMF_VIDEO_ENCODER_AV1_USAGE_HIGH_QUALITY
+        }
     }
 
     if (enablePAbyParam || enablePAbyUsage || enablePAbyRCmethod)
@@ -437,6 +448,7 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
 
     amf_int32 outVideoStreamIndex = -1;
     amf_int32 outAudioStreamIndex = -1;
+    amf::AMF_SURFACE_FORMAT format = amf::AMF_SURFACE_UNKNOWN;
 
     BitStreamParserPtr      pParser;
     amf::AMFOutputPtr       pAudioOutput;
@@ -464,7 +476,6 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     {
         amf_int32               width  = 0;
         amf_int32               height = 0;
-        amf::AMF_SURFACE_FORMAT format = amf::AMF_SURFACE_UNKNOWN;
         RawStreamReader::ParseRawFileFormat(inputPath, width, height, format);
         if ((format != amf::AMF_SURFACE_UNKNOWN) && (width > 0) && (height > 0))
         {
@@ -519,6 +530,12 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
                 {
                     iVideoStreamIndex = output;
                     pVideoOutput = pOutput;
+
+                    amf_int64 eFormat = 0;
+                    if (AMF_OK == pOutput->GetProperty(AMF_STREAM_VIDEO_FORMAT, &eFormat))
+                    {
+                        format = static_cast<amf::AMF_SURFACE_FORMAT>(eFormat);
+                    }
                 }
 
                 if(iAudioStreamIndex < 0 && eStreamType == AMF_STREAM_AUDIO)
@@ -534,7 +551,7 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     // init streams
     if(iVideoStreamIndex >= 0)
     {
-        InitVideo(pParser, m_pRawStreamReader, pVideoOutput, engineMemoryType,  previewTarget, display, pParams);
+        InitVideo(pParser, m_pRawStreamReader, pVideoOutput, engineMemoryType,  previewTarget, display, pParams, format);
     }
     if(iAudioStreamIndex >= 0 && outStreamType == BitStreamUnknown) // do not process audio if we write elmentary stream
     {
@@ -917,7 +934,7 @@ AMF_RESULT  TranscodePipeline::InitAudio(amf::AMFOutput* pOutput, ParametersStor
 
    return AMF_OK;
 }
-AMF_RESULT  TranscodePipeline::InitVideoDecoder(const wchar_t *pDecoderID, amf_int64 codecID, amf_int32 videoWidth, amf_int32 videoHeight, AMFRate frameRate, amf::AMFBuffer* pExtraData, ParametersStorage* pParams, amf_bool enableSmartAccess, amf_bool enableLowLatency)
+AMF_RESULT  TranscodePipeline::InitVideoDecoder(const wchar_t *pDecoderID, amf_int64 codecID, amf_int32 videoWidth, amf_int32 videoHeight, AMFRate frameRate, amf::AMFBuffer* pExtraData, ParametersStorage* pParams, amf_bool enableSmartAccess, amf_bool enableLowLatency, amf::AMF_SURFACE_FORMAT format)
 {
     AMF_VIDEO_DECODER_MODE_ENUM   decoderMode = AMF_VIDEO_DECODER_MODE_COMPLIANT; //amf:::AMF_VIDEO_DECODER_MODE_REGULAR , AMF_VIDEO_DECODER_MODE_LOW_LATENCY;
     AMF_RESULT res = AMF_OK;
@@ -951,10 +968,60 @@ AMF_RESULT  TranscodePipeline::InitVideoDecoder(const wchar_t *pDecoderID, amf_i
 
                 SetRecommendedDecoderPoolSize(pParams);
 
-                m_eDecoderFormat = amf::AMF_SURFACE_NV12;
-                if (std::wstring(pDecoderID) == AMFVideoDecoderHW_H265_MAIN10)
+                if (format != amf::AMF_SURFACE_UNKNOWN)
                 {
-                    m_eDecoderFormat = amf::AMF_SURFACE_P010;
+                    // convert to supported native decoder formats
+                    // These are AMF_SURFACE_NV12, AMF_SURFACE_P010, and AMF_SURFACE_P012
+                    switch (format)
+                    {
+                    case amf::AMF_SURFACE_NV12:
+                    case amf::AMF_SURFACE_YV12:               ///< 2  - planar 4:2:0 Y width x height + V width/2 x height/2 + U width/2 x height/2 - 8 bit per component
+                    case amf::AMF_SURFACE_BGRA:               ///< 3  - packed 4:4:4 - 8 bit per component
+                    case amf::AMF_SURFACE_ARGB:               ///< 4  - packed 4:4:4 - 8 bit per component
+                    case amf::AMF_SURFACE_RGBA:               ///< 5  - packed 4:4:4 - 8 bit per component
+                    case amf::AMF_SURFACE_GRAY8:              ///< 6  - single component - 8 bit
+                    case amf::AMF_SURFACE_YUV420P:            ///< 7  - planar 4:2:0 Y width x height + U width/2 x height/2 + V width/2 x height/2 - 8 bit per component
+                    case amf::AMF_SURFACE_U8V8:               ///< 8  - packed double component - 8 bit per component
+                    case amf::AMF_SURFACE_YUY2:               ///< 9  - packed 4:2:2 Byte 0=8-bit Y'0; Byte 1=8-bit Cb; Byte 2=8-bit Y'1; Byte 3=8-bit Cr
+                    case amf::AMF_SURFACE_UYVY:               ///< 12 - packed 4:2:2 the similar to YUY2 but Y and UV swapped: Byte 0=8-bit Cb; Byte 1=8-bit Y'0; Byte 2=8-bit Cr Byte 3=8-bit Y'1; (used the same DX/CL/Vulkan storage as YUY2)
+                    case amf::AMF_SURFACE_AYUV:               ///< 15 - packed 4:4:4 - 8 bit per component YUVA
+                        m_eDecoderFormat = amf::AMF_SURFACE_NV12;
+                        break;
+
+                    case amf::AMF_SURFACE_P010:               ///< 10 - planar 4:2:0 Y width x height + packed UV width/2 x height/2 - 10 bit per component (16 allocated: upper 10 bits are used)
+                    case amf::AMF_SURFACE_R10G10B10A2:        ///< 13 - packed 4:4:4 to 4 bytes: 10 bit per RGB component: 2 bits per A 
+                    case amf::AMF_SURFACE_Y210:               ///< 14 - packed 4:2:2 - Word 0=10-bit Y'0; Word 1=10-bit Cb; Word 2=10-bit Y'1; Word 3=10-bit Cr
+                    case amf::AMF_SURFACE_Y410:               ///< 16 - packed 4:4:4 - 10 bit per YUV component: 2 bits per A: AVYU 
+                        m_eDecoderFormat = amf::AMF_SURFACE_P010;
+                        break;
+
+                    case amf::AMF_SURFACE_RGBA_F16:           ///< 11 - packed 4:4:4 - 16 bit per component float
+                    case amf::AMF_SURFACE_Y416:               ///< 16 - packed 4:4:4 - 16 bit per component 4 bytes: AVYU
+                    case amf::AMF_SURFACE_P012:               ///< 18 - planar 4:2:0 Y width x height + packed UV width/2 x height/2 - 12 bit per component (16 allocated: upper 12 bits are used)
+                    case amf::AMF_SURFACE_P016:               ///< 19 - planar 4:2:0 Y width x height + packed UV width/2 x height/2 - 16 bit per component (16 allocated: all bits are used)
+                        m_eDecoderFormat = amf::AMF_SURFACE_P012;
+                        break;
+                    default:
+                        m_eDecoderFormat = format;
+                        break;
+                    }
+                }
+                else
+                {
+                    // default formats
+                    m_eDecoderFormat = amf::AMF_SURFACE_NV12;
+                    if (std::wstring(pDecoderID) == AMFVideoDecoderHW_H265_MAIN10)
+                    {
+                        m_eDecoderFormat = amf::AMF_SURFACE_P010;
+                    }
+                    else if (std::wstring(pDecoderID) == AMFVideoDecoderHW_VP9_10BIT)
+                    {
+                        m_eDecoderFormat = amf::AMF_SURFACE_P010;
+                    }
+                    else if (std::wstring(pDecoderID) == AMFVideoDecoderHW_AV1_12BIT)
+                    {
+                        m_eDecoderFormat = amf::AMF_SURFACE_P012;
+                    }
                 }
                 res = m_pDecoder->Init(m_eDecoderFormat, videoWidth, videoHeight);
                 if (res != AMF_OK)
@@ -962,22 +1029,6 @@ AMF_RESULT  TranscodePipeline::InitVideoDecoder(const wchar_t *pDecoderID, amf_i
                     LOG_WRITE(L"m_pDecoder->Init(" << videoWidth << videoHeight << L") failed " << pDecoderID << L" Error:" << g_AMFFactory.GetTrace()->GetResultText(res) << std::endl, AMFLogLevelInfo);
                     m_pDecoder = nullptr;
                 }
-                else
-                //CHECK_AMF_ERROR_RETURN(res, L"m_pDecoder->Init(" << videoWidth << videoHeight << L") failed " << pDecoderID);
-				if (std::wstring(pDecoderID) == AMFVideoDecoderHW_AV1)
-				{
-					//Only up to above m_pVideoDecoder->Init(), got/updated actual eDecoderFormat, then also update m_eDecoderFormat here.
-					amf_int64 format = 0;
-					if (m_pDecoder->GetProperty(L"AV1StreamFormat", &format) == AMF_OK)
-					{
-                        m_eDecoderFormat = (amf::AMF_SURFACE_FORMAT)format;
-					}
-				}
-                else if (std::wstring(pDecoderID) == AMFVideoDecoderHW_AV1_12BIT)
-                {
-                    m_eDecoderFormat = amf::AMF_SURFACE_P012;
-                }
-                //m_bCPUDecoder = false;
             }
             else
             {
@@ -1037,7 +1088,6 @@ AMF_RESULT  TranscodePipeline::InitVideoDecoder(const wchar_t *pDecoderID, amf_i
         }
         res = m_pDecoder->Init(m_eDecoderFormat, videoWidth, videoHeight);
         CHECK_AMF_ERROR_RETURN(res, L"m_pDecoder->Init(" << videoWidth << videoHeight << L") failed " << pDecoderID);
-        //m_bCPUDecoder = true;
     }
     return AMF_OK;
 }
@@ -1100,7 +1150,7 @@ AMF_RESULT  TranscodePipeline::InitPreProcessFilter(ParametersStorage* pParams)
     return AMF_OK;
 }
 
-AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamReaderPtr pRawReader, amf::AMFOutput* pOutput, amf::AMF_MEMORY_TYPE presenterEngine, amf_handle hwnd, amf_handle display, ParametersStorage* pParams)
+AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamReaderPtr pRawReader, amf::AMFOutput* pOutput, amf::AMF_MEMORY_TYPE presenterEngine, amf_handle hwnd, amf_handle display, ParametersStorage* pParams, amf::AMF_SURFACE_FORMAT format)
 {
     bool decodeAsAnnexBStream = false; // switches between Annex B and AVCC types of decode input.
 
@@ -1174,7 +1224,7 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamRe
         pParams->GetParam(AMF_VIDEO_DECODER_LOW_LATENCY, enableDecoderLowLatency);
 
         // Init Video Decoder
-        res = InitVideoDecoder(pVideoDecoderID.c_str(), codecID, videoWidth, videoHeight, frameRate, pExtraData, pParams, enableDecoderSmartAccess, enableDecoderLowLatency);
+        res = InitVideoDecoder(pVideoDecoderID.c_str(), codecID, videoWidth, videoHeight, frameRate, pExtraData, pParams, enableDecoderSmartAccess, enableDecoderLowLatency, format);
         CHECK_AMF_ERROR_RETURN(res, L"InitVideoDecoder() failed");
     }
 
@@ -1282,57 +1332,87 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamRe
         }
     }
 
-    res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, m_EncoderID.c_str(), &m_pEncoder);
-    CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << m_EncoderID << L") failed");
-
+    amf_bool  enableSWencode = false;
+    pParams->GetParam(PARAM_NAME_SWENCODE, enableSWencode);
+    // SW encoder enable - require full build version of ffmpeg dlls with shared libs
+    if (enableSWencode) {
+        if (m_EncoderID == AMFVideoEncoderVCE_AVC)
+        {
+            res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_ENCODER_H264, &m_pEncoder);
+            CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.LoadExternalComponent(" << FFMPEG_ENCODER_H264 << L") failed");
+            m_pEncoder->SetProperty(AMF_STREAM_CODEC_ID, AMF_STREAM_CODEC_ID_H264_AVC); // default
+        }
+        else if (m_EncoderID == AMFVideoEncoder_HEVC)
+        {
+            res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_ENCODER_HEVC, &m_pEncoder);
+            CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.LoadExternalComponent(" << FFMPEG_ENCODER_HEVC << L") failed");
+            m_pEncoder->SetProperty(AMF_STREAM_CODEC_ID, AMF_STREAM_CODEC_ID_H265_HEVC); // default
+        }
+        else if (m_EncoderID == AMFVideoEncoder_AV1)
+        {
+            res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_ENCODER_AV1, &m_pEncoder);
+            CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.LoadExternalComponent(" << FFMPEG_ENCODER_AV1 << L") failed");
+            m_pEncoder->SetProperty(AMF_STREAM_CODEC_ID, AMF_STREAM_CODEC_ID_AV1); // default
+        }
+        else
+        {
+            CHECK_AMF_ERROR_RETURN(AMF_CODEC_NOT_SUPPORTED, L"Codecs(" << m_EncoderID << L") is not supported in software encoder");
+        }
+    }
+    else
+    {
+        res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, m_EncoderID.c_str(), &m_pEncoder);
+        CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << m_EncoderID << L") failed");
+    }
     // Usage is preset that will set many parameters
     PushParamsToPropertyStorage(pParams, ParamEncoderUsage, m_pEncoder);
 
     // if we enable PA, we need to make sure RateCotrolMode gets set first
     // otherwise setting the PA properties might not work...
+    const wchar_t* PAproperty;
+    const wchar_t* RCproperty;
     if (m_EncoderID == AMFVideoEncoderVCE_AVC)
     {
-        amf::AMFVariant  enablePA;
-        if (pParams->GetParam(AMF_VIDEO_ENCODER_PRE_ANALYSIS_ENABLE, enablePA) == AMF_OK)
-        {
-            amf::AMFVariant  rateControlMode;
-            if (pParams->GetParam(AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD, rateControlMode) == AMF_OK)
-            {
-                m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD, rateControlMode);
-            }
-
-            m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_PRE_ANALYSIS_ENABLE, enablePA);
-        }
+        PAproperty = AMF_VIDEO_ENCODER_PRE_ANALYSIS_ENABLE;
+        RCproperty = AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD;
     }
     else if (m_EncoderID == AMFVideoEncoder_HEVC)
     {
-        amf::AMFVariant  enablePA;
-        if (pParams->GetParam(AMF_VIDEO_ENCODER_HEVC_PRE_ANALYSIS_ENABLE, enablePA) == AMF_OK)
-        {
-            amf::AMFVariant  rateControlMode;
-            if (pParams->GetParam(AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD, rateControlMode) == AMF_OK)
-            {
-                m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD, rateControlMode);
-            }
-
-            m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_PRE_ANALYSIS_ENABLE, enablePA);
-        }
+        PAproperty = AMF_VIDEO_ENCODER_HEVC_PRE_ANALYSIS_ENABLE;
+        RCproperty = AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD;
     }
     else if (m_EncoderID == AMFVideoEncoder_AV1)
     {
-        amf::AMFVariant  enablePA;
-        if (pParams->GetParam(AMF_VIDEO_ENCODER_AV1_PRE_ANALYSIS_ENABLE, enablePA) == AMF_OK)
+        PAproperty = AMF_VIDEO_ENCODER_AV1_PRE_ANALYSIS_ENABLE;
+        RCproperty = AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD;
+    }
+    else
+        return AMF_FAIL;
+    amf::AMFVariant  enablePA(true);
+    amf::AMFVariant  enablePAbyUsage(true);
+    //PA setting may come from parameters or usage. Can not only check parameters.
+    res = pParams->GetParam(PAproperty, enablePA);
+    if (res == AMF_OK)//if parameter sets PA, just follow it since it has higher priority
+    {
+        amf::AMFVariant  rateControlMode;
+        if (pParams->GetParam(RCproperty, rateControlMode) == AMF_OK)
+        {
+            m_pEncoder->SetProperty(RCproperty, rateControlMode);
+        }
+        m_pEncoder->SetProperty(PAproperty, enablePA);
+    }
+    else if (m_pEncoder->GetProperty(PAproperty, &enablePAbyUsage) == AMF_OK)//not set in parameter, check if PA settings in usage
+    {
+        if (enablePAbyUsage.boolValue == true)
         {
             amf::AMFVariant  rateControlMode;
-            if (pParams->GetParam(AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD, rateControlMode) == AMF_OK)
+            if (pParams->GetParam(RCproperty, rateControlMode) == AMF_OK)
             {
-                m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD, rateControlMode);
+                m_pEncoder->SetProperty(RCproperty, rateControlMode);
             }
-
-            m_pEncoder->SetProperty(AMF_VIDEO_ENCODER_AV1_PRE_ANALYSIS_ENABLE, enablePA);
+            m_pEncoder->SetProperty(PAproperty, true);
         }
     }
-
 	// override some usage parameters
 	if (frameRate.den != 0 && frameRate.num != 0)
 	{

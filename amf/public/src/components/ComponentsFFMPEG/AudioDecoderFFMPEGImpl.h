@@ -53,18 +53,17 @@ extern "C"
 #endif
 }
 
+#include <list>
+
 
 namespace amf
 {
-
-    //-------------------------------------------------------------------------------------------------
 
     class AMFAudioDecoderFFMPEGImpl : 
         public AMFInterfaceBase,
         public AMFPropertyStorageExImpl<AMFComponent>,
         public AMFSupportedCodecs
     {
-
     public:
         // interface access
         AMF_BEGIN_INTERFACE_MAP
@@ -77,6 +76,7 @@ namespace amf
         AMFAudioDecoderFFMPEGImpl(AMFContext* pContext);
         virtual ~AMFAudioDecoderFFMPEGImpl();
 
+
         // AMFComponent interface
         virtual AMF_RESULT  AMF_STD_CALL  Init(AMF_SURFACE_FORMAT format, amf_int32 width, amf_int32 height);
         virtual AMF_RESULT  AMF_STD_CALL  ReInit(amf_int32 width, amf_int32 height);
@@ -86,7 +86,7 @@ namespace amf
 
         virtual AMF_RESULT  AMF_STD_CALL  SubmitInput(AMFData* pData);
         virtual AMF_RESULT  AMF_STD_CALL  QueryOutput(AMFData** ppData);
-        virtual AMFContext* AMF_STD_CALL  GetContext()                                              {  return m_pContext;  };
+        virtual AMFContext* AMF_STD_CALL  GetContext()                                                  {  return m_pContext;  };
         virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* /*callback*/)    {  return AMF_NOT_SUPPORTED;  };
         virtual AMF_RESULT  AMF_STD_CALL  GetCaps(AMFCaps** /*ppCaps*/)                                 {  return AMF_NOT_SUPPORTED;  };
         virtual AMF_RESULT  AMF_STD_CALL  Optimize(AMFComponentOptimizationCallback* /*pCallback*/)     {  return AMF_OK;  };
@@ -95,33 +95,40 @@ namespace amf
         // AMFPropertyStorageObserver interface
         virtual void        AMF_STD_CALL  OnPropertyChanged(const wchar_t* pName);
 
-        // AMFSupportedCodecs interface
-        virtual AMF_RESULT     AMF_STD_CALL GetInputCodecAt(amf_size index, AMFPropertyStorage** codec) const override;
-        virtual AMF_RESULT     AMF_STD_CALL GetOutputCodecAt(amf_size index, AMFPropertyStorage** codec) const override { return AMF_NOT_SUPPORTED; };
 
-    protected:
-        bool                AMF_STD_CALL  ReadAVPacketInfo(AMFBufferPtr pBuffer, AVPacket *pPacket);
-        amf_pts             AMF_STD_CALL  GetPtsFromFFMPEG(AMFBufferPtr pBuffer, AVFrame *pFrame);
+        // AMFSupportedCodecs interface
+        virtual AMF_RESULT  AMF_STD_CALL GetInputCodecAt(amf_size index, AMFPropertyStorage** codec) const override;
+        virtual AMF_RESULT  AMF_STD_CALL GetOutputCodecAt(amf_size index, AMFPropertyStorage** codec) const override { return AMF_NOT_SUPPORTED; };
+
 
     private:
       mutable AMFCriticalSection  m_sync;
 
-        AMFContextPtr           m_pContext;
-        bool                    m_bDecodingEnabled;
-        bool                    m_bForceEof;
 
-        // member variables from AMFAudioDecoderFFMPEG
-        AVCodecContext*         m_pCodecContext;
-        amf_pts                 m_SeekPts;
+      // in QueryOutput, we want to make sure that we match the 
+      // input frame that went in with what's coming out, so we 
+      // copy the right properties to the right data going out 
+      struct AMFTransitFrame
+      {
+          AMFDataPtr  pData;
+          amf_int64   id;
+      };
 
 
-        AMFBufferPtr            m_pInputData;
-        AMFBufferPtr            m_pLastInputData;
-        amf_size                m_iLastDataOffset;
-        amf_pts                 m_ptsLastDataOffset;
+        AMFContextPtr               m_pContext;
+        amf_bool                    m_bDecodingEnabled;
+        amf_bool                    m_bEof;
 
-        amf_int64               m_audioFrameSubmitCount;
-        amf_int64               m_audioFrameQueryCount;
+        AVCodecContext*             m_pCodecContext;
+        amf_pts                     m_SeekPts;
+
+        AMFBufferPtr                m_pExtraData;
+        std::list<AMFTransitFrame>  m_inputData;
+        amf_int64                   m_dtsId;
+        amf_pts                     m_ptsLastDataOffset;
+
+        amf_int64                   m_audioFrameSubmitCount;
+        amf_int64                   m_audioFrameQueryCount;
 
 
         AMFAudioDecoderFFMPEGImpl(const AMFAudioDecoderFFMPEGImpl&);

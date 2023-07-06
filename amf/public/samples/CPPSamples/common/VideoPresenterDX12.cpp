@@ -161,6 +161,7 @@ AMF_RESULT VideoPresenterDX12::Present(amf::AMFSurface* pSurface)
         if (bResized)
         {
             res = ResizeSwapChain();
+            VideoPresenter::UpdateProcessor();  //adjust the scaling ratio
             CHECK_AMF_ERROR_RETURN(res, L"BitBlt() failed to resize swapchain.");
         }
 

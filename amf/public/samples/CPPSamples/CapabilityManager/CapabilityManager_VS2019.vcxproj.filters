@@ -48,6 +48,12 @@
     <ClInclude Include="..\common\ParametersStorage.h">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\common\CPUCaps.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\AMFSTL.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\common\CmdLogger.cpp">

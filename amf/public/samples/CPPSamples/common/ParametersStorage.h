@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -47,7 +47,7 @@ enum ParamType
     ParamCommon = 0,
     ParamEncoderUsage,       // sets to encoder first
     ParamEncoderStatic,     // sets to encoder before initialization
-    ParamEncoderDynamic,    // sets to encoder at any time 
+    ParamEncoderDynamic,    // sets to encoder at any time
     ParamEncoderFrame,       // sets to frame before frame submission
     ParamVideoProcessor
 };
@@ -114,6 +114,8 @@ public:
     amf_size    GetParamCount() const;
     AMF_RESULT  GetParamAt(amf_size index, std::wstring& name, amf::AMFVariantStruct* value) const;
 
+    AMF_RESULT  CopyTo(ParametersStorage* params);
+
     typedef AMF_RESULT (*ParamConverter)(const std::wstring& value, amf::AMFVariant& valueOut);
 
     struct ParamDescription
@@ -126,7 +128,7 @@ public:
         ParamDescription() : m_Type(ParamUnknown), m_Converter(NULL)
         {
         }
-        ParamDescription(const std::wstring &name, ParamType type,const std::wstring &description, ParamConverter converter) : 
+        ParamDescription(const std::wstring &name, ParamType type,const std::wstring &description, ParamConverter converter) :
             m_Name(name),
             m_Type(type),
             m_Description(description),

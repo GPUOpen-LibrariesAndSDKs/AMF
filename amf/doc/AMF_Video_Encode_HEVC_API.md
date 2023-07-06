@@ -61,8 +61,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 4. [Annex A: Encoding & Frame Parameters Description](#4-annex-a-encoding--frame-parameters-description)
    - [Table A-1. Encoder parameters](#table-a-1-encoder-parameters)
    - [Table A-2. Input frame and encoded data parameters](#table-a-2-input-frame-and-encoded-data-parameters)
-   - [Table A-3. Encoder statistics feedback](#table-a-3-encoder-statistics-feedback)
-   - [Table A-4. Encoder PSNR/SSIM feedback](#table-a-4-encoder-psnrssim-feedback)
+   - [Table A-3. Encoder capabilities exposed in AMFCaps interface](#table-a-3-encoder-capabilities-exposed-in-amfcaps-interface)
+   - [Table A-4. Encoder statistics feedback](#table-a-4-encoder-statistics-feedback)
+   - [Table A-5. Encoder PSNR/SSIM feedback](#table-a-5-encoder-psnrssim-feedback)
 
 
 ## 1 Introduction
@@ -74,7 +75,7 @@ This document provides a complete description of the AMD Advanced Media Framewor
 Figure 1 provides a system overview of the AMF Video Encoder Component.
 
 <p align="center">
-    <img src="AMF_Video_Encode_API.png">
+    <img src="./image/AMF_Video_Encode_API.png">
 
 <p align="center">
 Figure 1 — System overview of the AMF Video Encode SDK
@@ -287,7 +288,7 @@ File name, relative or absolute path
 `NULL`
 
 **Description:**
-Input file with frames (AVC or HEVC).
+Input file with frames.
 
 ---
 
@@ -385,7 +386,7 @@ Number of session run ip parallel.
 `false`
 
 **Description:**
-Preview Mode .
+Preview Mode.
 
 ---
 
@@ -611,6 +612,7 @@ This command encodes `400` frames through D3D renderer and creates an output fil
 | LOWLATENCY_MODE                         | amf_bool  |
 | PRE_ANALYSIS_ENABLE                     | amf_bool  |
 | MAX_NUM_TEMPORAL_LAYERS                 | amf_int64 |
+| ENABLE_SMART_ACCESS_VIDEO               | amf_bool  |
 
 <p align="center">
 Table 4. Encoder static parameters
@@ -751,7 +753,7 @@ Maximum number of reference frames.
    - HQLL: `true`
 
 **Description:**
-Enables low latency mode in the encoder
+Enables low latency mode in the encoder.
 
 ---
 
@@ -761,11 +763,16 @@ Enables low latency mode in the encoder
 **Values:**
 `true`, `false`
 
-**Default Value:**
-`false`
+**Default Value associated with usages:**
+   - Transcoding: `false`
+   - Ultra low latency: `false`
+   - Low latency: `false`
+   - Webcam: `false`
+   - HQ: `true`
+   - HQLL: `false`
 
 **Description:**
-Enables the pre-analysis module. Some features require this to be enabled. Refer to AMF Video PreAnalysis API reference for more details.
+Some encoder properties require this property to be set. Enables the pre-analysis module. Refer to *AMF Video PreAnalysis API* reference for more details on the pre-analysis module and its settings under different usages.
 
 ---
 
@@ -820,7 +827,7 @@ Width: `0`
 Height: `0`
 
 **Description:**
-Frame width/Height in pixels, maximum value is hardware-specific, should be queried through `AMFCaps`
+Frame width/Height in pixels, maximum value is hardware-specific, should be queried through `AMFCaps`.
 
 ---
 
@@ -834,7 +841,7 @@ Frame width/Height in pixels, maximum value is hardware-specific, should be quer
 `(1,1)`
 
 **Description:**
-Pixel aspect ratio
+Pixel aspect ratio.
 
 ---
 
@@ -886,7 +893,7 @@ Sets the target bitrate, bit/s based on use case.
 **Values:**
 `>= TargetBitrate`
 
-**Default Value:**
+**Default Value associated with usages:**
    - Transcoding: `30` mbps
    - Ultra low latency: `20` mbps
    - Low latency: `20` mbps
@@ -961,7 +968,7 @@ Remarks: Only available for QVBR rate control method.
    - HQLL: `false`
 
 **Description:**
-Enables skip frame for rate control
+Enables skip frame for rate control.
 
 ---
 
@@ -975,7 +982,7 @@ Enables skip frame for rate control
 `0`
 
 **Description:**
-Sets the minimum QP for I frame
+Sets the minimum QP for I frame.
 
 ---
 
@@ -989,7 +996,7 @@ Sets the minimum QP for I frame
 `51`
 
 **Description:**
-Sets the maximum QP for I frame
+Sets the maximum QP for I frame.
 
 ---
 
@@ -1112,7 +1119,7 @@ Sets the initial VBV buffer fullness.
    - HQLL: `false`
 
 **Description:**
-Disables/enables constraints on QP variation within a picture to meet HRD requirement(s).
+Disables/enables constraints on rate control to meet HRD model requirement(s) with peak_bitrate, VBV buffer size and VBV buffer fullness settings.
 
 ---
 
@@ -1131,7 +1138,7 @@ Disables/enables constraints on QP variation within a picture to meet HRD requir
    - HQLL: `false`
 
 **Description:**
-Pre-analysis assisted rate control
+Pre-analysis assisted rate control.
 
 ---
 
@@ -1150,8 +1157,9 @@ Pre-analysis assisted rate control
    - HQLL: `true`
 
 **Description:**
-By default, disable VBAQ.Note: Cannot use when RATE_CONTROL_METHOD is CQP.
-
+Note: Cannot use when `RATE_CONTROL_METHOD` is CQP.
+ - VBAQ stands for *Variance Based Adaptive Quantization*.
+ - The basic idea of VBAQ: Human visual system is typically less sensitive to artifacts in highly textured area. In VBAQ mode, we use pixel variance to indicate the complexity of spatial texture. This allows us to allocate more bits to smoother areas. Enabling such feature leads to improvements in subjective visual quality with some content.Note: Cannot use when `RATE_CONTROL_METHOD` is CQP.
 ---
 
 **Name:**
@@ -1311,6 +1319,7 @@ Sets the number of intra-refresh 64x64 coding-tree-blocks per slot.
 | QUALITY_PRESET                          | amf_int64 |
 | PICTURE_TRANSFER_MODE                   | amf_int64 |
 | QUERY_TIMEOUT                           | amf_int64 |
+| OUTPUT_MODE                           | amf_int64 |
 
 <p align="center">
 Table 8. Encoder miscellaneous parameters
@@ -1333,7 +1342,7 @@ Table 8. Encoder miscellaneous parameters
    - HQLL: `AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_QUALITY`
 
 **Description:**
-Selects the quality preset.
+Selects the quality preset in HW to balance between encoding speed and video quality.
 
 ---
 
@@ -1367,6 +1376,20 @@ Timeout for QueryOutput call in ms
 
 **Description:**
 Timeout for QueryOutput call in ms.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_OUTPUT_MODE`
+
+**Values:**
+`AMF_VIDEO_ENCODER_HEVC_OUTPUT_MODE_ENUM`: `AMF_VIDEO_ENCODER_HEVC_OUTPUT_MODE_FRAME`,   `AMF_VIDEO_ENCODER_HEVC_OUTPUT_MODE_TILE`
+
+**Default Value:**
+`AMF_VIDEO_ENCODER_HEVC_OUTPUT_MODE_FRAME`
+
+**Description:**
+Defines encoder output mode.
 
 ---
 
@@ -1795,6 +1818,7 @@ Injected reference picture. Valid with PICTURE_TRANSFER_MODE turned on.
 | OUTPUT_MARKED_LTR_INDEX                 | amf_int64  |
 | OUTPUT_REFERENCED_LTR_INDEX_BITFIELD    | amf_int64  |
 | OUTPUT_TEMPORAL_LAYER                   | amf_int64  |
+| OUTPUT_BUFFER_TYPE                   | amf_int64  |
 | RECONSTRUCTED_PICTURE                   | AMFSurface |
 
 <p align="center">
@@ -1860,6 +1884,20 @@ Temporal layer of the encoded picture.
 ---
 
 **Name:**
+`AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE`
+
+**Values:**
+`AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE_ENUM`: `AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE_FRAME`,`AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE_TILE`, `AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE_TILE_LAST`
+
+**Default Value:**
+`N\A`
+
+**Description:**
+Encoder output buffer type.
+
+---
+
+**Name:**
 `AMF_VIDEO_ENCODER_HEVC_RECONSTRUCTED_PICTURE`
 
 **Values:**
@@ -1872,49 +1910,492 @@ Temporal layer of the encoded picture.
 Reconstructed picture. Valid with `PICTURE_TRANSFER_MODE` turned on.
 
 ---
+### Table A-3. Encoder capabilities exposed in AMFCaps interface
 
-### Table A-3. Encoder statistics feedback
+| Name (prefix with AMF_VIDEO_ENCODER_HEVC_CAP_) | Type      |
+| :-------------------------------------------- | :-------- |
+|MAX_BITRATE                      |amf_int64|
+|NUM_OF_STREAMS                   |amf_int64|
+|MAX_PROFILE                      |amf_int64|
+|MAX_TIER                         |amf_int64|
+|MAX_LEVEL                        |amf_int64|
+|MIN_REFERENCE_FRAMES             |amf_int64|
+|MAX_REFERENCE_FRAMES             |amf_int64|
+|MAX_TEMPORAL_LAYERS              |amf_int64|
+|NUM_OF_HW_INSTANCES              |amf_int64|
+|COLOR_CONVERSION                 |amf_int64|
+|PRE_ANALYSIS                     |amf_bool|
+|ROI                              |amf_bool|
+|MAX_THROUGHPUT                   |amf_int64|
+|REQUESTED_THROUGHPUT             |amf_int64|
+|QUERY_TIMEOUT_SUPPORT           |amf_bool|
+|SUPPORT_SLICE_OUTPUT             |amf_bool|
 
-| Statistic Name                      | Description                                             |
-| :---------------------------------- | :------------------------------------------------------ |
-| STATISTIC_FRAME_QP                  | QP of the first encoded CTB in a picture                |
-| STATISTIC_AVERAGE_QP                | Average QP of all encoded CTBs in a picture             |
-| STATISTIC_MAX_QP                    | Max QP among all encoded CTBs in a picture              |
-| STATISTIC_MIN_QP                    | Min QP among all encoded CTBs in a picture              |
-| STATISTIC_PIX_NUM_INTRA             | Number of intra-coded pixels                            |
-| STATISTIC_PIX_NUM_INTER             | Number of inter-coded pixels                            |
-| STATISTIC_PIX_NUM_SKIP              | Number of skip-coded pixels                             |
-| STATISTIC_BITCOUNT_RESIDUAL         | Frame level bit count of residual data                  |
-| STATISTIC_BITCOUNT_MOTION           | Frame level bit count of motion vectors                 |
-| STATISTIC_BITCOUNT_INTER            | Frame level bit count of inter CTBs                     |
-| STATISTIC_BITCOUNT_INTRA            | Frame level bit count of intra CTBs                     |
-| STATISTIC_BITCOUNT_ALL_MINUS_HEADER | Frame level bit count of the bitstream excluding header |
-| STATISTIC_MV_X                      | Accumulated absolute values of MVX for full encoding    |
-| STATISTIC_MV_Y                      | Accumulated absolute values of MVY for full encoding    |
-| STATISTIC_RD_COST_FINAL             | Frame level final RD cost                               |
-| STATISTIC_RD_COST_INTRA             | Frame level RD cost for intra mode                      |
-| STATISTIC_RD_COST_INTER             | Frame level RD cost for inter mode                      |
-| STATISTIC_SATD_FINAL                | Frame level final SATD                                  |
-| STATISTIC_SATD_INTRA                | Frame level SATD for intra mode                         |
-| STATISTIC_SATD_INTER                | Frame level SATD for inter mode                         |
 
 <p align="center">
-Table 15. Encoder statistics feedback
+Table 15. Encoder capabilities exposed in AMFCaps interface
 </p>
 
-### Table A-4. Encoder PSNR/SSIM feedback
+---
 
-| Statistic Name     | Description |
-| :----------------- | :---------- |
-| STATISTIC_PSNR_Y   | PSNR Y      |
-| STATISTIC_PSNR_U   | PSNY U      |
-| STATISTIC_PSNR_V   | PSNR V      |
-| STATISTIC_PSNR_ALL | PSNR YUV    |
-| STATISTIC_SSIM_Y   | SSIM Y      |
-| STATISTIC_SSIM_U   | SSIM U      |
-| STATISTIC_SSIM_V   | SSIM V      |
-| STATISTIC_SSIM_ALL | SSIM YUV    |
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_CAP_MAX_BITRATE`
+
+**Values:**
+Integers, >=0
+
+**Description:**
+Maximum bit rate in bits.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_CAP_NUM_OF_STREAMS`
+
+**Values:**
+Integers, >=0
+
+**Description:**
+Maximum number of encode streams supported.
+
+---
+
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_CAP_MAX_PROFILE`
+
+**Values:**
+`AMF_VIDEO_ENCODER_HEVC_PROFILE_ENUM`: `AMF_VIDEO_ENCODER_HEVC_PROFILE_MAIN`, `AMF_VIDEO_ENCODER_HEVC_PROFILE_MAIN_10`
+
+
+**Description:**
+Maximum value of encoder profile.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_CAP_MAX_TIER`
+
+**Values:**
+`AMF_VIDEO_ENCODER_HEVC_TIER_ENUM`: `AMF_VIDEO_ENCODER_HEVC_TIER_MAIN`,`AMF_VIDEO_ENCODER_HEVC_TIER_HIGH`
+
+
+**Description:**
+Maximum profile tier.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_CAP_MAX_LEVEL`
+
+**Values:**
+`AMF_VIDEO_ENCODER_LEVEL_ENUM`:
+`AMF_LEVEL_1`, `AMF_LEVEL_2`, `AMF_LEVEL_2_1`, `AMF_LEVEL_3`, `AMF_LEVEL_3_1`, `AMF_LEVEL_4`, `AMF_LEVEL_4_1`, `AMF_LEVEL_5`, `AMF_LEVEL_5_1`, `AMF_LEVEL_5_2`, `AMF_LEVEL_6`, `AMF_LEVEL_6_1`, `AMF_LEVEL_6_2`
+
+
+**Description:**
+Maximum value of profile level.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_CAP_MIN_REFERENCE_FRAMES`
+
+**Description:**
+Minimum number of reference frames.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_CAP_MAX_REFERENCE_FRAMES`
+
+**Description:**
+Maximum number of reference frames.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_CAP_MAX_NUM_TEMPORAL_LAYERS`
+
+**Values:**
+`1` … `Maximum number of temporal layers supported`
+
+
+**Description:**
+The cap of maximum number of temporal layers.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_CAP_NUM_OF_HW_INSTANCES`
+
+**Values:**
+`0`... `number of instances - 1`
+
+**Description:**
+Number of HW encoder instances.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_CAP_COLOR_CONVERSION`
+
+**Values:**
+`AMF_ACCELERATION_TYPE`
+
+
+**Description:**
+Type of supported color conversion.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_CAP_PRE_ANALYSIS`
+
+**Values:**
+`true`, `false`
+
+
+**Description:**
+Pre analysis module is available.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_CAP_ROI`
+
+**Values:**
+`true`, `false`
+
+
+**Description:**
+ROI map support is available for HEVC UVE encoder, n/a for the other encoders.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_CAP_MAX_THROUGHPUT`
+
+**Values:**
+Integers, >=0
+
+**Description:**
+MAX throughput for HEVC encoder in MB (16 x 16 pixels).
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_CAP_REQUESTED_THROUGHPUT`
+
+**Values:**
+Integers, >=0
+
+**Description:**
+Currently total requested throughput for encode in MB (16 x 16 pixels).
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_CAPS_HEVC_QUERY_TIMEOUT_SUPPORT`
+
+**Values:**
+`true`, `false`
+
+
+**Description:**
+Timeout supported for QueryOutout call.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_CAP_SUPPORT_SLICE_OUTPUT`
+
+**Values:**
+`true`, `false`
+
+
+**Description:**
+If tile output is supported.
+
+---
+
+### Table A-4. Encoder statistics feedback
+
+| Statistic Name (prefix "AMF_VIDEO_ENCODER_HEVC_") | Type      |
+| :------------------------------------------------ | :---------|
+| STATISTIC_FRAME_QP                                | amf_int64 |
+| STATISTIC_AVERAGE_QP                              | amf_int64 |
+| STATISTIC_MAX_QP                                  | amf_int64 |
+| STATISTIC_MIN_QP                                  | amf_int64 |
+| STATISTIC_PIX_NUM_INTRA                           | amf_int64 |
+| STATISTIC_PIX_NUM_INTER                           | amf_int64 |
+| STATISTIC_PIX_NUM_SKIP                            | amf_int64 |
+| STATISTIC_BITCOUNT_RESIDUAL                       | amf_int64 |
+| STATISTIC_BITCOUNT_MOTION                         | amf_int64 |
+| STATISTIC_BITCOUNT_INTER                          | amf_int64 |
+| STATISTIC_BITCOUNT_INTRA                          | amf_int64 |
+| STATISTIC_BITCOUNT_ALL_MINUS_HEADER               | amf_int64 |
+| STATISTIC_MV_X                                    | amf_int64 |
+| STATISTIC_MV_Y                                    | amf_int64 |
+| STATISTIC_RD_COST_FINAL                           | amf_int64 |
+| STATISTIC_RD_COST_INTRA                           | amf_int64 |
+| STATISTIC_RD_COST_INTER                           | amf_int64 |
+| STATISTIC_SATD_FINAL                              | amf_int64 |
+| STATISTIC_SATD_INTRA                              | amf_int64 |
+| STATISTIC_SATD_INTER                              | amf_int64 |
+| STATISTIC_VARIANCE                                | amf_int64 |
 
 <p align="center">
 Table 16. Encoder statistics feedback
 </p>
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_FRAME_QP`
+
+**Description:**
+QP of the first encoded CTB in a picture.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_AVERAGE_QP`
+
+**Description:**
+Average QP of all encoded CTBs in a picture.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_MAX_QP`
+
+**Description:**
+Max QP among all encoded CTBs in a picture.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_MIN_QP`
+
+**Description:**
+Min QP among all encoded CTBs in a picture.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_PIX_NUM_INTRA`
+
+**Description:**
+Number of intra-coded pixels.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_PIX_NUM_INTER`
+
+**Description:**
+Number of inter-coded pixels.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_PIX_NUM_SKIP`
+
+**Description:**
+Number of skip-coded pixels.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_BITCOUNT_RESIDUAL`
+
+**Description:**
+Frame level bit count of residual data.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_BITCOUNT_MOTION`
+
+**Description:**
+Frame level bit count of motion vectors.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_BITCOUNT_INTER`
+
+**Description:**
+Frame level bit count of inter CTBs.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_BITCOUNT_INTRA`
+
+**Description:**
+Frame level bit count of intra CTBs.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_BITCOUNT_ALL_MINUS_HEADER`
+
+**Description:**
+Frame level bit count of the bitstream excluding header.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_MV_X`
+
+**Description:**
+Accumulated absolute values of MVX for full encoding.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_MV_Y`
+
+**Description:**
+Accumulated absolute values of MVY for full encoding.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_RD_COST_FINAL`
+
+**Description:**
+Frame level final RD cost.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_RD_COST_INTRA`
+
+**Description:**
+Frame level RD cost for intra mode.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_RD_COST_INTER`
+
+**Description:**
+Frame level RD cost for inter mode.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_SATD_FINAL`
+
+**Description:**
+Frame level final SATD.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_SATD_INTRA`
+
+**Description:**
+Frame level SATD for intra mode.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_SATD_INTER`
+
+**Description:**
+Frame level SATD for inter mode.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_VARIANCE`
+
+**Description:**
+Frame level variance for full encoding.
+
+---
+
+### Table A-5. Encoder PSNR/SSIM feedback
+
+| Statistic Name (prefix "AMF_VIDEO_ENCODER_HEVC") | Type       |
+| :----------------------------------------------- | :--------- |
+| STATISTIC_PSNR_Y                                 | amf_double |
+| STATISTIC_PSNR_U                                 | amf_double |
+| STATISTIC_PSNR_V                                 | amf_double |
+| STATISTIC_PSNR_ALL                               | amf_double |
+| STATISTIC_SSIM_Y                                 | amf_double |
+| STATISTIC_SSIM_U                                 | amf_double |
+| STATISTIC_SSIM_V                                 | amf_double |
+| STATISTIC_SSIM_ALL                               | amf_double |
+
+<p align="center">
+Table 17. Encoder statistics feedback
+</p>
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_PSNR_Y`
+
+**Description:**
+PSNR Y.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_PSNR_U`
+
+**Description:**
+PSNY U.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_PSNR_V`
+
+**Description:**
+PSNR V.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_PSNR_ALL`
+
+**Description:**
+PSNR YUV.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_SSIM_Y`
+
+**Description:**
+SSIM Y.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_SSIM_U`
+
+**Description:**
+SSIM U.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_SSIM_V`
+
+**Description:**
+SSIM V.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_STATISTIC_SSIM_ALL`
+
+**Description:**
+SSIM YUV.
+
+---

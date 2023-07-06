@@ -52,15 +52,6 @@ using namespace DirectX;
 #define ALPHA_BLEND_ENABLED 1
 #define HIST_SIZE   256
 
-inline static amf_uint32 AlignValue(amf_uint32 value, amf_uint32 alignment)
-{
-    return ((value + (alignment - 1)) & ~(alignment - 1));
-}
-
-struct WorldCB
-{
-    XMMATRIX mView;
-};
 
 extern XMVECTOR MakeSphere(XMVECTOR src, float centerX,float centerY,float centerZ, float newRadius);
 
@@ -69,11 +60,22 @@ StitchEngineBase(pContext),
     m_bWireRender(false),
     m_eOutputMode(AMF_VIDEO_STITCH_OUTPUT_MODE_PREVIEW)
 {
-    ::memset(&m_CameraOrienation, 0, sizeof(m_CameraOrienation));
+
+    m_pCameraOrientation = (Transform*)amf_aligned_alloc(sizeof(Transform), alignof(Transform));
+    if (m_pCameraOrientation != nullptr)
+    {
+        ::memset(m_pCameraOrientation, 0, sizeof(Transform));
+    }
 }
 //-------------------------------------------------------------------------------------------------
 StitchEngineDX11::~StitchEngineDX11()
 {
+    if (m_pCameraOrientation != nullptr)
+    {
+        amf_aligned_free(m_pCameraOrientation);
+        m_pCameraOrientation = nullptr;
+    }
+
     Terminate();
 }
 //-------------------------------------------------------------------------------------------------
@@ -85,7 +87,6 @@ AMF_RESULT AMF_STD_CALL StitchEngineDX11::Init(AMF_SURFACE_FORMAT formatInput, a
         bOMPInit = true;
         omp_set_num_threads(10);  
     }
-    int nThreads = omp_get_num_threads();
 
     AMF_RESULT res = AMF_OK;
     HRESULT hr = S_OK;
@@ -97,8 +98,6 @@ AMF_RESULT AMF_STD_CALL StitchEngineDX11::Init(AMF_SURFACE_FORMAT formatInput, a
     AMF_RETURN_IF_FALSE(m_pd3dDevice != NULL, AMF_NOT_INITIALIZED);
 
     m_pd3dDevice->GetImmediateContext(&m_pd3dDeviceContext);
-
-    DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
 
     //---------------------------------------------------------------------------------------------
     // Create the vertex shader
@@ -217,11 +216,13 @@ AMF_RESULT AMF_STD_CALL StitchEngineDX11::Init(AMF_SURFACE_FORMAT formatInput, a
     m_StreamList.resize(inputCount);
 
     XMMATRIX orientation = XMMatrixIdentity();
-    memcpy(m_CameraOrienation.m_WorldViewProjection, &orientation, sizeof(m_CameraOrienation.m_WorldViewProjection));
+
+    AMF_RETURN_IF_INVALID_POINTER(m_pCameraOrientation, L"Invalid m_pCameraOrientation pointer");
+    memcpy(m_pCameraOrientation->m_WorldViewProjection, &orientation, sizeof(m_pCameraOrientation->m_WorldViewProjection));
 
     Transform trnasform;
     Transform cubemap[6];
-    res = GetTransform(widthInput, heightInput, widthOutput, heightOutput, pStorage, m_CameraOrienation, trnasform, cubemap);
+    res = GetTransform(widthInput, heightInput, widthOutput, heightOutput, pStorage, *m_pCameraOrientation, trnasform, cubemap);
 
     amf_int64 mode = AMF_VIDEO_STITCH_OUTPUT_MODE_PREVIEW;
     pStorage->GetProperty(AMF_VIDEO_STITCH_OUTPUT_MODE, &mode);
@@ -230,14 +231,14 @@ AMF_RESULT AMF_STD_CALL StitchEngineDX11::Init(AMF_SURFACE_FORMAT formatInput, a
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.Usage = D3D11_USAGE_DYNAMIC;
     bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    bd.ByteWidth = sizeof(WorldCB);
+    bd.ByteWidth = sizeof(XMMATRIX);
     bd.StructureByteStride = 0;
     InitData.pSysMem = &trnasform;
 
     hr = m_pd3dDevice->CreateBuffer( &bd, &InitData, &m_pWorldCB );
     ASSERT_RETURN_IF_HR_FAILED(hr,AMF_DIRECTX_FAILED,L"InitializeRenderData() - CreateBuffer() failed");
 
-    bd.ByteWidth = sizeof(WorldCB) * 6;
+    bd.ByteWidth = sizeof(XMMATRIX) * 6;
     bd.StructureByteStride = 0;
     InitData.pSysMem = cubemap;
 
@@ -347,7 +348,8 @@ AMF_RESULT AMF_STD_CALL      StitchEngineDX11::UpdateFOV(amf_int32 widthInput, a
 
     Transform transform;
     Transform cubemap[6];
-    res = GetTransform(widthInput, heightInput, widthOutput, heightOutput, pStorage, m_CameraOrienation, transform, cubemap);
+    AMF_RETURN_IF_INVALID_POINTER(m_pCameraOrientation, L"Invalid m_pCameraOrientation pointer");
+    res = GetTransform(widthInput, heightInput, widthOutput, heightOutput, pStorage, *m_pCameraOrientation, transform, cubemap);
    
     D3D11_MAPPED_SUBRESOURCE MappedResource;
     hr = m_pd3dDeviceContext->Map(m_pWorldCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
@@ -570,7 +572,7 @@ AMF_RESULT AMF_STD_CALL StitchEngineDX11::GetBorderRect(amf_int32 index, AMFRect
 }
 
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL StitchEngineDX11::UpdateBrightness(amf_int32 index, AMFPropertyStorage *pStorage)
+AMF_RESULT AMF_STD_CALL StitchEngineDX11::UpdateBrightness(amf_int32 /* index */, AMFPropertyStorage* /* pStorage */)
 {
     return AMF_OK;
 }
@@ -604,12 +606,11 @@ static  int QuadrantByAngle(float angle, float &center)
 
 //re-generate the Rib and corner data based on the vertices
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT StitchEngineDX11::UpdateRibs(amf_int32 widthInput, amf_int32 heightInput, AMFPropertyStorage *pStorage)
+AMF_RESULT StitchEngineDX11::UpdateRibs(amf_int32 /* widthInput */, amf_int32 /* heightInput */, AMFPropertyStorage* pStorage)
 {
     amf_int64 lensCorrectionMode = AMF_VIDEO_STITCH_LENS_RECTILINEAR;
     pStorage->GetProperty(AMF_VIDEO_STITCH_LENS_MODE, &lensCorrectionMode);
 
-    amf_int32 ribCount = (amf_int32)m_StreamList.size() * 2;
     m_Ribs.clear();
 
     //create rib pairs
@@ -1101,14 +1102,14 @@ AMF_RESULT StitchEngineDX11::UpdateRibs(amf_int32 widthInput, amf_int32 heightIn
                   c.corner[2] = c3;
                   c.index  = (amf_int32)m_Corners.size();
 
-                  XMVECTOR plane0 = m_StreamList[c.channel[0]].m_Plane;
-                  XMVECTOR plane1 = m_StreamList[c.channel[1]].m_Plane;
-                  XMVECTOR plane2 = m_StreamList[c.channel[2]].m_Plane;
+                  XMVECTOR channelPlane0 = m_StreamList[c.channel[0]].m_Plane;
+                  XMVECTOR channelPlane1 = m_StreamList[c.channel[1]].m_Plane;
+                  XMVECTOR channelPlane2 = m_StreamList[c.channel[2]].m_Plane;
 
                   XMVECTOR line_01_0;
                   XMVECTOR line_01_1;
-                  XMPlaneIntersectPlane(&line_01_0, &line_01_1, plane0, plane1);
-                  XMVECTOR corner = XMPlaneIntersectLine(plane2, line_01_0, line_01_1);
+                  XMPlaneIntersectPlane(&line_01_0, &line_01_1, channelPlane0, channelPlane1);
+                  XMVECTOR corner = XMPlaneIntersectLine(channelPlane2, line_01_0, line_01_1);
                   c.pos[0] = XMVectorGetX(corner);
                   c.pos[1] = XMVectorGetY(corner);
                   c.pos[2] = XMVectorGetZ(corner);
@@ -1134,24 +1135,21 @@ AMFSurface* AMF_STD_CALL StitchEngineDX11::GetBorderMap(amf_int32 index)
 }
 
 //-------------------------------------------------------------------------------------------------
+#pragma warning(push)
+#pragma warning(disable : 4324) // structure was padded due to alignment specifier
 struct IntermediatePoint
 {
     float distance;
     XMVECTOR add;
 };
+#pragma warning(pop)
 
-struct IntermediateHolder
-{
-    amf_int32 channel;
-    amf_int32 vertex;
-
-    std::vector<IntermediatePoint> points;
-};
+typedef std::vector<IntermediatePoint, amf_aligned_allocator<IntermediatePoint, alignof(IntermediatePoint)> > IntermediatePointList;
 
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT          StitchEngineDX11::ApplyControlPoints()
 {
-    std::vector< std::map<amf_int32, std::vector<IntermediatePoint> > > holders;
+    std::vector< std::map<amf_int32, IntermediatePointList> > holders;
 
     holders.resize(m_StreamList.size());
 
@@ -1242,23 +1240,17 @@ AMF_RESULT          StitchEngineDX11::ApplyControlPoints()
     }
 
     int channel = 0;
-    for(std::vector< std::map<amf_int32, std::vector<IntermediatePoint> > >::iterator it_h = holders.begin(); it_h != holders.end(); it_h++, channel++)
+    for(std::vector< std::map<amf_int32, IntermediatePointList> >::iterator it_h = holders.begin(); it_h != holders.end(); it_h++, channel++)
     {
-        for(std::map<amf_int32, std::vector<IntermediatePoint> >::iterator it_v = it_h->begin(); it_v != it_h->end(); it_v++)
+        for(std::map<amf_int32, IntermediatePointList>::iterator it_v = it_h->begin(); it_v != it_h->end(); it_v++)
         { 
             TextureVertex &v = m_StreamList[channel].m_Vertices[it_v->first];
             XMVECTOR veretexOnPlane = XMVectorSet(v.Pos[0], v.Pos[1], v.Pos[2], 1.0f);
-            float distanceMax = 1000.f;
             XMVECTOR add = XMVectorSet(0, 0, 0, 0);;
 
-            for(std::vector<IntermediatePoint>::iterator it_p = it_v->second.begin(); it_p != it_v->second.end(); it_p++)
+            for(IntermediatePointList::iterator it_p = it_v->second.begin(); it_p != it_v->second.end(); it_p++)
             {
                 add = XMVectorAdd(add, it_p->add);
-            }
-
-            if(it_v->second.size() > 1)
-            {
-                int a = 1;
             }
 
             add = XMVectorScale(add, 1.0f / (float)it_v->second.size());

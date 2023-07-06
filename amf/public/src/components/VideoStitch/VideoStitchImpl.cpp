@@ -53,7 +53,7 @@
 
 extern "C"
 {
-    AMF_COMPONENT_VSTITCH_LINK AMF_RESULT AMF_CDECL_CALL AMFCreateComponentInt(amf::AMFContext* pContext, void* reserved, amf::AMFComponent** ppComponent)
+    AMF_COMPONENT_VSTITCH_LINK AMF_RESULT AMF_CDECL_CALL AMFCreateComponentInt(amf::AMFContext* pContext, void* /* reserved */ , amf::AMFComponent** ppComponent)
     {
         *ppComponent = new amf::AMFInterfaceMultiImpl< amf::AMFVideoStitchImpl, amf::AMFComponent, amf::AMFContext* >(pContext);
         (*ppComponent)->Acquire();
@@ -338,7 +338,7 @@ AMF_RESULT AMF_STD_CALL AMFVideoStitchImpl::Optimize(AMFComponentOptimizationCal
         amf_uint                            m_lastTotalPercent;
     public:
         Callback(AMFComponentOptimizationCallback* pCallback, amf_uint total)
-            :m_pCallback(pCallback), m_total(total), m_completed(0), m_lastTotalPercent(-1)
+            :m_pCallback(pCallback), m_total(total), m_completed(0), m_lastTotalPercent(static_cast<amf_uint>(-1))
         {
         }
         virtual AMF_RESULT AMF_STD_CALL OnComponentOptimizationProgress(amf_uint percent)
@@ -366,7 +366,6 @@ AMF_RESULT AMF_STD_CALL AMFVideoStitchImpl::Optimize(AMFComponentOptimizationCal
         {
             deviceTypes.insert(AMF_MEMORY_OPENCL);
         }
-        amf_uint count = 0;
         Callback callback(pCallback, (amf_uint)deviceTypes.size());
         for(amf_set<AMF_MEMORY_TYPE>::iterator it = deviceTypes.begin(); it != deviceTypes.end(); ++it)
         {
@@ -431,7 +430,7 @@ AMF_RESULT AMF_STD_CALL AMFVideoStitchImpl::Flush()
 }
 
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL AMFVideoStitchImpl::SubmitInput(AMFData* pData)
+AMF_RESULT AMF_STD_CALL AMFVideoStitchImpl::SubmitInput(AMFData* /* pData */)
 {
     return AMF_UNEXPECTED;
 }

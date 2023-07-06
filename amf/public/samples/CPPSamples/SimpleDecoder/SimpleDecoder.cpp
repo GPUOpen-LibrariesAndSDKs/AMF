@@ -39,11 +39,17 @@
 #endif
 #include "public/common/AMFFactory.h"
 #include "public/common/AMFSTL.h"
+#include "public/common/TraceAdapter.h"
 #include "public/include/components/VideoDecoderUVD.h"
 #include "public/common/DataStream.h"
 #include "../common/BitStreamParser.h"
+#include "public/samples/CPPSamples/common/MiscHelpers.h"
+#include "public/samples/CPPSamples/common/SurfaceUtils.h"
+#include "public/samples/CPPSamples/common/PollingThread.h"
 #include <fstream>
 #include <iostream>
+
+#define AMF_FACILITY L"SimpleDecoder"
 
 //static const wchar_t *fileNameIn          = L"./nasa_720p.264";
 //static const wchar_t *fileNameIn          = L"./bbc_1080p.264";
@@ -58,33 +64,21 @@ static amf::AMF_SURFACE_FORMAT formatOut    = amf::AMF_SURFACE_NV12;
 static amf_int32 frameCount                 = 500; // -1 means entire file
 static amf_int32 submitted = 0;
 
-static void WritePlane(amf::AMFPlane *plane, FILE *f);
-static void WaitDecoder(amf::AMFContext *context, amf::AMFSurface *surface); // Waits till decoder finishes decode the surface. Need for accurate profiling only. Do not use in the product!!!
-
 // The memory transfer from DX9 to HOST and writing a raw file is longer than decode time. To measure decode time correctly disable convert and write here: 
 static bool bWriteToFile = false;
-#define START_TIME_PROPERTY L"StartTimeProperty" // custom property ID to store submission time in a frame - all custom properties are copied from input to output
 
-#define MILLISEC_TIME     10000
-
-class PollingThread : public amf::AMFThread
+class DecPollingThread : public PollingThread
 {
-protected:
-    amf::AMFContextPtr      m_pContext;
-    amf::AMFComponentPtr    m_pDecoder;
-    std::ofstream           m_pFile;
 public:
-    PollingThread(amf::AMFContext *context, amf::AMFComponent *decoder, const wchar_t *pFileName);
-    ~PollingThread();
-    virtual void Run();
+    DecPollingThread(amf::AMFContext* pContext, amf::AMFComponent* pDecoder, const wchar_t* pFileName);
+protected:
+    void SetUp() override;
+    void ProcessData(amf::AMFData* pData) override;
+    void PrintResults() override;
+
+    amf_pts m_ConvertDuration;
 };
 
-template<class charT>
-std::wstring convert2WString(const charT * p)
-{
-    std::basic_string<charT> str(p);
-    return std::wstring(str.begin(), str.end());
-} 
 
 #ifdef _WIN32
 int _tmain(int argc, _TCHAR* argv[])
@@ -92,7 +86,7 @@ int _tmain(int argc, _TCHAR* argv[])
 int main(int argc, char* argv[])
 #endif
 {
-    std::wstring fileNameInW{};
+    amf_wstring fileNameInW{};
 
     if(argc <= 1 && fileNameIn == NULL)
     {
@@ -100,8 +94,12 @@ int main(int argc, char* argv[])
         return 1;
     }
     if(argc > 1)
-    { 
-        fileNameInW = convert2WString(argv[1]);
+    {
+#if defined(_WIN32) && defined(_UNICODE)
+        fileNameInW = argv[1];
+#else
+        fileNameInW = amf::amf_from_utf8_to_unicode(argv[1]);
+#endif
         fileNameIn = fileNameInW.c_str();
     }
     AMF_RESULT              res = AMF_OK; // error checking can be added later
@@ -182,7 +180,7 @@ int main(int argc, char* argv[])
     }
     res = decoder->Init(formatOut, parser->GetPictureWidth(), parser->GetPictureHeight());
 
-    PollingThread thread(context, decoder, fileNameOutWidthSize);
+    DecPollingThread thread(context, decoder, fileNameOutWidthSize);
     thread.Start();
 
     amf::AMFDataPtr data;
@@ -248,176 +246,43 @@ int main(int argc, char* argv[])
     g_AMFFactory.Terminate();
 	return 0;
 }
-static void WritePlane(amf::AMFPlane *plane, std::ofstream &f)
-{
-    // write NV12 surface removing offsets and alignments
-    amf_uint8 *data     = reinterpret_cast<amf_uint8*>(plane->GetNative());
-    amf_int32 offsetX   = plane->GetOffsetX();
-    amf_int32 offsetY   = plane->GetOffsetY();
-    amf_int32 pixelSize = plane->GetPixelSizeInBytes();
-    amf_int32 height    = plane->GetHeight();
-    amf_int32 width     = plane->GetWidth();
-    amf_int32 pitchH    = plane->GetHPitch();
 
-    for( amf_int32 y = 0; y < height; y++)
-    {
-        amf_uint8 *line = data + (y + offsetY) * pitchH;
-        f.write(reinterpret_cast<char*>(line) + offsetX * pixelSize, pixelSize * width);
-    }
+DecPollingThread::DecPollingThread(amf::AMFContext* pContext, amf::AMFComponent* pDecoder, const wchar_t* pFileName)
+    : PollingThread(pContext, pDecoder, pFileName, bWriteToFile), m_ConvertDuration(0)
+{}
+
+void DecPollingThread::SetUp()
+{
+    PollingThread::SetUp();
+    m_ConvertDuration = 0;
 }
-// Waits till decoder finishes decode the surface. Need for accurate profiling only. Do not use in the product!!!
-static void WaitDecoder(amf::AMFContext *context, amf::AMFSurface *surface) 
-{
-    // copy of four pixels will force DX to wait for UVD decoder and will not add a significant delay
-    amf::AMFSurfacePtr outputSurface;
-    context->AllocSurface(surface->GetMemoryType(), surface->GetFormat(), 2, 2, &outputSurface); // NV12 must be devisible by 2
 
-    switch(surface->GetMemoryType())
+void DecPollingThread::ProcessData(amf::AMFData* pData)
+{
+    AMF_RESULT res = AMF_OK;
+
+    SyncSurfaceToCPU(m_pContext, amf::AMFSurfacePtr(pData)); // Waits till decoder finishes decode the surface. Need for accurate profiling only. Do not use in the product!!!
+    AdjustTimes(pData);
+
+    if (bWriteToFile == true)
     {
-#ifdef _WIN32        
-    case amf::AMF_MEMORY_DX9:
-        {
-            HRESULT hr = S_OK;
-    
-            IDirect3DDevice9 *deviceDX9 = (IDirect3DDevice9 *)context->GetDX9Device(); // no reference counting - do not Release()
-            IDirect3DSurface9* surfaceDX9src = (IDirect3DSurface9*)surface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
-            IDirect3DSurface9* surfaceDX9dst = (IDirect3DSurface9*)outputSurface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
-            RECT rect = {0, 0, 2, 2};
-            // a-sync copy
-            hr = deviceDX9->StretchRect(surfaceDX9src,&rect ,surfaceDX9dst, &rect, D3DTEXF_NONE);
-            // wait
-            outputSurface->Convert(amf::AMF_MEMORY_HOST);
-        }
-        break;
-    case amf::AMF_MEMORY_DX11:
-        {    
-            ID3D11Device *deviceDX11 = (ID3D11Device*)context->GetDX11Device(); // no reference counting - do not Release()
-            ID3D11Texture2D *textureDX11src = (ID3D11Texture2D*)surface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
-            ID3D11Texture2D *textureDX11dst = (ID3D11Texture2D*)outputSurface->GetPlaneAt(0)->GetNative(); // no reference counting - do not Release()
-            ID3D11DeviceContext *contextDX11 = NULL;
-            deviceDX11->GetImmediateContext(&contextDX11);
-            D3D11_BOX srcBox = {0, 0, 0, 2, 2, 1};
-            contextDX11->CopySubresourceRegion(textureDX11dst, 0, 0, 0, 0, textureDX11src, 0, &srcBox);
-            contextDX11->Flush();
-            // release temp objects
-            contextDX11->Release();
-            outputSurface->Convert(amf::AMF_MEMORY_HOST);
-        }
-        break;
-#endif
-    case amf::AMF_MEMORY_VULKAN:
-        {
-            amf::AMFComputePtr pCompute;
-            context->GetCompute(amf::AMF_MEMORY_VULKAN, &pCompute),
-            pCompute->FinishQueue();
-//        outputSurface->Convert(amf::AMF_MEMORY_HOST);
-        }
-        break;
-    case amf::AMF_MEMORY_DX12:
-    {
-            amf::AMFComputePtr pCompute;
-            context->GetCompute(amf::AMF_MEMORY_DX12, &pCompute);
-//            pCompute->FinishQueue();
-//        outputSurface->Convert(amf::AMF_MEMORY_HOST);
-    }
-    break;
-    default:
-        break;
+        // this operation is slow nneed to remove it from stat
+        res = pData->Convert(amf::AMF_MEMORY_HOST); // convert to system memory
+
+        amf_pts convert_time = amf_high_precision_clock();
+        m_ConvertDuration += convert_time - m_LastPollTime;
+
+        amf::AMFSurfacePtr pSurface(pData); // query for surface interface
+
+        res = WritePlane(pSurface->GetPlane(amf::AMF_PLANE_Y), m_pFile); // get y-plane pixels
+        res = WritePlane(pSurface->GetPlane(amf::AMF_PLANE_UV), m_pFile); // get uv-plane pixels
+
+        m_WriteDuration += amf_high_precision_clock() - convert_time;
     }
 }
 
-PollingThread::PollingThread(amf::AMFContext *context, amf::AMFComponent *decoder, const wchar_t *pFileName) : m_pContext(context), m_pDecoder(decoder)
+void DecPollingThread::PrintResults()
 {
-    if(bWriteToFile)
-    {
-        amf_wstring wStr(pFileName);
-        amf_string str(amf::amf_from_unicode_to_utf8(wStr));
-        m_pFile = std::ofstream(str.c_str(), std::ofstream::binary | std::ofstream::out);
-
-        if(!m_pFile.is_open())
-        {
-            std::cerr << "Error(" << strerror(errno) << ")" << "Unable to open file: " << str  << std::endl; 
-        }
-    }
-}
-PollingThread::~PollingThread()
-{
-    if(m_pFile)
-    {
-        m_pFile.close();
-    }
-}
-void PollingThread::Run()
-{
-    RequestStop();
-
-    amf_pts latency_time = 0;
-    amf_pts convert_duration = 0;
-    amf_pts write_duration = 0;
-    amf_pts decode_duration = 0;
-    amf_pts last_poll_time = 0;
-
-    AMF_RESULT res = AMF_OK; // error checking can be added later
-    while(true)
-    {
-        amf::AMFDataPtr data;
-        res = m_pDecoder->QueryOutput(&data);
-        if(res == AMF_EOF)
-        {
-            break; // Drain complete
-        }
-		if ((res != AMF_OK) && (res != AMF_REPEAT))
-		{
-			// trace possible error message
-			break; // Drain complete
-		}
-        if(data != NULL)
-        {
-            WaitDecoder(m_pContext, amf::AMFSurfacePtr(data)); // Waits till decoder finishes decode the surface. Need for accurate profiling only. Do not use in the product!!!
-
-            amf_pts poll_time = amf_high_precision_clock();
-            amf_pts start_time = 0;
-            data->GetProperty(START_TIME_PROPERTY, &start_time);
-            if(start_time < last_poll_time ) // correct if submission was faster then decode
-            {
-                start_time = last_poll_time;
-            }
-            last_poll_time = poll_time;
-
-            decode_duration += poll_time - start_time;
-
-            if(latency_time == 0)
-            {
-                latency_time = poll_time - start_time;
-            }
-            if(bWriteToFile)
-            {
-                // this operation is slow nneed to remove it from stat
-                res = data->Convert(amf::AMF_MEMORY_HOST); // convert to system memory
-
-                amf_pts convert_time = amf_high_precision_clock();
-                convert_duration += convert_time - poll_time;
-
-                amf::AMFSurfacePtr surface(data); // query for surface interface
-    
-                WritePlane(surface->GetPlane(amf::AMF_PLANE_Y), m_pFile); // get y-plane pixels
-                WritePlane(surface->GetPlane(amf::AMF_PLANE_UV), m_pFile); // get uv-plane pixels
-            
-                write_duration += amf_high_precision_clock() - convert_time;
-            }
-        }
-        else
-        {
-            amf_sleep(1);
-        }
-
-    }
-    printf("latency           = %.4fms\ndecode  per frame = %.4fms\nconvert per frame = %.4fms\nwrite per frame   = %.4fms\n", 
-        double(latency_time)/MILLISEC_TIME,
-		double(decode_duration) / MILLISEC_TIME / submitted,
-		double(convert_duration) / MILLISEC_TIME / submitted,
-		double(write_duration) / MILLISEC_TIME / submitted);
-
-    m_pDecoder = NULL;
-    m_pContext = NULL;
+    PrintTimes("decode ", submitted);
+    printf("convert per frame = %.4fms\n", double(m_ConvertDuration) / AMF_MILLISECOND / submitted);
 }

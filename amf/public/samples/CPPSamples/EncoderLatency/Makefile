@@ -33,7 +33,7 @@ pp_include_dirs = $(amf_root)
 
 src_files = \
     public/samples/CPPSamples/EncoderLatency/EncoderLatency.cpp \
-    public/samples/CPPSamples/EncoderLatency/SurfaceGenerator.cpp \
+    public/samples/CPPSamples/common/SurfaceGenerator.cpp \
     $(public_common_dir)/AMFFactory.cpp \
     $(public_common_dir)/AMFSTL.cpp \
     $(public_common_dir)/DataStreamFactory.cpp \

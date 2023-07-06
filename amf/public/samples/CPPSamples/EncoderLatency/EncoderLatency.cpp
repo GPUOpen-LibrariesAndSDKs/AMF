@@ -49,14 +49,17 @@
 #include "public/samples/CPPSamples/common/EncoderParamsAVC.h"
 #include "public/samples/CPPSamples/common/EncoderParamsHEVC.h"
 #include "public/samples/CPPSamples/common/EncoderParamsAV1.h"
+#include "public/samples/CPPSamples/common/SurfaceGenerator.h"
+#include "public/samples/CPPSamples/common/PollingThread.h"
 #include "../common/ParametersStorage.h"
 #include "../common/CmdLineParser.h"
 #include "../common/CmdLogger.h"
 #include "../common/PipelineDefines.h"
-#include "SurfaceGenerator.h"
 
 #include <fstream>
 #include <iostream>
+
+#define AMF_FACILITY L"EncoderLatency"
 
 static AMF_COLOR_BIT_DEPTH_ENUM eDepth = AMF_COLOR_BIT_DEPTH_8;
 static amf_int32 frameCount = 500;
@@ -78,20 +81,18 @@ amf_int32               widthIn = 1920;
 amf_int32               heightIn = 1080;
 amf_int32               rectSize = 50;
 
-bool        writeToFileMode = false;
+bool        bWriteToFile = false;
 amf_int64   formatType = 0;
 amf_int64   memoryIn = 0;
 amf_wstring codec = AMFVideoEncoderVCE_AVC; // AVC default. can set using '-codec avc' '-codec hevc' '-codec av1' command line argument
 amf_wstring workAlgorithm = L"ASAP";
 amf_wstring fileNameOut;
 
-
-#define START_TIME_PROPERTY L"StartTimeProperty" // custom property ID to store submission time in a frame - all custom properties are copied from input to output
-
 amf::AMFSurfacePtr pColor1;
 amf::AMFSurfacePtr pColor2;
 
-#define MILLISEC_TIME     10000
+amf::AMFSurfacePtr pColor3;
+amf::AMFSurfacePtr pColor4;
 
 static const wchar_t*  PARAM_NAME_WORKALGORITHM = L"ALGORITHM";
 static const wchar_t*  PARAM_NAME_PRERENDER     = L"PRERENDER";
@@ -255,7 +256,7 @@ AMF_RESULT ReadParams(ParametersStorage* params, int argc, char* argv[])
         formatIn = (amf::AMF_SURFACE_FORMAT)formatType;
     }
 
-    writeToFileMode = (fileNameOut.empty() != true);
+    bWriteToFile = (fileNameOut.empty() != true);
     return AMF_OK;
 }
 
@@ -445,112 +446,85 @@ static void printTime(amf_pts total_time, amf_pts latency_time, amf_pts first_fr
            "Latency: First,Min,Max = %.2fms, %.2fms, %.2fms\n" \
            "Latency: Average = %.2fms\n",
         frameCount,
-        double(total_time) / MILLISEC_TIME,
+        double(total_time) / AMF_MILLISECOND,
         double(AMF_SECOND) * double(frameCount) / double(total_time),
-        double(first_frame) / MILLISEC_TIME,
-        double(min_latency) / MILLISEC_TIME,
-        double(max_latency) / MILLISEC_TIME,
-        double(latency_time) / MILLISEC_TIME / frameCount
+        double(first_frame) / AMF_MILLISECOND,
+        double(min_latency) / AMF_MILLISECOND,
+        double(max_latency) / AMF_MILLISECOND,
+        double(latency_time) / AMF_MILLISECOND / frameCount
     );
     fflush(stderr);
 }
 
 
-class PollingThread : public amf::AMFThread
+class EncPollingThread : public PollingThread
 {
-protected:
-    amf::AMFContextPtr      m_pContext;
-    amf::AMFComponentPtr    m_pEncoder;
-    std::ofstream           m_pFile;
-    bool                    isWritingToFile;
 public:
-    PollingThread(amf::AMFContext* context, amf::AMFComponent* encoder, const wchar_t* pFileName, bool writeToFile);
-    ~PollingThread();
-    virtual void Run();
+    EncPollingThread(amf::AMFContext* pContext, amf::AMFComponent* pEncoder, const wchar_t* pFileName);
+protected:
+    void SetUp() override;
+    void ProcessData(amf::AMFData* pData) override;
+    void PrintResults() override;
+
+    amf_pts m_StartTime;
+    amf_pts m_FirstFrame;
+    amf_pts m_MinLatency;
+    amf_pts m_MaxLatency;
 };
 
-PollingThread::PollingThread(amf::AMFContext * context, amf::AMFComponent * encoder, const wchar_t* pFileName, bool writeToFile) : m_pContext(context), m_pEncoder(encoder)
+EncPollingThread::EncPollingThread(amf::AMFContext* pContext, amf::AMFComponent* pEncoder, const wchar_t* pFileName)
+    : PollingThread(pContext, pEncoder, pFileName, bWriteToFile),
+    m_StartTime(0),
+    m_FirstFrame(0),
+    m_MinLatency(INT64_MAX),
+    m_MaxLatency(0)
+{}
+
+void EncPollingThread::SetUp()
 {
-#ifdef _WIN32
-    m_pFile.open(pFileName, std::ios::binary);
-#else
-    m_pFile.open( amf::amf_from_unicode_to_utf8(pFileName).c_str(), std::ios::binary);
-#endif
-    isWritingToFile = writeToFile;
+    m_StartTime = amf_high_precision_clock();
+    PollingThread::SetUp();
+    m_FirstFrame = 0;
+    m_MinLatency = INT64_MAX;
+    m_MaxLatency = 0;
 }
-PollingThread::~PollingThread()
+
+void EncPollingThread::ProcessData(amf::AMFData* pData)
 {
-    if (m_pFile)
+    amf_pts poll_time = amf_high_precision_clock();
+    amf_pts start_time = 0;
+    pData->GetProperty(START_TIME_PROPERTY, &start_time);
+    if (start_time < m_LastPollTime) // remove wait time if submission was faster then encode
     {
-        m_pFile.close();
+        start_time = m_LastPollTime;
+    }
+    m_LastPollTime = poll_time;
+
+    amf_pts tmp_time = poll_time - start_time;
+    if (m_FirstFrame == 0)
+    {
+        m_FirstFrame = tmp_time;
+    }
+    else
+    {
+        m_MinLatency = m_MinLatency < tmp_time ? m_MinLatency : tmp_time;
+        m_MaxLatency = m_MaxLatency > tmp_time ? m_MaxLatency : tmp_time;
+    }
+
+    m_LatencyTime += tmp_time;
+
+    amf::AMFBufferPtr pBuffer(pData); // query for buffer interface
+    if ((bWriteToFile == true) && (m_pFile != NULL))
+    {
+        m_pFile->Write(pBuffer->GetNative(), pBuffer->GetSize(), NULL);
+        m_WriteDuration += amf_high_precision_clock() - poll_time;
     }
 }
-void PollingThread::Run()
+
+void EncPollingThread::PrintResults()
 {
-    RequestStop();
-
-    amf_pts begin_time = amf_high_precision_clock();
-    amf_pts latency_time = 0;
-    amf_pts write_duration = 0;
-    amf_pts last_poll_time = 0;
-    amf_pts first_frame = 0;
-    amf_pts min_latency = INT64_MAX;
-    amf_pts max_latency = 0;
-
-    while (true)
-    {
-        amf::AMFDataPtr data;
-        AMF_RESULT res = m_pEncoder->QueryOutput(&data);
-        if (res == AMF_EOF)
-        {
-            break; // Drain complete
-        }
-        if ((res != AMF_OK) && (res != AMF_REPEAT))
-        {
-            // trace possible error message
-            break; // Drain complete
-        }
-        if (data != NULL)
-        {
-            amf_pts poll_time = amf_high_precision_clock();
-            amf_pts start_time = 0;
-            data->GetProperty(START_TIME_PROPERTY, &start_time);
-            if (start_time < last_poll_time) // remove wait time if submission was faster then encode
-            {
-                start_time = last_poll_time;
-            }
-            last_poll_time = poll_time;
-
-            amf_pts tmp_time = poll_time - start_time;
-            if (first_frame == 0)
-            {
-                first_frame = tmp_time;
-            }
-            else
-            {
-                min_latency = min_latency < tmp_time ? min_latency : tmp_time;
-                max_latency = max_latency > tmp_time ? max_latency : tmp_time;
-            }
-
-            latency_time += tmp_time;
-
-            amf::AMFBufferPtr buffer(data); // query for buffer interface
-            if (isWritingToFile)
-            {
-                m_pFile.write(reinterpret_cast<char*>(buffer->GetNative()), buffer->GetSize());
-                write_duration += amf_high_precision_clock() - poll_time;
-            }
-        }
-        else
-        {
-            amf_sleep(1);
-        }
-    }
     amf_pts end_time = amf_high_precision_clock();
-    printTime(end_time - begin_time, latency_time, first_frame, min_latency, max_latency);
-
-    m_pEncoder = NULL;
-    m_pContext = NULL;
+    printTime(end_time - m_StartTime, m_LatencyTime, m_FirstFrame, m_MinLatency, m_MaxLatency);
 }
 
 void CheckAndRestartReader(RawStreamReader *pRawStreamReader)
@@ -609,7 +583,7 @@ int main(int argc, char* argv[])
     {
         res = amf::AMFContext1Ptr(context)->InitVulkan(NULL);
         AMF_RETURN_IF_FAILED(res, L"InitVulkan(NULL) failed");
-        PrepareFillFromHost(context);
+        PrepareFillFromHost(context, memoryTypeIn, formatIn, widthIn, heightIn, false);
     }
 #ifdef _WIN32
     else if (memoryTypeIn == amf::AMF_MEMORY_DX9)
@@ -621,7 +595,7 @@ int main(int argc, char* argv[])
     {
         res = context->InitDX11(NULL); // can be DX11 device
         AMF_RETURN_IF_FAILED(res, L"InitDX11(NULL) failed");
-        PrepareFillFromHost(context);
+        PrepareFillFromHost(context, memoryTypeIn, formatIn, widthIn, heightIn, false);
     }
 #endif
 
@@ -669,14 +643,14 @@ int main(int argc, char* argv[])
         }
         else
         {
-            FillSurface(context, &surfacePreRender, true);
+            FillSurface(context, &surfacePreRender, memoryTypeIn, formatIn, widthIn, heightIn, true);
         }
         preRenderedSurf.push_back(surfacePreRender);
     }
 
     if (workAlgorithm == L"ASAP")
     {
-        PollingThread thread(context, encoder, fileNameOut.c_str(), writeToFileMode);
+        EncPollingThread thread(context, encoder, fileNameOut.c_str());
         thread.Start();
 
         // encode some frames
@@ -701,7 +675,7 @@ int main(int argc, char* argv[])
                 }
                 else
                 {
-                    FillSurface(context, &surfaceIn, false);
+                    FillSurface(context, &surfaceIn, memoryTypeIn, formatIn, widthIn, heightIn, false);
                 }
             }
 
@@ -751,11 +725,13 @@ int main(int argc, char* argv[])
         amf::AMFPreciseWaiter waiter;
 
         // output file, if we have one
-#ifdef _WIN32
-        std::ofstream  logFile(fileNameOut.c_str(), std::ios::binary);
-#else
-        std::ofstream  logFile( amf::amf_from_unicode_to_utf8(fileNameOut.c_str()).c_str(), std::ios::binary);
-#endif
+        amf::AMFDataStreamPtr pLogFile;
+        if (bWriteToFile == true)
+        {
+            res = amf::AMFDataStream::OpenDataStream(fileNameOut.c_str(), amf::AMFSO_WRITE, amf::AMFFS_SHARE_READ, &pLogFile);
+            AMF_ASSERT_OK(res, L"Failed to open file %s", fileNameOut.c_str());
+        }
+
         amf_pts begin_time = amf_high_precision_clock();
         while (submitted < frameCount)
         {
@@ -779,7 +755,7 @@ int main(int argc, char* argv[])
                 }
                 else
                 {
-                    FillSurface(context, &surfaceIn, true);
+                    FillSurface(context, &surfaceIn, memoryTypeIn, formatIn, widthIn, heightIn, true);
                 }
             }
 
@@ -818,13 +794,13 @@ int main(int argc, char* argv[])
             }
             latency_time += tmp_time;
 
-            if ((data != NULL) && (writeToFileMode == true))
+            if ((data != NULL) && (bWriteToFile == true) && (pLogFile != NULL))
             {
                 amf::AMFBufferPtr buffer(data); // query for buffer interface
-                logFile.write(reinterpret_cast<char*>(buffer->GetNative()), buffer->GetSize());
+                pLogFile->Write(buffer->GetNative(), buffer->GetSize(), NULL);
                 write_duration += amf_high_precision_clock() - poll_time;
             }
-            if (bRealTime)
+            if (bRealTime == true)
             {
                 amf_pts end_frame = amf_high_precision_clock();
                 amf_pts time_to_sleep = amf_pts(AMF_SECOND / fFrameRate) - (end_frame - begin_frame);
@@ -836,6 +812,12 @@ int main(int argc, char* argv[])
         }
         amf_pts end_time = amf_high_precision_clock();
         printTime(end_time - begin_time, latency_time, first_frame, min_latency, max_latency);
+
+        if (pLogFile != NULL)
+        {
+            pLogFile->Close();
+            pLogFile = NULL;
+        }
     }
 
     // clear any pre-rendered frames

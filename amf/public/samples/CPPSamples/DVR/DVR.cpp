@@ -81,10 +81,10 @@ HWND      g_hDlg = NULL;
 // Resolution of the desktops that could be captured
 struct CaptureSource
 {
-	int			ResolutionX;
-	int			ResolutionY;
-	unsigned	deviceIdx;
-	unsigned	adapterIdx;
+    int            ResolutionX;
+    int            ResolutionY;
+    unsigned    adapterIdx;
+    unsigned    monitorIdx;
 };
 
 static std::vector<std::wstring>  s_vAdapters;
@@ -154,7 +154,7 @@ public:
         g_AMFFactory.GetDebug()->AssertsEnable(true);
 #else
         g_AMFFactory.GetDebug()->AssertsEnable(false);
-//		g_AMFFactory.GetTrace()->SetGlobalLevel(AMF_TRACE_WARNING);
+//        g_AMFFactory.GetTrace()->SetGlobalLevel(AMF_TRACE_WARNING);
 #endif
 
         g_AMFFactory.GetTrace()->SetGlobalLevel(AMF_TRACE_INFO);
@@ -171,12 +171,12 @@ public:
 
 //-------------------------------------------------------------------------------------------------
 int APIENTRY _tWinMain(HINSTANCE hInstance,
-	HINSTANCE hPrevInstance,
-	LPTSTR    lpCmdLine,
-	int       nCmdShow)
+    HINSTANCE hPrevInstance,
+    LPTSTR    lpCmdLine,
+    int       nCmdShow)
 {
-	UNREFERENCED_PARAMETER(hPrevInstance);
-	UNREFERENCED_PARAMETER(lpCmdLine);
+    UNREFERENCED_PARAMETER(hPrevInstance);
+    UNREFERENCED_PARAMETER(lpCmdLine);
     hInst = hInstance; // Store instance handle in our global variable
 
     //-------------------------------------------------------------------------------------------------
@@ -191,23 +191,23 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         return 1;
     }
 
-	AMFCustomTraceWriter writer(AMF_TRACE_WARNING);
-	amf_increase_timer_precision();
+    AMFCustomTraceWriter writer(AMF_TRACE_WARNING);
+    amf_increase_timer_precision();
 
 
-	//-------------------------------------------------------------------------------------------------
-	// DisplayDvrPipeline Initialization
-	DisplayDvrPipeline pipeline;
-	s_pPipeline = &pipeline;
+    //-------------------------------------------------------------------------------------------------
+    // DisplayDvrPipeline Initialization
+    DisplayDvrPipeline pipeline;
+    s_pPipeline = &pipeline;
 
-	std::wstring codec = L"AMFVideoEncoderVCE_AVC";
-	s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_CODEC, AMFVideoEncoderVCE_AVC);
-	RegisterEncoderParamsAVC(s_pPipeline);
+    std::wstring codec = L"AMFVideoEncoderVCE_AVC";
+    s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_CODEC, AMFVideoEncoderVCE_AVC);
+    RegisterEncoderParamsAVC(s_pPipeline);
 
 
     s_pPipeline->SetParam(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED);
     s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_ADAPTERID, kDefaultGPUIdx);
-    s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_MONITORID, 0);
+    s_pPipeline->SetParamAsString(DisplayDvrPipeline::PARAM_NAME_MONITORID, L"0");
 
     wchar_t *component = L"AMD";
     s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_CAPTURE_COMPONENT, component);
@@ -217,41 +217,49 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 #else
     if (parseCmdLineParameters(s_pPipeline, argc, argv))
 #endif
-
-
-    //-------------------------------------------------------------------------------------------------
-    // initialize dialog UI
-    InitCommonControls();
-
-    g_hDlg = CreateDialogParam(hInstance, MAKEINTRESOURCE(IDD_MAIN_DIALOG), 0, DialogProc, 0);
-    ShowWindow(g_hDlg, nCmdShow);
-    UpdateWindow(g_hDlg);
-    CreateStatusBar(g_hDlg, hInstance);
-    PopulateMenus(GetMenu(g_hDlg));
-    UpdateButtons(g_hDlg, false);
-
-
-    //-------------------------------------------------------------------------------------------------
-	// Main message loop:
-    MSG  msg = {};
-
-    while (true)
     {
-        BOOL ret = GetMessage(&msg, NULL, 0, 0);
-
-        if (ret == 0)
-            break;
-
-        if (ret == -1)
-            return -1;
-
-        if (!IsDialogMessage(g_hDlg, &msg)) {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
+        std::vector<amf_uint32> monitorIDs;
+        s_pPipeline->GetMonitorIDs(monitorIDs);
+        if (monitorIDs.size() > 1)
+        {
+            s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_MULTI_MONITOR, true);
         }
-    }
 
-	return (int)msg.wParam;
+        //-------------------------------------------------------------------------------------------------
+        // initialize dialog UI
+        InitCommonControls();
+
+        g_hDlg = CreateDialogParam(hInstance, MAKEINTRESOURCE(IDD_MAIN_DIALOG), 0, DialogProc, 0);
+        ShowWindow(g_hDlg, nCmdShow);
+        UpdateWindow(g_hDlg);
+        CreateStatusBar(g_hDlg, hInstance);
+        PopulateMenus(GetMenu(g_hDlg));
+        UpdateButtons(g_hDlg, false);
+
+
+        //-------------------------------------------------------------------------------------------------
+        // Main message loop:
+        MSG  msg = {};
+
+        while (true)
+        {
+            BOOL ret = GetMessage(&msg, NULL, 0, 0);
+
+            if (ret == 0)
+                break;
+
+            if (ret == -1)
+                return -1;
+
+            if (!IsDialogMessage(g_hDlg, &msg)) {
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+            }
+        }
+        return (int)msg.wParam;
+    }
+    LOG_INFO(s_pPipeline->GetParamUsage());
+    return -1;
 }
 
 // Description:
@@ -301,29 +309,29 @@ void CreateStatusBar(HWND hwndParent, HINSTANCE hinst)
 //-------------------------------------------------------------------------------------------------
 void PopulateMenus(HMENU hMenu)
 {
-	ATL::CComPtr<IDXGIFactory> pFactory;
+    ATL::CComPtr<IDXGIFactory> pFactory;
     HRESULT hr = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&pFactory);
-	if (FAILED(hr))
-	{
-		LOG_ERROR(L"CreateDXGIFactory failed.");
-		return;
-	}
+    if (FAILED(hr))
+    {
+        LOG_ERROR(L"CreateDXGIFactory failed.");
+        return;
+    }
 
 
     // Enumerate display devices
-	for (UINT device = 0; ; ++device)
-	{
+    for (UINT adapterIdx = 0; ; ++adapterIdx)
+    {
         // get device - if no devices found anymore, exit the loop
-		ATL::CComPtr<IDXGIAdapter> pDevice;
-		if (pFactory->EnumAdapters(device, &pDevice) == DXGI_ERROR_NOT_FOUND)
-		{
-			break;
-		}
+        ATL::CComPtr<IDXGIAdapter> pDevice;
+        if (pFactory->EnumAdapters(adapterIdx, &pDevice) == DXGI_ERROR_NOT_FOUND)
+        {
+            break;
+        }
 
-		DXGI_ADAPTER_DESC descAdapter;
-		hr = pDevice->GetDesc(&descAdapter);
-		if (SUCCEEDED(hr))
-		{
+        DXGI_ADAPTER_DESC descAdapter;
+        hr = pDevice->GetDesc(&descAdapter);
+        if (SUCCEEDED(hr))
+        {
 #ifdef _DEBUG
             std::wstring adapterMsg;
             adapterMsg += L"Found adapter: ";
@@ -337,61 +345,61 @@ void PopulateMenus(HMENU hMenu)
                 continue;
             }
 
-			// Add to the Devices list
+            // Add to the Devices list
             s_vAdapters.push_back(descAdapter.Description);
 
 
-			// Enumerate monitors for the current adapter
-            UINT  adapterIdx = 0;
+            // Enumerate monitors for the current adapter
+            UINT  monitorIdx = 0;
             for (UINT output = 0; ; ++output)
-			{
-				ATL::CComPtr<IDXGIOutput> pOutput;
-				if (pDevice->EnumOutputs(output, &pOutput) == DXGI_ERROR_NOT_FOUND)
-				{
-					break;
-				}
+            {
+                ATL::CComPtr<IDXGIOutput> pOutput;
+                if (pDevice->EnumOutputs(output, &pOutput) == DXGI_ERROR_NOT_FOUND)
+                {
+                    break;
+                }
 
-				DXGI_OUTPUT_DESC descOutput;
-				hr = pOutput->GetDesc(&descOutput);
-				if (SUCCEEDED(hr))
-				{
-					// Get this output's screen resolution
-					MONITORINFOEX monitorInfo;
-					monitorInfo.cbSize = sizeof(MONITORINFOEX);
-					GetMonitorInfo(descOutput.Monitor, &monitorInfo);
+                DXGI_OUTPUT_DESC descOutput;
+                hr = pOutput->GetDesc(&descOutput);
+                if (SUCCEEDED(hr))
+                {
+                    // Get this output's screen resolution
+                    MONITORINFOEX monitorInfo;
+                    monitorInfo.cbSize = sizeof(MONITORINFOEX);
+                    GetMonitorInfo(descOutput.Monitor, &monitorInfo);
 
-					DEVMODE devMode;
-					devMode.dmSize = sizeof(DEVMODE);
-					devMode.dmDriverExtra = 0;
-					EnumDisplaySettings(monitorInfo.szDevice, ENUM_CURRENT_SETTINGS, &devMode);
+                    DEVMODE devMode;
+                    devMode.dmSize = sizeof(DEVMODE);
+                    devMode.dmDriverExtra = 0;
+                    EnumDisplaySettings(monitorInfo.szDevice, ENUM_CURRENT_SETTINGS, &devMode);
 
-					// Add to the Capture Sources list
-					CaptureSource cs;
-					cs.ResolutionX = devMode.dmPelsWidth;
-					cs.ResolutionY = devMode.dmPelsHeight;
-					cs.deviceIdx = device;		// GPU
-					cs.adapterIdx = adapterIdx;	// ADAPTER on GPU
-					s_vDisplays.push_back(cs);
+                    // Add to the Capture Sources list
+                    CaptureSource cs;
+                    cs.ResolutionX = devMode.dmPelsWidth;
+                    cs.ResolutionY = devMode.dmPelsHeight;
+                    cs.adapterIdx = adapterIdx;        // GPU/ADAPTER
+                    cs.monitorIdx = monitorIdx;    // MONITOR on GPU
+                    s_vDisplays.push_back(cs);
 
-                    ++adapterIdx;
-				}
-			}
-		}
-	}
+                    ++monitorIdx;
+                }
+            }
+        }
+    }
 
-	//
-	if (s_vAdapters.empty() || s_vDisplays.empty())
-	{
-		// No devices detected, close application
-		PostMessage(GetActiveWindow(), WM_USER + 1000, 0, 0);
-	}
-	else
-	{
+    //
+    if (s_vAdapters.empty() || s_vDisplays.empty())
+    {
+        // No devices detected, close application
+        PostMessage(GetActiveWindow(), WM_USER + 1000, 0, 0);
+    }
+    else
+    {
         PopulateAdaptersMenu(hMenu);
         PopulateDisplaysMenu(hMenu);
         PopulateComponentsMenu(hMenu);
 
-		// Remove placeholder separators (needed because GetSubMenu returns NULL if menu is initially empty)
+        // Remove placeholder separators (needed because GetSubMenu returns NULL if menu is initially empty)
         HMENU  hDevices           = GetSubMenu(hMenu, 1);
         HMENU  hCaptureSources    = GetSubMenu(hMenu, 2);
         HMENU  hCaptureComponents = GetSubMenu(hMenu, 3);
@@ -399,9 +407,9 @@ void PopulateMenus(HMENU hMenu)
         RemoveMenu(hCaptureSources, 0, MF_BYPOSITION);
         RemoveMenu(hCaptureComponents, 0, MF_BYPOSITION);
 
-		// Place default checkmarks at first item in each menu
-		UpdateMenuItems();
-	}
+        // Place default checkmarks at first item in each menu
+        UpdateMenuItems();
+    }
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -412,10 +420,10 @@ void  PopulateAdaptersMenu(HMENU hMenu)
     HMENU  hDevices = GetSubMenu(hMenu, 1);
 
     // update adapters
-    int deviceId = ID_DEVICE_START;
+    int adapterId = ID_DEVICE_START;
     for (std::vector<std::wstring>::const_iterator it = s_vAdapters.begin(); it != s_vAdapters.end(); ++it)
     {
-        if (AppendMenu(hDevices, MF_BYPOSITION, deviceId++, it->c_str()) == false)
+        if (AppendMenu(hDevices, MF_BYPOSITION, adapterId++, it->c_str()) == false)
         {
             LOG_ERROR(L"Could not insert device menu item.");
             break;
@@ -443,7 +451,7 @@ void  PopulateDisplaysMenu(HMENU hMenu)
             LOG_ERROR(L"Could not insert capture source menu item.");
             break;
         }
-        if (EnableMenuItem(hCaptureSources, outputId, (it->deviceIdx == kDefaultGPUIdx) ? MF_ENABLED : MF_DISABLED))
+        if (EnableMenuItem(hCaptureSources, outputId, (it->adapterIdx == kDefaultGPUIdx) ? MF_ENABLED : MF_DISABLED))
         {
             LOG_ERROR(L"Could not enable/disable capture source menu item.");
             break;
@@ -474,25 +482,48 @@ void  PopulateComponentsMenu(HMENU hMenu)
 //-------------------------------------------------------------------------------------------------
 void UpdateMenuItems()
 {
-    int iSelectedDevice = 0, iSelectedCapture = 0;
+    int iSelectedDevice = 0;
     std::wstring iSelectedComponent = L"";
     s_pPipeline->GetParam(DisplayDvrPipeline::PARAM_NAME_ADAPTERID, iSelectedDevice);
-    s_pPipeline->GetParam(DisplayDvrPipeline::PARAM_NAME_MONITORID, iSelectedCapture);
     s_pPipeline->GetParamWString(DisplayDvrPipeline::PARAM_NAME_CAPTURE_COMPONENT, iSelectedComponent);
+
+    std::vector<amf_uint32> monitorIDs;
+    s_pPipeline->GetMonitorIDs(monitorIDs);
 
     HMENU  hMenu = GetMenu(g_hDlg);
     HMENU  hDevices = GetSubMenu(hMenu, 1);
+
+    bool bMultiMonitor = false;
+    s_pPipeline->GetParam(DisplayDvrPipeline::PARAM_NAME_MULTI_MONITOR, bMultiMonitor);
+    CheckMenuItem(hMenu, ID_CAPTURESOURCE_MULTI_MONITOR, MF_BYCOMMAND | (bMultiMonitor ? MF_CHECKED : MF_UNCHECKED));
+    if (bMultiMonitor == false)
+    {
+        monitorIDs.resize(1);
+    }
+
     for (int i = 0; i < (int)s_vAdapters.size(); ++i)
     {
         CheckMenuItem(hDevices, ID_DEVICE_START + i, MF_BYCOMMAND | (i == iSelectedDevice ? MF_CHECKED : MF_UNCHECKED));
     }
 
     HMENU  hCaptureSources = GetSubMenu(hMenu, 2);
-    for (int i = 0; i < (int)s_vDisplays.size(); ++i)
+    for (amf_uint32 i = 0; i < (amf_uint32)s_vDisplays.size(); ++i)
     {
         //Casting is added to avoid signed/unsigned mismatch
-        const bool  enableItem = static_cast<int>(s_vDisplays[i].deviceIdx) == iSelectedDevice;
-        const bool  checkItem = enableItem && (static_cast<int>(s_vDisplays[i].adapterIdx) == iSelectedCapture);
+        bool  enableItem = static_cast<int>(s_vDisplays[i].adapterIdx) == iSelectedDevice;
+
+        bool  checkItem = false;
+        for (std::vector<amf_uint32>::iterator it = monitorIDs.begin(); it != monitorIDs.end(); it++)
+        {
+            if (*it == i)
+            {
+                if (enableItem)
+                {
+                    checkItem = true;
+                }
+                break;
+            }
+        }
         CheckMenuItem(hCaptureSources, ID_CAPTURE_SOURCE_START + i, MF_BYCOMMAND | (checkItem ? MF_CHECKED : MF_UNCHECKED));
         EnableMenuItem(hCaptureSources, ID_CAPTURE_SOURCE_START + i, enableItem ? MF_ENABLED : MF_DISABLED);
     }
@@ -525,59 +556,89 @@ void UpdateMenuItems()
 
 INT_PTR CALLBACK DialogProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM /*lParam*/)
 {
-	int wmId, wmEvent;
+    int wmId, wmEvent;
 
-	switch (message)
-	{
-	case WM_USER + 1000:
-		// If no AMD devices are recognized the application closes
-		if (DialogBox(hInst, MAKEINTRESOURCE(IDD_NODEVICEBOX), hWnd, Dialog) != IDOK)
-		{
-			PostQuitMessage(0);
-		}
-		break;
-	case WM_COMMAND:
-		wmId = LOWORD(wParam);
-		wmEvent = HIWORD(wParam);
-		// Parse the menu selections:
-		if (wmId == IDM_ABOUT)
-		{
-			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, AboutDialog);
-		}
+    switch (message)
+    {
+    case WM_USER + 1000:
+        // If no AMD devices are recognized the application closes
+        if (DialogBox(hInst, MAKEINTRESOURCE(IDD_NODEVICEBOX), hWnd, Dialog) != IDOK)
+        {
+            PostQuitMessage(0);
+        }
+        break;
+    case WM_COMMAND:
+        wmId = LOWORD(wParam);
+        wmEvent = HIWORD(wParam);
+        // Parse the menu selections:
+        if (wmId == IDM_ABOUT)
+        {
+            DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, AboutDialog);
+        }
         else if ((wmId == IDCANCEL) || (wmId == IDM_EXIT))
-		{
-			DestroyWindow(hWnd);
+        {
+            DestroyWindow(hWnd);
         }
-		else if (wmId == IDB_RECORD)
-		{
-			StartRecording(hWnd);
+        else if (wmId == IDB_RECORD)
+        {
+            StartRecording(hWnd);
         }
-		else if (wmId == IDB_STOP)
-		{
-			StopRecording(hWnd);
+        else if (wmId == IDB_STOP)
+        {
+            StopRecording(hWnd);
         }
-		else if (wmId == IDM_SAVEFILE)
-		{
-			ChangeFileLocation(hWnd);
-		}
-		// Checking/unchecking dynamically added gpu devices
-		else if ((wmId >= ID_DEVICE_START) && (wmId <= ID_DEVICE_START + (int)s_vAdapters.size()))
-		{
-			const int id = wmId - ID_DEVICE_START;
-			s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_ADAPTERID, id);
-			UpdateMenuItems();
-		}
-		// Checking/unchecking dynamically added capture source monitors
-		else if (wmId >= ID_CAPTURE_SOURCE_START && wmId <= ID_CAPTURE_SOURCE_START + (int)s_vDisplays.size())
-		{
-			// Find the id of the selected adapter in the menu
-			const int id = wmId - ID_CAPTURE_SOURCE_START;
-			// Find the adapter in the vector list
-			unsigned adapterIdx = s_vDisplays[id].adapterIdx;
-			// Set on the pipeline
-			s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_MONITORID, adapterIdx);
-			UpdateMenuItems();
-		}
+        else if (wmId == IDM_SAVEFILE)
+        {
+            ChangeFileLocation(hWnd);
+        }
+        // Checking/unchecking dynamically added gpu devices
+        else if ((wmId >= ID_DEVICE_START) && (wmId <= ID_DEVICE_START + (int)s_vAdapters.size()))
+        {
+            const int id = wmId - ID_DEVICE_START;
+            s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_ADAPTERID, id);
+            UpdateMenuItems();
+        }
+        else if (wmId == ID_CAPTURESOURCE_MULTI_MONITOR)
+        {
+            bool bMultiMonitor = false;
+            s_pPipeline->GetParam(DisplayDvrPipeline::PARAM_NAME_MULTI_MONITOR, bMultiMonitor);
+            bMultiMonitor = !bMultiMonitor;
+            s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_MULTI_MONITOR, bMultiMonitor);
+            UpdateMenuItems();
+
+        }
+        // Checking/unchecking dynamically added capture source monitors
+        else if (wmId >= ID_CAPTURE_SOURCE_START && wmId <= ID_CAPTURE_SOURCE_START + (int)s_vDisplays.size())
+        {
+            // Find the id of the selected adapter in the menu
+            const int id = wmId - ID_CAPTURE_SOURCE_START;
+            // Find the adapter in the vector list
+            unsigned monitorIdx = s_vDisplays[id].monitorIdx;
+
+            bool bMultiMonitor = false;
+            std::vector<amf_uint32> monitorIDs;
+            s_pPipeline->GetParam(DisplayDvrPipeline::PARAM_NAME_MULTI_MONITOR, bMultiMonitor);
+            if (bMultiMonitor)
+            {
+                s_pPipeline->GetMonitorIDs(monitorIDs);
+                std::vector<amf_uint32>::iterator found = std::find(monitorIDs.begin(), monitorIDs.end(), monitorIdx);
+                if (found == monitorIDs.end())
+                {
+                    monitorIDs.push_back(monitorIdx);
+                }
+                else
+                {
+                    monitorIDs.erase(found);
+                }
+            }
+            else
+            {
+                monitorIDs.push_back(monitorIdx);
+            }
+            // Set on the pipeline
+            s_pPipeline->SetMonitorIDs(monitorIDs);
+            UpdateMenuItems();
+        }
         // Checking/unchecking dynamically added capture components
         else if (wmId >= ID_CAPTURE_COMPONENT_START && wmId <= ID_CAPTURE_COMPONENT_START + 2)
         {
@@ -592,17 +653,17 @@ INT_PTR CALLBACK DialogProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM /*lPa
             }
             UpdateMenuItems();
         }
-		break;
-	case WM_TIMER:
-		UpdateFps(hWnd);
-		break;
+        break;
+    case WM_TIMER:
+        UpdateFps(hWnd);
+        break;
     case WM_CLOSE:
     case WM_DESTROY:
-		s_pPipeline->Terminate();
-		PostQuitMessage(0);
-		break;
-	}
-	return 0;
+        s_pPipeline->Terminate();
+        PostQuitMessage(0);
+        break;
+    }
+    return 0;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -610,50 +671,50 @@ INT_PTR CALLBACK DialogProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM /*lPa
 void ChangeFileLocation(HWND hWnd)
 {
     // Even though we're changing it, get it here to show default in dialog
-	TCHAR szDefaultFile[1024];
+    TCHAR szDefaultFile[1024];
     GetCurrentFileLocation(szDefaultFile);
 
-	OPENFILENAME ofn = {};
-	ZeroMemory(&ofn, sizeof(ofn));
-	ofn.lStructSize = sizeof(ofn);
-	ofn.hwndOwner = hWnd;
-	ofn.lpstrFile = szDefaultFile;
-	ofn.nMaxFile = sizeof(szDefaultFile) / sizeof(TCHAR);
-	ofn.lpstrFilter = L"Videos\0*.WMV;*.WMA;*.AVI;*.ASF;*.FLV;*.BFI;*.CAF;*.GXF;*.IFF;*.RL2;*.MP4;*.3GP;*.QTFF;*.MKV;*.MK3D;*.MKA;*.MKS;*.MPG;*.MPEG;*.PS;*.TS;*.MXF;*.OGV;*.OGA;*.OGX;*.OGG;*.SPX;*.FLV;*.F4V;*.F4P;*.F4A;*.F4B;*.JSV;*.h264;*.264;*.vc1;*.mov;*.mvc;*.m1v;*.m2v;*.m2ts;*.vpk;*.yuv;*.rgb;*.nv12;*.h265;*.265\0All\0*.*\0";
-	ofn.nFilterIndex = 1;
-	ofn.lpstrInitialDir = L"%USERPROFILE%\\Videos";
-	ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+    OPENFILENAME ofn = {};
+    ZeroMemory(&ofn, sizeof(ofn));
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = hWnd;
+    ofn.lpstrFile = szDefaultFile;
+    ofn.nMaxFile = sizeof(szDefaultFile) / sizeof(TCHAR);
+    ofn.lpstrFilter = L"Videos\0*.WMV;*.WMA;*.AVI;*.ASF;*.FLV;*.BFI;*.CAF;*.GXF;*.IFF;*.RL2;*.MP4;*.3GP;*.QTFF;*.MKV;*.MK3D;*.MKA;*.MKS;*.MPG;*.MPEG;*.PS;*.TS;*.MXF;*.OGV;*.OGA;*.OGX;*.OGG;*.SPX;*.FLV;*.F4V;*.F4P;*.F4A;*.F4B;*.JSV;*.h264;*.264;*.vc1;*.mov;*.mvc;*.m1v;*.m2v;*.m2ts;*.vpk;*.yuv;*.rgb;*.nv12;*.h265;*.265\0All\0*.*\0";
+    ofn.nFilterIndex = 1;
+    ofn.lpstrInitialDir = L"%USERPROFILE%\\Videos";
+    ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
 
-	if (GetSaveFileName(&ofn) == TRUE)
-	{
-		s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_OUTPUT, ofn.lpstrFile);
-	}
+    if (GetSaveFileName(&ofn) == TRUE)
+    {
+        s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_OUTPUT, ofn.lpstrFile);
+    }
 }
 
 //-------------------------------------------------------------------------------------------------
 // Get file name based on system time (e.g. DVRRecording-2017-09-26-12-30-00.mp4)
 void GetDirectoryFileLocation(TCHAR* szDirectory, TCHAR* szFile, bool generic)
 {
-	assert(szDirectory);
-	assert(szFile);
-	//
-	SYSTEMTIME lt;
-	ZeroMemory(&lt, sizeof(lt));
-	if (!generic)
-	{
-		GetLocalTime(&lt);
-	}
-	swprintf_s(szFile, 1024, L"%s\\DVRRecording-%d-%02d-%02d-%02d-%02d-%02d.mp4",
-		szDirectory, lt.wYear, lt.wMonth, lt.wDay, lt.wHour, lt.wMinute, lt.wSecond);
+    assert(szDirectory);
+    assert(szFile);
+    //
+    SYSTEMTIME lt;
+    ZeroMemory(&lt, sizeof(lt));
+    if (!generic)
+    {
+        GetLocalTime(&lt);
+    }
+    swprintf_s(szFile, 1024, L"%s\\DVRRecording-%d-%02d-%02d-%02d-%02d-%02d.mp4",
+        szDirectory, lt.wYear, lt.wMonth, lt.wDay, lt.wHour, lt.wMinute, lt.wSecond);
 }
 
 //-------------------------------------------------------------------------------------------------
 // Get file name based on system time (e.g. DVRRecording-2017-09-26-12-30-00.mp4)
 void GetDefaultFileLocation(TCHAR* szFile, bool generic)
 {
-	TCHAR szDirectory[1024];
-	swprintf_s(szDirectory, 1024, L"%s\\Videos", _wgetenv(L"USERPROFILE"));
-	GetDirectoryFileLocation(szDirectory, szFile, generic);
+    TCHAR szDirectory[1024];
+    swprintf_s(szDirectory, 1024, L"%s\\Videos", _wgetenv(L"USERPROFILE"));
+    GetDirectoryFileLocation(szDirectory, szFile, generic);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -729,17 +790,17 @@ void StartRecording(HWND hWnd)
 {
 
 
-	// Set record file location
-	TCHAR szFileDefaultStart[1024];
+    // Set record file location
+    TCHAR szFileDefaultStart[1024];
     GetRecordFileLocation(szFileDefaultStart);
     s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_OUTPUT, szFileDefaultStart);
 
-	AMF_RESULT res = s_pPipeline->Init();
-	if (res != AMF_OK)
-	{
+    AMF_RESULT res = s_pPipeline->Init();
+    if (res != AMF_OK)
+    {
         FailedRecording(hWnd, false);
-		return;
-	}
+        return;
+    }
     res = s_pPipeline->Start();
     if (res != AMF_OK)
     {
@@ -754,19 +815,19 @@ void StartRecording(HWND hWnd)
     s_uiFpsTimerId = SetTimer(g_hDlg, TIMER_ID, 1000, NULL);
 
 
-	// Update message
-	std::wstring str = L"Recording";
+    // Update message
+    std::wstring str = L"Recording";
 #ifdef _DEBUG
 
     bool bOCLConverter = false;
     s_pPipeline->GetParam(DisplayDvrPipeline::PARAM_NAME_OPENCL_CONVERTER, bOCLConverter);
     if (bOCLConverter)
-	{
-		str += L" (using OCL) ";
-	}
+    {
+        str += L" (using OCL) ";
+    }
 #endif
-	str += L"...";
-	UpdateMessage(str.c_str());
+    str += L"...";
+    UpdateMessage(str.c_str());
 
     // also add the file name being used for recording
     std::wstring szWriteFile = L"";
@@ -779,16 +840,16 @@ void StartRecording(HWND hWnd)
 // Handle Stop button press
 void StopRecording(HWND hWnd)
 {
-	// Enable record button and disable stop button to prevent repeated commands
+    // Enable record button and disable stop button to prevent repeated commands
     UpdateButtons(hWnd, false);
 
-	// Stop recording
-	s_pPipeline->Stop();
+    // Stop recording
+    s_pPipeline->Stop();
 
     // stop the timer
     KillTimer(g_hDlg, s_uiFpsTimerId);
 
-	UpdateMessage(L"Recording stopped.");
+    UpdateMessage(L"Recording stopped.");
     UpdateFps(hWnd);
 }
 
@@ -830,11 +891,11 @@ void UpdateButtons(HWND hWnd, bool recording)
 // Disply the recording FPS in the status bar...
 void UpdateFps(HWND /*hWnd*/)
 {
-	if (s_pPipeline->GetState() == PipelineStateRunning)
-	{
-		TCHAR windowText[1000];
-		double fps = s_pPipeline->GetFPS();
-		swprintf_s(windowText, 1000, L"FPS: %.1f", fps);
+    if (s_pPipeline->GetState() == PipelineStateRunning)
+    {
+        TCHAR windowText[1000];
+        double fps = s_pPipeline->GetFPS();
+        swprintf_s(windowText, 1000, L"FPS: %.1f", fps);
 
         // display the FPS into the second portion of the status bar
         ::SendDlgItemMessage(g_hDlg, ID_STATUS_BAR, SB_SETTEXT, 1, (LPARAM) windowText);
@@ -875,40 +936,40 @@ void UpdateMessage(const wchar_t *msg)
 // Message handler for simple dialog boxes.
 INT_PTR CALLBACK Dialog(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	UNREFERENCED_PARAMETER(lParam);
-	switch (message)
-	{
-	case WM_INITDIALOG:
-		return (INT_PTR)TRUE;
+    UNREFERENCED_PARAMETER(lParam);
+    switch (message)
+    {
+    case WM_INITDIALOG:
+        return (INT_PTR)TRUE;
 
-	case WM_COMMAND:
-		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCLOSE)
-		{
-			EndDialog(hDlg, LOWORD(wParam));
-			return (INT_PTR)TRUE;
-		}
-		break;
-	}
-	return (INT_PTR)FALSE;
+    case WM_COMMAND:
+        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCLOSE)
+        {
+            EndDialog(hDlg, LOWORD(wParam));
+            return (INT_PTR)TRUE;
+        }
+        break;
+    }
+    return (INT_PTR)FALSE;
 }
 
 //-------------------------------------------------------------------------------------------------
 // Message handler for About dialog box
 INT_PTR CALLBACK AboutDialog(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	UNREFERENCED_PARAMETER(lParam);
-	switch (message)
-	{
-	case WM_INITDIALOG:
-		return (INT_PTR)TRUE;
+    UNREFERENCED_PARAMETER(lParam);
+    switch (message)
+    {
+    case WM_INITDIALOG:
+        return (INT_PTR)TRUE;
 
-	case WM_COMMAND:
-		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCLOSE || LOWORD(wParam) == IDCANCEL)
-		{
-			EndDialog(hDlg, LOWORD(wParam));
-			return (INT_PTR)TRUE;
-		}
-		break;
-	}
-	return (INT_PTR)FALSE;
+    case WM_COMMAND:
+        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCLOSE || LOWORD(wParam) == IDCANCEL)
+        {
+            EndDialog(hDlg, LOWORD(wParam));
+            return (INT_PTR)TRUE;
+        }
+        break;
+    }
+    return (INT_PTR)FALSE;
 }

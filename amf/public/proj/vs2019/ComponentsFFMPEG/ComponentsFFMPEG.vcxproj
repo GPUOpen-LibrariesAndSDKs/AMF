@@ -72,13 +72,13 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LinkIncremental>true</LinkIncremental>
+    <LinkIncremental>false</LinkIncremental>
     <TargetName>amf-component-ffmpeg$(PlatformArchitecture)</TargetName>
     <OutDir>$(ProjectDir)..\..\..\..\bin\vs2019x$(PlatformArchitecture)$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)..\..\..\..\bin\obj\vs2019x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>true</LinkIncremental>
+    <LinkIncremental>false</LinkIncremental>
     <TargetName>amf-component-ffmpeg$(PlatformArchitecture)</TargetName>
     <OutDir>$(ProjectDir)..\..\..\..\bin\vs2019x$(PlatformArchitecture)$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)..\..\..\..\bin\obj\vs2019x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
@@ -98,10 +98,10 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;AMF_COMPONENT_FFMPEG_EXPORTS;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\..;$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-4.3.2\$(Platform)\release\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\..;$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-5.1.2\$(Platform)\release\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -113,11 +113,11 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
-      <AdditionalDependencies>avformat.lib;avutil.lib;avcodec.lib;avresample.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-4.3.2\$(Platform)\release\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>avformat.lib;avutil.lib;avcodec.lib;swresample.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-5.1.2\$(Platform)\release\lib</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>xcopy /Y /R "$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-4.3.2\$(Platform)\Release\bin\*.dll" $(OutDir)</Command>
+      <Command>xcopy /Y /R "$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-5.1.2\$(Platform)\Release\bin\*.dll" $(OutDir)</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Copying FFMPEG...</Message>
@@ -126,10 +126,10 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;AMF_COMPONENT_FFMPEG_EXPORTS;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\..;$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-4.3.2\$(Platform)\release\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\..;$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-5.1.2\$(Platform)\release\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -141,12 +141,12 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
-      <AdditionalDependencies>avformat.lib;avutil.lib;avcodec.lib;avresample.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-4.3.2\$(Platform)\release\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>avformat.lib;avutil.lib;avcodec.lib;swresample.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-5.1.2\$(Platform)\release\lib</AdditionalLibraryDirectories>
       <ImportLibrary>$(SolutionDir)..\..\bin\lib\vs2019x$(PlatformArchitecture)$(Configuration)\$(TargetName).lib</ImportLibrary>
     </Link>
     <PreBuildEvent>
-      <Command>xcopy /Y /R "$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-4.3.2\$(Platform)\Release\bin\*.dll" $(OutDir)</Command>
+      <Command>xcopy /Y /R "$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-5.1.2\$(Platform)\Release\bin\*.dll" $(OutDir)</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Copying FFMPEG...</Message>
@@ -154,13 +154,13 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;AMF_COMPONENT_FFMPEG_EXPORTS;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\..;$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-4.3.2\$(Platform)\release\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\..;$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-5.1.2\$(Platform)\release\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <SDLCheck>true</SDLCheck>
@@ -172,11 +172,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>avformat.lib;avutil.lib;avcodec.lib;avresample.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-4.3.2\$(Platform)\release\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>avformat.lib;avutil.lib;avcodec.lib;swresample.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-5.1.2\$(Platform)\release\lib</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>xcopy /Y /R "$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-4.3.2\$(Platform)\Release\bin\*.dll" $(OutDir)</Command>
+      <Command>xcopy /Y /R "$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-5.1.2\$(Platform)\Release\bin\*.dll" $(OutDir)</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Copying FFMPEG...</Message>
@@ -184,13 +184,13 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;AMF_COMPONENT_FFMPEG_EXPORTS;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\..;$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-4.3.2\$(Platform)\release\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\..;$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-5.1.2\$(Platform)\release\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <SDLCheck>true</SDLCheck>
@@ -202,11 +202,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>avformat.lib;avutil.lib;avcodec.lib;avresample.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-4.3.2\$(Platform)\release\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>avformat.lib;avutil.lib;avcodec.lib;swresample.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-5.1.2\$(Platform)\release\lib</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>xcopy /Y /R "$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-4.3.2\$(Platform)\Release\bin\*.dll" $(OutDir)</Command>
+      <Command>xcopy /Y /R "$(ProjectDir)..\..\..\..\..\Thirdparty\ffmpeg\ffmpeg-5.1.2\$(Platform)\Release\bin\*.dll" $(OutDir)</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Copying FFMPEG...</Message>
@@ -246,6 +246,9 @@
     <ClInclude Include="..\..\..\include\components\FFMPEGAudioDecoder.h" />
     <ClInclude Include="..\..\..\include\components\FFMPEGAudioEncoder.h" />
     <ClInclude Include="..\..\..\include\components\FFMPEGComponents.h" />
+    <ClInclude Include="..\..\..\include\components\FFMPEGEncoderAV1.h" />
+    <ClInclude Include="..\..\..\include\components\FFMPEGEncoderH264.h" />
+    <ClInclude Include="..\..\..\include\components\FFMPEGEncoderHEVC.h" />
     <ClInclude Include="..\..\..\include\components\FFMPEGFileDemuxer.h" />
     <ClInclude Include="..\..\..\include\components\FFMPEGFileMuxer.h" />
     <ClInclude Include="..\..\..\include\components\FFMPEGVideoDecoder.h" />
@@ -253,9 +256,13 @@
     <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\AudioConverterFFMPEGImpl.h" />
     <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\AudioDecoderFFMPEGImpl.h" />
     <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\AudioEncoderFFMPEGImpl.h" />
+    <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\AV1EncoderFFMPEGImpl.h" />
+    <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\BaseEncoderFFMPEGImpl.h" />
     <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\FileDemuxerFFMPEGImpl.h" />
     <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\FileMuxerFFMPEGImpl.h" />
+    <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\H264EncoderFFMPEGImpl.h" />
     <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\H264Mp4ToAnnexB.h" />
+    <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\HEVCEncoderFFMPEGImpl.h" />
     <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\UtilsFFMPEG.h" />
     <ClInclude Include="..\..\..\src\components\ComponentsFFMPEG\VideoDecoderFFMPEGImpl.h" />
   </ItemGroup>
@@ -273,10 +280,14 @@
     <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\AudioConverterFFMPEGImpl.cpp" />
     <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\AudioDecoderFFMPEGImpl.cpp" />
     <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\AudioEncoderFFMPEGImpl.cpp" />
+    <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\AV1EncoderFFMPEGImpl.cpp" />
+    <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\BaseEncoderFFMPEGImpl.cpp" />
     <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\ComponentFactory.cpp" />
     <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\FileDemuxerFFMPEGImpl.cpp" />
     <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\FileMuxerFFMPEGImpl.cpp" />
+    <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\H264EncoderFFMPEGImpl.cpp" />
     <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\H264Mp4ToAnnexB.cpp" />
+    <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\HEVCEncoderFFMPEGImpl.cpp" />
     <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\UtilsFFMPEG.cpp" />
     <ClCompile Include="..\..\..\src\components\ComponentsFFMPEG\VideoDecoderFFMPEGImpl.cpp" />
   </ItemGroup>

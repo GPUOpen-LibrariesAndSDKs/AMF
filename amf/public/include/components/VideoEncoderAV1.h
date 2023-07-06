@@ -44,8 +44,12 @@ enum AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE_ENUM
 
 enum AMF_VIDEO_ENCODER_AV1_USAGE_ENUM
 {
-    AMF_VIDEO_ENCODER_AV1_USAGE_TRANSCODING     = 0,
-    AMF_VIDEO_ENCODER_AV1_USAGE_LOW_LATENCY     = 1
+    AMF_VIDEO_ENCODER_AV1_USAGE_TRANSCODING                 = 0,
+    AMF_VIDEO_ENCODER_AV1_USAGE_ULTRA_LOW_LATENCY           = 2,
+    AMF_VIDEO_ENCODER_AV1_USAGE_LOW_LATENCY                 = 1,
+    AMF_VIDEO_ENCODER_AV1_USAGE_WEBCAM                      = 3,
+    AMF_VIDEO_ENCODER_AV1_USAGE_HIGH_QUALITY                = 4,
+    AMF_VIDEO_ENCODER_AV1_USAGE_LOW_LATENCY_HIGH_QUALITY    = 5
 };
 
 enum AMF_VIDEO_ENCODER_AV1_PROFILE_ENUM
@@ -169,7 +173,18 @@ enum AMF_VIDEO_ENCODER_AV1_LTR_MODE_ENUM
     AMF_VIDEO_ENCODER_AV1_LTR_MODE_KEEP_UNUSED      = 1
 };
 
+enum AMF_VIDEO_ENCODER_AV1_OUTPUT_MODE_ENUM
+{
+    AMF_VIDEO_ENCODER_AV1_OUTPUT_MODE_FRAME = 0,
+    AMF_VIDEO_ENCODER_AV1_OUTPUT_MODE_TILE  = 1
+};
 
+enum AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE_ENUM
+{
+    AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE_FRAME = 0,
+    AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE_TILE = 1,
+    AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE_TILE_LAST = 2
+};
 // *** Static properties - can be set only before Init() *** 
 
 // Encoder Engine Settings
@@ -221,6 +236,8 @@ enum AMF_VIDEO_ENCODER_AV1_LTR_MODE_ENUM
 // Miscellaneous
 #define AMF_VIDEO_ENCODER_AV1_EXTRA_DATA                            L"Av1ExtraData"                     // AMFInterface* - > AMFBuffer*; buffer to retrieve coded sequence header
 
+// Tile Output
+#define AMF_VIDEO_ENCODER_AV1_OUTPUT_MODE                           L"AV1OutputMode"                    // amf_int64(AMF_VIDEO_ENCODER_AV1_OUTPUT_MODE_ENUM); default = AMF_VIDEO_ENCODER_AV1_OUTPUT_MODE_FRAME - defines encoder output mode
 
 // *** Dynamic properties - can be set anytime *** 
 
@@ -253,6 +270,7 @@ enum AMF_VIDEO_ENCODER_AV1_LTR_MODE_ENUM
 
 // Picture Management Configuration
 #define AMF_VIDEO_ENCODER_AV1_GOP_SIZE                              L"Av1GOPSize"                       // amf_int64; default = depends on USAGE; GOP Size (distance between automatically inserted key frames). If 0, key frame will be inserted at first frame only. Note that GOP may be interrupted by AMF_VIDEO_ENCODER_AV1_FORCE_FRAME_TYPE.
+#define AMF_VIDEO_ENCODER_AV1_INTRA_PERIOD                          L"Av1IntraPeriod"                   // amf_int64; default = 0; Intra period in frames.
 #define AMF_VIDEO_ENCODER_AV1_HEADER_INSERTION_MODE                 L"Av1HeaderInsertionMode"           // amf_int64(AMF_VIDEO_ENCODER_AV1_HEADER_INSERTION_MODE_ENUM); default = depends on USAGE; sequence header insertion mode
 #define AMF_VIDEO_ENCODER_AV1_SWITCH_FRAME_INSERTION_MODE           L"Av1SwitchFrameInsertionMode"      // amf_int64(AMF_VIDEO_ENCODER_AV1_SWITCH_FRAME_INSERTION_MODE_ENUM); default = depends on USAGE; switch frame insertin mode
 #define AMF_VIDEO_ENCODER_AV1_SWITCH_FRAME_INTERVAL                 L"Av1SwitchFrameInterval"           // amf_int64; default = depends on USAGE; the interval between two inserted switch frames. Valid only when AMF_VIDEO_ENCODER_AV1_SWITCH_FRAME_INSERTION_MODE is AMF_VIDEO_ENCODER_AV1_SWITCH_FRAME_INSERTION_MODE_FIXED_INTERVAL.
@@ -277,24 +295,67 @@ enum AMF_VIDEO_ENCODER_AV1_LTR_MODE_ENUM
 #define AMF_VIDEO_ENCODER_AV1_MARK_CURRENT_WITH_LTR_INDEX           L"Av1MarkCurrentWithLTRIndex"       // amf_int64; default = N/A; Mark current frame with LTR index
 #define AMF_VIDEO_ENCODER_AV1_FORCE_LTR_REFERENCE_BITFIELD          L"Av1ForceLTRReferenceBitfield"     // amf_int64; default = 0; force LTR bit-field
 #define AMF_VIDEO_ENCODER_AV1_ROI_DATA                              L"Av1ROIData"					    // 2D AMFSurface, surface format: AMF_SURFACE_GRAY32
+#define AMF_VIDEO_ENCODER_AV1_PSNR_FEEDBACK                         L"Av1PSNRFeedback"             // amf_bool; default = false; Signal encoder to calculate PSNR score
+#define AMF_VIDEO_ENCODER_AV1_SSIM_FEEDBACK                         L"Av1SSIMFeedback"             // amf_bool; default = false; Signal encoder to calculate SSIM score
+#define AMF_VIDEO_ENCODER_AV1_STATISTICS_FEEDBACK                   L"Av1StatisticsFeedback"       // amf_bool; default = false; Signal encoder to collect and feedback encoder statistics
+#define AMF_VIDEO_ENCODER_AV1_BLOCK_Q_INDEX_FEEDBACK                L"Av1BlockQIndexFeedback"      // amf_bool; default = false; Signal encoder to collect and feedback block level QIndex values
 
 // Encode output parameters
 #define AMF_VIDEO_ENCODER_AV1_OUTPUT_FRAME_TYPE                     L"Av1OutputFrameType"               // amf_int64(AMF_VIDEO_ENCODER_AV1_OUTPUT_FRAME_TYPE_ENUM); default = N/A
 #define AMF_VIDEO_ENCODER_AV1_OUTPUT_MARKED_LTR_INDEX               L"Av1MarkedLTRIndex"                // amf_int64; default = N/A; Marked LTR index
 #define AMF_VIDEO_ENCODER_AV1_OUTPUT_REFERENCED_LTR_INDEX_BITFIELD  L"Av1ReferencedLTRIndexBitfield"    // amf_int64; default = N/A; referenced LTR bit-field
+#define AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE                    L"AV1OutputBufferType"              // amf_int64(AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE_ENUM); encoder output buffer type
+#define AMF_VIDEO_ENCODER_AV1_RECONSTRUCTED_PICTURE                 L"Av1ReconstructedPicture"     // AMFInterface(AMFSurface); returns reconstructed picture as an AMFSurface attached to the output buffer as property AMF_VIDEO_ENCODER_RECONSTRUCTED_PICTURE of AMFInterface type
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_PSNR_Y                      L"Av1PSNRY"                        // double; PSNR Y
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_PSNR_U                      L"Av1PSNRU"                        // double; PSNR U
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_PSNR_V                      L"Av1PSNRV"                        // double; PSNR V
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_PSNR_ALL                    L"Av1PSNRALL"                      // double; PSNR All
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_SSIM_Y                      L"Av1SSIMY"                        // double; SSIM Y
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_SSIM_U                      L"Av1SSIMU"                        // double; SSIM U
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_SSIM_V                      L"Av1SSIMV"                        // double; SSIM V
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_SSIM_ALL                    L"Av1SSIMALL"                      // double; SSIM ALL
+// Encoder statistics feedback
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_FRAME_Q_INDEX               L"Av1StatisticsFeedbackFrameQIndex"            // amf_int64; Rate control base frame/initial QIndex
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_AVERAGE_Q_INDEX             L"Av1StatisticsFeedbackAvgQIndex"              // amf_int64; Average QIndex of all encoded SBs in a picture. Value may be different from the one reported by bitstream analyzer when there are skipped SBs.
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_MAX_Q_INDEX                 L"Av1StatisticsFeedbackMaxQIndex"              // amf_int64; Max QIndex among all encoded SBs in a picture. Value may be different from the one reported by bitstream analyzer when there are skipped SBs.
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_MIN_Q_INDEX                 L"Av1StatisticsFeedbackMinQIndex"              // amf_int64; Min QIndex among all encoded SBs in a picture. Value may be different from the one reported by bitstream analyzer when there are skipped SBs.
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_PIX_NUM_INTRA               L"Av1StatisticsFeedbackPixNumIntra"            // amf_int64; Number of the intra encoded pixels
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_PIX_NUM_INTER               L"Av1StatisticsFeedbackPixNumInter"            // amf_int64; Number of the inter encoded pixels
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_PIX_NUM_SKIP                L"Av1StatisticsFeedbackPixNumSkip"             // amf_int64; Number of the skip mode pixels
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_BITCOUNT_RESIDUAL           L"Av1StatisticsFeedbackBitcountResidual"       // amf_int64; The bit count that corresponds to residual data
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_BITCOUNT_MOTION             L"Av1StatisticsFeedbackBitcountMotion"         // amf_int64; The bit count that corresponds to motion vectors
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_BITCOUNT_INTER              L"Av1StatisticsFeedbackBitcountInter"          // amf_int64; The bit count that are assigned to inter SBs
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_BITCOUNT_INTRA              L"Av1StatisticsFeedbackBitcountIntra"          // amf_int64; The bit count that are assigned to intra SBs
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_BITCOUNT_ALL_MINUS_HEADER   L"Av1StatisticsFeedbackBitcountAllMinusHeader" // amf_int64; The bit count of the bitstream excluding header
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_MV_X                        L"Av1StatisticsFeedbackMvX"                    // amf_int64; Accumulated absolute values of horizontal MV's
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_MV_Y                        L"Av1StatisticsFeedbackMvY"                    // amf_int64; Accumulated absolute values of vertical MV's
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_RD_COST_FINAL               L"Av1StatisticsFeedbackRdCostFinal"            // amf_int64; Frame level final RD cost for full encoding
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_RD_COST_INTRA               L"Av1StatisticsFeedbackRdCostIntra"            // amf_int64; Frame level intra RD cost for full encoding
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_RD_COST_INTER               L"Av1StatisticsFeedbackRdCostInter"            // amf_int64; Frame level inter RD cost for full encoding
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_SAD_FINAL                   L"Av1StatisticsFeedbackSadFinal"               // amf_int64; Frame level final SAD for full encoding
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_SAD_INTRA                   L"Av1StatisticsFeedbackSadIntra"               // amf_int64; Frame level intra SAD for full encoding
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_SAD_INTER                   L"Av1StatisticsFeedbackSadInter"               // amf_int64; Frame level inter SAD for full encoding
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_SSE                         L"Av1StatisticsFeedbackSSE"                    // amf_int64; Frame level SSE (only calculated for AV1)
+#define AMF_VIDEO_ENCODER_AV1_STATISTIC_VARIANCE                    L"Av1StatisticsFeedbackVariance"               // amf_int64; Frame level variance for full encoding
+
+    // Encoder block level feedback
+#define AMF_VIDEO_ENCODER_AV1_BLOCK_Q_INDEX_MAP                     L"Av1BlockQIndexMap"                               // AMFInterface(AMFSurface); AMFSurface of format AMF_SURFACE_GRAY32 containing block level QIndex values
 
 // AV1 Encoder capabilities - exposed in AMFCaps interface
 #define AMF_VIDEO_ENCODER_AV1_CAP_NUM_OF_HW_INSTANCES               L"Av1CapNumOfHwInstances"           // amf_int64; default = N/A; number of HW encoder instances
 #define AMF_VIDEO_ENCODER_AV1_CAP_MAX_THROUGHPUT                    L"Av1CapMaxThroughput"              // amf_int64; default = N/A; MAX throughput for AV1 encoder in MB (16 x 16 pixel)
 #define AMF_VIDEO_ENCODER_AV1_CAP_REQUESTED_THROUGHPUT              L"Av1CapRequestedThroughput"        // amf_int64; default = N/A; Currently total requested throughput for AV1 encode in MB (16 x 16 pixel)
-#define AMF_VIDEO_ENCODER_AV1_CAP_COLOR_CONVERSION                  L"Av1CapColorConversion"            // amf_int64(AMF_ACCELERATION_TYPE); default = N/A; type of supported color conversion. default AMF_ACCEL_GPU
-#define AMF_VIDEO_ENCODER_AV1_CAP_PRE_ANALYSIS                      L"Av1PreAnalysis"                    // amf_bool - pre analysis module is available for AV1 UVE encoder, n/a for the other encoders
+#define AMF_VIDEO_ENCODER_AV1_CAP_COLOR_CONVERSION                  L"Av1CapColorConversion"            // amf_int64(AMF_ACCELERATION_TYPE); default = N/A; type of supported color conversion.
+#define AMF_VIDEO_ENCODER_AV1_CAP_PRE_ANALYSIS                      L"Av1PreAnalysis"                   // amf_bool - pre analysis module is available for AV1 UVE encoder, n/a for the other encoders
 #define AMF_VIDEO_ENCODER_AV1_CAP_MAX_BITRATE                       L"Av1MaxBitrate"                    // amf_int64; default = N/A; Maximum bit rate in bits
 #define AMF_VIDEO_ENCODER_AV1_CAP_MAX_PROFILE                       L"Av1MaxProfile"                    // amf_int64(AMF_VIDEO_ENCODER_AV1_PROFILE_ENUM); default = N/A; max value of code profile
 #define AMF_VIDEO_ENCODER_AV1_CAP_MAX_LEVEL                         L"Av1MaxLevel"                      // amf_int64(AMF_VIDEO_ENCODER_AV1_LEVEL_ENUM); default = N/A; max value of codec level
 #define AMF_VIDEO_ENCODER_AV1_CAP_MAX_NUM_TEMPORAL_LAYERS           L"Av1CapMaxNumTemporalLayers"       // amf_int64; default = N/A; The cap of maximum number of temporal layers
 #define AMF_VIDEO_ENCODER_AV1_CAP_MAX_NUM_LTR_FRAMES                L"Av1CapMaxNumLTRFrames"            // amf_int64; default = N/A; The cap of maximum number of LTR frames. This value is calculated based on current value of AMF_VIDEO_ENCODER_AV1_MAX_NUM_TEMPORAL_LAYERS.
+#define AMF_VIDEO_ENCODER_AV1_CAP_SUPPORT_TILE_OUTPUT               L"AV1SupportTileOutput"             // amf_bool; if tile output is supported
 
 #define AMF_VIDEO_ENCODER_AV1_ENABLE_SMART_ACCESS_VIDEO             L"Av1EnableEncoderSmartAccessVideo" // amf_bool; default = false; true = enables smart access video feature
+
+#define AMF_VIDEO_ENCODER_AV1_CAP_SUPPORT_SMART_ACCESS_VIDEO        L"Av1EncoderSupportSmartAccessVideo"    // amf_bool; returns true if system supports SmartAccess Video
 
 #endif //#ifndef AMF_VideoEncoderAV1_h

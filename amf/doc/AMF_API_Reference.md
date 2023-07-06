@@ -198,7 +198,7 @@ Include `public/include/core/Factory.h`
 
 ### 2.2.2 AMFInterface
 
-All new objects and components in AMF are implemented in the form of AMF Interfaces.  These interfaces are implemented in the form of abstract C++ classes.  Most AMF interfaces will be derived from the `AMFInterface` basic interface. It exposes two reference counting methods and a query interface method.
+All new objects and components in AMF are implemented in the form of AMF Interfaces.  These interfaces are implemented in the form of abstract C++ classes. Most AMF interfaces will be derived from the `AMFInterface` basic interface. It exposes two reference counting methods and a query interface method.
 
 All AMF interfaces except [`AMFFactory`](#223-amffactory), `AMFTrace`, `AMFDebug` and `AMFPrograms` inherit from `AMFInterface`.
 
@@ -207,6 +207,26 @@ AMF provides a default implementation for `AMFInterface` with self-destroying be
 You should never call `delete` on any of the AMF interfaces. Instead, for reference-counted interfaces derived from AMFInterface, call `Acquire` when a new copy of the pointer pointing to an interface is created and `Release` when a pointer is destroyed. For interfaces to static objects, nothing needs to be done to manage their lifecycle.
 
 AMF provides the `AMFInterfacePtr_T` template, which implements a “smart” pointer to an AMF interface. `AMFInterfacePtr_T` automatically increments the reference count of the object on assignment and decrements the reference count when going out of scope. Use of smart pointers is highly recommended and encouraged to avoid memory and resource leaks.
+
+Interface definition:
+
+```cpp
+    class AMF_NO_VTABLE AMFInterface
+    {
+    public:
+        virtual amf_long            AMF_STD_CALL Acquire() = 0;
+        virtual amf_long            AMF_STD_CALL Release() = 0;
+        virtual AMF_RESULT          AMF_STD_CALL QueryInterface(const AMFGuid& interfaceID, void** ppInterface) = 0;
+    };
+```
+
+Interface diagram:
+
+<p align="center">
+    <img src="./image/AMFInterface_inherit.png">
+
+<p align="center">
+Figure 1 — AMFInterface inherit diagram
 
 Include `public/include/core/Interface.h`
 
@@ -1668,7 +1688,37 @@ Return the size (length) of the string in characters.
 
 ### 2.2.14.1 AMFPropertyStorage
 
-Most objects in AMF implement the `AMFPropertyStorage` or `AMFPropertyStorageEx` interfaces.  `AMFPropertyStorage` implements a property map with a string as an ID and the `AMFVariantStruct` structure as data. The default implementation is `not thread-safe.`
+Most objects in AMF implement the `AMFPropertyStorage` or `AMFPropertyStorageEx` interfaces. `AMFPropertyStorage` implements a property map with a string as an ID and the `AMFVariantStruct` structure as data. The default implementation is `not thread-safe.`
+
+Interface definition:
+
+```cpp
+    class AMF_NO_VTABLE AMFPropertyStorage : public AMFInterface
+    {
+    public:
+        virtual AMF_RESULT          AMF_STD_CALL SetProperty(const wchar_t* name, AMFVariantStruct value) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL GetProperty(const wchar_t* name, AMFVariantStruct* pValue) const = 0;
+
+        virtual amf_bool            AMF_STD_CALL HasProperty(const wchar_t* name) const = 0;
+        virtual amf_size            AMF_STD_CALL GetPropertyCount() const = 0;
+        virtual AMF_RESULT          AMF_STD_CALL GetPropertyAt(amf_size index, wchar_t* name, amf_size nameSize, AMFVariantStruct* pValue) const = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL Clear() = 0;
+        virtual AMF_RESULT          AMF_STD_CALL AddTo(AMFPropertyStorage* pDest, amf_bool overwrite, amf_bool deep) const= 0;
+        virtual AMF_RESULT          AMF_STD_CALL CopyTo(AMFPropertyStorage* pDest, amf_bool deep) const = 0;
+
+        virtual void                AMF_STD_CALL AddObserver(AMFPropertyStorageObserver* pObserver) = 0;
+        virtual void                AMF_STD_CALL RemoveObserver(AMFPropertyStorageObserver* pObserver) = 0;
+    };
+```
+
+Interface diagram:
+
+<p align="center">
+    <img src="./image/AMFPropertyStorage_inherit.png">
+
+<p align="center">
+Figure 2 — AMFPropertyStorage inherit diagram
 
 Include `public/include/core/PropertyStorage.h`
 
@@ -2000,7 +2050,38 @@ A pointer to the array of `AMFEnumDescriptionEntry` structures describing an enu
 
 The `AMFData` interface abstracts memory objects located in CPU and GPU memory providing a cross-platform access to them. It serves as a base class for other interfaces used to access specific memory objects.
 
+Interface definition:
+
+```cpp
+    class AMF_NO_VTABLE AMFData : public AMFPropertyStorage
+    {
+    public:
+        virtual AMF_MEMORY_TYPE     AMF_STD_CALL GetMemoryType() = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL Duplicate(AMF_MEMORY_TYPE type, AMFData** ppData) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL Convert(AMF_MEMORY_TYPE type) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL Interop(AMF_MEMORY_TYPE type) = 0;
+
+        virtual AMF_DATA_TYPE       AMF_STD_CALL GetDataType() = 0;
+
+        virtual amf_bool            AMF_STD_CALL IsReusable() = 0;
+
+        virtual void                AMF_STD_CALL SetPts(amf_pts pts) = 0;
+        virtual amf_pts             AMF_STD_CALL GetPts() = 0;
+        virtual void                AMF_STD_CALL SetDuration(amf_pts duration) = 0;
+        virtual amf_pts             AMF_STD_CALL GetDuration() = 0;
+    };
+```
+
 `AMFData` inherits from [`AMFPropertyStorage`](#22141-amfpropertystorage). AMFData objects are generally not thread-safe.
+
+Interface diagram:
+
+<p align="center">
+    <img src="./image/AMFData_inherit.png">
+
+<p align="center">
+Figure 3 — AMFData inherit diagram
 
 Include `public/include/core/Data.h`
 
@@ -2369,7 +2450,35 @@ This method is to be implemented by the observer object. It will be called when 
 
 The `AMFSurface` interface abstracts a memory buffer containing a 2D image (typically a video frame) accessible by the GPU. The structure of the buffer depends on the surface type and format. Memory buffers associated with a surface may be stored in either GPU or host memory and consist of one or more planes accessible through the `AMFPlane` interface.
 
+Interface definition:
+
+```cpp
+    class AMF_NO_VTABLE AMFSurface : public AMFData
+    {
+    public:
+        virtual AMF_SURFACE_FORMAT  AMF_STD_CALL GetFormat() = 0;
+
+        virtual amf_size            AMF_STD_CALL GetPlanesCount() = 0;
+        virtual AMFPlane*           AMF_STD_CALL GetPlaneAt(amf_size index) = 0;
+        virtual AMFPlane*           AMF_STD_CALL GetPlane(AMF_PLANE_TYPE type) = 0;
+
+        virtual AMF_FRAME_TYPE      AMF_STD_CALL GetFrameType() = 0;
+        virtual void                AMF_STD_CALL SetFrameType(AMF_FRAME_TYPE type) = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL SetCrop(amf_int32 x,amf_int32 y, amf_int32 width, amf_int32 height) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL CopySurfaceRegion(AMFSurface* pDest, amf_int32 dstX, amf_int32 dstY, amf_int32 srcX, amf_int32 srcY, amf_int32 width, amf_int32 height) = 0;
+    };
+```
+
 `AMFSurface` inherits from [`AMFData`](#231-amfdata). `AMFSurface` objects are generally not thread-safe.
+
+Interface diagram:
+
+<p align="center">
+    <img src="./image/AMFSurface_inherit.png">
+
+<p align="center">
+Figure 4 — AMFSurface inherit diagram
 
 Include `public/include/core/Surface.h`
 
@@ -2560,6 +2669,16 @@ When a surface is submitted to an AMF component as an input resource, the compon
 
 The `AMFSurfaceObserver` interface must be implemented by objects observing the surface.
 
+Interface definition:
+
+```cpp
+    class AMF_NO_VTABLE AMFSurfaceObserver
+    {
+    public:
+        virtual void AMF_STD_CALL OnSurfaceDataRelease(AMFSurface* pSurface) = 0;
+    };
+```
+
 ---
 
 ### AMFSurfaceObserver::OnSurfaceDataRelease
@@ -2578,7 +2697,34 @@ This method is to be implemented by the observer object. It will be called when 
 
 The `AMFPlane` interface provides access to a single plane of a surface. A pointer to the `AMFPlane` interface can be obtained using the `GetPlane` and `GetPlaneAt` methods of the [`AMFSurface`](#2331-amfsurface) interface. Any `AMFSurface` object contains at least one plane. The number of planes in a surface is determined by `Surface Format`.
 
-Plane Types
+Interface definition:
+
+```cpp
+    class AMF_NO_VTABLE AMFPlane : public AMFInterface
+    {
+    public:
+        virtual AMF_PLANE_TYPE      AMF_STD_CALL GetType() = 0;
+        virtual void*               AMF_STD_CALL GetNative() = 0;
+        virtual amf_int32           AMF_STD_CALL GetPixelSizeInBytes() = 0;
+        virtual amf_int32           AMF_STD_CALL GetOffsetX() = 0;
+        virtual amf_int32           AMF_STD_CALL GetOffsetY() = 0;
+        virtual amf_int32           AMF_STD_CALL GetWidth() = 0;
+        virtual amf_int32           AMF_STD_CALL GetHeight() = 0;
+        virtual amf_int32           AMF_STD_CALL GetHPitch() = 0;
+        virtual amf_int32           AMF_STD_CALL GetVPitch() = 0;
+        virtual bool                AMF_STD_CALL IsTiled() = 0;
+    };
+```
+
+Interface diagram:
+
+<p align="center">
+    <img src="./image/AMFPlane_inherit.png">
+
+<p align="center">
+Figure 5 — AMFPlane inherit diagram
+
+#### Plane Types
 
 Plane types are defined using the `AMF_PLANE_TYPE` enumeration and can be one of the following:
 
@@ -2723,6 +2869,77 @@ Determine whether the physical memory storing the plane is contiguous or tiled.
 ### 2.4.1 AMFContext
 
 The `AMFContext` interface serves as an entry point to most AMF functionality, acting as a facility to create and initialize device-specific resources. It also abstracts the underlying platform-specific technologies, providing a consistent API across DirectX9, DirectX11, OpenGL, OpenCL, XV, Android.
+
+Interface definition:
+
+```cpp
+    class AMF_NO_VTABLE AMFContext : public AMFPropertyStorage
+    {
+    public:
+        virtual AMF_RESULT          AMF_STD_CALL Terminate() = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL InitDX9(void* pDX9Device) = 0;
+        virtual void*               AMF_STD_CALL GetDX9Device(AMF_DX_VERSION dxVersionRequired = AMF_DX9) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL LockDX9() = 0;
+        virtual AMF_RESULT          AMF_STD_CALL UnlockDX9() = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL InitDX11(void* pDX11Device, AMF_DX_VERSION dxVersionRequired = AMF_DX11_0) = 0;
+        virtual void*               AMF_STD_CALL GetDX11Device(AMF_DX_VERSION dxVersionRequired = AMF_DX11_0) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL LockDX11() = 0;
+        virtual AMF_RESULT          AMF_STD_CALL UnlockDX11() = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL InitOpenCL(void* pCommandQueue = NULL) = 0;
+        virtual void*               AMF_STD_CALL GetOpenCLContext() = 0;
+        virtual void*               AMF_STD_CALL GetOpenCLCommandQueue() = 0;
+        virtual void*               AMF_STD_CALL GetOpenCLDeviceID() = 0;
+        virtual AMF_RESULT          AMF_STD_CALL GetOpenCLComputeFactory(AMFComputeFactory **ppFactory) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL InitOpenCLEx(AMFComputeDevice *pDevice) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL LockOpenCL() = 0;
+        virtual AMF_RESULT          AMF_STD_CALL UnlockOpenCL() = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL InitOpenGL(amf_handle hOpenGLContext, amf_handle hWindow, amf_handle hDC) = 0;
+        virtual amf_handle          AMF_STD_CALL GetOpenGLContext() = 0;
+        virtual amf_handle          AMF_STD_CALL GetOpenGLDrawable() = 0;
+        virtual AMF_RESULT          AMF_STD_CALL LockOpenGL() = 0;
+        virtual AMF_RESULT          AMF_STD_CALL UnlockOpenGL() = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL InitXV(void* pXVDevice) = 0;
+        virtual void*               AMF_STD_CALL GetXVDevice() = 0;
+        virtual AMF_RESULT          AMF_STD_CALL LockXV() = 0;
+        virtual AMF_RESULT          AMF_STD_CALL UnlockXV() = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL InitGralloc(void* pGrallocDevice) = 0;
+        virtual void*               AMF_STD_CALL GetGrallocDevice() = 0;
+        virtual AMF_RESULT          AMF_STD_CALL LockGralloc() = 0;
+        virtual AMF_RESULT          AMF_STD_CALL UnlockGralloc() = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL AllocBuffer(AMF_MEMORY_TYPE type, amf_size size, AMFBuffer** ppBuffer) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL AllocSurface(AMF_MEMORY_TYPE type, AMF_SURFACE_FORMAT format, amf_int32 width, amf_int32 height, AMFSurface** ppSurface) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL AllocAudioBuffer(AMF_MEMORY_TYPE type, AMF_AUDIO_FORMAT format, amf_int32 samples, amf_int32 sampleRate, amf_int32 channels,
+                                                    AMFAudioBuffer** ppAudioBuffer) = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL CreateBufferFromHostNative(void* pHostBuffer, amf_size size, AMFBuffer** ppBuffer, AMFBufferObserver* pObserver) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL CreateSurfaceFromHostNative(AMF_SURFACE_FORMAT format, amf_int32 width, amf_int32 height, amf_int32 hPitch, amf_int32 vPitch, void* pData,
+                                                     AMFSurface** ppSurface, AMFSurfaceObserver* pObserver) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL CreateSurfaceFromDX9Native(void* pDX9Surface, AMFSurface** ppSurface, AMFSurfaceObserver* pObserver) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL CreateSurfaceFromDX11Native(void* pDX11Surface, AMFSurface** ppSurface, AMFSurfaceObserver* pObserver) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL CreateSurfaceFromOpenGLNative(AMF_SURFACE_FORMAT format, amf_handle hGLTextureID, AMFSurface** ppSurface, AMFSurfaceObserver* pObserver) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL CreateSurfaceFromGrallocNative(amf_handle hGrallocSurface, AMFSurface** ppSurface, AMFSurfaceObserver* pObserver) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL CreateSurfaceFromOpenCLNative(AMF_SURFACE_FORMAT format, amf_int32 width, amf_int32 height, void** pClPlanes,
+                                                     AMFSurface** ppSurface, AMFSurfaceObserver* pObserver) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL CreateBufferFromOpenCLNative(void* pCLBuffer, amf_size size, AMFBuffer** ppBuffer) = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL GetCompute(AMF_MEMORY_TYPE eMemType, AMFCompute** ppCompute) = 0;
+    };
+```
+
+Interface diagram:
+
+<p align="center">
+    <img src="./image/AMFContext_inherit.png">
+
+<p align="center">
+Figure 6 — AMFContext inherit diagram
 
 ---
 
@@ -3024,7 +3241,7 @@ The `AMFContext` object must be initialized with a call to one of the `Init` met
 
 | Parameter        | Description                                                                                                                                                                                                                 |
 | :--------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| memType [in]     | <p>Memory type. Can be one of the following:</p><p>`AMF_MEMORY_OPENCL` – for OpenCL</p><p>`AMF_MEMORY_COMPUTE_FOR_DX9` – for AMF Compute on DirectX9</p><p>`AMF_MEMORY_COMPUTE_FOR_DX11` – for AMF Compute on DirectX11</p> |
+| memType [in]     | <p>Memory type. Can be one of the following:</p><p>`AMF_MEMORY_OPENCL` – for OpenCL</p><p>`AMF_MEMORY_VULKAN` for AMF Compute on Vulkan</p><p>`AMF_MEMORY_COMPUTE_FOR_DX9` – for AMF Compute on DirectX9</p><p>`AMF_MEMORY_COMPUTE_FOR_DX11` – for AMF Compute on DirectX11</p><p>`AMF_MEMORY_COMPUTE_FOR_DX12` – for AMF Compute on DirectX12</p> |
 | ppFactory [out]  | A pointer to the location to receive a pointer to the [`AMFComputeFactory`](#251-amfcomputefactory) interface                                                                                                               |
 | **Return Value** | <p>`AMF_OK` on success</p><p>`AMF_INVALID_ARG` when `ppFactory` is `nullptr` or when `memType` is set to a value different from `AMF_MEMORY_OPENCL`, `AMF_MEMORY_COMPUTE_FOR_DX9` or `AMF_MEMORY_COMPUTE_FOR_DX11`</p>      |
 
@@ -3033,6 +3250,36 @@ The `AMFContext` object must be initialized with a call to one of the `Init` met
 ### 2.4.2 AMFContext1
 
 The `AMFContext1` interface adds new functionality to the [`AMFContext`](#242-amfcontext1) interface. `AMFContext1` is derived from [`AMFContext`](#242-amfcontext1) and can be obtained by calling `QueryInterface()` on the instance of the [`AMFContext`](#242-amfcontext1) interface obtained from [`AMFFactory`](#amffactory)`::CreateContext()`.
+
+Interface definition:
+
+```cpp
+    class AMF_NO_VTABLE AMFContext1 : public AMFContext
+    {
+    public:
+        virtual AMF_RESULT          AMF_STD_CALL CreateBufferFromDX11Native(void* pHostBuffer, AMFBuffer** ppBuffer, AMFBufferObserver* pObserver) = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL AllocBufferEx(AMF_MEMORY_TYPE type, amf_size size, AMF_BUFFER_USAGE usage, AMF_MEMORY_CPU_ACCESS access, AMFBuffer** ppBuffer) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL AllocSurfaceEx(AMF_MEMORY_TYPE type, AMF_SURFACE_FORMAT format, amf_int32 width, amf_int32 height, AMF_SURFACE_USAGE usage, AMF_MEMORY_CPU_ACCESS access, AMFSurface** ppSurface) = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL InitVulkan(void* pVulkanDevice) = 0;
+        virtual void*               AMF_STD_CALL GetVulkanDevice() = 0;
+        virtual AMF_RESULT          AMF_STD_CALL LockVulkan() = 0;
+        virtual AMF_RESULT          AMF_STD_CALL UnlockVulkan() = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL CreateSurfaceFromVulkanNative(void* pVulkanImage, AMFSurface** ppSurface, AMFSurfaceObserver* pObserver) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL CreateBufferFromVulkanNative(void* pVulkanBuffer, AMFBuffer** ppBuffer, AMFBufferObserver* pObserver) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL GetVulkanDeviceExtensions(amf_size *pCount, const char **ppExtensions) = 0;
+    };
+```
+
+Interface diagram:
+
+<p align="center">
+    <img src="./image/AMFContext1_inherit.png">
+
+<p align="center">
+Figure 7 — AMFContext1 inherit diagram
 
 ---
 
@@ -3257,6 +3504,25 @@ OpenCL kernels can be submitted to and executed in an AMF Compute queue. Kernels
 
 The `AMFComputeFactory` interface allows to enumerate Compute devices available in the system. The `AMFComputeFactory` interface inherits from [`AMFInterface`](#223-amffactory).
 
+Interface definition:
+
+```cpp
+    class AMF_NO_VTABLE AMFComputeFactory : public AMFInterface
+    {
+    public:
+        virtual amf_int32           AMF_STD_CALL GetDeviceCount() = 0;
+        virtual AMF_RESULT          AMF_STD_CALL GetDeviceAt(amf_int32 index, AMFComputeDevice **ppDevice) = 0;
+    };
+```
+
+Interface diagram:
+
+<p align="center">
+    <img src="./image/AMFComputeFactory_inherit.png">
+
+<p align="center">
+Figure 8 — AMFComputeFactory inherit diagram
+
 Include `public/include/core/ComputeFactory.h`
 
 ---
@@ -3291,6 +3557,34 @@ Obtain a pointer to a specific AMF Compute device.
 The `AMFDeviceCompute` interface provides access to the functionality of an AMF Compute device object.
 
 The `AMFDeviceCompute` interface inherits from [`AMFPropertyStorage`](#2141-amfpropertystorage).
+
+Interface definition:
+
+```cpp
+    class AMF_NO_VTABLE AMFDeviceCompute
+    {
+    public:
+        virtual AMF_RESULT          AMF_STD_CALL PreInit() = 0;
+        virtual AMF_RESULT          AMF_STD_CALL Init(void* pCommandQueue) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL InitEx(AMFComputeDevice *pDevice) = 0;
+
+        virtual bool                AMF_STD_CALL CheckExtensions() = 0;
+        virtual void*               AMF_STD_CALL GetNativeContext() = 0;
+        virtual void*               AMF_STD_CALL GetNativeDeviceID() = 0;
+        virtual void*               AMF_STD_CALL GetNativeCommandQueue() = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL CopyImageToHost(void* pSource, const amf_size origin[3], const amf_size region[3], void* pDest, amf_size dstPitch, bool blocking) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL CopyImageFromHost(void* pSource, const amf_size origin[3], const amf_size region[3], amf_size srcPitch, void* pDest, bool blocking) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL CopyImage(void* pSourceHandle, const amf_size srcOrigin[3], const amf_size region[3], void* pDestHandle, const amf_size dstOrigin[3]) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL FillImage(void* pDestHandle, const amf_size origin[3], const amf_size region[3], const void* pColor) = 0;
+
+        virtual const CLFuncTable*  AMF_STD_CALL GetCLFuncTable() = 0;
+        virtual bool                AMF_STD_CALL SupportsInteropFrom(AMF_MEMORY_TYPE memoryType) = 0;
+
+        virtual AMFCacheStream*     AMF_STD_CALL GetCache() = 0;
+        virtual bool                AMF_STD_CALL IsGFX9() = 0;
+    };
+```
 
 Include `public/include/core/ComputeFactory.h`
 
@@ -3352,6 +3646,20 @@ Create an AMF Compute object and obtain the [`AMFCompute`](#254-amfcompute) inte
 The `AMFPrograms` interface is used to compile and register AMF Compute kernels with AMF. AMF Compute kernels use the same syntax as OpenCL kernels.
 
 A pointer to the `AMFPrograms` interface can be obtained by calling the [`AMFFactory`](#223-amffactory)`::GetPrograms` method. The `AMFPrograms` interface is not reference-counted and represents a global object, which maintains a registry of all AMF Compute kernels used by the application. Do not call `delete` on the `AMFPrograms` interface.
+
+Interface definition:
+
+```cpp
+    class AMF_NO_VTABLE AMFPrograms
+    {
+    public:
+        virtual AMF_RESULT          AMF_STD_CALL RegisterKernelSourceFile(AMF_KERNEL_ID* pKernelID, const wchar_t* kernelid_name, const char* kernelName, const wchar_t* filepath, const char* options) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL RegisterKernelSource(AMF_KERNEL_ID* pKernelID, const wchar_t* kernelid_name, const char* kernelName, amf_size dataSize, const amf_uint8* data, const char* options) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL RegisterKernelBinary(AMF_KERNEL_ID* pKernelID, const wchar_t* kernelid_name, const char* kernelName, amf_size dataSize, const amf_uint8* data, const char* options) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL RegisterKernelSource1(AMF_MEMORY_TYPE eMemoryType, AMF_KERNEL_ID* pKernelID, const wchar_t* kernelid_name, const char* kernelName, amf_size dataSize, const amf_uint8* data, const char* options) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL RegisterKernelBinary1(AMF_MEMORY_TYPE eMemoryType, AMF_KERNEL_ID* pKernelID, const wchar_t* kernelid_name, const char* kernelName, amf_size dataSize, const amf_uint8* data, const char* options) = 0;
+    };
+```
 
 Include `public/include/core/Compute.h`
 
@@ -3415,6 +3723,49 @@ Load and register a precompiled kernel located in a memory buffer.
 The `AMFCompute` interface provides access to the functionality of an OpenCL command queue.
 
 The `AMFCompute` interface inherits from [`AMFInterface`](#223-amffactory).
+
+Interface definition:
+
+```cpp
+    class AMF_NO_VTABLE AMFCompute : public AMFInterface
+    {
+    public:
+        virtual AMF_MEMORY_TYPE     AMF_STD_CALL GetMemoryType() = 0;
+
+        virtual void*               AMF_STD_CALL GetNativeContext() = 0;
+        virtual void*               AMF_STD_CALL GetNativeDeviceID() = 0;
+        virtual void*               AMF_STD_CALL GetNativeCommandQueue() = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL GetKernel(AMF_KERNEL_ID kernelID, AMFComputeKernel** kernel) = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL PutSyncPoint(AMFComputeSyncPoint** ppSyncPoint) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL FinishQueue() = 0;
+        virtual AMF_RESULT          AMF_STD_CALL FlushQueue() = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL FillPlane(AMFPlane *pPlane, const amf_size origin[3], const amf_size region[3], const void* pColor) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL FillBuffer(AMFBuffer* pBuffer, amf_size dstOffset, amf_size dstSize, const void* pSourcePattern, amf_size patternSize) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL ConvertPlaneToBuffer(AMFPlane *pSrcPlane, AMFBuffer** ppDstBuffer) = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL CopyBuffer(AMFBuffer* pSrcBuffer, amf_size srcOffset, amf_size size, AMFBuffer* pDstBuffer, amf_size dstOffset) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL CopyPlane(AMFPlane *pSrcPlane, const amf_size srcOrigin[3], const amf_size region[3], AMFPlane *pDstPlane, const amf_size dstOrigin[3]) = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL CopyBufferToHost(AMFBuffer* pSrcBuffer, amf_size srcOffset, amf_size size, void* pDest, amf_bool blocking) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL CopyBufferFromHost(const void* pSource, amf_size size, AMFBuffer* pDstBuffer, amf_size dstOffsetInBytes, amf_bool blocking) = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL CopyPlaneToHost(AMFPlane *pSrcPlane, const amf_size origin[3], const amf_size region[3], void* pDest, amf_size dstPitch, amf_bool blocking) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL CopyPlaneFromHost(void* pSource, const amf_size origin[3], const amf_size region[3], amf_size srcPitch, AMFPlane *pDstPlane, amf_bool blocking) = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL ConvertPlaneToPlane(AMFPlane* pSrcPlane, AMFPlane** ppDstPlane, AMF_CHANNEL_ORDER order, AMF_CHANNEL_TYPE type) = 0;
+    };
+```
+
+Interface diagram:
+
+<p align="center">
+    <img src="./image/AMFCompute_inherit.png">
+
+<p align="center">
+Figure 10 — AMFCompute inherit diagram
 
 Include `public/include/core/Compute.h`
 
@@ -3742,6 +4093,39 @@ The `AMFComputeKernel` interface facilitates passing parameters to and execution
 
 The `AMFComputeKernel` interface inherits from [`AMFInterface`](#223-amffactory).
 
+Interface definition:
+
+```cpp
+    class AMF_NO_VTABLE AMFComputeKernel : public AMFInterface
+    {
+    public:
+        virtual void*               AMF_STD_CALL GetNative() = 0;
+        virtual const wchar_t*      AMF_STD_CALL GetIDName() = 0;
+        virtual AMF_RESULT          AMF_STD_CALL SetArgPlaneNative(amf_size index, void* pPlane, AMF_ARGUMENT_ACCESS_TYPE eAccess) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL SetArgBufferNative(amf_size index, void* pBuffer, AMF_ARGUMENT_ACCESS_TYPE eAccess) = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL SetArgPlane(amf_size index, AMFPlane* pPlane, AMF_ARGUMENT_ACCESS_TYPE eAccess) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL SetArgBuffer(amf_size index, AMFBuffer* pBuffer, AMF_ARGUMENT_ACCESS_TYPE eAccess) = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL SetArgInt32(amf_size index, amf_int32 data) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL SetArgInt64(amf_size index, amf_int64 data) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL SetArgFloat(amf_size index, amf_float data) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL SetArgBlob(amf_size index, amf_size dataSize, const void* pData) = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL GetCompileWorkgroupSize(amf_size workgroupSize[3]) = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL Enqueue(amf_size dimension, amf_size globalOffset[3], amf_size globalSize[3], amf_size localSize[3]) = 0;
+    };
+```
+
+Interface diagram:
+
+<p align="center">
+    <img src="./image/AMFComputeKernel_inherit.png">
+
+<p align="center">
+Figure 11 — AMFComputeKernel inherit diagram
+
 Include `public/include/core/Compute.h`
 
 ---
@@ -3850,6 +4234,25 @@ A synchronization point object is created when a sync point is added to the AMF 
 
 The `AMFComputeSyncPoint` interface inherits from [`AMFInterface`](#223-amffactory).
 
+Interface definition:
+
+```cpp
+    class AMF_NO_VTABLE AMFComputeSyncPoint : public AMFInterface
+    {
+    public:
+        virtual amf_bool            AMF_STD_CALL IsCompleted() = 0;
+        virtual void                AMF_STD_CALL Wait() = 0;
+    };
+```
+
+Interface diagram:
+
+<p align="center">
+    <img src="./image/AMFComputeSyncPoint_inherit.png">
+
+<p align="center">
+Figure 12 — AMFComputeSyncPoint inherit diagram
+
 Include `public/include/core/Compute.h`
 
 ---
@@ -3887,7 +4290,7 @@ The main purpose of an AMF component is to process a media stream, usually as pa
     <img src="./image/AMF_API_Reference.1.png">
 
 <p align="center">
-Figure 1 – A pipeline of AMF components
+Figure 13 – A pipeline of AMF components
 
 The `AMFComponent` interface inherits from the [`AMFPropertyStorageEx`](#22143-amfpropertystorageex) interface. All AMF components are thread-safe.
 
@@ -3899,7 +4302,7 @@ The use model of AMF components is built around the following flow:
     <img src="./image/AMF_API_Reference.2.png">
 
 <p align="center">
-Figure 2 — AMF Component Usage Model
+Figure 14 — AMF Component Usage Model
 
 Both input and output samples are stored in objects implementing the [`AMFData`](#231-amfdata) interface.
 
@@ -3908,6 +4311,36 @@ Input samples are submitted continuously to a component by calling the `SubmitIn
 User code should not make any assumptions about any relationship between input and output samples. While for some components the number of output samples is equal to the number of input samples, for other components this is not true. Some components may require more than one input sample to be submitted before any output samples are produced.
 
 AMF does not provide a standard implementation of a pipeline as part of the AMF API, leaving it up to applications to implement. However, many AMF samples do include a pipeline implementation, which could be used as a basis for your own implementation.
+
+Interface definition:
+
+```cpp
+    class AMF_NO_VTABLE AMFComponent : public AMFPropertyStorageEx
+    {
+    public:
+        virtual AMF_RESULT  AMF_STD_CALL Init(AMF_SURFACE_FORMAT format,amf_int32 width,amf_int32 height) = 0;
+        virtual AMF_RESULT  AMF_STD_CALL ReInit(amf_int32 width,amf_int32 height) = 0;
+        virtual AMF_RESULT  AMF_STD_CALL Terminate() = 0;
+        virtual AMF_RESULT  AMF_STD_CALL Drain() = 0;
+        virtual AMF_RESULT  AMF_STD_CALL Flush() = 0;
+
+        virtual AMF_RESULT  AMF_STD_CALL SubmitInput(AMFData* pData) = 0;
+        virtual AMF_RESULT  AMF_STD_CALL QueryOutput(AMFData** ppData) = 0;
+        virtual AMFContext* AMF_STD_CALL GetContext() = 0;
+        virtual AMF_RESULT  AMF_STD_CALL SetOutputDataAllocatorCB(AMFDataAllocatorCB* callback) = 0;
+
+        virtual AMF_RESULT  AMF_STD_CALL GetCaps(AMFCaps** ppCaps) = 0;
+        virtual AMF_RESULT  AMF_STD_CALL Optimize(AMFComponentOptimizationCallback* pCallback) = 0;
+    };
+```
+
+Interface diagram:
+
+<p align="center">
+    <img src="./image/AMFComponent_inherit.png">
+
+<p align="center">
+Figure 15 — AMFComponent inherit diagram
 
 Include `public/include/components/Component.h`
 
@@ -3936,7 +4369,7 @@ Components can be initialized multiple times with either the `Init` or the `ReIn
 
 Reinitialize a component for the new resolution. The `ReInit` method performs a minimal reinitialization and typically is much quicker than `Init`. Call `ReInit` for the fast resolution change when resolution is the only parameter that has changed.
 
-`ReInit` requires that `Init` is called at least once prior to the call and will fail when this is not so.
+`ReInit` requires that `Init` is called at least once prior to the call and will fail when this is not so. Additionally, before a component can be reinitialized with the `ReInit` method, either `Flush` or `Drain` needs to be called on the same object to remove any frames which are still in the component for processing.
 
 | Parameter        | Description                                                                                                                                             |
 | :--------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -4068,6 +4501,27 @@ Not all components are required to implement the `AMFCaps` interface. Always che
 
 `AMFCaps` inherits from [`AMFPropertyStorage`](#2214-property-storage).
 
+Interface definition:
+
+```cpp
+    class AMF_NO_VTABLE AMFCaps : public AMFPropertyStorage
+    {
+    public:
+        virtual AMF_ACCELERATION_TYPE     AMF_STD_CALL            GetAccelerationType() const = 0;
+        virtual AMF_RESULT                AMF_STD_CALL            GetInputCaps(AMFIOCaps** input) = 0;
+        virtual AMF_RESULT                AMF_STD_CALL            GetOutputCaps(AMFIOCaps** output) = 0;
+    };
+```
+
+Interface diagram:
+
+<p align="center">
+    <img src="./image/AMFCaps_inherit.png">
+
+<p align="center">
+Figure 16 — AMFCaps inherit diagram
+
+
 Include `public/include/components/ComponentCaps.h`
 
 ---
@@ -4111,6 +4565,35 @@ Get input and output capabilities of a component.
 The `AMFIOCaps` interface provides methods to query capabilities of a component’s input and output.
 
 `AMFIOCaps` inherits from [`AMFInterface`](#223-amffactory).
+
+Interface definition:
+
+```cpp
+    class AMF_NO_VTABLE AMFIOCaps : public AMFInterface
+    {
+    public:
+        virtual void       AMF_STD_CALL     GetWidthRange(amf_int32* minWidth, amf_int32* maxWidth) const = 0;
+        virtual void       AMF_STD_CALL     GetHeightRange(amf_int32* minHeight, amf_int32* maxHeight) const = 0;
+
+        virtual amf_int32  AMF_STD_CALL     GetVertAlign() const = 0;
+
+        virtual amf_int32  AMF_STD_CALL     GetNumOfFormats() const = 0;
+        virtual AMF_RESULT AMF_STD_CALL     GetFormatAt(amf_int32 index, AMF_SURFACE_FORMAT* format, amf_bool* native) const = 0;
+
+        virtual amf_int32  AMF_STD_CALL     GetNumOfMemoryTypes() const = 0;
+        virtual AMF_RESULT AMF_STD_CALL     GetMemoryTypeAt(amf_int32 index, AMF_MEMORY_TYPE* memType, amf_bool* native) const = 0;
+
+        virtual amf_bool   AMF_STD_CALL     IsInterlacedSupported() const = 0;
+    };
+```
+
+Interface diagram:
+
+<p align="center">
+    <img src="./image/AMFIOCaps_inherit.png">
+
+<p align="center">
+Figure 17 — AMFIOCaps inherit diagram
 
 Include `public/include/components/ComponentCaps.h`
 
@@ -4216,6 +4699,25 @@ Check whether interlaced input or output is supported.
 The `AMFDataAllocatorCB` interface is used to facilitate interaction between an [`AMFComponent`](#261-amfcomponent) object and a custom memory allocator.
 
 `AMFDataAllocatorCB` inherits from `AMFInterface`.
+
+Interface definition:
+
+```cpp
+    class AMF_NO_VTABLE AMFDataAllocatorCB : public AMFInterface
+    {
+    public:
+        virtual AMF_RESULT     AMF_STD_CALL AllocBuffer(AMF_MEMORY_TYPE type, amf_size size, AMFBuffer** ppBuffer) = 0;
+        virtual AMF_RESULT     AMF_STD_CALL AllocSurface(AMF_MEMORY_TYPE type, AMF_SURFACE_FORMAT format, amf_int32 width, amf_int32 height, amf_int32 hPitch, amf_int32 vPitch, AMFSurface** ppSurface) = 0;
+    };
+```
+
+Interface diagram:
+
+<p align="center">
+    <img src="./image/AMFDataAllocatorCB_inherit.png">
+
+<p align="center">
+Figure 18 — AMFDataAllocatorCB inherit diagram
 
 Include `public/include/components/Component.h`
 

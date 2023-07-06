@@ -294,8 +294,13 @@ Enables automatic long term reference frame management. Last frame of a scene wi
 **Values:**
 `0 - MAX_LOOKAHEAD_DEPTH`
 
-**Default Value:**
-`0`
+**Default Value associated with usages:**
+   - Transcoding: `0`
+   - Ultra low latency: `0`
+   - Low latency: `0`
+   - Webcam: `0`
+   - HQ: `11`
+   - HQLL: `0`
 
 **Description:**
 Sets the PA lookahead buffer size. The longer the buffer depth, the better the quality and the longer the latency.
@@ -317,13 +322,18 @@ Sets the perceptual adaptive quantization mode.
 ---
 
 **Name:**
-`PAQ_MODE`
+`TAQ_MODE`
 
 **Values:**
 `AMF_PA_TAQ_MODE_NONE`, `AMF_PA_TAQ_MODE_1`, `AMF_PA_TAQ_MODE_2`
 
-**Default Value:**
-`AMF_PA_TAQ_MODE_NONE`
+**Default Value associated with usages:**
+   - Transcoding: `AMF_PA_TAQ_MODE_NONE`
+   - Ultra low latency: `AMF_PA_TAQ_MODE_NONE`
+   - Low latency: `AMF_PA_TAQ_MODE_NONE`
+   - Webcam: `AMF_PA_TAQ_MODE_NONE`
+   - HQ: `AMF_PA_TAQ_MODE_2`
+   - HQLL: `AMF_PA_TAQ_MODE_NONE`
 
 **Description:**
 Sets the temporal adaptive quantization mode. MODE_1 is suitable for non-gaming applications whereas MODE_2 is suitable for gaming applications.
@@ -336,8 +346,13 @@ Sets the temporal adaptive quantization mode. MODE_1 is suitable for non-gaming 
 **Values:**
 `AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_NONE`, `AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_AUTO`
 
-**Default Value:**
-`AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_NONE`
+**Default Value associated with usages:**
+   - Transcoding: `AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_NONE`
+   - Ultra low latency: `AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_NONE`
+   - Low latency: `AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_NONE`
+   - Webcam: `AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_NONE`
+   - HQ: `AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_AUTO`
+   - HQLL: `AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_NONE`
 
 **Description:**
 Sets the PA high motion quality boost mode to help the encoder in motion search.

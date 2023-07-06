@@ -110,6 +110,10 @@ extern "C"
     #define amf_virtual_free amf_free
 #endif
 
+    // cpu
+#ifdef _WIN32
+    amf_int32   AMF_STD_CALL  amf_get_cpu_cores();
+#endif
 
 }
 

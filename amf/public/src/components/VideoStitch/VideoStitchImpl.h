@@ -113,7 +113,7 @@ namespace amf
         virtual amf_int32   AMF_STD_CALL GetInputCount();
         virtual amf_int32   AMF_STD_CALL GetOutputCount(){ return 0; }
         virtual AMF_RESULT  AMF_STD_CALL GetInput(amf_int32 index, AMFInput** ppInput);
-        virtual AMF_RESULT  AMF_STD_CALL GetOutput(amf_int32 index, AMFOutput** ppOutput) { return AMF_NOT_SUPPORTED; }
+        virtual AMF_RESULT  AMF_STD_CALL GetOutput(amf_int32 /* index */, AMFOutput** /* ppOutput */) { return AMF_NOT_SUPPORTED; }
 
         //  AMFComponentPrivate methods
         virtual void        AMF_STD_CALL SetName(const wchar_t* name) { m_name = name; }

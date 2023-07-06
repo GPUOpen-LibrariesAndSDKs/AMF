@@ -193,8 +193,8 @@ extern "C"
         NULL,       //int (*url_get_multi_file_handle)(URLContext *h, int **handles, int *numhandles);
         NULL,       //int (*url_get_short_seek)(URLContext *h);
         NULL,       //int (*url_shutdown)(URLContext *h, int flags);
-        0,          //int priv_data_size;
         NULL,       //const AVClass *priv_data_class;
+        0,          //int priv_data_size;
         0,          //int flags;
         NULL,       //int (*url_check)(URLContext *h, int mask);
         NULL,       //int (*url_open_dir)(URLContext *h);
@@ -306,7 +306,6 @@ static bool g_bRegistered = false;
 
 //        int currLevel = av_log_get_level();
         av_log_set_level(AV_LOG_ERROR);
-        av_register_all();
 
         // register protocol
         void*       opaque = NULL;
@@ -412,20 +411,21 @@ AMF_STREAM_CODEC_ID_ENUM  AMF_STD_CALL   amf::GetAMFVideoFormat(AVCodecID inForm
 {
     switch((int)inFormat)   //  Casting to int to avoid compiler warning
     {
-    case AV_CODEC_ID_NONE: return AMF_STREAM_CODEC_ID_UNKNOWN;
+    case AV_CODEC_ID_NONE:       return AMF_STREAM_CODEC_ID_UNKNOWN;
     case AV_CODEC_ID_MPEG2VIDEO: return AMF_STREAM_CODEC_ID_MPEG2;
-    case AV_CODEC_ID_MPEG4: return AMF_STREAM_CODEC_ID_MPEG4;
-    case AV_CODEC_ID_WMV3: return AMF_STREAM_CODEC_ID_WMV3;
-    case AV_CODEC_ID_VC1: return AMF_STREAM_CODEC_ID_VC1;
-    case AV_CODEC_ID_H264: return AMF_STREAM_CODEC_ID_H264_AVC;
-    case AV_CODEC_H264MVC: return AMF_STREAM_CODEC_ID_H264_MVC;
+    case AV_CODEC_ID_MPEG4:      return AMF_STREAM_CODEC_ID_MPEG4;
+    case AV_CODEC_ID_WMV3:       return AMF_STREAM_CODEC_ID_WMV3;
+    case AV_CODEC_ID_VC1:        return AMF_STREAM_CODEC_ID_VC1;
+    case AV_CODEC_ID_H264:       return AMF_STREAM_CODEC_ID_H264_AVC;
+    case AV_CODEC_H264MVC:       return AMF_STREAM_CODEC_ID_H264_MVC;
     //case AMF_STREAM_CODEC_ID_H264_SVC    = 7,  // AMFVideoDecoderUVD_H264_SVC   
-    case AV_CODEC_ID_MJPEG: return AMF_STREAM_CODEC_ID_MJPEG;
-    case AV_CODEC_ID_HEVC: return AMF_STREAM_CODEC_ID_H265_HEVC;
-    case AMF_CODEC_H265MAIN10: return AMF_STREAM_CODEC_ID_H265_MAIN10;
-    case AV_CODEC_ID_VP9: return AMF_STREAM_CODEC_ID_VP9;
-    case AMF_CODEC_VP9_10BIT: return AMF_STREAM_CODEC_ID_VP9_10BIT;
-	case AV_CODEC_ID_AV1: return AMF_STREAM_CODEC_ID_AV1;
+    case AV_CODEC_ID_MJPEG:      return AMF_STREAM_CODEC_ID_MJPEG;
+    case AV_CODEC_ID_HEVC:       return AMF_STREAM_CODEC_ID_H265_HEVC;
+    case AMF_CODEC_H265MAIN10:   return AMF_STREAM_CODEC_ID_H265_MAIN10;
+    case AV_CODEC_ID_VP9:        return AMF_STREAM_CODEC_ID_VP9;
+    case AMF_CODEC_VP9_10BIT:    return AMF_STREAM_CODEC_ID_VP9_10BIT;
+	case AV_CODEC_ID_AV1:        return AMF_STREAM_CODEC_ID_AV1;
+    case AMF_CODEC_AV1_12BIT:    return AMF_STREAM_CODEC_ID_AV1_12BIT;
 
     }
     return AMF_STREAM_CODEC_ID_UNKNOWN;
@@ -435,22 +435,152 @@ AVCodecID    AMF_STD_CALL   amf::GetFFMPEGVideoFormat(AMF_STREAM_CODEC_ID_ENUM i
 {
     switch(inFormat)
     {
-    case AMF_STREAM_CODEC_ID_UNKNOWN: return AV_CODEC_ID_NONE;
-    case AMF_STREAM_CODEC_ID_MPEG2: return AV_CODEC_ID_MPEG2VIDEO;
-    case AMF_STREAM_CODEC_ID_MPEG4: return AV_CODEC_ID_MPEG4;
-    case AMF_STREAM_CODEC_ID_WMV3: return AV_CODEC_ID_WMV3;
-    case AMF_STREAM_CODEC_ID_VC1: return AV_CODEC_ID_VC1;
-    case AMF_STREAM_CODEC_ID_H264_AVC: return AV_CODEC_ID_H264;
-    case AMF_STREAM_CODEC_ID_H264_MVC: return (AVCodecID)AV_CODEC_H264MVC;
+    case AMF_STREAM_CODEC_ID_UNKNOWN:     return AV_CODEC_ID_NONE;
+    case AMF_STREAM_CODEC_ID_MPEG2:       return AV_CODEC_ID_MPEG2VIDEO;
+    case AMF_STREAM_CODEC_ID_MPEG4:       return AV_CODEC_ID_MPEG4;
+    case AMF_STREAM_CODEC_ID_WMV3:        return AV_CODEC_ID_WMV3;
+    case AMF_STREAM_CODEC_ID_VC1:         return AV_CODEC_ID_VC1;
+    case AMF_STREAM_CODEC_ID_H264_AVC:    return AV_CODEC_ID_H264;
+    case AMF_STREAM_CODEC_ID_H264_MVC:    return (AVCodecID)AV_CODEC_H264MVC;
     //case AMF_STREAM_CODEC_ID_H264_SVC    = 7,  // AMFVideoDecoderUVD_H264_SVC   
-    case AMF_STREAM_CODEC_ID_MJPEG: return AV_CODEC_ID_MJPEG;
-    case AMF_STREAM_CODEC_ID_H265_HEVC: return AV_CODEC_ID_HEVC;
+    case AMF_STREAM_CODEC_ID_MJPEG:       return AV_CODEC_ID_MJPEG;
+    case AMF_STREAM_CODEC_ID_H265_HEVC:   return AV_CODEC_ID_HEVC;
     case AMF_STREAM_CODEC_ID_H265_MAIN10: return (AVCodecID)AMF_CODEC_H265MAIN10;
-    case AMF_STREAM_CODEC_ID_VP9: return (AVCodecID)AV_CODEC_ID_VP9;
-    case AMF_STREAM_CODEC_ID_VP9_10BIT: (AVCodecID)AMF_CODEC_VP9_10BIT;
-	case AMF_STREAM_CODEC_ID_AV1: return AV_CODEC_ID_AV1;
+    case AMF_STREAM_CODEC_ID_VP9:         return AV_CODEC_ID_VP9;
+    case AMF_STREAM_CODEC_ID_VP9_10BIT:   return (AVCodecID)AMF_CODEC_VP9_10BIT;
+	case AMF_STREAM_CODEC_ID_AV1:         return AV_CODEC_ID_AV1;
+    case AMF_STREAM_CODEC_ID_AV1_12BIT:   return (AVCodecID)AMF_CODEC_AV1_12BIT;
 
     }
     return AV_CODEC_ID_NONE;
 }
 //-------------------------------------------------------------------------------------------------
+bool AMF_STD_CALL  amf::ReadAVPacketInfo(AMFBuffer* pBuffer, AVPacket *pPacket)
+{
+    AMFPropertyStoragePtr pStorage(pBuffer);
+    if ((pStorage != NULL) && (pPacket != NULL))
+    {
+        if ((pStorage->GetProperty(L"FFMPEG:pts", &pPacket->pts) != AMF_OK)
+            || (pStorage->GetProperty(L"FFMPEG:dts", &pPacket->dts) != AMF_OK)
+            || (pStorage->GetProperty(L"FFMPEG:stream_index", &pPacket->stream_index) != AMF_OK)
+            || (pStorage->GetProperty(L"FFMPEG:flags", &pPacket->flags) != AMF_OK)
+            || (pStorage->GetProperty(L"FFMPEG:duration", &pPacket->duration) != AMF_OK)
+            || (pStorage->GetProperty(L"FFMPEG:pos", &pPacket->pos) != AMF_OK))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+//-------------------------------------------------------------------------------------------------
+void AMF_STD_CALL amf::AttachAVPacketInfo(AMFBuffer* pBuffer, const AVPacket* pPacket)
+{
+    AMFPropertyStoragePtr pStorage(pBuffer);
+
+    if ((pStorage != NULL) && (pPacket != NULL))
+    {
+        pStorage->SetProperty(L"FFMPEG:pts", AMFVariant(pPacket->pts));
+        pStorage->SetProperty(L"FFMPEG:dts", AMFVariant(pPacket->dts));
+        pStorage->SetProperty(L"FFMPEG:stream_index", AMFVariant(pPacket->stream_index));
+        pStorage->SetProperty(L"FFMPEG:flags", AMFVariant(pPacket->flags));
+        pStorage->SetProperty(L"FFMPEG:duration", AMFVariant(pPacket->duration));
+        pStorage->SetProperty(L"FFMPEG:pos", AMFVariant(pPacket->pos));
+    }
+}
+//-------------------------------------------------------------------------------------------------
+amf_pts AMF_STD_CALL  amf::GetPtsFromFFMPEG(AMFBuffer* pBuffer, AVFrame *pFrame)
+{
+    amf_pts retPts = 0;
+    if (pBuffer != NULL)
+    {
+        retPts = pBuffer->GetPts();
+
+        if (pFrame->pts >= 0)
+        {
+            amf_int num = 0;
+            amf_int den = 1;
+            amf_int64 startTime = 0;
+
+            if ((pBuffer->GetProperty(L"FFMPEG:time_base_num", &num) == AMF_OK)
+                && (pBuffer->GetProperty(L"FFMPEG:time_base_den", &den) == AMF_OK)
+                && (pBuffer->GetProperty(L"FFMPEG:start_time", &startTime) == AMF_OK))
+            {
+                AVRational tmp = { num, den };
+                retPts = (av_rescale_q((pFrame->pts - startTime), tmp, AMF_TIME_BASE_Q));
+            }
+        }
+
+        amf_pts firstPts = 0;
+        if (pBuffer->GetProperty(L"FFMPEG:FirstPtsOffset", &firstPts) == AMF_OK)
+        {
+            retPts -= firstPts;
+        }
+    }
+    return retPts;
+}
+//-------------------------------------------------------------------------------------------------
+amf::AMF_SURFACE_FORMAT AMF_STD_CALL amf::GetAMFSurfaceFormat(AVPixelFormat eFormat)
+{
+    switch (eFormat)
+    {
+    case AV_PIX_FMT_NONE:           return AMF_SURFACE_UNKNOWN;
+    case AV_PIX_FMT_NV12:           return AMF_SURFACE_NV12;
+    case AV_PIX_FMT_BGRA:           return AMF_SURFACE_BGRA;
+    case AV_PIX_FMT_ARGB:           return AMF_SURFACE_ARGB;
+    case AV_PIX_FMT_RGBA:           return AMF_SURFACE_RGBA;
+    case AV_PIX_FMT_GRAY8:          return AMF_SURFACE_GRAY8;
+    case AV_PIX_FMT_YUV420P:        return AMF_SURFACE_YUV420P;
+    case AV_PIX_FMT_BGR0:           return AMF_SURFACE_BGRA;
+    case AV_PIX_FMT_P010:           return AMF_SURFACE_P010;
+    case AV_PIX_FMT_YUV420P10:      return AMF_SURFACE_P010;
+    case AV_PIX_FMT_YUV420P12:      return AMF_SURFACE_P012;
+    case AV_PIX_FMT_P016:           return AMF_SURFACE_P016;
+    case AV_PIX_FMT_YUV420P16:      return AMF_SURFACE_P016;
+    case AV_PIX_FMT_YUV422P10LE:    return AMF_SURFACE_Y210;
+    case AV_PIX_FMT_YUV444P10LE:    return AMF_SURFACE_Y416;
+    case AV_PIX_FMT_YUYV422:        return AMF_SURFACE_YUY2;
+    case AV_PIX_FMT_UYVY422:        return AMF_SURFACE_UYVY;
+    case AV_PIX_FMT_GBRAP16:        return AMF_SURFACE_RGBA_F16;
+    case AV_PIX_FMT_RGBA64LE:       return AMF_SURFACE_RGBA_F16; //EXR
+    case AV_PIX_FMT_RGB48LE:        return AMF_SURFACE_RGBA_F16; //EXR
+    case AV_PIX_FMT_RGB48BE:        return AMF_SURFACE_RGBA_F16; //PNG
+    // Not supported by ffmpeg
+    //  case :                      return AMF_SURFACE_R10G10B10A2;
+    //  case :                      return AMF_SURFACE_AYUV;
+    //  case :                      return AMF_SURFACE_Y410;
+    //  case :                      return AMF_SURFACE_Y416;
+    }
+
+    return AMF_SURFACE_UNKNOWN;
+}
+//-------------------------------------------------------------------------------------------------
+AVPixelFormat AMF_STD_CALL amf::GetFFMPEGSurfaceFormat(amf::AMF_SURFACE_FORMAT eFormat)
+{
+    switch (eFormat)
+    {
+    case AMF_SURFACE_UNKNOWN:       return AV_PIX_FMT_NONE;
+    case AMF_SURFACE_NV12:          return AV_PIX_FMT_NV12;
+    case AMF_SURFACE_BGRA:          return AV_PIX_FMT_BGRA;
+    case AMF_SURFACE_ARGB:          return AV_PIX_FMT_ARGB;
+    case AMF_SURFACE_RGBA:          return AV_PIX_FMT_RGBA;
+    case AMF_SURFACE_GRAY8:         return AV_PIX_FMT_GRAY8;
+    case AMF_SURFACE_YUV420P:       return AV_PIX_FMT_YUV420P;
+    case AMF_SURFACE_YV12:          return AV_PIX_FMT_YUV420P;
+    case AMF_SURFACE_P010:          return AV_PIX_FMT_P010;
+    case AMF_SURFACE_P012:          return AV_PIX_FMT_YUV420P12;
+    case AMF_SURFACE_P016:          return AV_PIX_FMT_P016;
+    case AMF_SURFACE_YUY2:          return AV_PIX_FMT_YUYV422;
+    case AMF_SURFACE_UYVY:          return AV_PIX_FMT_UYVY422;
+    case AMF_SURFACE_RGBA_F16:      return AV_PIX_FMT_GBRAP16;
+
+    // Not supported by ffmpeg
+    //  case AMF_SURFACE_R10G10B10A2:   return;
+    //  case AMF_SURFACE_Y210:          return;
+    //  case AMF_SURFACE_AYUV:          return;
+    //  case AMF_SURFACE_Y410:          return;
+    //  case AMF_SURFACE_Y416:          return;
+    }
+
+    return AV_PIX_FMT_NONE;
+}
