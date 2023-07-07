@@ -591,21 +591,6 @@ void AMF_STD_CALL amf_virtual_free(void* ptr)
     free(ptr); // according to linux help memory allocated by memalign() must be freed by free()
 }
 //----------------------------------------------------------------------------------------
-void* AMF_STD_CALL amf_aligned_alloc(size_t count, size_t alignment)
-{
-#if defined(__APPLE__)
-    void* p = nullptr;
-    posix_memalign(&p, alignment, count);
-    return p;
-#else
-    return memalign(alignment, count);
-#endif
-}
-//----------------------------------------------------------------------------------------
-void AMF_STD_CALL amf_aligned_free(void* ptr)
-{
-    return free(ptr);
-}
 
 amf_handle AMF_STD_CALL amf_load_library(const wchar_t* filename)
 {

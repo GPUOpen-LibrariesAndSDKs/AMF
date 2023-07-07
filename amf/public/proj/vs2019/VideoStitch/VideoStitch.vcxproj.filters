@@ -22,15 +22,6 @@
     <Filter Include="common">
       <UniqueIdentifier>{02f1f550-82ac-4ae6-889b-fe2fddbaf79a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="runtime">
-      <UniqueIdentifier>{23658dc9-7f81-4be3-9cae-62a67632c47f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="runtime\src">
-      <UniqueIdentifier>{a3f484db-78f5-4e19-90d5-0307246590cf}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="runtime\src\common">
-      <UniqueIdentifier>{e430efb6-4198-4739-9196-1e291c340e46}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\public\include\core\Buffer.h">
@@ -172,9 +163,6 @@
     <ClCompile Include="..\..\..\src\components\VideoStitch\VideoStitchImpl.cpp" />
     <ClCompile Include="..\..\..\common\Linux\ThreadLinux.cpp">
       <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\runtime\src\common\windows\OSWrappersWindows.cpp">
-      <Filter>runtime\src\common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

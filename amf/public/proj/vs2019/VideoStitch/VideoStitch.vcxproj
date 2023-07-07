@@ -234,7 +234,6 @@
     <ClCompile Include="..\..\..\..\public\common\Thread.cpp" />
     <ClCompile Include="..\..\..\..\public\common\TraceAdapter.cpp" />
     <ClCompile Include="..\..\..\..\public\common\Windows\ThreadWindows.cpp" />
-    <ClCompile Include="..\..\..\..\runtime\src\common\windows\OSWrappersWindows.cpp" />
     <ClCompile Include="..\..\..\common\Linux\ThreadLinux.cpp" />
     <ClCompile Include="..\..\..\src\components\VideoStitch\DirectX11\StitchEngineDX11.cpp" />
     <ClCompile Include="..\..\..\src\components\VideoStitch\HistogramImpl.cpp" />

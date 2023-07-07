@@ -52,6 +52,10 @@ using namespace DirectX;
 #define ALPHA_BLEND_ENABLED 1
 #define HIST_SIZE   256
 
+inline static amf_uint32 AlignValue(amf_uint32 value, amf_uint32 alignment)
+{
+    return ((value + (alignment - 1)) & ~(alignment - 1));
+}
 
 extern XMVECTOR MakeSphere(XMVECTOR src, float centerX,float centerY,float centerZ, float newRadius);
 

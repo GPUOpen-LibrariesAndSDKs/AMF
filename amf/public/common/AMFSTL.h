@@ -62,6 +62,8 @@ extern "C"
     // allocator
     void* AMF_STD_CALL amf_alloc(amf_size count);
     void AMF_STD_CALL amf_free(void* ptr);
+    void* AMF_STD_CALL amf_aligned_alloc(size_t count, size_t alignment);
+    void AMF_STD_CALL amf_aligned_free(void* ptr);
 #if defined(__cplusplus)
 }
 #endif

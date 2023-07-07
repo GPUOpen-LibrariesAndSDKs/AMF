@@ -34,12 +34,12 @@
 #include "public/include/core/Trace.h"
 #include "public/include/core/Context.h"
 #include "public/common/InterfaceImpl.h"
+#include "public/common/AMFSTL.h"
 #include "public/include/components/VideoStitch.h"
 #include "HistogramImpl.h"
 #include <DirectXMath.h>
 
 #include <vector>
-#include <runtime/include/core/Typedefs.h>
 
 //#define DEBUG_TRANSPARENT
 namespace amf
