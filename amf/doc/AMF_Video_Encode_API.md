@@ -1446,13 +1446,8 @@ Sets the number of slices per frame.
 **Values:**
 `0`, `1`, `2`, `3`
 
-**Default Value associated with usages:**
-   - Transcoding: `3`
-   - Ultra low latency: `0`
-   - Low latency: `0`
-   - Webcam: `0`
-   - HQ: `3`
-   - HQLL: `0`
+**Default Value:**
+`0`
 
 **Description:**
 Sets the number of consecutive B-pictures in a GOP.  BPicturesPattern = `0` indicates that B-pictures are not used. This feature is not supported by VCE 1.0.
