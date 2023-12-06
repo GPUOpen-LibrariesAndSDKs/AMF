@@ -14,6 +14,7 @@
 #include "public/include/components/VideoEncoderHEVC.h"
 #include "public/include/components/VideoEncoderAV1.h"
 #include "public/common/PropertyStorageExImpl.h"
+#include "public/common/Thread.h"
 #include "public/include/core/Context.h"
 #include "public/include/core/Compute.h"
 #include <memory>
@@ -80,8 +81,32 @@ namespace amf
     protected:
         virtual AMF_RESULT  AMF_STD_CALL  InitializeFrame(AMFSurface* pInSurface, AVFrame& avFrame);
         AMF_RESULT  AMF_STD_CALL  CodecContextInit(const wchar_t* name);
+        virtual const char *AMF_STD_CALL GetEncoderName() = 0;
+        virtual AMF_RESULT AMF_STD_CALL SetEncoderOptions() = 0;
 
     protected:
+
+        // define the thread class that will send frames
+        // in SubmitInput, we have to convert the frame
+        // to host memory before send to ffmpeg encoder,
+        // so a separate thread allows us to send frame
+        // to ffmpeg and can copy the next incomming frame
+        // to host memory at the same time.
+        amf::AMFQueue<amf::AMFSurfacePtr>    m_SendQueue;
+
+        class SendThread : public amf::AMFQueueThread< amf::AMFSurfacePtr, int>
+        {
+        public:
+            SendThread(BaseEncoderFFMPEGImpl* pHost, amf::AMFQueue<amf::AMFSurfacePtr>* pSendQueue) :
+                amf::AMFQueueThread< amf::AMFSurfacePtr, int>(pSendQueue, nullptr), m_pEncoderFFMPEG(pHost)
+            { }
+            virtual bool Process(amf_ulong& ulID, amf::AMFSurfacePtr& inData, int& outData) override;
+        protected:
+            BaseEncoderFFMPEGImpl* m_pEncoderFFMPEG;
+            mutable AMFEvent       m_EventEOF;
+        };
+        SendThread              m_SendThread;
+
       mutable AMFCriticalSection        m_Sync;
 
       // in QueryOutput, we want to make sure that we match the 
@@ -104,10 +129,13 @@ namespace amf
         AVCodecContext*                 m_pCodecContext;
         AVCodecID                       m_CodecID;
         AMFRate                         m_FrameRate;
-        std::list<AMFTransitFrame>      m_inputData;
-        std::list<amf_pts>              m_inputpts; // contains monotonically increasing PTS in decode order
+
+        mutable AMFCriticalSection      m_SyncAVCodec;
+        amf_list<AMFTransitFrame>       m_inputData;
+        amf_list<amf_pts>               m_inputpts; // contains monotonically increasing PTS in decode order
+
         amf_pts                         m_firstFramePts;
-        
+
         bool                            m_isEOF;
 
         amf_uint64                      m_videoFrameSubmitCount;

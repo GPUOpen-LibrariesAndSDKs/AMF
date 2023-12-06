@@ -90,6 +90,14 @@ namespace amf
         AMFVulkanSync       Sync;               // To sync on GPU
     } AMFVulkanSurface;
 
+    typedef struct AMFVulkanSurface1
+    {
+        amf_size            cbSizeof;           // sizeof(AMFVulkanSurface)
+        void*               pNext;              // reserved for extensions
+        // surface properties
+        amf_uint32          eTiling;            // VkImageTiling
+    } AMFVulkanSurface1;
+
     typedef struct AMFVulkanView
     {
         amf_size            cbSizeof;           // sizeof(AMFVulkanView)

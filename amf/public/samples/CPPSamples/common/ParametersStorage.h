@@ -75,6 +75,8 @@ AMF_RESULT ParamConverterStaticScene(const std::wstring& value, amf::AMFVariant&
 AMF_RESULT ParamConverterActivityType(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterCAQStrength(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterPAQMode(const std::wstring& value, amf::AMFVariant& valueOut);
+AMF_RESULT ParamConverterFRCAlgorithm(const std::wstring& value, amf::AMFVariant& valueOut);
+AMF_RESULT ParamConverterFRCSnapshotMode(const std::wstring& value, amf::AMFVariant& valueOut);
 
 std::wstring AddIndexToPath(const std::wstring& path, amf_int32 index);
 

@@ -72,7 +72,7 @@ class DecPollingThread : public PollingThread
 public:
     DecPollingThread(amf::AMFContext* pContext, amf::AMFComponent* pDecoder, const wchar_t* pFileName);
 protected:
-    void SetUp() override;
+    virtual bool Init() override;
     void ProcessData(amf::AMFData* pData) override;
     void PrintResults() override;
 
@@ -219,7 +219,17 @@ int main(int argc, char* argv[])
     }
     // drain decoder queue 
     res = decoder->Drain();
-    thread.WaitForStop();
+
+    // Need to request stop before waiting for stop
+    if (thread.RequestStop() == false)
+    {
+        AMFTraceError(AMF_FACILITY, L"thread.RequestStop() Failed");
+    }
+
+    if (thread.WaitForStop() == false)
+    {
+        AMFTraceError(AMF_FACILITY, L"thread.WaitForStop() Failed");
+    }
 
     switch (memoryTypeOut)
     {
@@ -251,10 +261,12 @@ DecPollingThread::DecPollingThread(amf::AMFContext* pContext, amf::AMFComponent*
     : PollingThread(pContext, pDecoder, pFileName, bWriteToFile), m_ConvertDuration(0)
 {}
 
-void DecPollingThread::SetUp()
+bool DecPollingThread::Init()
 {
-    PollingThread::SetUp();
+    bool ret = PollingThread::Init();
+
     m_ConvertDuration = 0;
+    return ret;
 }
 
 void DecPollingThread::ProcessData(amf::AMFData* pData)

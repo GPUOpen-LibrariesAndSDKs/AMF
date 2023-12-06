@@ -381,6 +381,7 @@ AMF_RESULT AudioPresenterLinux::Flush()
 {
     amf::AMFLock lock(&m_cs);
     Reset();
+    AudioPresenter::Flush();
     return AMF_OK;
 }
 

@@ -612,6 +612,7 @@ This command encodes `400` frames through D3D renderer and creates an output fil
 | LOWLATENCY_MODE                         | amf_bool  |
 | PRE_ANALYSIS_ENABLE                     | amf_bool  |
 | MAX_NUM_TEMPORAL_LAYERS                 | amf_int64 |
+| NOMINAL_RANGE                           | amf_bool  |
 | ENABLE_SMART_ACCESS_VIDEO               | amf_bool  |
 
 <p align="center">
@@ -787,6 +788,20 @@ Some encoder properties require this property to be set. Enables the pre-analysi
 
 **Description:**
 Sets the maximum number of temporal layers. It shall not be exceeded by the number of temporal layers. The maximum number of temporal layers supported is determined by the corresponding encoder capability.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE`
+
+**Values:**
+`AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE_STUDIO`, `AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE_FULL`
+
+**Default Value:**
+`AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE_STUDIO`
+
+**Description:**
+Sets the minimum and maximum pixel values that can be encoded. The nominal range refers to the range of pixel values that represent the full dynamic range of a video signal.
 
 ---
 

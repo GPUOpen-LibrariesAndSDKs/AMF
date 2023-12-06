@@ -173,6 +173,13 @@ AMF_RESULT AMF_STD_CALL AV1EncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT format, am
     //Libaom-av1 supported pixel formats : yuv420p yuv422p yuv444p gbrp yuv420p10le yuv422p10le yuv444p10le yuv420p12le yuv422p12le yuv444p12le gbrp10le gbrp12le gray gray10le gray12le
     AMF_RETURN_IF_FAILED(BaseEncoderFFMPEGImpl::Init(format, width, height));
 
+    if (strcasecmp(m_pCodecContext->codec->name, "libaom-av1") != 0)
+    {
+        AMFTraceError(AMF_FACILITY, L"H264EncoderFFMPEGImpl::Init() - Failed to find FFmpeg libaom-av1 encoder");
+        Terminate();
+        return AMF_NOT_SUPPORTED;
+    }
+
     //
     // we've created the correct FFmpeg information, now
     // it's time to update the component properties with
@@ -293,5 +300,15 @@ AMF_RESULT AMF_STD_CALL  AV1EncoderFFMPEGImpl::InitializeFrame(AMFSurface* pInSu
     BaseEncoderFFMPEGImpl::InitializeFrame(pInSurface, avFrame);
 
 
+    return AMF_OK;
+}
+
+const char *AMF_STD_CALL AV1EncoderFFMPEGImpl::GetEncoderName()
+{
+    return "libaom-av1";
+}
+
+AMF_RESULT AMF_STD_CALL AV1EncoderFFMPEGImpl::SetEncoderOptions(void)
+{
     return AMF_OK;
 }

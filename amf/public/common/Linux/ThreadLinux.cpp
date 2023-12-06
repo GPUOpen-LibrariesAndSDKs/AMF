@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -58,6 +58,7 @@
 #include <unistd.h>
 #include <dlfcn.h>
 #include <sys/time.h>
+#include <fstream>
 
 #if !defined(__APPLE__)
 #include <malloc.h>
@@ -132,6 +133,10 @@ amf_handle AMF_STD_CALL amf_create_critical_section()
 //----------------------------------------------------------------------------------------
 bool AMF_STD_CALL amf_delete_critical_section(amf_handle cs)
 {
+    if(cs == NULL)
+    {
+        return false;
+    }
     pthread_mutex_t* mutex = (pthread_mutex_t*)cs;
     int err = pthread_mutex_destroy(mutex);
     delete mutex;
@@ -140,17 +145,29 @@ bool AMF_STD_CALL amf_delete_critical_section(amf_handle cs)
 //----------------------------------------------------------------------------------------
 bool AMF_STD_CALL amf_enter_critical_section(amf_handle cs)
 {
+    if(cs == NULL)
+    {
+        return false;
+    }
     pthread_mutex_t* mutex = (pthread_mutex_t*)cs;
     return pthread_mutex_lock(mutex) == 0;
 }
 //----------------------------------------------------------------------------------------
 bool AMF_CDECL_CALL amf_wait_critical_section(amf_handle cs, amf_ulong ulTimeout)
 {
+    if(cs == NULL)
+    {
+        return false;
+    }
     return amf_wait_for_mutex(cs, ulTimeout);
 }
 //----------------------------------------------------------------------------------------
 bool AMF_STD_CALL amf_leave_critical_section(amf_handle cs)
 {
+    if(cs == NULL)
+    {
+        return false;
+    }
     pthread_mutex_t* mutex = (pthread_mutex_t*)cs;
     return pthread_mutex_unlock(mutex) == 0;
 }
@@ -194,6 +211,10 @@ amf_handle AMF_STD_CALL amf_create_event(bool initially_owned, bool manual_reset
 //----------------------------------------------------------------------------------------
 bool AMF_STD_CALL amf_delete_event(amf_handle hevent)
 {
+    if(hevent == NULL)
+    {
+        return false;
+    }
     MyEvent* event = (MyEvent*)hevent;
     int err1 = pthread_mutex_destroy(&event->m_mutex);
     int err2 = pthread_cond_destroy(&event->m_cond);
@@ -203,6 +224,10 @@ bool AMF_STD_CALL amf_delete_event(amf_handle hevent)
 //----------------------------------------------------------------------------------------
 bool AMF_STD_CALL amf_set_event(amf_handle hevent)
 {
+    if(hevent == NULL)
+    {
+        return false;
+    }
     MyEvent* event = (MyEvent*)hevent;
     pthread_mutex_lock(&event->m_mutex);
     event->m_triggered = true;
@@ -214,6 +239,10 @@ bool AMF_STD_CALL amf_set_event(amf_handle hevent)
 //----------------------------------------------------------------------------------------
 bool AMF_STD_CALL amf_reset_event(amf_handle hevent)
 {
+    if(hevent == NULL)
+    {
+        return false;
+    }
     MyEvent* event = (MyEvent*)hevent;
     pthread_mutex_lock(&event->m_mutex);
     event->m_triggered = false;
@@ -224,6 +253,10 @@ bool AMF_STD_CALL amf_reset_event(amf_handle hevent)
 //----------------------------------------------------------------------------------------
 static bool AMF_STD_CALL amf_wait_for_event_int(amf_handle hevent, unsigned long timeout, bool bTimeoutErr)
 {
+    if(hevent == NULL)
+    {
+        return false;
+    }
     bool ret = true;
     int err = 0;
     MyEvent* event = (MyEvent*)hevent;
@@ -313,6 +346,11 @@ amf_handle AMF_STD_CALL amf_create_mutex(bool initially_owned, const wchar_t* na
     pthread_mutex_t mutex_tmp = PTHREAD_MUTEX_INITIALIZER;
     *mutex = mutex_tmp;
 
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(mutex, &attr);
+
     if(initially_owned)
     {
         pthread_mutex_lock(mutex);
@@ -328,6 +366,10 @@ amf_handle AMF_STD_CALL amf_open_mutex(const wchar_t* pName)
 //----------------------------------------------------------------------------------------
 bool AMF_STD_CALL amf_delete_mutex(amf_handle hmutex)
 {
+    if(hmutex == NULL)
+    {
+        return false;
+    }
     pthread_mutex_t* mutex = (pthread_mutex_t*)hmutex;
     int err = pthread_mutex_destroy(mutex);
     delete mutex;
@@ -388,6 +430,10 @@ int pthread_mutex_timedlock1(pthread_mutex_t* mutex, const struct timespec* time
 //----------------------------------------------------------------------------------------
 bool AMF_STD_CALL amf_wait_for_mutex(amf_handle hmutex, unsigned long timeout)
 {
+    if(hmutex == NULL)
+    {
+        return false;
+    }
     pthread_mutex_t* mutex = (pthread_mutex_t*)hmutex;
     if(timeout == AMF_INFINITE)
     {
@@ -419,8 +465,12 @@ bool AMF_STD_CALL amf_wait_for_mutex(amf_handle hmutex, unsigned long timeout)
 //----------------------------------------------------------------------------------------
 bool AMF_STD_CALL amf_release_mutex(amf_handle hmutex)
 {
+    if(hmutex == NULL)
+    {
+        return false;
+    }
     pthread_mutex_t* mutex = (pthread_mutex_t*)hmutex;
-    return pthread_mutex_unlock(mutex) != 0;
+    return pthread_mutex_unlock(mutex) == 0;
 }
 
 //----------------------------------------------------------------------------------------
@@ -442,11 +492,11 @@ amf_handle AMF_STD_CALL amf_create_semaphore(amf_long iInitCount, amf_long iMaxC
 //----------------------------------------------------------------------------------------
 bool AMF_STD_CALL amf_delete_semaphore(amf_handle hsemaphore)
 {
-    bool ret = true;
     if(hsemaphore == NULL)
     {
-        return true;
+        return false;
     }
+    bool ret = true;
     sem_t* semaphore = (sem_t*)hsemaphore;
     ret = (0==sem_destroy(semaphore)) ? 1:0;
     delete semaphore;
@@ -495,7 +545,7 @@ bool AMF_STD_CALL amf_release_semaphore(amf_handle hsemaphore, amf_long iCount, 
 {
     if(hsemaphore == NULL)
     {
-        return true;
+        return false;
     }
     sem_t* semaphore = (sem_t*)hsemaphore;
 
@@ -508,7 +558,7 @@ bool AMF_STD_CALL amf_release_semaphore(amf_handle hsemaphore, amf_long iCount, 
 
     for(int i = 0; i < iCount; i++)
     {
-        sem_post(semaphore);
+        sem_post(semaphore); 
     }
     return true;
 }
@@ -665,6 +715,40 @@ amf_pts AMF_STD_CALL amf_high_precision_clock()
     timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
     return ts.tv_sec * 10000000LL + ts.tv_nsec / 100.; //to nanosec
+}
+//---------------------------------------------------------------------------------------
+// Returns number of physical cores
+amf_int32 AMF_STD_CALL amf_get_cpu_cores()
+{
+    // NOTE: get_nprocs is preffered way to get online cores on linux but it will
+    // return number of logical cores. Uncomment line bellow if that's the behaviour needed
+    //return get_nprocs();
+
+    const char CPUINFO_CORES_COUNT[] = "cpu cores";
+
+    std::ifstream cpuinfo("/proc/cpuinfo");
+    std::string line;
+
+    while (std::getline(cpuinfo, line))
+    {
+        if (line.compare(0, strlen(CPUINFO_CORES_COUNT), CPUINFO_CORES_COUNT) == 0)
+        {
+            size_t pos = line.rfind(':') + 2;
+            if (pos == std::string::npos)
+            {
+                continue;
+            }
+
+            std::string tmp = line.substr(pos);
+            const char* value = tmp.c_str();
+            int cores_online = std::atoi(value);
+            // Make sure we always return at least 1
+            return std::max(1, cores_online);
+        }
+    }
+
+    // Failure, return default
+    return 1;
 }
 //--------------------------------------------------------------------------------
 // the end

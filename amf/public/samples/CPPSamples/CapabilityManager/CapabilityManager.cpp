@@ -33,7 +33,9 @@
 
 
 #include "public/common/AMFFactory.h"
-#include "public/common/CPUCaps.h"
+#if !defined(__aarch64__) && !defined(__arm__)
+#include "public/common/CPUCaps.h" // Doesn't work on aarch64 arm.
+#endif
 #include "public/common/AMFSTL.h"
 #include "public/include/components/VideoDecoderUVD.h"
 #include "public/include/components/VideoEncoderVCE.h"
@@ -488,10 +490,12 @@ bool QueryConverterCaps(amf::AMFContext* pContext)
     return result;
 }
 
+#if !defined(__aarch64__) && !defined(__arm__)
 const InstructionSet::InstructionSet_Internal InstructionSet::CPU_Rep;
-
+#endif
 void QueryCPUForSSE()
 {
+    #if !defined(__aarch64__) && !defined(__arm__)
     std::wcout << L"\t\tSSE capabilities:" << std::endl;
 
     if (InstructionSet::SSE() == true)
@@ -522,10 +526,13 @@ void QueryCPUForSSE()
     {
         std::wcout << L"\t\t\tSSE4a" << std::endl;
     }
+    #endif
+
 }
 
 void QueryCPUForAVX()
 {
+    #if !defined(__aarch64__) && !defined(__arm__)
     std::wcout << L"\t\tAVX capabilities:" << std::endl;
 
     if (InstructionSet::AVX() == true)
@@ -552,10 +559,12 @@ void QueryCPUForAVX()
     {
         std::wcout << L"\t\t\tAVX-512PF" << std::endl;
     }
+    #endif
 }
 
 void QueryCPUCaps()
 {
+    #if !defined(__aarch64__) && !defined(__arm__)
     std::wcout << std::endl << L"Querying CPU capabilities..." << std::endl;
 
     std::wstring vendor = amf::amf_from_utf8_to_unicode(amf_string(InstructionSet::Vendor().c_str())).c_str();
@@ -566,6 +575,7 @@ void QueryCPUCaps()
     std::wcout << L"\tSupported Instruction Sets:" << std::endl;
     QueryCPUForSSE();
     QueryCPUForAVX();
+    #endif
 }
 
 #if defined(_WIN32)

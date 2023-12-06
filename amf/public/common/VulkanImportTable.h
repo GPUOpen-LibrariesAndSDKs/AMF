@@ -229,6 +229,7 @@ struct VulkanImportTable
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
     PFN_vkCreateAndroidSurfaceKHR  vkCreateAndroidSurfaceKHR;
 #endif
+    PFN_vkGetMemoryHostPointerPropertiesEXT vkGetMemoryHostPointerPropertiesEXT;
 
     PFN_vkCreateDebugReportCallbackEXT  vkCreateDebugReportCallbackEXT;
     PFN_vkDebugReportMessageEXT         vkDebugReportMessageEXT;

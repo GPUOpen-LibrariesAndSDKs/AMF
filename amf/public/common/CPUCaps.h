@@ -40,7 +40,6 @@
 #if defined(_WIN32)
 #include <intrin.h>
 #else
-#include <cpuid.h>
 #include <stdint.h>
 #endif
 
@@ -96,6 +95,8 @@ public:
 	static bool AVX512ER(void) { return CPU_Rep.f_7_EBX_[27]; }
 	static bool AVX512CD(void) { return CPU_Rep.f_7_EBX_[28]; }
 	static bool SHA(void) { return CPU_Rep.f_7_EBX_[29]; }
+	static bool AVX512BW(void) { return CPU_Rep.f_7_EBX_[30]; }
+	static bool AVX512VL(void) { return CPU_Rep.f_7_EBX_[31]; }
 
 	static bool PREFETCHWT1(void) { return CPU_Rep.f_7_ECX_[0]; }
 

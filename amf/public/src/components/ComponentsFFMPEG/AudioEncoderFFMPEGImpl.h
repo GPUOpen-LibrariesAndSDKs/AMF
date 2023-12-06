@@ -126,7 +126,7 @@ namespace amf
 
         std::list<AMFTransitFrame>    m_inputData;
         amf_pts                       m_firstFramePts;
-        amf_pts                       m_samplesPacked;
+        amf_int64                     m_firstFFMPEGPts;
 
         // it is possible we need to combine/split input 
         // frames to get them to what the encoder needs

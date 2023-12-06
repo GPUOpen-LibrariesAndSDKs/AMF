@@ -96,7 +96,7 @@ AMF_RESULT VideoRenderVulkan::Init(amf_handle hWnd, amf_handle hDisplay, bool bF
 
     CHECK_RETURN(m_width != 0 && m_height != 0 && format != VK_FORMAT_UNDEFINED, AMF_FAIL, L"Bad width/height: width=" << m_width << L" height=" << m_height << L" format" << amf::AMFSurfaceGetFormatName(GetFormat()));
 
-    res = SwapChainVulkan::Init(hWnd, hDisplay, bFullScreen, m_width, m_height, format);
+    res = SwapChainVulkan::Init(hWnd, hDisplay, nullptr, m_width, m_height, GetFormat(), bFullScreen);
     CHECK_AMF_ERROR_RETURN(res, L"SwapChainVulkan::Init() failed");
 
     res = CreatePipelineInput();
@@ -117,21 +117,20 @@ AMF_RESULT VideoRenderVulkan::Init(amf_handle hWnd, amf_handle hDisplay, bool bF
 
 AMF_RESULT VideoRenderVulkan::Terminate()
 {
-    if(m_hVulkanDev == NULL)
+    if(m_pVulkanDevice == NULL)
     {
         return AMF_OK;
     }
-    amf::AMFVulkanDevice* pVulkanDev = (amf::AMFVulkanDevice*)m_hVulkanDev;    
 
     //VkSampler						m_hTextureSampler;
     if(m_hDescriptorSet != NULL)
     {
-		GetVulkan()->vkFreeDescriptorSets(pVulkanDev->hDevice, m_hDescriptorPool, 1, &m_hDescriptorSet);
+		GetVulkan()->vkFreeDescriptorSets(m_pVulkanDevice->hDevice, m_hDescriptorPool, 1, &m_hDescriptorSet);
         m_hDescriptorPool = NULL;
     }
 	if (m_hDescriptorPool != NULL)
 	{
-		GetVulkan()->vkDestroyDescriptorPool(pVulkanDev->hDevice, m_hDescriptorPool, nullptr);
+		GetVulkan()->vkDestroyDescriptorPool(m_pVulkanDevice->hDevice, m_hDescriptorPool, nullptr);
         m_hDescriptorPool = NULL;
 	}
     DestroyBuffer(m_VertexBuffer);
@@ -141,22 +140,22 @@ AMF_RESULT VideoRenderVulkan::Terminate()
 
 	if (m_hPipeline != NULL)
 	{
-		GetVulkan()->vkDestroyPipeline(pVulkanDev->hDevice, m_hPipeline, nullptr);
+		GetVulkan()->vkDestroyPipeline(m_pVulkanDevice->hDevice, m_hPipeline, nullptr);
         m_hPipeline = NULL;
 	}
 	if (m_hPipelineLayout != NULL)
 	{
-		GetVulkan()->vkDestroyPipelineLayout(pVulkanDev->hDevice, m_hPipelineLayout, nullptr);
+		GetVulkan()->vkDestroyPipelineLayout(m_pVulkanDevice->hDevice, m_hPipelineLayout, nullptr);
         m_hPipelineLayout = NULL;
 	}
     if (m_hUniformLayout != NULL)
     {
-		GetVulkan()->vkDestroyDescriptorSetLayout(pVulkanDev->hDevice, m_hUniformLayout, nullptr);
+		GetVulkan()->vkDestroyDescriptorSetLayout(m_pVulkanDevice->hDevice, m_hUniformLayout, nullptr);
         m_hUniformLayout = NULL;
     }
     if(m_CommandBuffers.size() > 0)
     {
-		GetVulkan()->vkFreeCommandBuffers(pVulkanDev->hDevice, m_hCommandPool, (uint32_t)m_CommandBuffers.size(), m_CommandBuffers.data());
+		GetVulkan()->vkFreeCommandBuffers(m_pVulkanDevice->hDevice, m_hCommandPool, (uint32_t)m_CommandBuffers.size(), m_CommandBuffers.data());
     }
     m_CommandBuffers.clear();
 
@@ -173,8 +172,6 @@ AMF_RESULT VideoRenderVulkan::CreatePipelineInput()
 }
 AMF_RESULT VideoRenderVulkan::CreateDescriptorSetLayout()
 {
-    amf::AMFVulkanDevice* pVulkanDev = (amf::AMFVulkanDevice*)m_hVulkanDev;    
-
 	VkResult res = VK_INCOMPLETE;
 
 	VkDescriptorSetLayoutBinding MVPLayoutBinding = {};
@@ -199,7 +196,7 @@ AMF_RESULT VideoRenderVulkan::CreateDescriptorSetLayout()
 		layoutCreateInfo.bindingCount = (uint32_t)bindings.size();
 		layoutCreateInfo.pBindings = bindings.data();
 
-	res = GetVulkan()->vkCreateDescriptorSetLayout(pVulkanDev->hDevice, &layoutCreateInfo, nullptr, &m_hUniformLayout);
+	res = GetVulkan()->vkCreateDescriptorSetLayout(m_pVulkanDevice->hDevice, &layoutCreateInfo, nullptr, &m_hUniformLayout);
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkCreateDescriptorSetLayout() failed with error=" << res);
 
     return AMF_OK;
@@ -240,8 +237,6 @@ static AMF_RESULT LoadShaderFile(const wchar_t* pFileName, AMFByteArray &data)
 }
 AMF_RESULT VideoRenderVulkan::CreatePipeline()
 {
-    amf::AMFVulkanDevice* pVulkanDev = (amf::AMFVulkanDevice*)m_hVulkanDev;    
-
 	VkResult res = VK_INCOMPLETE;
     AMF_RESULT resAMF = AMF_OK;
 
@@ -269,10 +264,10 @@ AMF_RESULT VideoRenderVulkan::CreatePipeline()
 		fragModuleCreateInfo.codeSize = fraqShader.GetSize();
 		fragModuleCreateInfo.pCode = (uint32_t*)fraqShader.GetData();
 
-	res = GetVulkan()->vkCreateShaderModule(pVulkanDev->hDevice, &vertModuleCreateInfo, nullptr, &vertModule);
+	res = GetVulkan()->vkCreateShaderModule(m_pVulkanDevice->hDevice, &vertModuleCreateInfo, nullptr, &vertModule);
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkCreateShaderModule(" << pCubeShaderFileNameVert << L") failed with error=" << res);
 
-	res = GetVulkan()->vkCreateShaderModule(pVulkanDev->hDevice, &fragModuleCreateInfo, nullptr, &fragModule);
+	res = GetVulkan()->vkCreateShaderModule(m_pVulkanDevice->hDevice, &fragModuleCreateInfo, nullptr, &fragModule);
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkCreateShaderModule(" << pCubeShaderFileNameFraq << L") failed with error=" << res);
 
 	VkPipelineShaderStageCreateInfo vertStageInfo = {};
@@ -325,15 +320,15 @@ AMF_RESULT VideoRenderVulkan::CreatePipeline()
 	VkViewport viewport = {};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = (float)m_SwapChainExtent.width;
-		viewport.height = (float)m_SwapChainExtent.height;
+		viewport.width = (float)m_size.width;
+		viewport.height = (float)m_size.height;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
 	VkRect2D scissor = {};
 		scissor.offset = { 0, 0 };
-		scissor.extent.width = m_SwapChainExtent.width;
-		scissor.extent.height = m_SwapChainExtent.height;
+		scissor.extent.width = m_size.width;
+		scissor.extent.height = m_size.height;
 
 	VkPipelineViewportStateCreateInfo viewportState = {};
 		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -388,7 +383,7 @@ AMF_RESULT VideoRenderVulkan::CreatePipeline()
 		depthStencilState.front = depthStencilState.back;
 
 
-	res = GetVulkan()->vkCreatePipelineLayout(pVulkanDev->hDevice, &pipelineLayoutInfo, nullptr, &m_hPipelineLayout);
+	res = GetVulkan()->vkCreatePipelineLayout(m_pVulkanDevice->hDevice, &pipelineLayoutInfo, nullptr, &m_hPipelineLayout);
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkCreatePipelineLayout() failed with error=" << res);
 
 	VkGraphicsPipelineCreateInfo pipelineInfo = {};
@@ -407,19 +402,17 @@ AMF_RESULT VideoRenderVulkan::CreatePipeline()
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-	res = GetVulkan()->vkCreateGraphicsPipelines(pVulkanDev->hDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_hPipeline);
+	res = GetVulkan()->vkCreateGraphicsPipelines(m_pVulkanDevice->hDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_hPipeline);
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkCreateGraphicsPipelines() failed with error=" << res);
 	//cleanup
-	GetVulkan()->vkDestroyShaderModule(pVulkanDev->hDevice, vertModule, nullptr);
-	GetVulkan()->vkDestroyShaderModule(pVulkanDev->hDevice, fragModule, nullptr);
+	GetVulkan()->vkDestroyShaderModule(m_pVulkanDevice->hDevice, vertModule, nullptr);
+	GetVulkan()->vkDestroyShaderModule(m_pVulkanDevice->hDevice, fragModule, nullptr);
 
     return AMF_OK;
 }
 
 AMF_RESULT VideoRenderVulkan::CreateCommands()
 {
-    amf::AMFVulkanDevice* pVulkanDev = (amf::AMFVulkanDevice*)m_hVulkanDev;    
-
 	VkResult res = VK_INCOMPLETE;
     AMF_RESULT resAMF = AMF_OK;
 
@@ -430,7 +423,7 @@ AMF_RESULT VideoRenderVulkan::CreateCommands()
 	resAMF = CreateDescriptorSetPool();
     CHECK_AMF_ERROR_RETURN(resAMF, L"CreateDescriptorSetPool() failed");
 
-    m_CommandBuffers.resize(m_BackBuffers.size());
+    m_CommandBuffers.resize(GetBackBufferCount());
 
 	VkCommandBufferAllocateInfo bufferAllocInfo = {};
 		bufferAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -438,12 +431,12 @@ AMF_RESULT VideoRenderVulkan::CreateCommands()
 		bufferAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		bufferAllocInfo.commandBufferCount = (uint32_t)m_CommandBuffers.size();
 
-	res = GetVulkan()->vkAllocateCommandBuffers(pVulkanDev->hDevice, &bufferAllocInfo, m_CommandBuffers.data());
+	res = GetVulkan()->vkAllocateCommandBuffers(m_pVulkanDevice->hDevice, &bufferAllocInfo, m_CommandBuffers.data());
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkAllocateCommandBuffers() failed with error=" << res);
 
 	for (uint32_t i = 0; i < m_CommandBuffers.size(); i++)
     {
-        BackBuffer &backBuffer = m_BackBuffers[i];
+        BackBufferVulkan* pBackBuffer = (BackBufferVulkan*)m_pBackBuffers[i].get();
         VkCommandBuffer commandBuffer = m_CommandBuffers[i];
 
 		VkCommandBufferBeginInfo beginInfo = {};
@@ -456,10 +449,10 @@ AMF_RESULT VideoRenderVulkan::CreateCommands()
 		VkRenderPassBeginInfo renderPassInfo = {};
 			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			renderPassInfo.renderPass = m_hRenderPass;
-			renderPassInfo.framebuffer = backBuffer.m_hFrameBuffer;
+			renderPassInfo.framebuffer = pBackBuffer->m_hFrameBuffer;
 			renderPassInfo.renderArea.offset = { 0, 0 };
-			renderPassInfo.renderArea.extent.width = m_SwapChainExtent.width;
-			renderPassInfo.renderArea.extent.height = m_SwapChainExtent.height;
+			renderPassInfo.renderArea.extent.width = m_size.width;
+			renderPassInfo.renderArea.extent.height = m_size.height;
 			renderPassInfo.clearValueCount = 1;
 			renderPassInfo.pClearValues = &clearColor;
 
@@ -516,8 +509,6 @@ AMF_RESULT VideoRenderVulkan::CreateVertexBuffers()
 }
 AMF_RESULT VideoRenderVulkan::CreateDescriptorSetPool()
 {
-    amf::AMFVulkanDevice* pVulkanDev = (amf::AMFVulkanDevice*)m_hVulkanDev;    
-
 	VkResult res = VK_INCOMPLETE;
 
 	VkDescriptorPoolSize poolSize = {};
@@ -536,7 +527,7 @@ AMF_RESULT VideoRenderVulkan::CreateDescriptorSetPool()
 		poolCreateInfo.maxSets = 1;
         poolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
-	res = GetVulkan()->vkCreateDescriptorPool(pVulkanDev->hDevice, &poolCreateInfo, nullptr, &m_hDescriptorPool);
+	res = GetVulkan()->vkCreateDescriptorPool(m_pVulkanDevice->hDevice, &poolCreateInfo, nullptr, &m_hDescriptorPool);
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkCreateDescriptorPool() failed with error=" << res);
 
 	VkDescriptorSetLayout layouts[] = { m_hUniformLayout };
@@ -546,7 +537,7 @@ AMF_RESULT VideoRenderVulkan::CreateDescriptorSetPool()
 		allocInfo.descriptorSetCount = 1;
 		allocInfo.pSetLayouts = layouts;
 
-	res = GetVulkan()->vkAllocateDescriptorSets(pVulkanDev->hDevice, &allocInfo, &m_hDescriptorSet);
+	res = GetVulkan()->vkAllocateDescriptorSets(m_pVulkanDevice->hDevice, &allocInfo, &m_hDescriptorSet);
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkAllocateDescriptorSets() failed with error=" << res);
 
 	VkDescriptorBufferInfo bufferInfo = {};
@@ -565,15 +556,13 @@ AMF_RESULT VideoRenderVulkan::CreateDescriptorSetPool()
 
     std::vector<VkWriteDescriptorSet> descriptors = { descriptorWrite };
 
-	GetVulkan()->vkUpdateDescriptorSets(pVulkanDev->hDevice, (uint32_t)descriptors.size(), descriptors.data(), 0, nullptr);
+	GetVulkan()->vkUpdateDescriptorSets(m_pVulkanDevice->hDevice, (uint32_t)descriptors.size(), descriptors.data(), 0, nullptr);
 
     return AMF_OK;
 }
 
 AMF_RESULT VideoRenderVulkan::UpdateMVP()
 {
-    amf::AMFVulkanDevice* pVulkanDev = (amf::AMFVulkanDevice*)m_hVulkanDev;    
-
 	VkResult res = VK_INCOMPLETE;
 
     amf::Vector Eye ( 0.0f, 1.0f, -5.0f, 0.0f );
@@ -593,11 +582,11 @@ AMF_RESULT VideoRenderVulkan::UpdateMVP()
 	memcpy(mvp.view, view.k, sizeof(mvp.view));
 
     void* bufferData = NULL;
-	res = GetVulkan()->vkMapMemory(pVulkanDev->hDevice, m_MVPBuffer.hMemory, 0, sizeof(ModelView), 0, &bufferData);
+	res = GetVulkan()->vkMapMemory(m_pVulkanDevice->hDevice, m_MVPBuffer.hMemory, 0, sizeof(ModelView), 0, &bufferData);
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkMapMemory() failed with error=" << res);
 
 	memcpy(bufferData, &mvp, sizeof(ModelView));
-	GetVulkan()->vkUnmapMemory(pVulkanDev->hDevice, m_MVPBuffer.hMemory);
+	GetVulkan()->vkUnmapMemory(m_pVulkanDevice->hDevice, m_MVPBuffer.hMemory);
 
     m_fAnimation += amf::AMF_PI *2.0f /240.f;
 
@@ -614,37 +603,37 @@ AMF_RESULT VideoRenderVulkan::Render(amf::AMFData** ppData)
     AMF_RESULT resAMF = AMF_OK;
 
 	amf_uint32 imageIndex = 0;
-    resAMF = AcquireBackBuffer(&imageIndex);
+    resAMF = AcquireNextBackBufferIndex(imageIndex);
     CHECK_AMF_ERROR_RETURN(resAMF, L"AcquireBackBuffer() failed");
 
-    BackBuffer &backBuffer = m_BackBuffers[imageIndex];
+    BackBufferVulkan* pBackBuffer = (BackBufferVulkan*)m_pBackBuffers[imageIndex].get();
 
 	VkPipelineStageFlags waitFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
 /*
     AMFTraceInfo(AMF_FACILITY, L"+++++++++++++++vkQueueSubmit(GFX ) Start +++++++++++++");
-    if(backBuffer.m_Surface.Sync.bSubmitted)
+    if(pBackBuffer->m_surface.Sync.bSubmitted)
     {
-        AMFTraceInfo(AMF_FACILITY, L"    Wait:   0x%llu", backBuffer.m_Surface.Sync.hSemaphore);
+        AMFTraceInfo(AMF_FACILITY, L"    Wait:   0x%llu", pBackBuffer->m_surface.Sync.hSemaphore);
     }
-	AMFTraceInfo(AMF_FACILITY, L"    Signal: 0x%llu", backBuffer.m_Surface.Sync.hSemaphore);
+	AMFTraceInfo(AMF_FACILITY, L"    Signal: 0x%llu", pBackBuffer->m_surface.Sync.hSemaphore);
     AMFTraceInfo(AMF_FACILITY, L"+++++++++++++++vkQueueSubmit(GFX ) End  +++++++++++++");
 */
 
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    if(backBuffer.m_Surface.Sync.hSemaphore != VK_NULL_HANDLE)
+    if(pBackBuffer->m_surface.Sync.hSemaphore != VK_NULL_HANDLE)
     {
-        if(backBuffer.m_Surface.Sync.bSubmitted)
+        if(pBackBuffer->m_surface.Sync.bSubmitted)
         { 
 	        submitInfo.waitSemaphoreCount = 1;
-	        submitInfo.pWaitSemaphores = &backBuffer.m_Surface.Sync.hSemaphore;
+	        submitInfo.pWaitSemaphores = &pBackBuffer->m_surface.Sync.hSemaphore;
 	        submitInfo.pWaitDstStageMask = &waitFlags;
         }
 	    submitInfo.signalSemaphoreCount = 1;
-	    submitInfo.pSignalSemaphores = &backBuffer.m_Surface.Sync.hSemaphore;
-        backBuffer.m_Surface.Sync.bSubmitted = true;
+	    submitInfo.pSignalSemaphores = &pBackBuffer->m_surface.Sync.hSemaphore;
+        pBackBuffer->m_surface.Sync.bSubmitted = true;
     }
     submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &m_CommandBuffers[imageIndex];
@@ -653,13 +642,13 @@ AMF_RESULT VideoRenderVulkan::Render(amf::AMFData** ppData)
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkQueueSubmit() failed with error=" << res);
 
     amf::AMFSurfacePtr pSwapChainSurface;
-    resAMF = SwapChainVulkan::m_pContext->CreateSurfaceFromVulkanNative(&backBuffer.m_Surface, &pSwapChainSurface, NULL);
+    resAMF = SwapChainVulkan::m_pContext1->CreateSurfaceFromVulkanNative(&pBackBuffer->m_surface, &pSwapChainSurface, NULL);
     CHECK_AMF_ERROR_RETURN(resAMF, L"CreateSurfaceFromVulkanNative() failed");
 
     resAMF = pSwapChainSurface->Duplicate(pSwapChainSurface->GetMemoryType(), ppData);
     CHECK_AMF_ERROR_RETURN(resAMF, L"Duplicate() failed");
 
-    resAMF = Present(imageIndex, true);
+    resAMF = Present(true);
     CHECK_AMF_ERROR_RETURN(resAMF, L"Present() failed");
 
     return AMF_OK;

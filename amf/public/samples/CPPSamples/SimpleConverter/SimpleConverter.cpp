@@ -48,6 +48,8 @@
 #include <fstream>
 #include <iostream>
 
+#define AMF_FACILITY L"SimpleConverter"
+
 // On Win7 AMF Encoder can work on DX9 only
 // The next line can be used to demo DX11 input and DX9 output from converter
 #ifdef WIN32
@@ -79,10 +81,10 @@ public:
         : PollingThread(NULL, pConverter, pFileName, true), m_StartTime(0)
     {}
 protected:
-    void SetUp() override
+    bool Init() override
     {
         m_StartTime = amf_high_precision_clock();
-        PollingThread::SetUp();
+        return PollingThread::Init();
     }
     void ProcessData(amf::AMFData* pData) override
     {
@@ -200,7 +202,17 @@ int main(int /* argc */, char* /* argv */[])
     }
     // drain it
     res = converter->Drain();
-    thread.WaitForStop();
+
+    // Need to request stop before waiting for stop
+    if (thread.RequestStop() == false)
+    {
+        AMFTraceError(AMF_FACILITY, L"thread.RequestStop() Failed");
+    }
+
+    if (thread.WaitForStop() == false)
+    {
+        AMFTraceError(AMF_FACILITY, L"thread.WaitForStop() Failed");
+    }
 
     // cleanup in this order
     converter->Terminate();

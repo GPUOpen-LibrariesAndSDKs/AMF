@@ -232,7 +232,7 @@ void DeviceDX11::EnumerateAdapters(bool onlyWithOutputs, bool bCheckForAMD)
             continue;
         }
         ATL::CComPtr<IDXGIOutput> pOutput;
-        if(onlyWithOutputs && pAdapter->EnumOutputs(0, &pOutput) == DXGI_ERROR_NOT_FOUND)
+        if(onlyWithOutputs && FAILED(pAdapter->EnumOutputs(0, &pOutput)))
         {
             count++;
             continue;

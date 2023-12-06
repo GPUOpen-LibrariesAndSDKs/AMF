@@ -32,11 +32,11 @@
 #pragma once
 
 #include "BackBufferPresenter.h"
+#include "SwapChainDX11.h"
+#include "SwapChainDXGIDecode.h"
 
 #include <atlbase.h>
 #include <d3d11.h>
-#include <DXGI1_2.h>
-#include <DXGI1_3.h>
 #include <dcomp.h>
 
 #include <DirectXMath.h>
@@ -49,63 +49,83 @@ public:
 
     virtual ~VideoPresenterDX11();
 
-    virtual AMF_RESULT Present(amf::AMFSurface* pSurface);
+    virtual AMF_RESULT                  Present(amf::AMFSurface* pSurface);
 
-    virtual bool                SupportAllocator() const { return true; }
+    virtual bool                        SupportAllocator() const { return true; }
 
-    virtual amf::AMF_MEMORY_TYPE GetMemoryType() const { return amf::AMF_MEMORY_DX11; }
-//    virtual amf::AMF_SURFACE_FORMAT GetInputFormat() { return amf::AMF_SURFACE_BGRA; }
-    virtual amf::AMF_SURFACE_FORMAT GetInputFormat() const{ return m_eInputFormat; }
-    virtual AMF_RESULT              SetInputFormat(amf::AMF_SURFACE_FORMAT format);
-    virtual DXGI_FORMAT             GetDXGIFormat() const;
-    virtual AMF_RESULT              Flush();
-//    virtual bool                SupportAllocator() const { return false; } //MM to test only
+    virtual amf::AMF_MEMORY_TYPE        GetMemoryType() const { return amf::AMF_MEMORY_DX11; }
+//  virtual amf::AMF_SURFACE_FORMAT     GetInputFormat() { return amf::AMF_SURFACE_BGRA; }
+    virtual amf::AMF_SURFACE_FORMAT     GetInputFormat() const{ return m_eInputFormat; }
+    virtual AMF_RESULT                  SetInputFormat(amf::AMF_SURFACE_FORMAT format);
+    virtual AMF_RESULT                  Flush();
 
-    virtual AMF_RESULT Init(amf_int32 width, amf_int32 height, amf::AMFSurface* pSurface);
-    virtual AMF_RESULT Terminate();
-    virtual AMFSize             GetSwapchainSize();
-	virtual	AMFRate				GetDisplayRefreshRate();
+    virtual AMF_RESULT                  Init(amf_int32 width, amf_int32 height, amf::AMFSurface* pSurface);
+    virtual AMF_RESULT                  Terminate();
+    virtual AMFSize                     GetSwapchainSize();
+	virtual	AMFRate				        GetDisplayRefreshRate();
 
     // amf::AMFDataAllocatorCB interface
-    virtual AMF_RESULT AMF_STD_CALL AllocSurface(amf::AMF_MEMORY_TYPE type, amf::AMF_SURFACE_FORMAT format,
+    virtual AMF_RESULT AMF_STD_CALL     AllocSurface(amf::AMF_MEMORY_TYPE type, amf::AMF_SURFACE_FORMAT format,
             amf_int32 width, amf_int32 height, amf_int32 hPitch, amf_int32 vPitch, amf::AMFSurface** ppSurface);
     // amf::AMFSurfaceObserver interface
-    virtual void AMF_STD_CALL OnSurfaceDataRelease(amf::AMFSurface* pSurface);
+    virtual void AMF_STD_CALL           OnSurfaceDataRelease(amf::AMFSurface* pSurface);
 
-    virtual AMFPoint MapClientToSource(const AMFPoint& point) override;
-    virtual AMFPoint MapSourceToClient(const AMFPoint& point) override;
+    virtual AMFPoint                    MapClientToSource(const AMFPoint& point) override;
+    virtual AMFPoint                    MapSourceToClient(const AMFPoint& point) override;
+
+    virtual AMF_RESULT                  SetViewTransform(amf_int iOffsetX, amf_int iOffsetY, amf_float fScale);
+    virtual AMF_RESULT                  GetViewTransform(amf_int& iOffsetX, amf_int& iOffsetY, amf_float& fScale);
+
 protected:
-    virtual void        UpdateProcessor();
-    CComPtr<ID3D11Device>   m_pDevice;
-    virtual AMF_RESULT CustomDraw();
-    virtual AMF_RESULT ResizeSwapChain();
+    
+    struct SimpleVertex
+    {
+        XMFLOAT3 position;
+        XMFLOAT2 texture;
+    };
+
+    struct CBNeverChanges
+    {
+        XMMATRIX mView;
+    };
+
+    using RenderTarget = SwapChainDX11::BackBuffer;
+
+    virtual AMF_RESULT                  SetHDREnable(bool bEnable);
+    virtual bool                        GetHDREnable() const;
+
+    virtual AMF_RESULT                  DrawBackground(const RenderTarget* pRenderTarget);
+    virtual AMF_RESULT                  SetStates();
+    virtual AMF_RESULT                  DrawFrame(ID3D11Texture2D* pSrcSurface, const RenderTarget* pRenderTarget, amf_bool left);
+    virtual AMF_RESULT                  DrawOverlay(amf::AMFSurface* /*pSurface*/, const RenderTarget* /*pRenderTarget*/) { return AMF_OK; }
+
+    virtual void                        UpdateProcessor();
+    virtual AMF_RESULT                  CustomDraw();
+    virtual AMF_RESULT                  ResizeSwapChain();
+
+    virtual AMF_RESULT                  DropFrame();
+
+    CComPtr<ID3D11Device>               m_pDevice;
+    std::unique_ptr<SwapChain>          m_pSwapChain;
 
 private:
-    AMF_RESULT BitBlt(amf::AMF_FRAME_TYPE eFrameType, ID3D11Texture2D* pSrcSurface, AMFRect* pSrcRect, ID3D11Texture2D* pDstSurface, AMFRect* pDstRect);
-    AMF_RESULT BitBltRender(amf::AMF_FRAME_TYPE eFrameType, ID3D11Texture2D* pSrcSurface, AMFRect* pSrcRect, ID3D11Texture2D* pDstSurface, AMFRect* pDstRect);
-    AMF_RESULT BitBltCopy(ID3D11Texture2D* pSrcSurface, AMFRect* pSrcRect, ID3D11Texture2D* pDstSurface, AMFRect* pDstRect);
-    AMF_RESULT CompileShaders();
-    AMF_RESULT PrepareStates();
-    AMF_RESULT CheckForResize(bool bForce, bool *bResized);
-    AMF_RESULT UpdateVertices(AMFRect *srcRect, AMFSize *srcSize, AMFRect *dstRect, AMFSize *dstSize);
-    AMF_RESULT DrawFrame(ID3D11Texture2D* pSrcSurface, bool bLeft);
-    AMF_RESULT CopySurface(amf::AMF_FRAME_TYPE eFrameType, ID3D11Texture2D* pSrcSurface, AMFRect* pSrcRect);
+    AMF_RESULT PresentWithDC(amf::AMFSurface* pSurface);
+    AMF_RESULT PresentWithSwapChain(amf::AMFSurface* pSurface);
 
-    AMF_RESULT CreatePresentationSwapChain(amf::AMFSurface* pSurface);
+    AMF_RESULT RenderSurface(amf::AMFSurface* pSurface, const RenderTarget* pRenderTarget);
+    AMF_RESULT BitBlt(amf::AMF_FRAME_TYPE eFrameType, amf::AMFSurface* pSrcSurface, AMFRect* pSrcRect, const RenderTarget* pRenderTarget, AMFRect* pDstRect);
+    AMF_RESULT BitBltRender(amf::AMF_FRAME_TYPE eFrameType, amf::AMFSurface* pSrcSurface, AMFRect* pSrcRect, const RenderTarget* pRenderTarget, AMFRect* pDstRect);
+    AMF_RESULT BitBltCopy(amf::AMFSurface* pSrcSurface, AMFRect* pSrcRect, const RenderTarget* pRenderTarget, AMFRect* pDstRect);
+    AMF_RESULT CreateShaders();
+    AMF_RESULT PrepareStates();
+    AMF_RESULT CheckForResize(amf_bool force);
+    AMF_RESULT UpdateVertices(AMFRect *pSrcRect, AMFSize *pSrcSize, AMFRect *pDstRect, AMFSize *pDstSize);
+    AMF_RESULT CopySurface(amf::AMF_FRAME_TYPE eFrameType, ID3D11Texture2D* pSrcSurface, AMFRect* pSrcRect);
 
     AMF_RESULT ApplyCSC(amf::AMFSurface* pSurface);
 
-    inline AMF_RESULT UpdateCurrentMonitorOutput();
-
-
     amf::AMF_SURFACE_FORMAT             m_eInputFormat;
-    CComQIPtr<IDXGISwapChain>           m_pSwapChain;
-    CComPtr<IDXGISwapChain1>            m_pSwapChain1;
-    CComPtr<IDXGIDecodeSwapChain>       m_pSwapChainVideo;
-    CComPtr<IDXGIOutput>                m_pCurrentOutput;
-    std::vector<CComPtr<IDXGIOutput>>   m_pOutputs;
 
-    bool                                m_stereo;
     CComPtr<ID3D11Texture2D>            m_pCopyTexture_L;
     CComPtr<ID3D11Texture2D>            m_pCopyTexture_R;
 
@@ -122,29 +142,16 @@ private:
     XMFLOAT4X4                          m_mSrcToClientMatrix;
     XMFLOAT4X4                          m_mSrcToScreenMatrix;
 
-    CComPtr<ID3D11RenderTargetView>     m_pRenderTargetView_L;
-    CComPtr<ID3D11RenderTargetView>     m_pRenderTargetView_R;
-
     float                               m_fScale;
     float                               m_fPixelAspectRatio;
-    float                               m_fOffsetX;
-    float                               m_fOffsetY;
+    amf_int                             m_iOffsetX;
+    amf_int                             m_iOffsetY;
+    bool                                m_bUpdateVertices;
 
-
-    amf::AMFCriticalSection          m_sect;
-    volatile UINT               m_uiAvailableBackBuffer;
-    UINT                        m_uiBackBufferCount;
-    std::vector<amf::AMFSurface*>    m_TrackSurfaces; // raw pointer  doent want keep references to ensure object is destroying
+    amf::AMFCriticalSection             m_sect;
+    std::vector<amf::AMFSurface*>       m_TrackSurfaces; // raw pointer  doent want keep references to ensure object is destroying
 
     bool                                m_bResizeSwapChain;
-
     bool                                m_bFirstFrame; 
-
-    amf_handle                          m_hDcompDll;
-    HANDLE                              m_hDCompositionSurfaceHandle;
-
-    CComPtr<IDCompositionDesktopDevice>        m_pDCompDevice;
-    CComPtr<IDCompositionTarget>        m_pDCompTarget;
-    CComPtr<IDCompositionVisual2>        m_pVisualSurfaceRoot;
-    CComPtr <ID3D11Texture2D>           m_pDecodeTexture;
+    bool                                m_bHDREnabled;
 };

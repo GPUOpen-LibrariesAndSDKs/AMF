@@ -69,7 +69,7 @@ class MyPlaybackPipeline : public PlaybackPipeline
      {
          if(m_pVideoPresenter != nullptr)
          {
-             m_pVideoPresenter->CheckForResize();
+             m_pVideoPresenter->ResizeIfNeeded();
          }
      }
     
@@ -107,6 +107,7 @@ void                CloseToolbar();
 
 HWND                hMainWindow;
 HWND                hClientWindow;
+HMENU               hMenu;
 
 static INT_PTR CALLBACK ProgressDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
 
@@ -258,7 +259,6 @@ ATOM MyRegisterClass()
     WNDCLASSEX wcex;
 
     wcex.cbSize = sizeof(WNDCLASSEX);
-
     wcex.style              = CS_HREDRAW | CS_VREDRAW;
     wcex.lpfnWndProc        = WndProc;
     wcex.cbClsExtra         = 0;
@@ -309,15 +309,42 @@ bool InitInstance(int nCmdShow)
 
     ShowWindow(hMainWindow, nCmdShow);
     UpdateWindow(hMainWindow);
+    hMenu = ::GetMenu(hMainWindow);
     UpdateMenuItems();
 
     return true;
 }
 
+void UpdateWindowStyle()
+{
+    amf::AMF_MEMORY_TYPE presenterType = amf::AMF_MEMORY_DX11;
+
+    amf_int64 engineInt = amf::AMF_MEMORY_UNKNOWN;
+    if (s_pPipeline->GetParam(PlaybackPipeline::PARAM_NAME_PRESENTER, engineInt) != AMF_OK || engineInt == amf::AMF_MEMORY_UNKNOWN)
+    {
+        return;
+    }
+
+    presenterType = (amf::AMF_MEMORY_TYPE)engineInt;
+
+    const LONG classStyle = presenterType == amf::AMF_MEMORY_VULKAN ? 0 : (CS_HREDRAW | CS_VREDRAW);
+
+    // Don't redraw on vertical/horizontal resizing
+    // This messes with vulkan swapchain causing flickering
+    SetClassLongPtr(hMainWindow, GCL_STYLE, classStyle);
+}
+
 void UpdateMenuItems()
 {
-    PipelineState currState = s_pPipeline->GetState();
-    HMENU         hMenu     = ::GetMenu(hMainWindow);
+    const PipelineState currState = s_pPipeline->GetState();
+
+    bool bFullScreen = false;
+    s_pPipeline->GetParam(PlaybackPipeline::PARAM_NAME_FULLSCREEN, bFullScreen);
+
+    // Hide the menu on fullscreen. Some presenters like DX11 do this automatically
+    // but some may not like DX12. The problem is that the menu is seen as a "seperate"
+    // window so interacting with it causes DXGI to automatically undo fullscreen
+    ::SetMenu(hMainWindow, bFullScreen && currState == PipelineStateRunning ? nullptr : hMenu);
 
     amf::AMF_MEMORY_TYPE    presenterType = amf::AMF_MEMORY_DX11;
     {
@@ -366,9 +393,6 @@ void UpdateMenuItems()
 	EnableMenuItem(hMenu,ID_HQSCALER_FSR,      MF_BYCOMMAND| ( ((currState == PipelineStateRunning) && isHQScalerOFF) ? MF_DISABLED : MF_ENABLED));
 	EnableMenuItem(hMenu,ID_HQSCALER_OFF,      MF_BYCOMMAND| ( currState == PipelineStateRunning                      ? MF_DISABLED : MF_ENABLED));
 
- 
-    bool bFullScreen = false;
-    s_pPipeline->GetParam(PlaybackPipeline::PARAM_NAME_FULLSCREEN, bFullScreen);
     CheckMenuItem(hMenu, ID_OPTIONS_FULLSCREEN, MF_BYCOMMAND | (bFullScreen ? MF_CHECKED : MF_UNCHECKED));
 }
 
@@ -404,9 +428,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             break;
         case ID_FILE_OPEN:
             FileOpen(hWnd);
+            UpdateWindowStyle();
             break;
         case ID_FILE_OPENNETWORKSTREAM:
             StreamOpen(hWnd);
+            UpdateWindowStyle();
             break;
         case ID_PLAYBACK_PLAY:
             if(s_pPipeline->GetState() == PipelineStateEof || s_pPipeline->GetState() == PipelineStateNotReady)
@@ -415,6 +441,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 {
                     s_pPipeline->Play();
                     UpdateMenuItems();
+                    UpdateWindowStyle();
                 }
             }else if(s_pPipeline->GetState() == PipelineStateRunning)
             {

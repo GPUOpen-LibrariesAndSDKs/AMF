@@ -123,6 +123,12 @@
     <ClInclude Include="..\common\EncoderParamsAV1.h">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\SwapChain.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\Windows\UtilsWindows.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\common\CmdLogger.cpp">
@@ -224,6 +230,12 @@
     </ClCompile>
     <ClCompile Include="..\common\EncoderParamsAV1.cpp">
       <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\SwapChain.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\Windows\UtilsWindows.cpp">
+      <Filter>public\common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

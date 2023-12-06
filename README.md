@@ -14,9 +14,9 @@ AMF is a light-weight, portable multimedia framework that abstracts away most of
     * Windows Subsystem for Linux (DX12 Decoder and Converter Only)
     * Visual Studio&reg; 2019
 * Linux
-    * RHEL 9.1 / 8.7
-    * Ubuntu 22.04.1 / 20.04.5
-    * SLED/SLES 15 SP4
+    * RHEL 9.2 / 8.8
+    * Ubuntu 22.04.2 / 20.04.5
+    * SLED/SLES 15 SP5
 * Driver and AMF component installation instructions are available on the [Wiki page](https://github.com/GPUOpen-LibrariesAndSDKs/AMF/wiki).
     * The following table contains the driver versions in which the Linux pro driver started including the AMF runtime, otherwise, the AMF runtime is optional and has to be installed separately.
     * All supported distros include the AMF runtime starting driver version 20.40.
@@ -28,6 +28,7 @@ AMF is a light-weight, portable multimedia framework that abstracts away most of
       | \**All supported distros* | 20.40                             |
 
 * AMF SDK is backward compatible with all previous driver versions.
+* Version 1.4.32: AMD Radeon Software Adrenalin Edition 23.12.1 (23.30.13.01) or newer. Added new FRC component and API doc. Added new VQEnhancer doc. Improved presenters. Updated FFmpeg to 6.0.
 * Version 1.4.30: AMD Radeon Software Adrenalin Edition 23.5.2 (23.10.01.45) or newer. Added AMF wrappers for AVC / HEVC / AV1 FFmpeg software encoders, frame in -> slice / tile output support for AVC / HEVC / AV1 encoders, and multi-monitor support for DVR. Updated FFmpeg to 5.1.2.
 * Version 1.4.29: AMD Radeon Software Adrenalin Edition 23.1.2 (22.40.01.34) or newer. Added SmartAccess Video for AVC / HEVC / AV1. New options for VQEnhancer and AV1 encoder components. Switched to Markdown based API docs which enable easier open source developer contributions.
 * Version 1.4.28: AMD Radeon Software Adrenalin Edition 22.12.1 (22.40.00.24) or newer. Added AV1 encoding support and 12-bit AV1 decoding. New VQEnhancer component. New AVC / HEVC encoder rate control methods.

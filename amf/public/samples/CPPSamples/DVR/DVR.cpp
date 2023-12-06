@@ -354,7 +354,7 @@ void PopulateMenus(HMENU hMenu)
             for (UINT output = 0; ; ++output)
             {
                 ATL::CComPtr<IDXGIOutput> pOutput;
-                if (pDevice->EnumOutputs(output, &pOutput) == DXGI_ERROR_NOT_FOUND)
+                if (FAILED(pDevice->EnumOutputs(output, &pOutput)))
                 {
                     break;
                 }

@@ -358,15 +358,19 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
 
 
     amf::AMF_MEMORY_TYPE engineMemoryType = amf::AMF_MEMORY_UNKNOWN;
-    if(engineStr == L"DX9")
+    if (engineStr == L"HOST")
+    {
+        engineMemoryType = amf::AMF_MEMORY_HOST;
+    }
+    else if (engineStr == L"DX9")
     {
         engineMemoryType = amf::AMF_MEMORY_DX9;
     }
-    else if(engineStr == L"DX11")
+    else if (engineStr == L"DX11")
     {
         engineMemoryType = amf::AMF_MEMORY_DX11;
     }
-    else if(engineStr == L"VULKAN")
+    else if (engineStr == L"VULKAN")
     {
         engineMemoryType = amf::AMF_MEMORY_VULKAN;
     }

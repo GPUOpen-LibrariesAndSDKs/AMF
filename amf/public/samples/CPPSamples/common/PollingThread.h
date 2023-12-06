@@ -70,11 +70,19 @@ public:
         }
     }
 
+    void PrintTimes(const char* component, amf_int32 frameCount)
+    {
+        printf("latency           = %.4fms\n%s per frame = %.4fms\nwrite per frame   = %.4fms\n",
+            double(m_LatencyTime) / AMF_MILLISECOND,
+            component,
+            double(m_ComponentDuration) / AMF_MILLISECOND / frameCount,
+            double(m_WriteDuration) / AMF_MILLISECOND / frameCount);
+    }
+
+protected:
+
     virtual void Run()
     {
-        RequestStop();
-        SetUp();
-
         AMF_RESULT res = AMF_OK; // error checking can be added later
         while (true)
         {
@@ -99,32 +107,26 @@ public:
             }
         }
         PrintResults();
-        CleanUp();
-
-        m_pComponent = NULL;
-        m_pContext = NULL;
     }
 
-    void PrintTimes(const char* component, amf_int32 frameCount)
-    {
-        printf("latency           = %.4fms\n%s per frame = %.4fms\nwrite per frame   = %.4fms\n",
-            double(m_LatencyTime) / AMF_MILLISECOND,
-            component,
-            double(m_ComponentDuration) / AMF_MILLISECOND / frameCount,
-            double(m_WriteDuration) / AMF_MILLISECOND / frameCount);
-    }
-
-protected:
-    virtual void SetUp()
+    virtual bool Init() override
     {
         m_LatencyTime = 0;
         m_WriteDuration = 0;
         m_ComponentDuration = 0;
         m_LastPollTime = 0;
+        return true;
     }
+
     virtual void ProcessData(amf::AMFData* pData) = 0;
     virtual void PrintResults() {}
-    virtual void CleanUp() {}
+
+    virtual bool Terminate() override
+    {
+        m_pComponent = NULL;
+        m_pContext = NULL;
+        return true;
+    }
 
     void AdjustTimes(amf::AMFData* pData)
     {

@@ -347,7 +347,7 @@ AMFFileDemuxerFFMPEGImpl::AMFVideoOutputDemuxerImpl::AMFVideoOutputDemuxerImpl(A
         AMFPropertyInfoEnum(AMF_STREAM_VIDEO_FORMAT, L"Surface Format", surfaceFormat, AMF_OUTPUT_FORMATS_ENUM, false),
         AMFPropertyInfoDouble(FFMPEG_DEMUXER_VIDEO_PIXEL_ASPECT_RATIO, L"Pixel Aspect Ratio", pixelAspectRatio, 0, DBL_MAX, false),
         AMFPropertyInfoInt64(FFMPEG_DEMUXER_VIDEO_CODEC,    L"FFMPEG codec", ist->codecpar->codec_id, AV_CODEC_ID_NONE, AV_CODEC_ID_WRAPPED_AVFRAME, false),
-        AMFPrimitivePropertyInfoMapEnd
+    AMFPrimitivePropertyInfoMapEnd
 
     SetProperty(AMF_STREAM_CODEC_ID, GetAMFVideoFormat(AVCodecID(codecID)));
     SetProperty(AMF_STREAM_BIT_RATE, ist->codecpar->bit_rate);

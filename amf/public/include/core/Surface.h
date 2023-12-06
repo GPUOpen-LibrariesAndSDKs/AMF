@@ -87,7 +87,8 @@ namespace amf
         AMF_SURFACE_USAGE_UNORDERED_ACCESS  = 0x00000004,   // D3D11_BIND_UNORDERED_ACCESS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
         AMF_SURFACE_USAGE_TRANSFER_SRC      = 0x00000008,   //								D3D12_RESOURCE_FLAG_NONE    	            VK_IMAGE_USAGE_TRANSFER_SRC_BIT
         AMF_SURFACE_USAGE_TRANSFER_DST      = 0x00000010,   //								D3D12_RESOURCE_FLAG_NONE		            VK_IMAGE_USAGE_TRANSFER_DST_BIT
-        AMF_SURFACE_USAGE_LINEAR            = 0x00000020    
+        AMF_SURFACE_USAGE_LINEAR            = 0x00000020,   //
+        AMF_SURFACE_USAGE_NOSYNC            = 0x00000040,   //							    no fence (AMFFenceGUID) created	            no semaphore (AMFVulkanSync::hSemaphore) created            
     } AMF_SURFACE_USAGE_BITS;
     typedef amf_flags AMF_SURFACE_USAGE;
     //----------------------------------------------------------------------------------------------

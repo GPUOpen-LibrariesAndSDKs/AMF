@@ -11,7 +11,6 @@
 
 #include <iostream>
 
-
 const amf_int32  MIN_FRAME_WIDTH  = 320;
 const amf_int32  MAX_FRAME_WIDTH  = 7680;
 const amf_int32  MIN_FRAME_HEIGHT = 200;
@@ -28,7 +27,79 @@ using namespace amf;
 // BaseEncoderFFMPEGImpl
 //
 //
+//--------------------------------------------------------------------------------------------------------------------------------
+bool BaseEncoderFFMPEGImpl::SendThread::Process(amf_ulong& ulID, amf::AMFSurfacePtr& pSurfaceIn, int& outData)
+{
+    int ret = 0;
+    if (pSurfaceIn == nullptr)
+    {
+        AMFLock lock(&m_pEncoderFFMPEG->m_SyncAVCodec);
+        // check if it is the end of the stream
+        if (m_pEncoderFFMPEG->m_isEOF)
+        {
+            // NOTE: to drain, we need to submit a NULL packet to avcodec_send_frame call
+            //       Sending the first flush packet will return success.
+            //       Subsequent ones are unnecessary and will return AVERROR_EOF
+            ret = avcodec_send_frame(m_pEncoderFFMPEG->m_pCodecContext, NULL);
+        }
+        return true;
+    }
+    // fill the frame information
+    AVFrameEx  avFrame;
+    AMF_RESULT err = m_pEncoderFFMPEG->InitializeFrame(pSurfaceIn, avFrame);
+    AMFTransitFrame  transitFrame = {};
+    transitFrame.pStorage = new AMFInterfaceImpl< AMFPropertyStorageImpl <AMFPropertyStorage>>();
+    transitFrame.pts = pSurfaceIn->GetPts();
+    transitFrame.duration = pSurfaceIn->GetDuration();
+    pSurfaceIn->CopyTo(transitFrame.pStorage, true);
+    while(true)
+    {
+        {// ffmpeg is not thread safe
+            AMFLock lock(&m_pEncoderFFMPEG->m_SyncAVCodec);
+            ret = avcodec_send_frame(m_pEncoderFFMPEG->m_pCodecContext, &avFrame);
 
+            if (ret >= 0)
+            {
+                // if we did have a frame to submit, and we succeeded
+                // it's time to increment the submitted frames counter
+                if (m_pEncoderFFMPEG->m_pCodecContext->max_b_frames > 0)
+                {
+                    m_pEncoderFFMPEG->m_inputpts.push_back(transitFrame.pts);
+                }
+                m_pEncoderFFMPEG->m_inputData.push_back(transitFrame);
+
+                AMFTraceWarning(AMF_FACILITY, L"SendThread::Process() - sent input frame count is %d",
+                    m_pEncoderFFMPEG->m_videoFrameSubmitCount);
+                m_pEncoderFFMPEG->m_videoFrameSubmitCount++;
+                return true;
+            }
+        }
+        //
+        // handle the error returns from the encoder
+        //
+        if (ret == AVERROR_EOF)
+        {
+            return true;
+        }
+        // NOTE: it is possible the encoder is busy as encoded frames have not
+        //       been taken out yet, so it's possible that it will not accept even
+        //       to start flushing the data yet, so it can return AVERROR(EAGAIN)
+        //       along the normal case when it can't accept a new frame to process
+        if (ret == AVERROR(EAGAIN))
+        {
+
+            AMFTraceWarning(AMF_FACILITY, L"SendThread::Process() - input is full");
+            amf_sleep(1);
+            continue;
+        }
+        char  errBuffer[AV_ERROR_MAX_STRING_SIZE] = { 0 };
+        AMFTraceWarning(AMF_FACILITY, L"EncoderThread::Run() - Error sending a frame for encoding - %S",
+            av_make_error_string(errBuffer, sizeof(errBuffer) / sizeof(errBuffer[0]), ret));
+        return false;
+    }
+
+    return true;
+}
 //-------------------------------------------------------------------------------------------------
 // we can initialize PA in different modes, for external, 
 // internal inside encoder, or various debug modes
@@ -44,7 +115,8 @@ BaseEncoderFFMPEGImpl::BaseEncoderFFMPEGImpl(AMFContext* pContext)
     m_pCodecContext(NULL),
     m_CodecID(AV_CODEC_ID_NONE),
     m_FrameRate(AMFConstructRate(30, 1)),
-    m_firstFramePts(-1LL)
+    m_firstFramePts(-1LL),
+    m_SendThread(this, &m_SendQueue)
 {
     g_AMFFactory.Init();
 
@@ -90,20 +162,38 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT format, 
     amf_int64  streamID = 0;
     AMF_RETURN_IF_FAILED(GetProperty(AMF_STREAM_CODEC_ID, &streamID));
     m_CodecID = GetFFMPEGVideoFormat((AMF_STREAM_CODEC_ID_ENUM)streamID);
-    const AVCodec* codec = avcodec_find_encoder(m_CodecID);
 
-    if (!codec)
+    const AVCodec* pCodec;
+    const char* pCodecName = GetEncoderName();
+    pCodec = avcodec_find_encoder_by_name(pCodecName);
+
+    if (!pCodec)
     {
         Terminate();
         return AMF_CODEC_NOT_SUPPORTED;
     }
     // allocate the codec context
-    m_pCodecContext = avcodec_alloc_context3(codec);
+    m_pCodecContext = avcodec_alloc_context3(pCodec);
 
     // set common properties
     m_pCodecContext->pix_fmt = GetFFMPEGSurfaceFormat(format);
     m_pCodecContext->strict_std_compliance = FF_COMPLIANCE_STRICT;
     m_pCodecContext->codec_type = AVMEDIA_TYPE_VIDEO;
+    m_pCodecContext->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+    m_pCodecContext->thread_type = FF_THREAD_SLICE;
+    m_pCodecContext->slices = amf_get_cpu_cores();
+    m_pCodecContext->thread_count = amf_get_cpu_cores();
+    AMFTraceDebug(AMF_FACILITY, L"BaseEncoderFFMPEGImpl::Init() - using %d cores", amf_get_cpu_cores());
+    if (strcasecmp(m_pCodecContext->codec->name, pCodecName) != 0)
+    {
+        AMFTraceError(AMF_FACILITY, L"BaseEncoderFFMPEGImpl::Init() - Failed to find %s encoder", pCodecName);
+        Terminate();
+        return AMF_NOT_SUPPORTED;
+    }
+
+    SetEncoderOptions();
+    // start the thread
+    AMF_RETURN_IF_FALSE(m_SendThread.Start(), AMF_UNEXPECTED, L"Init() - m_SendThread.Start()");
 
     return AMF_OK;
 }
@@ -117,6 +207,10 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::ReInit(amf_int32 width, amf_int3
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::Terminate()
 {
+    // terminate/clean-up the thread
+    AMF_RETURN_IF_FALSE(m_SendThread.RequestStop(), AMF_UNEXPECTED, L"Terminate() - m_SendThread.RequestStop()");
+    AMF_RETURN_IF_FALSE(m_SendThread.WaitForStop(), AMF_UNEXPECTED, L"Terminate() - m_SendThread.WaitForStop()");
+
     AMFLock lock(&m_Sync);
 
     // clean-up codec related items
@@ -139,6 +233,8 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::Terminate()
     m_inputData.clear();
     m_inputpts.clear();
 
+    m_SendQueue.Clear();
+
     // clean-up the width/height/format/codec
     m_format = AMF_SURFACE_UNKNOWN;
     m_width = 0;
@@ -150,8 +246,7 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::Terminate()
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::Drain()                                                   
 {  
-    AMFTraceDebug(AMF_FACILITY, L"BaseEncoderFFMPEGImpl::Drain()");
-    AMFTraceWarning(AMF_FACILITY, L"BaseEncoderFFMPEGImpl::Drain() - input queue %d",
+    AMFTraceDebug(AMF_FACILITY, L"BaseEncoderFFMPEGImpl::Drain() - current input queue size %d",
         m_inputData.size());
 
     AMFLock lock(&m_Sync);
@@ -165,8 +260,14 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::Flush()
 {  
     AMFTraceDebug(AMF_FACILITY, L"BaseEncoderFFMPEGImpl::Flush()");
 
+    // dump all the remaining frames in the system
+    // NOTE: since this should get called from the same
+    //       place as SubmitInput, we should not really
+    //       get any more frames in
+    // terminate encoding thread
+    AMF_RETURN_IF_FALSE(m_SendThread.RequestStop(), AMF_UNEXPECTED, L"Flush() - m_SendThread.RequestStop()");
+    AMF_RETURN_IF_FALSE(m_SendThread.WaitForStop(), AMF_UNEXPECTED, L"Flush() - m_SendThread.WaitForStop()");
 
-    //
     // now that we stopped the thread, we should be
     // OK to lock and clean up anything else
     AMFLock lock(&m_Sync);
@@ -182,6 +283,12 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::Flush()
     m_inputpts.clear();
     m_videoFrameSubmitCount = 0;
     m_videoFrameQueryCount = 0;
+
+    m_SendQueue.Clear();
+
+    // now that we're done with the clean-up
+    // restart the thread
+    AMF_RETURN_IF_FALSE(m_SendThread.Start(), AMF_UNEXPECTED, L"Flush() - m_SendThread.Start()");
 
     return AMF_OK;  
 };
@@ -214,7 +321,7 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::SubmitInput(AMFData* pData)
     // once they're done submitting input
     // start submitting information to the encoder
     AMFSurfacePtr spSurface;
-    int           ret = 0;
+
     if (pData != nullptr) 
     {
         // check the input data type is AMFSurface
@@ -245,69 +352,20 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::SubmitInput(AMFData* pData)
         AMF_RESULT err = spSurface->Convert(AMF_MEMORY_HOST);
         AMF_RETURN_IF_FAILED(err, L"SubmitInput() - Convert(AMF_MEMORY_HOST) failed");
 
-
-        //
-        // fill the frame information
-        AVFrameEx  avFrame;
-        err = InitializeFrame(spSurface, avFrame);
-        AMF_RETURN_IF_FAILED(err, L"SubmitInput() - Failed to initialize and set frame properties");
-
-        ret = avcodec_send_frame(m_pCodecContext, &avFrame);
     }
     else
     {
         // update internal flag that we reached the end of the file
-        m_isEOF = true;
-
         // no more frames to encode so now it's time to drain the encoder
         // draining the encoder should happen once
         // otherwise an error code will be returned by avcodec_send_frame
-        //
-        // NOTE: to drain, we need to submit a NULL packet to avcodec_send_frame call
-        //       Sending the first flush packet will return success.
-        //       Subsequent ones are unnecessary and will return AVERROR_EOF
-        ret = avcodec_send_frame(m_pCodecContext, NULL);
+        m_isEOF = true;
     }
 
+    // add surface or eof null into queue for encoding thread
+    m_SendQueue.Add(0, spSurface);
 
-    //
-    // handle the error returns from the encoder
-    //
-    // NOTE: it is possible the encoder is busy as encoded frames have not
-    //       been taken out yet, so it's possible that it will not accept even
-    //       to start flushing the data yet, so it can return AVERROR(EAGAIN)
-    //       along the normal case when it can't accept a new frame to process
-    if (ret == AVERROR(EAGAIN))
-    {
-        return  AMF_INPUT_FULL;
-    }
-    if (ret == AVERROR_EOF)
-    {
-        return AMF_EOF;
-    }
-
-    // once we get here, we should have no errors after we
-    // submitted the frame
-    char  errBuffer[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-    AMF_RETURN_IF_FALSE(ret >= 0, AMF_FAIL, L"SubmitInput() - Error sending a frame for encoding - %S", av_make_error_string(errBuffer, sizeof(errBuffer) / sizeof(errBuffer[0]), ret));
-
-
-    //
-    // if we did have a frame to submit, and we succeeded
-    // it's time to increment the submitted frames counter
-    if (spSurface != nullptr) 
-    {
-        AMFTransitFrame  transitFrame = {};
-        transitFrame.pStorage = new AMFInterfaceImpl< AMFPropertyStorageImpl <AMFPropertyStorage>>();
-        transitFrame.pts = spSurface->GetPts();
-        transitFrame.duration = spSurface->GetDuration();
-        spSurface->CopyTo(transitFrame.pStorage, true);
-        m_inputpts.push_back(transitFrame.pts);
-        m_inputData.push_back(transitFrame);
-        m_videoFrameSubmitCount++;
-    }
-
-    return ((m_isEOF == true) || (ret == AVERROR_EOF)) ? AMF_EOF : AMF_OK;
+    return (m_isEOF == true) ? AMF_EOF : AMF_OK;
 };
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::QueryOutput(AMFData** ppData)
@@ -321,8 +379,6 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::QueryOutput(AMFData** ppData)
 
 
     AMFLock lock(&m_Sync);
-
-
     //
     // encode
     AVPacketEx avPacket;
@@ -336,160 +392,163 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::QueryOutput(AMFData** ppData)
     // AVERROR_EOF: the encoder has been fully flushed, and there will be no more output packets 
     // AVERROR(EINVAL): codec not opened, or it is an encoder 
     // other errors: legitimate decoding errors
-    int ret = avcodec_receive_packet(m_pCodecContext, &avPacket);
-    if (ret == AVERROR(EAGAIN))
     {
-        AMFTraceDebug(AMF_FACILITY, L"QueryOutput() - avcodec_receive_packet EAGAIN");
+        AMFLock lock(&m_SyncAVCodec);
 
-        // if we finished the packets in the encoder, we should get
-        // out as there's nothing to put out and we don't need to remove
-        // any of the queued input frames
-        // we also don't have to unref the packet as nothing got out
-        // of the encoder at this point
-        return AMF_REPEAT;
-    }
-    else if (ret == AVERROR_EOF)
-    {
-        AMFTraceWarning(AMF_FACILITY, L"QueryOutput() - avcodec_receive_packet EOF");
-
-        // if we're draining, we need to check until we get we get
-        // AVERROR_EOF to know the encoder has been fully drained
-        return AMF_EOF;
-    }
-    else
-    {
-        char  errBuffer[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-        AMF_RETURN_IF_FALSE(ret >= 0, AMF_FAIL, L"QueryOutput() - Error encoding frame - %S", av_make_error_string(errBuffer, sizeof(errBuffer) / sizeof(errBuffer[0]), ret));
-    }
-
-
-    //
-    // if avcodec_receive_packet returns 0,
-    // a valid packet should have been provided
-    // 
-    // NOTE: For video, it should typically contain one compressed frame. 
-    //       For audio it may contain several compressed frames. 
-    //       Encoders are allowed to output empty packets, with no 
-    //       compressed data, containing only side data (e.g. to update 
-    //       some stream parameters at the end of encoding)."
-    if (ret >= 0 && avPacket.size > 0)
-    {
-        // allocate and fill output buffer - if we fail the memory
-        // allocation, we probably have more problems than worrying
-        // about recovery at this point, but still try
-        AMFBufferPtr pBufferOut;
-        AMF_RESULT err = m_spContext->AllocBuffer(AMF_MEMORY_HOST, avPacket.size, &pBufferOut);
-        AMF_RETURN_IF_FAILED(err, L"QueryOutput() - AllocBuffer failed");
-
-        amf_uint8* pMemOut = static_cast<amf_uint8*>(pBufferOut->GetNative());
-        memcpy(pMemOut, avPacket.data, avPacket.size);
-
-        // for PTS -always 100 nanos
-        amf_pts duration = av_rescale_q(avPacket.duration, m_pCodecContext->time_base, AMF_TIME_BASE_Q);
-        amf_pts pts= av_rescale_q(avPacket.pts, m_pCodecContext->time_base, AMF_TIME_BASE_Q);
-        pBufferOut->SetProperty(AMF_VIDEO_ENCODER_PRESENTATION_TIME_STAMP, pts);
-
-        // copy input data properties to the encoded packet
-        // now here we have to be a bit careful as there's no
-        // exact way to match input frame with output packet(s)
-        // so we'll try to match based on pts and duration
-        //               pts    duration
-        //   frame m      |-----------------|
-        //
-        //                 pts
-        //   packet n       |
-        //
-        // what happens in some cases is that the input pts is
-        // a bit off from the resulting pts
-        //               pts    duration
-        //   frame m      |-----------------|
-        //
-        //             pts
-        //   packet n   |
-        //
-        // so check and see if it's closer to the next packet,
-        // pick that one
-        std::list<AMFTransitFrame>::iterator transitFrame = m_inputData.begin();
-        for (transitFrame = m_inputData.begin(); transitFrame != m_inputData.end(); ++transitFrame)
+        int ret = avcodec_receive_packet(m_pCodecContext, &avPacket);
+        if (ret == AVERROR(EAGAIN))
         {
-            const amf_pts          inFramePts = transitFrame->pts;
-            const amf_pts          inFrameDuration = transitFrame->duration;
+            AMFTraceDebug(AMF_FACILITY, L"QueryOutput() - avcodec_receive_packet EAGAIN");
 
-            // we found the proper frame to copy data from
-            if (((pts >= inFramePts) && (pts <= inFramePts + inFrameDuration))|| pts < m_inputData.front().pts)
-            {
-                // check though if the frame is closer to the next frame, in which
-                // case it should probably copy from that frame
-                std::list<AMFTransitFrame>::iterator itNext = std::next(transitFrame, 1);
-
-                if ((itNext != m_inputData.end()) &&
-                    (abs((amf_int64)(*itNext).pts - (amf_int64)pts) < (pts - inFramePts)))
-                {
-                    (*itNext).pStorage->CopyTo(pBufferOut, false);
-                    transitFrame = itNext;
-                }
-                else
-                {
-                    (*transitFrame).pStorage->CopyTo(pBufferOut, false);
-                }
-
-                // check key frame
-                if (avPacket.flags & AV_PKT_FLAG_KEY)
-                {
-                    // Set output video frame type for muxer
-                    switch (m_pCodecContext->codec_id)
-                    {
-                    case AV_CODEC_ID_H264:
-                        pBufferOut->SetProperty(AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE, AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_IDR);
-                    case AV_CODEC_ID_HEVC:
-                        pBufferOut->SetProperty(AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE, AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE_IDR);
-                    case AV_CODEC_ID_AV1:
-                        pBufferOut->SetProperty(AMF_VIDEO_ENCODER_AV1_OUTPUT_FRAME_TYPE, AMF_VIDEO_ENCODER_AV1_OUTPUT_FRAME_TYPE_KEY);
-                    }
-                }
-
-                pBufferOut->SetPts(pts);
-                // Duration could be 0 if unknown from packet
-                // In this case we use input duration instead
-                if (duration!= 0)
-                {
-                    pBufferOut->SetDuration(duration);
-                }
-                else
-                {
-                    pBufferOut->SetDuration((*transitFrame).duration);
-                }
-                // when b frame is enabled
-                // set buffer pts as incremental pts in inputted order
-                // muxer needs it to calculate the correct dts
-                // set property PresentationTimeStamp as the real pts
-                if (m_pCodecContext->max_b_frames > 0) {
-                    pBufferOut->SetProperty(AMF_VIDEO_ENCODER_PRESENTATION_TIME_STAMP, pts);
-                    pBufferOut->SetPts(m_inputpts.front());
-                    m_inputpts.pop_front();
-                }
-                AMFTraceWarning(AMF_FACILITY, L"QueryOutput(): real pts is %" LPRId64 L" input pts is  %" LPRId64 L" output frame count is %d",
-                    pts, pBufferOut->GetPts(), m_videoFrameQueryCount);
-                break;
-            }
-
+            // if we finished the packets in the encoder, we should get
+            // out as there's nothing to put out and we don't need to remove
+            // any of the queued input frames
+            // we also don't have to unref the packet as nothing got out
+            // of the encoder at this point
+            return AMF_REPEAT;
         }
-        // remove if we find the matching input surface
-        if (transitFrame != m_inputData.end())
+        else if (ret == AVERROR_EOF)
         {
-            m_inputData.erase(transitFrame);
+            AMFTraceWarning(AMF_FACILITY, L"QueryOutput() - avcodec_receive_packet EOF");
+
+            // if we're draining, we need to check until we get we get
+            // AVERROR_EOF to know the encoder has been fully drained
+            return AMF_EOF;
         }
-        // the generated frame doesn't match any input frames
-        // this should not really happen - trace
         else
         {
-            AMFTraceWarning(AMF_FACILITY, L"Generated packet pts %" LPRId64 L" doesn't match any input frames %", pts);
+            char  errBuffer[AV_ERROR_MAX_STRING_SIZE] = { 0 };
+            AMF_RETURN_IF_FALSE(ret >= 0, AMF_FAIL, L"QueryOutput() - Error encoding frame - %S", av_make_error_string(errBuffer, sizeof(errBuffer) / sizeof(errBuffer[0]), ret));
         }
 
-        *ppData = pBufferOut.Detach();
-        m_videoFrameQueryCount++;
+        //
+        // if avcodec_receive_packet returns 0,
+        // a valid packet should have been provided
+        //
+        // NOTE: For video, it should typically contain one compressed frame.
+        //       For audio it may contain several compressed frames.
+        //       Encoders are allowed to output empty packets, with no
+        //       compressed data, containing only side data (e.g. to update
+        //       some stream parameters at the end of encoding)."
+        if (ret >= 0 && avPacket.size > 0)
+        {
+            // allocate and fill output buffer - if we fail the memory
+            // allocation, we probably have more problems than worrying
+            // about recovery at this point, but still try
+            AMFBufferPtr pBufferOut;
+            AMF_RESULT err = m_spContext->AllocBuffer(AMF_MEMORY_HOST, avPacket.size, &pBufferOut);
+            AMF_RETURN_IF_FAILED(err, L"QueryOutput() - AllocBuffer failed");
 
+            amf_uint8* pMemOut = static_cast<amf_uint8*>(pBufferOut->GetNative());
+            memcpy(pMemOut, avPacket.data, avPacket.size);
+
+            // for PTS -always 100 nanos
+            amf_pts duration = av_rescale_q(avPacket.duration, m_pCodecContext->time_base, AMF_TIME_BASE_Q);
+            amf_pts pts = av_rescale_q(avPacket.pts, m_pCodecContext->time_base, AMF_TIME_BASE_Q);
+            pBufferOut->SetProperty(AMF_VIDEO_ENCODER_PRESENTATION_TIME_STAMP, pts);
+
+            // copy input data properties to the encoded packet
+            // now here we have to be a bit careful as there's no
+            // exact way to match input frame with output packet(s)
+            // so we'll try to match based on pts and duration
+            //               pts    duration
+            //   frame m      |-----------------|
+            //
+            //                 pts
+            //   packet n       |
+            //
+            // what happens in some cases is that the input pts is
+            // a bit off from the resulting pts
+            //               pts    duration
+            //   frame m      |-----------------|
+            //
+            //             pts
+            //   packet n   |
+            //
+            // so check and see if it's closer to the next packet,
+            // pick that one
+            std::list<AMFTransitFrame>::iterator transitFrame = m_inputData.begin();
+            while (transitFrame != m_inputData.end())
+            {
+                const amf_pts          inFramePts = transitFrame->pts;
+                const amf_pts          inFrameDuration = transitFrame->duration;
+
+                // we found the proper frame to copy data from
+                if (((pts >= inFramePts) && (pts <= inFramePts + inFrameDuration)) || pts < m_inputData.front().pts)
+                {
+                    // check though if the frame is closer to the next frame, in which
+                    // case it should probably copy from that frame
+                    std::list<AMFTransitFrame>::iterator itNext = std::next(transitFrame, 1);
+
+                    if ((itNext != m_inputData.end()) &&
+                        (abs((amf_int64)(*itNext).pts - (amf_int64)pts) < (pts - inFramePts)))
+                    {
+                        (*itNext).pStorage->CopyTo(pBufferOut, false);
+                        transitFrame = itNext;
+                    }
+                    else
+                    {
+                        (*transitFrame).pStorage->CopyTo(pBufferOut, false);
+                    }
+
+                    // check key frame
+                    if (avPacket.flags & AV_PKT_FLAG_KEY)
+                    {
+                        // Set output video frame type for muxer
+                        switch (m_pCodecContext->codec_id)
+                        {
+                        case AV_CODEC_ID_H264:
+                            pBufferOut->SetProperty(AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE, AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_IDR);
+                        case AV_CODEC_ID_HEVC:
+                            pBufferOut->SetProperty(AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE, AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE_IDR);
+                        case AV_CODEC_ID_AV1:
+                            pBufferOut->SetProperty(AMF_VIDEO_ENCODER_AV1_OUTPUT_FRAME_TYPE, AMF_VIDEO_ENCODER_AV1_OUTPUT_FRAME_TYPE_KEY);
+                        }
+                    }
+
+                    pBufferOut->SetPts(pts);
+                    // Duration could be 0 if unknown from packet
+                    // In this case we use input duration instead
+                    if (duration != 0)
+                    {
+                        pBufferOut->SetDuration(duration);
+                    }
+                    else
+                    {
+                        pBufferOut->SetDuration((*transitFrame).duration);
+                    }
+                    // when b frame is enabled
+                    // set buffer pts as incremental pts in inputted order
+                    // muxer needs it to calculate the correct dts
+                    // set property PresentationTimeStamp as the real pts
+                    if (m_pCodecContext->max_b_frames > 0)
+                    {
+                        pBufferOut->SetProperty(AMF_VIDEO_ENCODER_PRESENTATION_TIME_STAMP, pts);
+                        pBufferOut->SetPts(m_inputpts.front());
+                        m_inputpts.pop_front();
+                    }
+                    // remove if we find the matching input surface
+                    transitFrame = m_inputData.erase(transitFrame);
+                    AMFTraceDebug(AMF_FACILITY, L"QueryOutput(): output pts is %" LPRId64 L" input pts is  %" LPRId64 L" output frame count is %d",
+                        pts, pBufferOut->GetPts(), m_videoFrameQueryCount);
+                    break;
+                }
+
+                ++transitFrame;
+                // the generated frame doesn't match any input frames
+                // this should not really happen - trace
+                if (transitFrame == m_inputData.end())
+                {
+                    AMFTraceWarning(AMF_FACILITY, L"Generated packet pts %" LPRId64 L" doesn't match any input frames %", pts);
+                }
+            }
+
+            *ppData = pBufferOut.Detach();
+            m_videoFrameQueryCount++;
+
+        }
     }
+
     //
     // if we get a frame out from avcodec_receive_packet, we need
     // to repeat until we get an error that more input needs to
@@ -497,6 +556,7 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::QueryOutput(AMFData** ppData)
     // our documentation states that OK will return a frame out,
     // while repeat says no frame came out so it's up to the caller
     // to repeat QueryOutput while getting AMF_OK
+
     return (*ppData != nullptr) ? AMF_OK : AMF_REPEAT;
 };
 //-------------------------------------------------------------------------------------------------

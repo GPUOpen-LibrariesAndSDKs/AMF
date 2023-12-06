@@ -168,8 +168,6 @@ AMF_RESULT AMF_STD_CALL HistogramImpl::Init(AMFCompute* pDevice, AMFContext* pCo
     CompileKernels(pDevice, NULL);
     m_pContext = pContext;
     m_pDevice = pDevice;
-    bool bGFX9 = false;
-    m_pContext->GetProperty(L"GFX9", &bGFX9);
 
     if(m_pDevice->GetMemoryType() == AMF_MEMORY_DX11)
     {
@@ -179,15 +177,6 @@ AMF_RESULT AMF_STD_CALL HistogramImpl::Init(AMFCompute* pDevice, AMFContext* pCo
         AMF_RETURN_IF_FAILED(pDevice->GetKernel(m_KernelBuildLUTIdDX11, &m_pKernelBuildLUT));
         AMF_RETURN_IF_FAILED(pDevice->GetKernel(m_KernelBuildLUTCenterIdDX11, &m_pKernelBuildLUTCenter));
         AMF_RETURN_IF_FAILED(pDevice->GetKernel(m_KernelBuildShiftsIdDX11, &m_pKernelBuildShifts));
-    }
-    else if(bGFX9 && (m_pDevice->GetMemoryType() == AMF_MEMORY_COMPUTE_FOR_DX9 || m_pDevice->GetMemoryType() == AMF_MEMORY_COMPUTE_FOR_DX11))
-    {
-        AMF_RETURN_IF_FAILED(pDevice->GetKernel(m_KernelHistogramIdBin, &m_pKernelHistogram));
-        AMF_RETURN_IF_FAILED(pDevice->GetKernel(m_KernelColorIdBin, &m_pKernelColor));
-        AMF_RETURN_IF_FAILED(pDevice->GetKernel(m_KernelNV12toRGBIdBin, &m_pKernelNV12toRGB));
-        AMF_RETURN_IF_FAILED(pDevice->GetKernel(m_KernelBuildLUTIdBin, &m_pKernelBuildLUT));
-        AMF_RETURN_IF_FAILED(pDevice->GetKernel(m_KernelBuildLUTCenterIdBin, &m_pKernelBuildLUTCenter));
-        AMF_RETURN_IF_FAILED(pDevice->GetKernel(m_KernelBuildShiftsIdBin, &m_pKernelBuildShifts));
     }
     else
     {

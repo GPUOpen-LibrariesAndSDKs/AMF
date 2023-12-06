@@ -50,11 +50,20 @@ public:
 
 protected:
     BackBufferPresenter(amf_handle hwnd, amf::AMFContext* pContext, amf_handle hDisplay = 0);
-    AMFRect GetClientRect();
+    virtual AMFRect GetClientRect();
+
+    virtual amf_bool GetFullScreenState() const { return m_currentFullScreenState; }
+    virtual AMF_RESULT SetFullScreenState(amf_bool bFullScreen);
 
     amf_handle              m_hwnd;
     amf_handle              m_hDisplay;
     
-    amf::AMFContext* m_pContext;
-    bool m_bRenderToBackBuffer;
+    amf::AMFContext*        m_pContext;
+    bool                    m_bRenderToBackBuffer;
+
+    amf_bool                m_currentFullScreenState;
+    AMFRect                 m_windowModeRect;
+#if defined(_WIN32)
+    LONG_PTR                m_windowModeStyle;
+#endif
 };

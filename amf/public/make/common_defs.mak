@@ -162,7 +162,7 @@ cxx_flags = \
    -pthread \
    -Werror \
    -std=c++11 \
-   -fno-exceptions \
+   -fexceptions \
    -fno-rtti \
    -fvisibility=hidden \
    -fPIC

@@ -28,6 +28,13 @@
 //
 
 
+1.4.32.0 (5.12.2023) version
+--------------------------
+   - Added new FRC component and API doc
+   - Added new VQEnhancer API doc
+   - Improvements and cleanup to presenters
+   - Updated FFmpeg to 6.0
+
 1.4.30.0 (6.7.2023) version
 --------------------------
    - Added AMF wrappers for AVC / HEVC / AV1 FFmpeg software encoders
@@ -82,7 +89,7 @@
 --------------------------
    - HDR color conversion updated
    - HDR color conversion in encoder
-   - QVBR rate control mode in encoder
+   - QVBR rate control mode in encoder 
    - Extended statistic and quality metrics in encoder
    - Frame rate parameter became dynamic
    - New LTR encoder mode
@@ -94,7 +101,7 @@
    - VP9 decoding
    - DX12 decoding and color conversion
    - Pre-analysis component  (PA)
-   - Pre-processing filter
+   - Pre-processing filter 
    - Encoder: output timeout support, throughput information, picture management , statistic
 
 1.4.14.0 (08.07.2019) version
@@ -144,7 +151,7 @@
 
 
 
-Driver: Radeon Software Edition Crimson; 16.7.3 Software: 16.30 and later
+Driver: Radeon Software Edition Crimson; 16.7.3 Software: 16.30 and later 
 
 1.3.0.5 (19.07.2016) version
 --------------------------

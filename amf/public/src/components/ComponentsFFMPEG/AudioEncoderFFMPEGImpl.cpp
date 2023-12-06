@@ -73,7 +73,7 @@ AMFAudioEncoderFFMPEGImpl::AMFAudioEncoderFFMPEGImpl(AMFContext* pContext)
     m_bEncodingEnabled(true),
     m_bEof(false),
     m_pCodecContext(NULL),
-    m_samplesPacked(0),
+    m_firstFFMPEGPts(LLONG_MIN),
     m_firstFramePts(-1LL),
     m_audioFrameSubmitCount(0),
     m_audioFrameQueryCount(0),
@@ -127,6 +127,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
 
     // reset the first frame pts offset
     m_firstFramePts = -1LL;
+    m_firstFFMPEGPts = LLONG_MIN;
 
     // get the codec ID that was set
     amf_int64  codecID = AV_CODEC_ID_NONE;
@@ -168,6 +169,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
     m_pCodecContext->sample_rate = m_sampleRate;
 
 
+    //
     // figure out the surface format conversion
     amf_int64 format = AMFAF_UNKNOWN;
     AMF_RETURN_IF_FAILED(GetProperty(AUDIO_ENCODER_IN_AUDIO_SAMPLE_FORMAT, &format));
@@ -282,7 +284,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Terminate()
     }
 
     m_firstFramePts = -1LL;
-    m_samplesPacked = 0;
+    m_firstFFMPEGPts = LLONG_MIN;
     m_samplePreProcRequired = false;
 	
     m_audioFrameSubmitCount = 0;
@@ -391,11 +393,33 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Flush()
     // need to flush the encoder
     // NOTE: it will only work if encoder declares 
     //       support for AV_CODEC_CAP_ENCODER_FLUSH
-    avcodec_flush_buffers(m_pCodecContext);
+    // NOTE: if we can't flush the encoder we need
+    //       to reinitialize it, otherwise we will
+    //       get incorrect results
+    if (m_pCodecContext != nullptr)
+    {
+        const int caps = ( m_pCodecContext->codec != nullptr) ? m_pCodecContext->codec->capabilities : 0;
+        if (caps & AV_CODEC_CAP_ENCODER_FLUSH)
+        {
+            avcodec_flush_buffers(m_pCodecContext);
+        }
+        else
+        {
+            // re-initialize the encoder
+            AMF_RESULT res = ReInit(0, 0);
+            if (res != AMF_OK)
+            {
+                avcodec_close(m_pCodecContext);
+                av_free(m_pCodecContext);
+                m_pCodecContext = NULL;
+                return res;
+            }
+        }
+    }
 
     // clean any remaining variables
     m_firstFramePts = -1LL;
-    m_samplesPacked = 0;
+    m_firstFFMPEGPts = LLONG_MIN;
 
     m_preparedFrames.clear();
     m_recycledFrames.clear();
@@ -665,7 +689,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::QueryOutput(AMFData** ppData
         // any of the queued input frames
         // we also don't have to unref the packet as nothing got out
         // of the encoder at this point
-        return AMF_REPEAT;
+        return AMF_NEED_MORE_INPUT;
     }
     if (ret == AVERROR_EOF)
     {
@@ -699,16 +723,21 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::QueryOutput(AMFData** ppData
         amf_uint8 *pMemOut = static_cast<uint8_t*>(pBufferOut->GetNative());
         memcpy(pMemOut, avPacket.data, avPacket.size);
 
+        // get the pts fo the ffmpeg frame returned - we will 
+        // calculate our pts relative to what ffmpeg gives us
+        if (m_firstFFMPEGPts == LLONG_MIN)
+        {
+            m_firstFFMPEGPts = avPacket.pts;
+        }
+
         // calculate the number of samples we got out
         // for PTS -always 100 nanos
         // just make sure to round off properly
         const amf_pts duration = av_rescale_q(avPacket.duration, m_pCodecContext->time_base, AMF_TIME_BASE_Q);
-        const amf_pts samples  = duration * m_pCodecContext->sample_rate / AMF_SECOND;
-        const amf_pts pts      = m_firstFramePts + (m_samplesPacked * AMF_SECOND + m_pCodecContext->sample_rate - 1) / m_pCodecContext->sample_rate;
+        const amf_pts pts      = m_firstFramePts + av_rescale_q(avPacket.pts - m_firstFFMPEGPts, m_pCodecContext->time_base, AMF_TIME_BASE_Q);
 
         pBufferOut->SetDuration(duration);
         pBufferOut->SetPts(pts);
-        m_samplesPacked += samples;
 
 
         //
@@ -741,18 +770,28 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::QueryOutput(AMFData** ppData
             // if the current pts is past the end of the frame
             // we should drop that frame as the frames should 
             // come in sequentially
-            if (pts > inFramePts + inFrameDuration)
+            std::list<AMFTransitFrame>::const_iterator itNext = ++m_inputData.begin();
+            if ((pts > inFramePts + inFrameDuration) || 
+                ((itNext != m_inputData.end()) && (pts == itNext->pData->GetPts())))
             {
                 m_inputData.pop_front();
                 continue;
             }
             
             // we found the proper frame to copy data from
-            if ((pts >= inFramePts) && (pts < inFramePts + inFrameDuration))
+            // due to round-off errors, we could have say for the 
+            // first frame pts = 10, duration 5, but the next 
+            // frame would have pts at 16 instead of 15 so we need
+            // to take that into consideration
+            // the change will not affect things much as the code
+            // below will still pick between current and next frame
+            // depending on which one is closer to the pts
+            // without this, in the case mentioned, the first frame
+            // would never get deleted and the queue will keep growing 
+            if ((pts >= inFramePts) && (pts <= inFramePts + inFrameDuration))
             {
                 // check though if the frame is closer to the next frame, in which
                 // case it should probably copy from that frame
-                std::list<AMFTransitFrame>::const_iterator itNext = ++m_inputData.begin();
                 if ((itNext != m_inputData.end()) && 
                     (abs((amf_int64) itNext->pData->GetPts() - (amf_int64) pts) < (pts - inFramePts)))
                 {

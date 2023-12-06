@@ -87,7 +87,7 @@ public:
     DecPollingThread(amf::AMFContext* pContext, amf::AMFComponent* pEncoder, amf::AMFComponent* pDecoder, const wchar_t* pFileName);
 protected:
     void ProcessData(amf::AMFData* pData) override;
-    void CleanUp() override;
+    virtual bool Terminate() override;
 
     amf::AMFComponentPtr m_pEncoder;
 };
@@ -293,7 +293,17 @@ int main(int argc, char* argv[])
     }
     // drain decoder queue 
     res = decoder->Drain();
-    threadDec.WaitForStop();
+
+    // Need to request stop before waiting for stop
+    if (threadDec.RequestStop() == false)
+    {
+        AMFTraceError(AMF_FACILITY, L"threadDec.RequestStop() Failed");
+    }
+
+    if (threadDec.WaitForStop() == false)
+    {
+        AMFTraceError(AMF_FACILITY, L"threadDec.WaitForStop() Failed");
+    }
 
 	// drain encoder; input queue can be full
 	while (true)
@@ -305,7 +315,17 @@ int main(int argc, char* argv[])
 		}
 		amf_sleep(1); // input queue is full: wait and try again
 	}
-	threadEnc.WaitForStop();
+
+    // Need to request stop before waiting for stop
+    if (threadEnc.RequestStop() == false)
+    {
+        AMFTraceError(AMF_FACILITY, L"threadEnc.RequestStop() Failed");
+    }
+
+    if (threadEnc.WaitForStop() == false)
+    {
+        AMFTraceError(AMF_FACILITY, L"threadEnc.WaitForStop() Failed");
+    }
 
     // cleanup in this order
     data = NULL;
@@ -397,9 +417,12 @@ void DecPollingThread::ProcessData(amf::AMFData* pData)
     }
 }
 
-void DecPollingThread::CleanUp()
+bool DecPollingThread::Terminate()
 {
+    bool ret = PollingThread::Terminate();
+
     m_pEncoder = NULL;
+    return ret;
 }
 
 EncPollingThread::EncPollingThread(amf::AMFContext *pContext, amf::AMFComponent *pEncoder, const wchar_t *pFileName)

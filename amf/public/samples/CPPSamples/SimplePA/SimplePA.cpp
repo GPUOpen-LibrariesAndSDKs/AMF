@@ -212,7 +212,17 @@ int main(int /* argc */, char* /* argv */[])
 		}
 		amf_sleep(1); // input queue is full: wait and try again
 	}
-	thread.WaitForStop();
+
+    // Need to request stop before waiting for stop
+    if (thread.RequestStop() == false)
+    {
+        AMFTraceError(AMF_FACILITY, L"thread.RequestStop() Failed");
+    }
+
+    if (thread.WaitForStop() == false)
+    {
+        AMFTraceError(AMF_FACILITY, L"thread.WaitForStop() Failed");
+    }
 
 	pColor1 = NULL;
 	pColor2 = NULL;

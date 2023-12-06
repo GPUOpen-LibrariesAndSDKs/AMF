@@ -462,7 +462,7 @@ class EncPollingThread : public PollingThread
 public:
     EncPollingThread(amf::AMFContext* pContext, amf::AMFComponent* pEncoder, const wchar_t* pFileName);
 protected:
-    void SetUp() override;
+    virtual bool Init() override;
     void ProcessData(amf::AMFData* pData) override;
     void PrintResults() override;
 
@@ -480,13 +480,16 @@ EncPollingThread::EncPollingThread(amf::AMFContext* pContext, amf::AMFComponent*
     m_MaxLatency(0)
 {}
 
-void EncPollingThread::SetUp()
+bool EncPollingThread::Init()
 {
     m_StartTime = amf_high_precision_clock();
-    PollingThread::SetUp();
+
+    bool ret = PollingThread::Init();
+
     m_FirstFrame = 0;
     m_MinLatency = INT64_MAX;
     m_MaxLatency = 0;
+    return ret;
 }
 
 void EncPollingThread::ProcessData(amf::AMFData* pData)
@@ -711,7 +714,17 @@ int main(int argc, char* argv[])
             }
             amf_sleep(1); // input queue is full: wait and try again
         }
-        thread.WaitForStop();
+        
+        // Need to request stop before waiting for stop
+        if (thread.RequestStop() == false)
+        {
+            AMFTraceError(AMF_FACILITY, L"thread.RequestStop() Failed");
+        }
+
+        if (thread.WaitForStop() == false)
+        {
+            AMFTraceError(AMF_FACILITY, L"thread.WaitForStop() Failed");
+        }
     }
     else
     {

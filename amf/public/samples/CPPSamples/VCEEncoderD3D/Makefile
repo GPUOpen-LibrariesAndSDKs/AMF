@@ -54,6 +54,7 @@ src_files = \
     $(samples_common_dir)/EncoderParamsAV1.cpp \
     $(samples_common_dir)/ParametersStorage.cpp \
     $(samples_common_dir)/Pipeline.cpp \
+    $(samples_common_dir)/SwapChain.cpp \
     $(samples_common_dir)/SwapChainVulkan.cpp \
     $(sample_path)/VCEEncoderD3D.cpp \
     $(sample_path)/RenderEncodePipeline.cpp \

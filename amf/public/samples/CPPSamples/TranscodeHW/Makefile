@@ -63,6 +63,7 @@ src_files = \
     $(samples_common_dir)/Pipeline.cpp \
     $(samples_common_dir)/PreProcessingParams.cpp \
     $(samples_common_dir)/TranscodePipeline.cpp \
+    $(samples_common_dir)/SwapChain.cpp \
     $(samples_common_dir)/SwapChainVulkan.cpp \
     $(samples_common_dir)/VideoPresenter.cpp \
     $(samples_common_dir)/VideoPresenterOpenGL.cpp \

@@ -325,9 +325,14 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::Flush()
     AMFLock lock(&m_sync);
 
     // need to flush the decoder
-    // NOTE:  this function just releases any references the decoder might 
-    //        keep internally, but the caller's references remain valid
-    avcodec_flush_buffers(m_pCodecContext);
+    // NOTE: this function just releases any references the decoder might 
+    //       keep internally, but the caller's references remain valid
+    // NOTE: unlike the encoder, the decoder doesn't seem to have an issue
+    //       flushing the buffers
+    if (m_pCodecContext != nullptr)
+    {
+        avcodec_flush_buffers(m_pCodecContext);
+    }
 
     // clear the internally stored buffers
     m_inputData.clear();
@@ -508,7 +513,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
         // any of the queued input frames
         // we also don't have to unref the frame as nothing got out
         // of the decoder at this point
-        return AMF_REPEAT;
+        return AMF_NEED_MORE_INPUT;
     }
     if (ret == AVERROR_EOF)
     {
@@ -556,7 +561,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
     {
         // we got a frame out, but it's before the point we
         // seeked to, so don't put that frame out
-        return AMF_REPEAT;
+        return AMF_NEED_MORE_INPUT;
     }
 
 
@@ -646,10 +651,7 @@ void AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::OnPropertyChanged(const wchar_t* p
         amf_pts  seekPts = 0;
         if (GetProperty(AUDIO_DECODER_IN_AUDIO_SEEK_POSITION, &seekPts) == AMF_OK)
         {
-            if (m_pCodecContext)
-            {
-                avcodec_flush_buffers(m_pCodecContext);
-            }
+            Flush();
             m_SeekPts = seekPts;
         }
     }

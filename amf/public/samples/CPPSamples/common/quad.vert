@@ -33,7 +33,8 @@
 
 layout(binding = 0) uniform mvpMat
 {
-	mat4 ModelViewProj;
+	mat4 vertexTransformMatrix;
+    mat4 texTransformMatrix;
 } mvp;
 
 out gl_PerVertex{
@@ -47,7 +48,6 @@ layout (location = 0) out vec2 fragTex;
 
 void main() 
 {
-	gl_Position = mvp.ModelViewProj * vec4(inPosition, 1.0);
-
-	fragTex = incolor;
+	gl_Position = vec4(inPosition, 1.0) * mvp.vertexTransformMatrix;
+	fragTex = (vec4(incolor, 0.0, 1.0) * mvp.texTransformMatrix).xy;
 }

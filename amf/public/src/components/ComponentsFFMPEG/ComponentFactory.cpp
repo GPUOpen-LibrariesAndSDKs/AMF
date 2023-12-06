@@ -97,14 +97,45 @@ extern "C"
         else if (name == FFMPEG_ENCODER_H264)
         {
             *ppComponent = new amf::AMFInterfaceMultiImpl< amf::H264EncoderFFMPEGImpl, amf::AMFComponent, amf::AMFContext* >(pContext);
+            // failed at create if ffmpeg dlls does not supported.
+            if (*ppComponent)
+            {
+                AMF_RESULT res = (*ppComponent)->Init(amf::AMF_SURFACE_NV12, 1920, 1080);
+                (*ppComponent)->Terminate();
+                if (res != AMF_OK)
+                {
+                    *ppComponent = NULL;
+                }
+            }
         }
         else if (name == FFMPEG_ENCODER_HEVC)
         {
             *ppComponent = new amf::AMFInterfaceMultiImpl< amf::HEVCEncoderFFMPEGImpl, amf::AMFComponent, amf::AMFContext* >(pContext);
+            // failed at create if ffmpeg dlls does not supported.
+            if (*ppComponent)
+            {
+                AMF_RESULT res = (*ppComponent)->Init(amf::AMF_SURFACE_YUV420P, 1920, 1080);
+                (*ppComponent)->Terminate();
+                if (res != AMF_OK)
+                {
+                    *ppComponent = NULL;
+                }
+
+            }
         }
         else if (name == FFMPEG_ENCODER_AV1)
         {
             *ppComponent = new amf::AMFInterfaceMultiImpl< amf::AV1EncoderFFMPEGImpl, amf::AMFComponent, amf::AMFContext* >(pContext);
+            // failed at create if ffmpeg dlls does not supported.
+            if (*ppComponent)
+            {
+                AMF_RESULT res = (*ppComponent)->Init(amf::AMF_SURFACE_YUV420P, 1920, 1080);
+                (*ppComponent)->Terminate();
+                if (res != AMF_OK)
+                {
+                    *ppComponent = NULL;
+                }
+            }
         }
 
         if (*ppComponent)

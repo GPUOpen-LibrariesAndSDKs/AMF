@@ -264,6 +264,46 @@ namespace amf
 typedef std::basic_string<char, std::char_traits<char>, amf::amf_allocator<char> > amf_string;
 typedef std::basic_string<wchar_t, std::char_traits<wchar_t>, amf::amf_allocator<wchar_t> > amf_wstring;
 
+template <class TAmfString>
+std::size_t amf_string_hash(TAmfString const& s) noexcept
+{
+#if defined(_WIN64) || defined(__x86_64__)
+    constexpr size_t fnvOffsetBasis = 14695981039346656037ULL;
+    constexpr size_t fnvPrime = 1099511628211ULL;
+#else // defined(_WIN64) || defined(__x86_64__)
+    constexpr size_t fnvOffsetBasis = 2166136261U;
+    constexpr size_t fnvPrime = 16777619U;
+#endif // defined(_WIN64) || defined(__x86_64__)
+
+    const unsigned char* const pStr = reinterpret_cast<const unsigned char*>(s.c_str());
+    const size_t count = s.size() * sizeof(typename TAmfString::value_type);
+    size_t value = fnvOffsetBasis;
+    for (size_t i = 0; i < count; ++i)
+    {
+        value ^= static_cast<size_t>(pStr[i]);
+        value *= fnvPrime;
+    }
+    return value;
+}
+
+template<>
+struct std::hash<amf_wstring>
+{
+    std::size_t operator()(amf_wstring const& s) const noexcept
+    {
+        return amf_string_hash<amf_wstring>(s);
+    }
+};
+
+template<>
+struct std::hash<amf_string>
+{
+    std::size_t operator()(amf_string const& s) const noexcept
+    {
+        return amf_string_hash<amf_string>(s);
+    }
+};
+
 namespace amf
 {
     //-------------------------------------------------------------------------------------------------

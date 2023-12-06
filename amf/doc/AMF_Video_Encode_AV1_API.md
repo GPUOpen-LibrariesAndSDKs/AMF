@@ -958,13 +958,13 @@ Enables skip frame for rate control.
 `AMF_VIDEO_ENCODER_AV1_MIN_Q_INDEX_INTRA`
 
 **Values:**
-`0` – `255`
+`1` – `255`
 
 **Default Value:**
-`0`
+`1`
 
 **Description:**
-Sets the minimum Q for Intra frame.
+Sets the minimum QIndex for Intra frame.
 
 ---
 
@@ -972,13 +972,13 @@ Sets the minimum Q for Intra frame.
 `AMF_VIDEO_ENCODER_AV1_MAX_Q_INDEX_INTRA`
 
 **Values:**
-`0` – `255`
+`1` – `255`
 
 **Default Value:**
-`51`
+`255`
 
 **Description:**
-Sets the maximum Q for Intra frame.
+Sets the maximum QIndex for Intra frame.
 
 ---
 
@@ -986,13 +986,13 @@ Sets the maximum Q for Intra frame.
 `AMF_VIDEO_ENCODER_AV1_MIN_Q_INDEX_INTER`
 
 **Values:**
-`0` – `255`
+`1` – `255`
 
 **Default Value:**
-`0`
+`1`
 
 **Description:**
-Sets the minimum Q for inter frame.
+Sets the minimum QIndex for Inter frame.
 
 ---
 
@@ -1000,13 +1000,13 @@ Sets the minimum Q for inter frame.
 `AMF_VIDEO_ENCODER_AV1_MAX_Q_INDEX_INTER`
 
 **Values:**
-`0` – `255`
+`1` – `255`
 
 **Default Value:**
-`51`
+`255`
 
 **Description:**
-Sets the maximum Q for inter frame.
+Sets the maximum QIndex for Inter frame.
 
 ---
 
@@ -1014,13 +1014,13 @@ Sets the maximum Q for inter frame.
 `AMF_VIDEO_ENCODER_AV1_Q_INDEX_INTRA`
 
 **Values:**
-`0` – `255`
+`1` – `255`
 
 **Default Value:**
 `26`
 
 **Description:**
-Sets the constant Q for Intra frames.
+Sets the constant QIndex for Intra frames.
 
 Remarks: Only available for CQP rate control method.
 
@@ -1030,13 +1030,13 @@ Remarks: Only available for CQP rate control method.
 `AMF_VIDEO_ENCODER_AV1_Q_INDEX_INTER`
 
 **Values:**
-`0` – `255`
+`1` – `255`
 
 **Default Value:**
 `26`
 
 **Description:**
-Sets the constant Q for Inter frames.
+Sets the constant QIndex for Inter frames.
 
 Remarks: Only available for CQP rate control method.
 

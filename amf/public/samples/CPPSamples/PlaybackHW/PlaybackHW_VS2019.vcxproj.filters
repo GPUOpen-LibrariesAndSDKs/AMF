@@ -125,6 +125,24 @@
     <ClInclude Include="..\common\SwapChainVulkan.h">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\SwapChain.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\SwapChainDXGI.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\Windows\UtilsWindows.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\SwapChainDX11.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\SwapChainDXGIDecode.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\SwapChainDX9.h">
+      <Filter>common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PlaybackHW.cpp">
@@ -220,6 +238,24 @@
     <ClCompile Include="..\common\SwapChainVulkan.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="..\common\SwapChain.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\SwapChainDXGI.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\Windows\UtilsWindows.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\SwapChainDX11.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\SwapChainDXGIDecode.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\SwapChainDX9.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PlaybackHW.rc">
@@ -233,5 +269,25 @@
     <CustomBuild Include="..\common\quad.vert">
       <Filter>common</Filter>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\common\QuadDX12_vs.hlsl">
+      <Filter>common</Filter>
+    </FxCompile>
+    <FxCompile Include="..\common\QuadDX9_vs.hlsl">
+      <Filter>common</Filter>
+    </FxCompile>
+    <FxCompile Include="..\common\QuadDX11_ps.hlsl">
+      <Filter>common</Filter>
+    </FxCompile>
+    <FxCompile Include="..\common\QuadDX11_vs.hlsl">
+      <Filter>common</Filter>
+    </FxCompile>
+    <FxCompile Include="..\common\QuadDX12_ps.hlsl">
+      <Filter>common</Filter>
+    </FxCompile>
+    <FxCompile Include="..\common\QuadDX9_ps.hlsl">
+      <Filter>common</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

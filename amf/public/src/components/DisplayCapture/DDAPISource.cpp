@@ -111,7 +111,7 @@ AMF_RESULT AMFDDAPISourceImpl::InitDisplayCapture(uint32_t displayMonitorIndex, 
 	std::vector<ATL::CComPtr<IDXGIOutput>> outputs;
     CComPtr<IDXGIOutput> dxgiOutput;
     UINT i = 0;
-    while (dxgiAdapter->EnumOutputs(i, &dxgiOutput) != DXGI_ERROR_NOT_FOUND)
+    while (SUCCEEDED(dxgiAdapter->EnumOutputs(i, &dxgiOutput)))
     {
         outputs.push_back(dxgiOutput);
         dxgiOutput = nullptr;

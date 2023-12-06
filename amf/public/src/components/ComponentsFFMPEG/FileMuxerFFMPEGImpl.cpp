@@ -99,7 +99,9 @@ const AMFEnumDescriptionEntry AMF_OUTPUT_FORMATS_ENUM[] =
     { AMF_SURFACE_NV12, L"NV12" },
     { AMF_SURFACE_YUV420P, L"YUV420P" },
     { AMF_SURFACE_YV12, L"YV12" },
-
+    { AMF_SURFACE_P010, L"P010" },
+    { AMF_SURFACE_P012, L"P012" },
+    { AMF_SURFACE_P016, L"P016" },
     { AMF_SURFACE_UNKNOWN, 0 }  // This is end of description mark
 };
 
@@ -205,11 +207,12 @@ AMFFileMuxerFFMPEGImpl::AMFVideoInputMuxerImpl::AMFVideoInputMuxerImpl(AMFFileMu
         AMFPropertyInfoEnum(AMF_STREAM_TYPE, L"Stream Type", AMF_STREAM_VIDEO, FFMPEG_MUXER_STREAM_TYPE_ENUM_DESCRIPTION, false),
         AMFPropertyInfoBool(AMF_STREAM_ENABLED, L"Enabled", true, false),
         AMFPropertyInfoEnum(AMF_STREAM_CODEC_ID, L"Codec ID", AMF_STREAM_CODEC_ID_H264_AVC, VIDEO_CODEC_IDS_ENUM, false),
-        AMFPropertyInfoInt64(AMF_STREAM_BIT_RATE, L"Bit Rate", 100000, 1, INT_MAX, false),
+        AMFPropertyInfoInt64(AMF_STREAM_BIT_RATE, L"Bit Rate", 100000, 0, INT_MAX, false),
         AMFPropertyInfoInterface(AMF_STREAM_EXTRA_DATA, L"Extra Data", NULL, false),
         AMFPropertyInfoRate(AMF_STREAM_VIDEO_FRAME_RATE, L"Frame Rate", 30, 1, false),
         AMFPropertyInfoSize(AMF_STREAM_VIDEO_FRAME_SIZE, L"Frame Size", AMFConstructSize(1920,1080), AMFConstructSize(1,1), AMFConstructSize(100000,100000), false),
-        AMFPropertyInfoInt64(FFMPEG_MUXER_VIDEO_ROTATION, L"Frame Rotation", 0, 0, 360, false)
+        AMFPropertyInfoInt64(FFMPEG_MUXER_VIDEO_ROTATION, L"Frame Rotation", 0, 0, 360, false),
+        AMFPropertyInfoEnum(AMF_STREAM_VIDEO_FORMAT, L"Surface Format", AMF_SURFACE_YUV420P, AMF_OUTPUT_FORMATS_ENUM, false)
     AMFPrimitivePropertyInfoMapEnd
 }
 //-------------------------------------------------------------------------------------------------
@@ -437,14 +440,14 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
 {
     m_pOutputContext = avformat_alloc_context();
 
-    for (unsigned int ind=0; ind < GetInputCount(); ind++)
+    for (amf_int32 ind=0; ind < GetInputCount(); ind++)
     {
         // Allocates a new stream and adds it to the context
         // the stream structs such as codecpar are initialized
         AVStream *ist = avformat_new_stream(m_pOutputContext, NULL);
         AMF_RETURN_IF_FALSE(ist != NULL, AMF_OUT_OF_MEMORY, L"AllocateContext() - Failed to create new stream, ist == NULL");
 
-        ist->index = (amf_int32)ind;
+        ist->index = ind;
         ist->id = AVMEDIA_TYPE_UNKNOWN;
         ist->sample_aspect_ratio.den=1;
         ist->sample_aspect_ratio.num=0;
@@ -518,7 +521,9 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
             ist->codecpar->width = frame.width;
             ist->codecpar->height = frame.height;
 
-            ist->codecpar->format = AV_PIX_FMT_YUV420P; // always
+            amf_int64 amfFormat = AMF_SURFACE_YUV420P;
+            spInput->GetProperty(AMF_STREAM_VIDEO_FORMAT, &amfFormat);
+            ist->codecpar->format = GetFFMPEGSurfaceFormat((AMF_SURFACE_FORMAT)amfFormat);// AV_PIX_FMT_YUV420P; // always
 
             amf_int64 rotation;
             if (AMF_OK == GetProperty(FFMPEG_MUXER_VIDEO_ROTATION, &rotation))

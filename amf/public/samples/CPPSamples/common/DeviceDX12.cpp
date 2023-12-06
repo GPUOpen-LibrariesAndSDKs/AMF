@@ -239,7 +239,7 @@ void DeviceDX12::EnumerateAdapters(bool onlyWithOutputs)
             continue;
         }
         ATL::CComPtr<IDXGIOutput> pOutput;
-        if(onlyWithOutputs && pAdapter->EnumOutputs(0, &pOutput) == DXGI_ERROR_NOT_FOUND)
+        if(onlyWithOutputs && FAILED(pAdapter->EnumOutputs(0, &pOutput)))
         {
             count++;
             continue;
@@ -255,7 +255,7 @@ void DeviceDX12::EnumerateAdapters(bool onlyWithOutputs)
 
         int i = 0;
         pOutput = nullptr;
-        while (pAdapter->EnumOutputs(i, &pOutput) != DXGI_ERROR_NOT_FOUND)
+        while (SUCCEEDED(pAdapter->EnumOutputs(i, &pOutput)))
         {
             DXGI_OUTPUT_DESC outputDesc = {};
             pOutput->GetDesc(&outputDesc);

@@ -283,21 +283,6 @@ AMF_RESULT AMF_STD_CALL AMFVideoStitchImpl::Init(AMF_SURFACE_FORMAT format, amf_
     // init OCL/COMPUTE if needed
     AMFComputePtr compute;
    
-    bool bGFX9 = false;
-    m_pContext->GetProperty(L"GFX9", &bGFX9);
-
-    if(bGFX9)
-    {
-        if(m_deviceHistogramMemoryType == AMF_MEMORY_COMPUTE_FOR_DX11)
-        {
-            m_deviceHistogramMemoryType = AMF_MEMORY_DX11;
-        }
-        else if(m_deviceHistogramMemoryType == AMF_MEMORY_COMPUTE_FOR_DX9)
-        {
-            m_deviceHistogramMemoryType = AMF_MEMORY_OPENCL;
-        }
-
-    }
     res = m_pContext->GetCompute(m_deviceHistogramMemoryType, &compute);
     if(res != AMF_OK)
     {

@@ -18,6 +18,9 @@ using namespace amf;
 // HEVCEncoderFFMPEGImpl
 //
 //
+
+# define MAX_SW_HEVC_GOP       250;
+
 const AMFEnumDescriptionEntry g_enumDescr_Usages[] =
 {
     { AMF_VIDEO_ENCODER_HEVC_USAGE_TRANSCODING,		                L"Transcoding" },
@@ -170,25 +173,7 @@ AMF_RESULT AMF_STD_CALL HEVCEncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT format, a
     // the data that we obtained
     //
     // input properties
-    char  errBuffer[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-    amf_int64  present = 0;
     amf_int64 ret = 0;
-    AMF_RETURN_IF_FAILED(GetProperty(AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET, &present));
-    //hevc quiality ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo
-    if (present == AMF_VIDEO_ENCODER_QUALITY_PRESET_BALANCED)
-    {
-        ret = av_opt_set(m_pCodecContext->priv_data, "preset", "medium", 0);
-    }
-    if (present == AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED)
-    {
-        ret = av_opt_set(m_pCodecContext->priv_data, "preset", "fast", 0);
-    }
-    if (present == AMF_VIDEO_ENCODER_QUALITY_PRESET_QUALITY)
-    {
-        ret = av_opt_set(m_pCodecContext->priv_data, "preset", "slow", 0);
-    }
-    AMF_RETURN_IF_FALSE(ret >= 0, AMF_FAIL, L"Init() - Error setting quality preset for H264 encoder - %S",
-        av_make_error_string(errBuffer, sizeof(errBuffer) / sizeof(errBuffer[0]), ret));
 
     AMF_RETURN_IF_FAILED(GetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, &m_FrameRate));
     m_pCodecContext->framerate.num = m_FrameRate.num;
@@ -222,7 +207,13 @@ AMF_RESULT AMF_STD_CALL HEVCEncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT format, a
     m_pCodecContext->bit_rate_tolerance = (int)m_pCodecContext->bit_rate;
     m_pCodecContext->rc_max_rate = m_pCodecContext->bit_rate;
 
+    // 0 to disable automatic periodic IDR in encode core for streaming
+    // however, ffmpeg can't achieve that, instead we force gop to be max
     AMF_RETURN_IF_FAILED(GetProperty(AMF_VIDEO_ENCODER_HEVC_GOP_SIZE, &m_pCodecContext->gop_size));
+    if (m_pCodecContext->gop_size == 0)
+    {
+        m_pCodecContext->gop_size = MAX_SW_HEVC_GOP;
+    }
     m_pCodecContext->max_b_frames = 0; // AMF doesn't support hevc b frame yet
 
     // ready to open codecs and set extradata
@@ -257,6 +248,40 @@ AMF_RESULT AMF_STD_CALL  HEVCEncoderFFMPEGImpl::InitializeFrame(AMFSurface* pInS
 
     BaseEncoderFFMPEGImpl::InitializeFrame(pInSurface, avFrame);
 
+
+    return AMF_OK;
+}
+
+const char *AMF_STD_CALL HEVCEncoderFFMPEGImpl::GetEncoderName()
+{
+    return "libx265";
+}
+
+AMF_RESULT AMF_STD_CALL HEVCEncoderFFMPEGImpl::SetEncoderOptions(void)
+{
+    char  errBuffer[AV_ERROR_MAX_STRING_SIZE] = { 0 };
+    amf_int64  present = 0;
+    amf_int64 ret = 0;
+    AMF_RETURN_IF_FAILED(GetProperty(AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET, &present));
+    //hevc quiality ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo
+    if (present == AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_BALANCED)
+    {
+        ret = av_opt_set(m_pCodecContext->priv_data, "preset", "medium", 0);
+    }
+    if (present == AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED)
+    {
+        ret = av_opt_set(m_pCodecContext->priv_data, "preset", "fast", 0);
+    }
+    if (present == AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_QUALITY)
+    {
+        ret = av_opt_set(m_pCodecContext->priv_data, "preset", "slow", 0);
+    }
+    AMF_RETURN_IF_FALSE(ret >= 0, AMF_FAIL, L"Init() - Error setting quality preset for H264 encoder - %S",
+        av_make_error_string(errBuffer, sizeof(errBuffer) / sizeof(errBuffer[0]), ret));
+
+    ret = av_opt_set(m_pCodecContext->priv_data, "tune", "zerolatency", 0);
+    AMF_RETURN_IF_FALSE(ret >= 0, AMF_FAIL, L"Init() - Error setting tune for H264 encoder - %S",
+    av_make_error_string(errBuffer, sizeof(errBuffer) / sizeof(errBuffer[0]), ret));
 
     return AMF_OK;
 }

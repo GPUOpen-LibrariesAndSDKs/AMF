@@ -41,6 +41,7 @@
 #include "public/include/components/VideoEncoderAV1.h"
 #include "public/include/components/VideoConverter.h"
 #include "public/include/components/HQScaler.h"
+#include "public/include/components/FRC.h"
 
 
 std::wstring AddIndexToPath(const std::wstring& path, amf_int32 index)
@@ -774,6 +775,54 @@ AMF_RESULT ParamConverterPAQMode(const std::wstring& value, amf::AMFVariant& val
     else {
         LOG_ERROR(L"AMF_PA_PAQ_MODE_ENUM hasn't \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+
+AMF_RESULT ParamConverterFRCAlgorithm(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    amf_int64    paramValue = -1;
+    std::wstring uppValue = toUpper(value);
+    if ((uppValue == L"OFF") || (uppValue == L"0"))
+    {
+        paramValue = FRC_ENGINE_OFF;
+    }
+    else if ((uppValue == L"DX12") || (uppValue == L"1"))
+    {
+        paramValue = FRC_ENGINE_DX12;
+    }
+    else if ((uppValue == L"OPENCL") || (uppValue == L"2"))
+    {
+        paramValue = FRC_ENGINE_OPENCL;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+
+AMF_RESULT ParamConverterFRCSnapshotMode(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    amf_int64    paramValue = -1;
+    std::wstring uppValue = toUpper(value);
+    if ((uppValue == L"OFF") || (uppValue == L"0"))
+    {
+        paramValue = FRC_SNAPSHOT_OFF;
+    }
+    else if ((uppValue == L"LOAD") || (uppValue == L"1"))
+    {
+        paramValue = FRC_SNAPSHOT_LOAD;
+    }
+    else if ((uppValue == L"STORE") || (uppValue == L"2"))
+    {
+        paramValue = FRC_SNAPSHOT_STORE;
+    }
+    else if ((uppValue == L"TEST") || (uppValue == L"3"))
+    {
+        paramValue = FRC_SNAPSHOT_REGRESSION_TEST;
+    }
+    else if ((uppValue == L"STORE_NO_PADDING") || (uppValue == L"4"))
+    {
+        paramValue = FRC_SNAPSHOT_STORE_NO_PADDING;
     }
     valueOut = amf_int64(paramValue);
     return AMF_OK;

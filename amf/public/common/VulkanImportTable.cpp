@@ -49,6 +49,8 @@ using namespace amf;
 #define GET_INSTANCE_ENTRYPOINT_NORETURN(i, w) w = reinterpret_cast<PFN_##w>(vkGetInstanceProcAddr(i, #w));
 #define GET_DEVICE_ENTRYPOINT(i, w) w = reinterpret_cast<PFN_##w>(vkGetDeviceProcAddr(i, #w)); if(w==nullptr) \
     { AMFTraceError(L"VulkanImportTable", L"Failed to aquire entrypoint %S", #w); return AMF_FAIL; };
+#define GET_DEVICE_ENTRYPOINT_NORETURN(i, w) w = reinterpret_cast<PFN_##w>(vkGetDeviceProcAddr(i, #w)); if(w==nullptr) \
+    { AMFTraceDebug(L"VulkanImportTable", L"Failed to aquire entrypoint %S", #w); };
 
 VulkanImportTable::VulkanImportTable() :
     m_hVulkanDll(nullptr),
@@ -215,6 +217,7 @@ VulkanImportTable::VulkanImportTable() :
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
     vkCreateAndroidSurfaceKHR(nullptr),
 #endif
+    vkGetMemoryHostPointerPropertiesEXT(nullptr),
     vkCreateDebugReportCallbackEXT(nullptr),
     vkDebugReportMessageEXT(nullptr),
     vkDestroyDebugReportCallbackEXT(nullptr)
@@ -433,10 +436,12 @@ AMF_RESULT VulkanImportTable::LoadDeviceFunctionsTableExt(VkDevice device)
     GET_DEVICE_ENTRYPOINT(device, vkImportSemaphoreFdKHR);
     GET_DEVICE_ENTRYPOINT(device, vkGetSemaphoreFdKHR);
 #endif
+    GET_DEVICE_ENTRYPOINT_NORETURN(device, vkGetMemoryHostPointerPropertiesEXT); //< requires VK_EXT_external_memory_host
 
     return AMF_OK;
 }
 
 #undef GET_DEVICE_ENTRYPOINT
+#undef GET_DEVICE_ENTRYPOINT_NORETURN
 #undef GET_INSTANCE_ENTRYPOINT
 #undef GET_INSTANCE_ENTRYPOINT_NORETURN

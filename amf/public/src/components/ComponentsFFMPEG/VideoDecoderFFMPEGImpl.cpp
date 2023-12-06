@@ -268,18 +268,23 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::Drain()
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::Flush()
 {
+    AMF_RESULT res = AMF_NOT_INITIALIZED;
     AMFLock lock(&m_sync);
 
     // need to flush the decoder
     // NOTE:  this function just releases any references the decoder might 
     //        keep internally, but the caller's references remain valid
-    avcodec_flush_buffers(m_pCodecContext);
+    if (m_pCodecContext != nullptr)
+    {
+        avcodec_flush_buffers(m_pCodecContext);
 
-    // clear the internally stored buffer
-    m_inputData.clear();
-    m_bEof = false;
+        // clear the internally stored buffer
+        m_inputData.clear();
+        m_bEof = false;
+        res = AMF_OK;
+    }
 
-    return AMF_OK;
+    return res;
 }
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::SubmitInput(AMFData* pData)

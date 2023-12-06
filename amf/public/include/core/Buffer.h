@@ -59,6 +59,7 @@ namespace amf
         AMF_BUFFER_USAGE_UNORDERED_ACCESS  = 0x00000004,   // D3D11_BIND_UNORDERED_ACCESS,  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
         AMF_BUFFER_USAGE_TRANSFER_SRC      = 0x00000008,   //                               								            VK_BUFFER_USAGE_TRANSFER_SRC_BIT
         AMF_BUFFER_USAGE_TRANSFER_DST      = 0x00000010,   //                               								            VK_BUFFER_USAGE_TRANSFER_DST_BIT
+        AMF_BUFFER_USAGE_NOSYNC            = 0x00000020,   //  							    no fence (AMFFenceGUID) created	            no semaphore (AMFVulkanSync::hSemaphore) created
     } AMF_BUFFER_USAGE_BITS;
     typedef amf_flags AMF_BUFFER_USAGE;
     //----------------------------------------------------------------------------------------------

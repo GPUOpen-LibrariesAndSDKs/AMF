@@ -60,6 +60,11 @@ const wchar_t* PlaybackPipelineBase::PARAM_NAME_HQ_SCALER_RATIO = L"HQSCALERRATI
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_ENABLE_AUDIO = L"ENABLEAUDIO";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_HQSCALER_SHARPNESS = L"HQSCALERSHARPNESS";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_FRAME_RATE = L"FRAMERATE";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_FRC_ENGINE = L"FRCENGINE";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_FRC_INFO = L"FRCINFO";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_FRC_MODE = L"FRCMODE";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_FRC_ENABLE_FALLBACK = L"FRCENABLEFALLBACK";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_FRC_INDICATOR = L"FRCINDICATOR";
 
 PlaybackPipelineBase::PlaybackPipelineBase() :
     m_iVideoWidth(0),
@@ -94,6 +99,11 @@ PlaybackPipelineBase::PlaybackPipelineBase() :
     SetParamDescription(PARAM_NAME_ENABLE_AUDIO, ParamCommon, L"Enables audio playback, boolean, default = true", ParamConverterDouble);
     SetParamDescription(PARAM_NAME_HQSCALER_SHARPNESS, ParamCommon, L"Specifies FSR RCAS attenuation, double, default 0.75", ParamConverterDouble);
     SetParamDescription(PARAM_NAME_FRAME_RATE, ParamCommon, L"Frame Rate (off, 15fps, 30fps, 60fps), default off", ParamConverterInt64);
+    SetParamDescription(PARAM_NAME_FRC_ENGINE, ParamCommon, L"Frame Rate Conversion, default DX12", ParamConverterFRCAlgorithm);
+    SetParamDescription(PARAM_NAME_FRC_INFO, ParamCommon, L"Frame Rate Conversion debug mode, default off", ParamConverterInt64);
+    SetParamDescription(PARAM_NAME_FRC_MODE, ParamCommon, L"FRC Mode,  default off", ParamConverterInt64);
+    SetParamDescription(PARAM_NAME_FRC_ENABLE_FALLBACK, ParamCommon, L"FRC enable fallback, true, false, default false", ParamConverterBoolean);
+    SetParamDescription(PARAM_NAME_FRC_INDICATOR, ParamCommon, L"FRC Indicator,  default off", ParamConverterBoolean);
 
     SetParam(PARAM_NAME_LISTEN_FOR_CONNECTION, false);
     SetParam(PARAM_NAME_FULLSCREEN, false);
@@ -104,10 +114,13 @@ PlaybackPipelineBase::PlaybackPipelineBase() :
     SetParam(PARAM_NAME_SIDE_BY_SIDE, false);
     SetParam(PARAM_NAME_HQ_SCALER_RGB, false);
     SetParam(PARAM_NAME_HQ_SCALER_RATIO, AMFRatio({ 20, 10 }));
-    SetParam(PARAM_NAME_ENABLE_AUDIO, true);
+    SetParam(PARAM_NAME_ENABLE_AUDIO, false);
     SetParam(PARAM_NAME_HQSCALER_SHARPNESS, 0.75);
     SetParam(PARAM_NAME_FRAME_RATE, 0);
-
+    SetParam(PARAM_NAME_FRC_ENGINE, FRC_ENGINE_OFF);
+    SetParam(PARAM_NAME_FRC_MODE,   FRC_OFF);
+    SetParam(PARAM_NAME_FRC_ENABLE_FALLBACK, true);
+    SetParam(PARAM_NAME_FRC_INDICATOR, false);
 #if defined(_WIN32)
     SetParam(PlaybackPipelineBase::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_DX11);
 #elif defined(__linux)
@@ -510,7 +523,8 @@ AMF_RESULT PlaybackPipelineBase::InitVideoPipeline(amf_uint32 /* iVideoStreamInd
     bool bForceScalingRGB = false;
     GetParam(PARAM_NAME_HQ_SCALER_RGB, bForceScalingRGB);
     bool bYUVScaling = (((m_eDecoderFormat == amf::AMF_SURFACE_NV12) || (m_eDecoderFormat == amf::AMF_SURFACE_P010)) &&
-                        (m_pScaler != nullptr) &&
+                        ((m_pFRC != nullptr) ||
+                         (m_pScaler != nullptr)) &&
                         !bForceScalingRGB);
 
     if (!bYUVScaling && (m_pVideoProcessor != NULL))
@@ -525,11 +539,16 @@ AMF_RESULT PlaybackPipelineBase::InitVideoPipeline(amf_uint32 /* iVideoStreamInd
         }
     }
 
+    if (m_pFRC != NULL)
+    {
+        Connect(PipelineElementPtr(new AMFComponentElement(m_pFRC)), 1, CT_ThreadQueue);
+    }
+
     if (m_pScaler != NULL)
     {
         if (m_pHQScaler2 == NULL)
         {
-            Connect(PipelineElementPtr(new AMFComponentElement(m_pScaler)), 1, CT_Direct);
+            Connect(PipelineElementPtr(new AMFComponentElement(m_pScaler)), 1, CT_ThreadQueue);
         }
         else
         {
@@ -580,6 +599,80 @@ AMF_RESULT PlaybackPipelineBase::InitVideoPipeline(amf_uint32 /* iVideoStreamInd
         Connect(m_pVideoPresenter, 4, CT_ThreadQueue);
     }
 	return AMF_OK;
+}
+
+AMF_RESULT  PlaybackPipelineBase::InitFRC()
+{
+    AMF_RESULT res = AMF_OK;
+    res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFFRC, &m_pFRC);
+    CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFFRC << L") failed");
+    m_pFRC->SetProperty(AMF_HQ_SCALER_ENGINE_TYPE, m_pVideoPresenter->GetMemoryType());
+
+    // initialize
+    if (m_pFRC != nullptr)
+    {
+        SetParam(PARAM_NAME_HQ_SCALER_RATIO, AMFRatio({ 10, 10 }));
+
+        amf_int64 frcEngineType;
+        GetParam(PlaybackPipelineBase::PARAM_NAME_FRC_ENGINE, frcEngineType);
+        m_pFRC->SetProperty(AMF_FRC_ENGINE_TYPE, frcEngineType);
+
+        bool bForceScalingRGB = false;
+        GetParam(PARAM_NAME_HQ_SCALER_RGB, bForceScalingRGB);
+
+        amf_int64 frcMode = 0;
+        GetParam(PlaybackPipelineBase::PARAM_NAME_FRC_MODE, frcMode);
+        m_pFRC->SetProperty(AMF_FRC_MODE, frcMode);
+
+        amf_int64 frcFlag = 0;
+
+        GetParam(PlaybackPipelineBase::PARAM_NAME_FRC_ENABLE_FALLBACK, frcFlag);
+        m_pFRC->SetProperty(AMF_FRC_ENABLE_FALLBACK, frcFlag);
+
+        GetParam(PlaybackPipelineBase::PARAM_NAME_FRC_INDICATOR, frcFlag);
+        m_pFRC->SetProperty(AMF_FRC_INDICATOR, frcFlag);
+
+        res = m_pFRC->Init(bForceScalingRGB ? m_pVideoPresenter->GetInputFormat() : m_eDecoderFormat, m_iVideoWidth, m_iVideoHeight);
+        CHECK_AMF_ERROR_RETURN(res, L"m_pFRC->Init() failed with err=%d");
+    }
+
+    // create CSC - this one is needed all the time,
+    res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFVideoConverter, &m_pVideoProcessor);
+    CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFVideoConverter << L") failed");
+
+    if (m_eDecoderFormat == amf::AMF_SURFACE_P010) //HDR support
+    {
+        //        m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_COLOR_PROFILE, AMF_VIDEO_CONVERTER_COLOR_PROFILE_2020);
+        //        m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_LINEAR_RGB, true);
+    }
+    else
+    {
+        //        m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_COLOR_PROFILE, AMF_VIDEO_CONVERTER_COLOR_PROFILE_709);
+    }
+    m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_MEMORY_TYPE, m_pVideoPresenter->GetMemoryType());
+    m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, m_pVideoPresenter->GetInputFormat());
+
+    res = m_pVideoProcessor->Init(m_eDecoderFormat, m_iVideoWidth, m_iVideoHeight);
+    CHECK_AMF_ERROR_RETURN(res, L"m_pVideoProcessor->Init() failed");
+
+
+    // set-up the processor for presenter - if we use HQ scaler,
+    // we need to set it, otherwise it will be CSC
+
+    if (m_pContext->GetOpenCLContext() == NULL)
+    {
+        m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_KEEP_ASPECT_RATIO, true);
+        m_pVideoProcessor->SetProperty(AMF_VIDEO_CONVERTER_FILL, true);
+
+        if (m_pScaler != nullptr)
+        {
+            m_pScaler->SetProperty(AMF_HQ_SCALER_KEEP_ASPECT_RATIO, true);
+            m_pScaler->SetProperty(AMF_HQ_SCALER_FILL, true);
+        }
+
+        m_pVideoPresenter->SetProcessor(m_pVideoProcessor, m_pFRC);
+    }
+    return res;
 }
 
 AMF_RESULT  PlaybackPipelineBase::InitVideoProcessor()
@@ -715,7 +808,7 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoDecoder(const wchar_t *pDecoderID, am
 
     // switch to SW Decoder when the HW Decoder does not support this config
     amf::AMFCapsPtr pCaps;
-    if (m_pVideoDecoder != nullptr && 
+    if (m_pVideoDecoder != nullptr &&
         m_pVideoDecoder->GetCaps(&pCaps) != AMF_OK)
     {
         m_pVideoDecoder = NULL;
@@ -979,7 +1072,13 @@ AMF_RESULT PlaybackPipelineBase::Stop()
         m_pHQScaler2 = NULL;
     }
 
-    if(m_pVideoPresenter != NULL)
+   if (m_pFRC != NULL)
+    {
+       m_pFRC->Terminate();
+       m_pFRC = NULL;
+    }
+
+   if(m_pVideoPresenter != NULL)
     {
         m_pVideoPresenter->Terminate();
         m_pVideoPresenter = NULL;
@@ -1037,6 +1136,50 @@ void PlaybackPipelineBase::OnParamChanged(const wchar_t* name)
         if (m_pScaler != nullptr && modeHQScalerNew != -1)
         {
             m_pScaler->SetProperty(AMF_HQ_SCALER_ALGORITHM, modeHQScalerNew);
+        }
+    }
+
+    //check if FRC will need to be re-created in the pipeline
+    if (std::wstring(name) == std::wstring(PARAM_NAME_FRC_ENGINE))
+    {
+        amf_int64  frcEngineType = FRC_ENGINE_OFF;
+        if (m_pFRC != nullptr)
+        {
+            // Running FRC component engine type.
+            m_pFRC->GetProperty(AMF_FRC_ENGINE_TYPE, &frcEngineType);
+        }
+
+        // Pipeline selected FRC engine type.
+        amf_int64  frcEngineTypePipeline = FRC_ENGINE_OFF;
+        GetParam(PARAM_NAME_FRC_ENGINE, frcEngineTypePipeline);
+
+        if (frcEngineTypePipeline != frcEngineType) //need to re-build the pipeline
+        {
+            ReInit();
+        }
+    }
+
+    //update FRC fallback mode
+    if (std::wstring(name) == std::wstring(PARAM_NAME_FRC_ENABLE_FALLBACK))
+    {
+        if (m_pFRC != nullptr)
+        {
+            // Pipeline selected FRC engine type.
+            amf_bool bEnableFallback = false;
+            GetParam(PARAM_NAME_FRC_ENABLE_FALLBACK, bEnableFallback);
+            m_pFRC->SetProperty(AMF_FRC_ENABLE_FALLBACK, bEnableFallback);
+        }
+    }
+
+    //update FRC mode
+    if (std::wstring(name) == std::wstring(PARAM_NAME_FRC_MODE))
+    {
+        if (m_pFRC != nullptr)
+        {
+            // Pipeline selected FRC engine type.
+            amf_int64 frcMode = 0;
+            GetParam(PARAM_NAME_FRC_MODE, frcMode);
+            m_pFRC->SetProperty(AMF_FRC_MODE, frcMode);
         }
     }
 
@@ -1381,9 +1524,20 @@ AMF_RESULT  PlaybackPipelineBase::InitVideo(amf::AMFOutput* pOutput, amf::AMF_ME
     CHECK_AMF_ERROR_RETURN(res, L"m_pVideoPresenter->Init(" << m_iVideoWidth << m_iVideoHeight << ") failed");
 
     //---------------------------------------------------------------------------------------------
-    // Init Video Converter/Processor
-    res = InitVideoProcessor();
-    CHECK_AMF_ERROR_RETURN(res, L"InitVideoProcessor() failed");
+    // Init Video Converter/Processor/FRC
+    amf_int64 frcEngineType;
+    GetParam(PARAM_NAME_FRC_ENGINE, frcEngineType);
+    if (frcEngineType != FRC_ENGINE_OFF)
+    {
+        res = InitFRC();
+        CHECK_AMF_ERROR_RETURN(res, L"InitFRC() failed");
+    }
+    else
+    {
+        res = InitVideoProcessor();
+        CHECK_AMF_ERROR_RETURN(res, L"InitVideoProcessor() failed");
+    }
+
 
     return AMF_OK;
 }
@@ -1424,6 +1578,10 @@ void PlaybackPipelineBase::OnEof()
             if (m_pHQScaler2 != NULL)
             {
                 m_pHQScaler2->ReInit(m_iVideoWidth, m_iVideoHeight);
+            }
+            if (m_pFRC != NULL)
+            {
+                m_pFRC->ReInit(m_iVideoWidth, m_iVideoHeight);
             }
             if(m_pVideoPresenter != NULL)
             {
@@ -1475,7 +1633,7 @@ AMF_RESULT PlaybackPipelineBase::OnActivate(bool bActivated)
 
 AMF_RESULT PlaybackPipelineBase::ReInit()
 {
-    //restart the playback with possibably different pipeline 
+    //restart the playback with possibably different pipeline
     if (GetState() == PipelineStateRunning)
     {
         Init();

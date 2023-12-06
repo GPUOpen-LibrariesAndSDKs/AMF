@@ -41,6 +41,7 @@
 #include "public/include/components/FFMPEGFileDemuxer.h"
 #include "public/include/components/FFMPEGVideoDecoder.h"
 #include "public/include/components/HQScaler.h"
+#include "public/include/components/FRC.h"
 #include "BitStreamParser.h"
 #include "VideoPresenter.h"
 #include "AudioPresenter.h"
@@ -82,6 +83,11 @@ public:
     static const wchar_t* PARAM_NAME_ENABLE_AUDIO;
     static const wchar_t* PARAM_NAME_HQSCALER_SHARPNESS;
     static const wchar_t* PARAM_NAME_FRAME_RATE;
+    static const wchar_t* PARAM_NAME_FRC_ENGINE;
+    static const wchar_t* PARAM_NAME_FRC_INFO;
+    static const wchar_t* PARAM_NAME_FRC_MODE;
+    static const wchar_t* PARAM_NAME_FRC_ENABLE_FALLBACK;
+    static const wchar_t* PARAM_NAME_FRC_INDICATOR;
 
     virtual AMF_RESULT Play();
     virtual AMF_RESULT Pause();
@@ -123,6 +129,7 @@ protected:
 	virtual AMF_RESULT  InitVideoPipeline(amf_uint32 iVideoStreamIndex, PipelineElementPtr pVideoSourceStream);
 	virtual AMF_RESULT  InitAudioPipeline(amf_uint32 iAudioStreamIndex, PipelineElementPtr pAudioSourceStream);
     virtual AMF_RESULT  ReInit();
+    virtual AMF_RESULT  InitFRC();
 
     amf::AMFContextPtr      m_pContext;
 
@@ -136,6 +143,7 @@ protected:
     amf::AMFComponentPtr    m_pVideoProcessor;
     amf::AMFComponentPtr    m_pHQScaler2;
     amf::AMFComponentPtr    m_pScaler;
+    amf::AMFComponentPtr    m_pFRC;
     VideoPresenterPtr       m_pVideoPresenter;
     SplitterPtr             m_pSplitter;
     CombinerPtr             m_pCombiner;

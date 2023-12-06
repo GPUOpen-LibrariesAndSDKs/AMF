@@ -257,13 +257,13 @@ enum AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_AV1_PEAK_BITRATE                          L"Av1PeakBitrate"                   // amf_int64; default = depends on USAGE; Peak bit rate in bits
 
 #define AMF_VIDEO_ENCODER_AV1_MAX_COMPRESSED_FRAME_SIZE             L"Av1MaxCompressedFrameSize"        // amf_int64; default = 0; Max compressed frame Size in bits. 0 - no limit
-#define AMF_VIDEO_ENCODER_AV1_MIN_Q_INDEX_INTRA                     L"Av1MinQIndex_Intra"               // amf_int64; default = depends on USAGE; Min QIndex for intra frames; range = 0-255
-#define AMF_VIDEO_ENCODER_AV1_MAX_Q_INDEX_INTRA                     L"Av1MaxQIndex_Intra"               // amf_int64; default = depends on USAGE; Max QIndex for intra frames; range = 0-255
-#define AMF_VIDEO_ENCODER_AV1_MIN_Q_INDEX_INTER                     L"Av1MinQIndex_Inter"               // amf_int64; default = depends on USAGE; Min QIndex for inter frames; range = 0-255
-#define AMF_VIDEO_ENCODER_AV1_MAX_Q_INDEX_INTER                     L"Av1MaxQIndex_Inter"               // amf_int64; default = depends on USAGE; Max QIndex for inter frames; range = 0-255
+#define AMF_VIDEO_ENCODER_AV1_MIN_Q_INDEX_INTRA                     L"Av1MinQIndex_Intra"               // amf_int64; default = depends on USAGE; Min QIndex for intra frames; range = 1-255
+#define AMF_VIDEO_ENCODER_AV1_MAX_Q_INDEX_INTRA                     L"Av1MaxQIndex_Intra"               // amf_int64; default = depends on USAGE; Max QIndex for intra frames; range = 1-255
+#define AMF_VIDEO_ENCODER_AV1_MIN_Q_INDEX_INTER                     L"Av1MinQIndex_Inter"               // amf_int64; default = depends on USAGE; Min QIndex for inter frames; range = 1-255
+#define AMF_VIDEO_ENCODER_AV1_MAX_Q_INDEX_INTER                     L"Av1MaxQIndex_Inter"               // amf_int64; default = depends on USAGE; Max QIndex for inter frames; range = 1-255
 
-#define AMF_VIDEO_ENCODER_AV1_Q_INDEX_INTRA                         L"Av1QIndex_Intra"                  // amf_int64; default = depends on USAGE; intra-frame QIndex; range = 0-255
-#define AMF_VIDEO_ENCODER_AV1_Q_INDEX_INTER                         L"Av1QIndex_Inter"                  // amf_int64; default = depends on USAGE; inter-frame QIndex; range = 0-255
+#define AMF_VIDEO_ENCODER_AV1_Q_INDEX_INTRA                         L"Av1QIndex_Intra"                  // amf_int64; default = depends on USAGE; intra-frame QIndex; range = 1-255
+#define AMF_VIDEO_ENCODER_AV1_Q_INDEX_INTER                         L"Av1QIndex_Inter"                  // amf_int64; default = depends on USAGE; inter-frame QIndex; range = 1-255
 
 #define AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_SKIP_FRAME               L"Av1RateControlSkipFrameEnable"    // bool; default = depends on USAGE; If true, rate control may code skip frame when needed; if false, rate control will not code skip frame.
 

@@ -19,6 +19,9 @@ using namespace amf;
 // H264EncoderFFMPEGImpl
 //
 //
+
+# define MAX_SW_AVC_GOP       250;
+
 const AMFEnumDescriptionEntry g_enumDescr_Usages[] =
 {
     { AMF_VIDEO_ENCODER_USAGE_TRANSCONDING,		L"Transcoding" },
@@ -109,7 +112,7 @@ H264EncoderFFMPEGImpl::H264EncoderFFMPEGImpl(AMFContext* pContext)
         //AMF_VIDEO_ENCODER_CABAC_ENABLE
         //AMF_VIDEO_ENCODER_INSERT_AUD
         //AMF_VIDEO_ENCODER_HEADER_INSERTION_SPACING
-        AMFPropertyInfoInt64(AMF_VIDEO_ENCODER_IDR_PERIOD, AMF_VIDEO_ENCODER_IDR_PERIOD, 30, 0, INT_MAX, AMF_PROPERTY_ACCESS_FULL),//int gop_size
+        AMFPropertyInfoInt64(AMF_VIDEO_ENCODER_IDR_PERIOD, AMF_VIDEO_ENCODER_IDR_PERIOD, 30, 0, INT_MAX, AMF_PROPERTY_ACCESS_FULL),//int gop_size // encode core H264 doesn't support the GOP size property
         //AMF_VIDEO_ENCODER_NUM_TEMPORAL_ENHANCMENT_LAYERS
         AMFPropertyInfoRatio(AMF_VIDEO_ENCODER_ASPECT_RATIO, AMF_VIDEO_ENCODER_ASPECT_RATIO, 1, 1, AMF_PROPERTY_ACCESS_FULL),
         //AMF_VIDEO_ENCODER_FULL_RANGE_COLOR
@@ -168,25 +171,7 @@ AMF_RESULT AMF_STD_CALL H264EncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT format, a
     // the data that we obtained
     //
     // input properties
-    char  errBuffer[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-    amf_int64  preset = 0;
     amf_int64 ret = 0;
-    AMF_RETURN_IF_FAILED(GetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, &preset));
-    //h264 quiality ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo
-    if (preset == AMF_VIDEO_ENCODER_QUALITY_PRESET_BALANCED)
-    {
-        ret = av_opt_set(m_pCodecContext->priv_data, "preset", "medium", 0);
-    }
-    if (preset == AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED)
-    {
-        ret = av_opt_set(m_pCodecContext->priv_data, "preset", "fast", 0);
-    }
-    if (preset == AMF_VIDEO_ENCODER_QUALITY_PRESET_QUALITY)
-    {
-        ret = av_opt_set(m_pCodecContext->priv_data, "preset", "slow", 0);
-    }
-    AMF_RETURN_IF_FALSE(ret >= 0, AMF_FAIL, L"Init() - Error setting quality preset for H264 encoder - %S",
-        av_make_error_string(errBuffer, sizeof(errBuffer) / sizeof(errBuffer[0]), ret));
 
     AMF_RETURN_IF_FAILED(GetProperty(AMF_VIDEO_ENCODER_FRAMERATE, &m_FrameRate));
     m_pCodecContext->framerate.num = m_FrameRate.num;
@@ -215,12 +200,20 @@ AMF_RESULT AMF_STD_CALL H264EncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT format, a
     m_pCodecContext->sample_aspect_ratio.num = aspect_ratio.num;
     m_pCodecContext->sample_aspect_ratio.den = aspect_ratio.den;
 
+    AMF_RETURN_IF_FAILED(GetProperty(AMF_VIDEO_ENCODER_PROFILE, &m_pCodecContext->profile));
+    AMF_RETURN_IF_FAILED(GetProperty(AMF_VIDEO_ENCODER_PROFILE_LEVEL, &m_pCodecContext->level));
+
     //InitPerLayerProperties
     AMF_RETURN_IF_FAILED(GetProperty(AMF_VIDEO_ENCODER_TARGET_BITRATE, &m_pCodecContext->bit_rate));
-    m_pCodecContext->bit_rate_tolerance = (int)m_pCodecContext->bit_rate;
-    m_pCodecContext->rc_max_rate = m_pCodecContext->bit_rate;
 
     AMF_RETURN_IF_FAILED(GetProperty(AMF_VIDEO_ENCODER_IDR_PERIOD, &m_pCodecContext->gop_size));
+    // 0 to disable automatic periodic IDR in encode core for streaming
+    // however, ffmpeg can't achieve that, instead we force gop to be max
+    if (m_pCodecContext->gop_size == 0)
+    {
+        m_pCodecContext->gop_size = MAX_SW_AVC_GOP;
+        m_pCodecContext->keyint_min = 25;
+    }
     bool isReferenced = false;
     AMF_RETURN_IF_FAILED(GetProperty(AMF_VIDEO_ENCODER_B_REFERENCE_ENABLE, &isReferenced));
     if (isReferenced)
@@ -231,15 +224,6 @@ AMF_RESULT AMF_STD_CALL H264EncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT format, a
     {
         m_pCodecContext->max_b_frames = 0;
     }
-
-    // disable frame hierarchical mode since HW encoder doesn't support it
-    ret = av_opt_set_int(m_pCodecContext->priv_data, "b-pyramid", 0, 0);
-    AMF_RETURN_IF_FALSE(ret >= 0, AMF_FAIL, L"Init() - Error disabling frame hierarchical for H264 encoder - %S",
-        av_make_error_string(errBuffer, sizeof(errBuffer) / sizeof(errBuffer[0]), ret));
-    // force it always use the max number of b frames
-    ret = av_opt_set_int(m_pCodecContext->priv_data, "b_strategy", 0, 0);
-    AMF_RETURN_IF_FALSE(ret >= 0, AMF_FAIL, L"Init() - Error setting b frame number for H264 encoder - %S",
-        av_make_error_string(errBuffer, sizeof(errBuffer) / sizeof(errBuffer[0]), ret));
 
     // ready to open codecs and set extradata
     CodecContextInit(AMF_VIDEO_ENCODER_EXTRADATA);
@@ -276,6 +260,51 @@ AMF_RESULT AMF_STD_CALL  H264EncoderFFMPEGImpl::InitializeFrame(AMFSurface* pInS
 
     BaseEncoderFFMPEGImpl::InitializeFrame(pInSurface, avFrame);
 
+
+    return AMF_OK;
+}
+//-------------------------------------------------------------------------------------------------
+const char *AMF_STD_CALL H264EncoderFFMPEGImpl::GetEncoderName()
+{
+    return "libx264";
+}
+
+AMF_RESULT AMF_STD_CALL H264EncoderFFMPEGImpl::SetEncoderOptions(void)
+{
+    char  errBuffer[AV_ERROR_MAX_STRING_SIZE] = { 0 };
+    amf_int64  preset = 0;
+    amf_int64 ret = 0;
+
+    AMF_RETURN_IF_FAILED(GetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, &preset));
+    //h264 quiality ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo
+    if (preset == AMF_VIDEO_ENCODER_QUALITY_PRESET_BALANCED)
+    {
+        ret = av_opt_set(m_pCodecContext->priv_data, "preset", "medium", 0);
+    }
+    if (preset == AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED)
+    {
+        ret = av_opt_set(m_pCodecContext->priv_data, "preset", "veryfast", 0);
+    }
+    if (preset == AMF_VIDEO_ENCODER_QUALITY_PRESET_QUALITY)
+    {
+        ret = av_opt_set(m_pCodecContext->priv_data, "preset", "slow", 0);
+    }
+    AMF_RETURN_IF_FALSE(ret >= 0, AMF_FAIL, L"Init() - Error setting quality preset for H264 encoder - %S",
+        av_make_error_string(errBuffer, sizeof(errBuffer) / sizeof(errBuffer[0]), ret));
+
+    // disable frame hierarchical mode since HW encoder doesn't support it
+    ret = av_opt_set_int(m_pCodecContext->priv_data, "b-pyramid", 0, 0);
+    AMF_RETURN_IF_FALSE(ret >= 0, AMF_FAIL, L"Init() - Error disabling frame hierarchical for H264 encoder - %S",
+        av_make_error_string(errBuffer, sizeof(errBuffer) / sizeof(errBuffer[0]), ret));
+    // force it always use the max number of b frames
+    ret = av_opt_set_int(m_pCodecContext->priv_data, "b_strategy", 0, 0);
+    AMF_RETURN_IF_FALSE(ret >= 0, AMF_FAIL, L"Init() - Error setting b frame number for H264 encoder - %S",
+        av_make_error_string(errBuffer, sizeof(errBuffer) / sizeof(errBuffer[0]), ret));
+
+    // force encode output without buffering
+    ret = av_opt_set(m_pCodecContext->priv_data, "tune", "zerolatency", 0);
+    AMF_RETURN_IF_FALSE(ret >= 0, AMF_FAIL, L"Init() - Error setting tune for H264 encoder - %S",
+        av_make_error_string(errBuffer, sizeof(errBuffer) / sizeof(errBuffer[0]), ret));
 
     return AMF_OK;
 }

@@ -35,6 +35,10 @@
 #include "public/include/components/Component.h"
 #include "public/include/core/Buffer.h"
 
+#if defined(_MSC_VER)
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+#endif
 
 extern "C"
 {

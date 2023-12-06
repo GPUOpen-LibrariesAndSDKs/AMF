@@ -40,12 +40,20 @@
 #if !defined(DISABLE_VULKAN)
 #include "VideoPresenterVulkan.h"
 #endif
+#include <public/common/TraceAdapter.h>
+
+#define AMF_FACILITY L"BackBufferPresenter"
 
 BackBufferPresenter::BackBufferPresenter(amf_handle hwnd, amf::AMFContext* pContext, amf_handle hDisplay)
     : m_hwnd(hwnd)
     , m_hDisplay(hDisplay)
     , m_pContext(pContext)
     , m_bRenderToBackBuffer(false)
+    , m_currentFullScreenState(false)
+    , m_windowModeRect{}
+#ifdef _WIN32
+    , m_windowModeStyle(0)
+#endif
 {
 }
 
@@ -131,3 +139,63 @@ BackBufferPresenter::GetClientRect()
     }
     return clientRect;
 }
+
+AMF_RESULT BackBufferPresenter::SetFullScreenState(amf_bool fullScreen)
+{
+    if (m_currentFullScreenState == fullScreen)
+    {
+        return AMF_OK;
+    }
+
+    m_currentFullScreenState = fullScreen;
+
+#if defined(_WIN32)
+    const HWND hWnd = (HWND)m_hwnd;
+
+    // Should only set fullscreen if holding top-most window
+    if (hWnd != ::GetAncestor(hWnd, GA_ROOT))
+    {
+        return AMF_OK;
+    }
+
+    LONG_PTR style = 0;
+    UINT topLeftX = 0;
+    UINT topLeftY = 0;
+    UINT width = 0;
+    UINT height = 0;
+    UINT posFlags = SWP_FRAMECHANGED | SWP_SHOWWINDOW;
+
+    if (fullScreen)
+    {
+        WINDOWINFO info;
+        ::GetWindowInfo(hWnd, &info);
+        m_windowModeRect = AMFConstructRect(info.rcClient.left, info.rcClient.top, info.rcClient.right, info.rcClient.bottom);
+        m_windowModeStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE);
+
+        style = WS_VISIBLE | WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
+
+        const HDC hdc = ::GetWindowDC(hWnd);
+        width = ::GetDeviceCaps(hdc, DESKTOPHORZRES);
+        height = ::GetDeviceCaps(hdc, DESKTOPVERTRES);
+    }
+    else
+    {
+        style = m_windowModeStyle;
+        topLeftX = m_windowModeRect.left;
+        topLeftY = m_windowModeRect.top;
+        width = m_windowModeRect.Width();
+        height = m_windowModeRect.Height();
+    }
+
+    AMF_RETURN_IF_FALSE(width > 0 && height > 0, AMF_INVALID_RESOLUTION, L"SetFullScreenState() - Invalid window size %ux%u", width, height);
+
+    ::SetWindowLongPtr(hWnd, GWL_STYLE, style);
+    ::SetWindowPos(hWnd, nullptr, topLeftX, topLeftY, width, height, posFlags);
+
+#elif defined(__linux) // _WIN32
+
+#endif // __linux
+    return AMF_OK;
+}
+
+

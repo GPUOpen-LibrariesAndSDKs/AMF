@@ -34,6 +34,8 @@ namespace amf
         AMF_RESULT  AMF_STD_CALL  Init(AMF_SURFACE_FORMAT format, amf_int32 width, amf_int32 height);
     protected:
         virtual AMF_RESULT  AMF_STD_CALL  InitializeFrame(AMFSurface* pInSurface, AVFrame& avFrame);
+        virtual const char *AMF_STD_CALL GetEncoderName(void);
+        virtual AMF_RESULT AMF_STD_CALL SetEncoderOptions(void);
     private:
         AV1EncoderFFMPEGImpl(const AV1EncoderFFMPEGImpl&);
         AV1EncoderFFMPEGImpl& operator=(const AV1EncoderFFMPEGImpl&);
