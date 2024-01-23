@@ -90,6 +90,7 @@
 #define ID_HQSCALER_BILINEAR            32800
 #define ID_HQSCALER_BICUBIC             32801
 #define ID_HQSCALER_FSR                 32802
+#define ID_OPTIONS_EXCLUSIVEFULLSCREEN  32807
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -98,7 +99,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        131
-#define _APS_NEXT_COMMAND_VALUE         32807
+#define _APS_NEXT_COMMAND_VALUE         32808
 #define _APS_NEXT_CONTROL_VALUE         1018
 #define _APS_NEXT_SYMED_VALUE           110
 #endif

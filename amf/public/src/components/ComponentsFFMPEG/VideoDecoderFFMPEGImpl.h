@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -63,7 +63,7 @@ namespace amf
 
     //-------------------------------------------------------------------------------------------------
 
-    class AMFVideoDecoderFFMPEGImpl : 
+    class AMFVideoDecoderFFMPEGImpl :
         public AMFInterfaceBase,
         public AMFPropertyStorageExImpl<AMFComponent>
     {
@@ -122,9 +122,9 @@ namespace amf
         mutable AMFCriticalSection  m_sync;
 
 
-      // in QueryOutput, we want to make sure that we match the 
-      // input frame that went in with what's coming out, so we 
-      // copy the right properties to the right data going out 
+      // in QueryOutput, we want to make sure that we match the
+      // input frame that went in with what's coming out, so we
+      // copy the right properties to the right data going out
       struct AMFTransitFrame
       {
           AMFDataPtr  pData;
@@ -201,9 +201,9 @@ namespace amf
         class CopyThread : public AMFQueueThread<CopyTask, int>
         {
         public:
-            CopyThread(AMFQueue<CopyTask>* pInputQueue, AMFQueue<int>* pOutputQueue, int param) :
+            CopyThread(AMFQueue<CopyTask>* pInputQueue, AMFQueue<int>* pOutputQueue, int /*param*/) :
                 AMFQueueThread<CopyTask, int>(pInputQueue, pOutputQueue) {}
-            virtual bool Process(amf_ulong& ulID, CopyTask& inData, int& outData)
+            virtual bool Process(amf_ulong& /*ulID*/, CopyTask& inData, int& /*outData*/)
             {
                 inData.Run();
                 return true;
@@ -225,5 +225,5 @@ namespace amf
         AMFVideoDecoderFFMPEGImpl(const AMFVideoDecoderFFMPEGImpl&);
         AMFVideoDecoderFFMPEGImpl& operator=(const AMFVideoDecoderFFMPEGImpl&);
     };
-    
+
 }

@@ -52,7 +52,7 @@
 #include "EncoderParamsAVC.h"
 #include "EncoderParamsHEVC.h"
 #include "EncoderParamsAV1.h"
-#include "BackBufferPresenter.h"
+#include "VideoPresenter.h"
 
 
 
@@ -142,7 +142,7 @@ private:
 
     AMF_RESULT            ConnectPipeline();
 
-    void                SetErrorMessage(wchar_t* msg) { m_errorMsg = msg; }
+    void                  SetErrorMessage(const wchar_t* msg) { m_errorMsg = msg; }
 
     AMF_RESULT            UpdateMuxerFileName();
 

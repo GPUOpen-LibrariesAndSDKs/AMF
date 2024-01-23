@@ -31,9 +31,6 @@
     <ClCompile Include="Profiling.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="Stitch.cpp" />
-    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\BackBufferPresenter.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\BitStreamParser.cpp">
       <Filter>common</Filter>
     </ClCompile>
@@ -116,6 +113,12 @@
     <ClCompile Include="..\common\SwapChainDX9.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="..\common\SwapChainOpenGL.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\OpenGLImportTable.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\public\common\AMFFactory.h">
@@ -143,9 +146,6 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Stitch.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\BackBufferPresenter.h">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\BitStreamParser.h">
       <Filter>common</Filter>
     </ClInclude>
@@ -241,6 +241,18 @@
     </ClInclude>
     <ClInclude Include="..\common\SwapChainDX9.h">
       <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\QuadOpenGL.vert.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\QuadOpenGL.frag.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\SwapChainOpenGL.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\OpenGLImportTable.h">
+      <Filter>public\common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

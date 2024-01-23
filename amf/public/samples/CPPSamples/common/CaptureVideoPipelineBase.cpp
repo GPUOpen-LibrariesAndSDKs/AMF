@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -44,7 +44,7 @@
 //parameters
 amf::AMF_SURFACE_FORMAT CaptureVideoPipelineBase::m_eComposerOutputDefault = amf::AMF_SURFACE_RGBA; // use if most composer input is RGBA
 
-// class serializes decoder submission to ge all frames from all streams in right order 
+// class serializes decoder submission to ge all frames from all streams in right order
 class CaptureVideoPipelineBase::DecoderSubmissionSync
 {
 protected:
@@ -145,7 +145,7 @@ public:
     virtual void Restart(){m_bEof = false;}
 
 
-    AMF_RESULT SubmitInput(amf::AMFData* pData) 
+    AMF_RESULT SubmitInput(amf::AMFData* pData)
     {
         AMF_RESULT res = AMF_OK;
         if (pData == NULL || m_bEof) // EOF
@@ -173,7 +173,7 @@ public:
                 return AMF_INPUT_FULL;
             }
         }
-        return res; 
+        return res;
     }
     virtual AMF_RESULT QueryOutput(amf::AMFData** ppData)
     {
@@ -585,8 +585,7 @@ AMF_RESULT CaptureVideoPipelineBase::InitDemuxer(
     std::wstring&        sFilename,
     amf::AMFComponent**  ppDemuxer)
 {
-    AMF_RESULT res = AMF_OK;
-    res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_DEMUXER, ppDemuxer);
+    AMF_RESULT res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*) FFMPEG_DEMUXER, ppDemuxer);
     AMF_RETURN_IF_FAILED(res, L"AMFCreateComponent  ( %s) failed", FFMPEG_DEMUXER);
     (*ppDemuxer)->SetProperty(FFMPEG_DEMUXER_PATH, sFilename.c_str());
     return res;
@@ -720,7 +719,7 @@ AMF_RESULT CaptureVideoPipelineBase::Stop()
 {
     Pipeline::Stop();
 
-    
+
     m_stream.Terminate();
     m_streamBK.Terminate();
 
@@ -750,12 +749,12 @@ AMF_RESULT CaptureVideoPipelineBase::Stop()
 
     if (m_pContext != NULL)
     {
-#if DEBUG_D3D11_LEAKS        
+#if DEBUG_D3D11_LEAKS
         ATL::CComQIPtr<ID3D11Debug>  pDebug((ID3D11Device*)m_pContext->GetDX11Device());
 #endif
         m_pContext->Terminate();
         m_pContext.Release();
-#if DEBUG_D3D11_LEAKS        
+#if DEBUG_D3D11_LEAKS
         if(pDebug != NULL)
         {
             pDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);

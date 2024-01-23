@@ -45,7 +45,7 @@ namespace amf
 
     ////-------------------------------------------------------------------------------------------------
 
-    class BaseEncoderFFMPEGImpl : 
+    class BaseEncoderFFMPEGImpl :
         public AMFInterfaceBase,
         public AMFPropertyStorageExImpl<AMFComponent>
     {
@@ -70,9 +70,9 @@ namespace amf
         virtual AMF_RESULT  AMF_STD_CALL  SubmitInput(AMFData* pData);
         virtual AMF_RESULT  AMF_STD_CALL  QueryOutput(AMFData** ppData);
         virtual AMFContext* AMF_STD_CALL  GetContext()                                                  {  return m_spContext;  };
-        virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* callback)        {  return AMF_NOT_SUPPORTED;  };
-        virtual AMF_RESULT  AMF_STD_CALL  GetCaps(AMFCaps** ppCaps)                                     {  return AMF_NOT_SUPPORTED;  };
-        virtual AMF_RESULT  AMF_STD_CALL  Optimize(AMFComponentOptimizationCallback* pCallback)         {  return AMF_OK;  };
+        virtual AMF_RESULT  AMF_STD_CALL  SetOutputDataAllocatorCB(AMFDataAllocatorCB* /*callback*/)    {  return AMF_NOT_SUPPORTED;  };
+        virtual AMF_RESULT  AMF_STD_CALL  GetCaps(AMFCaps** /*ppCaps*/)                                 {  return AMF_NOT_SUPPORTED;  };
+        virtual AMF_RESULT  AMF_STD_CALL  Optimize(AMFComponentOptimizationCallback* /*pCallback*/)     {  return AMF_OK;  };
 
         // AMFPropertyStorageObserver interface
         virtual void        AMF_STD_CALL  OnPropertyChanged(const wchar_t* pName);
@@ -109,11 +109,11 @@ namespace amf
 
       mutable AMFCriticalSection        m_Sync;
 
-      // in QueryOutput, we want to make sure that we match the 
-      // input frame that went in with what's coming out, so we 
-      // copy the right properties to the right data going out 
+      // in QueryOutput, we want to make sure that we match the
+      // input frame that went in with what's coming out, so we
+      // copy the right properties to the right data going out
       // the fact is that we don't want to store the full frames
-      // because they can be quite large and the encoder seems 
+      // because they can be quite large and the encoder seems
       // to queue quite a few before it spits out the first frame
       // just imagine you queue 15 x 8k frames
       struct AMFTransitFrame
@@ -142,7 +142,7 @@ namespace amf
         amf_uint64                      m_videoFrameQueryCount;
 
         // data of the surface we are going to process
-        // NOTE: For now, the frames should have the 
+        // NOTE: For now, the frames should have the
         //       same size for each submit...
         AMF_SURFACE_FORMAT              m_format;
         amf_int32                       m_width;
@@ -155,5 +155,5 @@ namespace amf
     };
 
  //   typedef AMFInterfacePtr_T<BaseEncoderFFMPEGImpl>    AMFBaseEncoderFFMPEGPtr;
-    
+
 }

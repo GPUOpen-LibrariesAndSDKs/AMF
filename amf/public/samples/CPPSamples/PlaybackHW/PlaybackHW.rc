@@ -68,6 +68,7 @@ BEGIN
         END
         MENUITEM SEPARATOR
         MENUITEM "Fullscreen\tCtrl+F",          ID_OPTIONS_FULLSCREEN
+        MENUITEM "Exclusive Fullscreen",        ID_OPTIONS_EXCLUSIVEFULLSCREEN
     END
     MENUITEM "Play",                        ID_PLAYBACK_PLAY
     MENUITEM "Pause",                       ID_PLAYBACK_PAUSE

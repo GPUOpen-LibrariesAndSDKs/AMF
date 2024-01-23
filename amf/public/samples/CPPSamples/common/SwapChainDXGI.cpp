@@ -70,11 +70,11 @@ AMF_RESULT SwapChainDXGI::Terminate()
 {
     if (m_pSwapChain != nullptr)
     {
-        SetFullscreenState(false);
+        SetExclusiveFullscreenState(false);
     }
 
     m_pDXGIDevice = nullptr;
-    m_pDXGIAdapter = nullptr;
+    m_pDXGIAdapters.clear();
     m_pDXGIFactory = nullptr;
     m_pDXGIFactory2 = nullptr;
 
@@ -82,6 +82,7 @@ AMF_RESULT SwapChainDXGI::Terminate()
     m_pSwapChain1 = nullptr;
     m_pSwapChain3 = nullptr;
 
+    m_pDXGIAdapters.clear();
     m_pOutputs.clear();
     m_pCurrentOutput = nullptr;
     m_pCurrentOutput6 = nullptr;
@@ -206,10 +207,21 @@ AMF_RESULT SwapChainDXGI::CreateSwapChain(IUnknown* pDevice, amf_int32 width, am
 
     // When tearing support is enabled we will handle ALT+Enter key presses in the
     // window message loop rather than let DXGI handle it by calling SetFullscreenState.
-    m_pDXGIFactory->MakeWindowAssociation((HWND)m_hwnd, DXGI_MWA_NO_ALT_ENTER);
+    //m_pDXGIFactory->MakeWindowAssociation((HWND)m_hwnd, DXGI_MWA_NO_ALT_ENTER); MakeWindowAssociation requires adapter parent factory
+    ATL::CComPtr<IDXGIAdapter> pDXGIAdapter;
+    GetDXGIDeviceAdapter( &pDXGIAdapter );
 
-    res = SetFullscreenState(fullscreen);
-    AMF_RETURN_IF_FAILED(res, L"CreateSwapChain() - SetFullscreenState() failed");
+    ATL::CComPtr<IDXGIFactory> pDXGIFactory;
+    if (pDXGIAdapter != nullptr)
+    {
+        pDXGIAdapter->GetParent(__uuidof(IDXGIFactory), (void **)&pDXGIFactory);
+    }
+    // if no parent, use existing
+    if (pDXGIFactory == nullptr)
+    {
+        pDXGIFactory = m_pDXGIFactory;
+    }
+    pDXGIFactory->MakeWindowAssociation((HWND)m_hwnd, DXGI_MWA_NO_ALT_ENTER);
 
     res = EnableHDR(hdr);
     AMF_RETURN_IF_FALSE(res == AMF_OK || res == AMF_NOT_SUPPORTED, res, L"CreateSwapChain() - EnableHDR() failed");
@@ -232,7 +244,7 @@ AMF_RESULT SwapChainDXGI::Present(amf_bool waitForVSync)
     }
 
     // Present the frame.
-    for (int i = 0; i < 100; i++)
+    for (amf_int i = 0; i < 100; i++)
     {
         // If the GPU is busy at the moment present was called and if 
         // it did not execute or schedule the operation, we get the
@@ -264,8 +276,8 @@ AMF_RESULT SwapChainDXGI::Resize(amf_int32 width, amf_int32 height, amf_bool ful
         AMF_RETURN_IF_FAILED(res, L"ResizeSwapChain() - SetFormat() failed");
     }
 
-    AMF_RESULT res = SetFullscreenState(fullscreen);
-    AMF_RETURN_IF_FAILED(res, L"Resize() - SetFullscreenState() failed");
+    AMF_RESULT res = UpdateCurrentOutput();
+    AMF_RETURN_IF_FAILED(res, L"ResizeSwapChain() - UpdateCurrentOutput() failed");
 
     // Ignore passed width/height and take output size when fullscreen
     if (fullscreen == true)
@@ -277,9 +289,6 @@ AMF_RESULT SwapChainDXGI::Resize(amf_int32 width, amf_int32 height, amf_bool ful
 
     HRESULT hr = m_pSwapChain->ResizeBuffers(0, width, height, GetDXGIFormat(), 0);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"Resize() - SwapChain ResizeBuffers() failed.");
-
-    res = UpdateCurrentOutput();
-    AMF_RETURN_IF_FAILED(res, L"ResizeSwapChain() - UpdateCurrentOutput() failed");
 
     return AMF_OK;
 }
@@ -326,7 +335,7 @@ DXGI_FORMAT SwapChainDXGI::GetSupportedDXGIFormat(AMF_SURFACE_FORMAT format) con
     return DXGI_FORMAT_UNKNOWN;
 }
 
-amf_bool SwapChainDXGI::GetFullscreenState()
+amf_bool SwapChainDXGI::GetExclusiveFullscreenState()
 {
     if (m_hwnd == nullptr || m_pSwapChain == nullptr)
     {
@@ -350,12 +359,16 @@ amf_bool SwapChainDXGI::GetFullscreenState()
     return false;
 }
 
-AMF_RESULT SwapChainDXGI::SetFullscreenState(amf_bool fullscreen)
+AMF_RESULT SwapChainDXGI::SetExclusiveFullscreenState(amf_bool fullscreen)
 {
+    if (m_pSwapChain == nullptr)
+    {
+        return AMF_NOT_INITIALIZED;
+    }
     AMF_RETURN_IF_FALSE(m_hwnd != nullptr, AMF_NOT_INITIALIZED, L"SetFullscreenState() - m_hwnd is not initialized");
     AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_NOT_INITIALIZED, L"SetFullscreenState() - m_pSwapChain is not initialized");
 
-    if (GetFullscreenState() == fullscreen)
+    if (GetExclusiveFullscreenState() == fullscreen)
     {
         return AMF_OK;
     }
@@ -367,8 +380,6 @@ AMF_RESULT SwapChainDXGI::SetFullscreenState(amf_bool fullscreen)
         HRESULT hr = m_pSwapChain->SetFullscreenState(fullscreen ? TRUE : FALSE, nullptr);
         ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetFullscreenState() - SetFullscreenState failed");
     }
-
-    m_fullscreenEnabled = fullscreen;
 
     return AMF_OK;
 }
@@ -430,23 +441,43 @@ amf_bool SwapChainDXGI::StereoSupported()
     return m_pDXGIFactory2 != nullptr;
 }
 
-AMF_RESULT SwapChainDXGI::UpdateOutputs()
+template<typename Enumerator_T=branch, typename Interface_T>
+static AMF_RESULT EnumDXGIInterface(Enumerator_T* pEnumerator, HRESULT (__stdcall Enumerator_T::*enumFunc)(UINT, Interface_T**), amf::amf_vector<CComPtr<Interface_T>>& pInterfaces)
 {
-    AMF_RETURN_IF_FALSE(m_pDXGIAdapter != nullptr, AMF_NOT_INITIALIZED, L"UpdateOutputs() - m_pDXGIAdapter is not initialized");
-
-    m_pOutputs.clear();
-
-    // Get all outputs from adapter
-    for (UINT i = 0;; i++)
+    for (UINT i = 0;; ++i)
     {
-        CComPtr<IDXGIOutput> pOutput;
-        HRESULT hr = m_pDXGIAdapter->EnumOutputs(i, &pOutput);
-        if (pOutput == nullptr || FAILED(hr))
+        CComPtr<Interface_T> pInterface;
+        HRESULT hr = (pEnumerator->*enumFunc)(i, &pInterface);
+        if (FAILED(hr) || pInterface == nullptr)
         {
             break;
         }
 
-        m_pOutputs.push_back(pOutput);
+        pInterfaces.push_back(pInterface);
+    }
+
+    return AMF_OK;
+}
+
+AMF_RESULT SwapChainDXGI::GetDXGIAdapters()
+{
+    AMF_RETURN_IF_FALSE(m_pDXGIFactory != nullptr, AMF_NOT_INITIALIZED, L"GetDXGIAdapters() - DXGI factor not initialized");
+
+    m_pDXGIAdapters.clear();
+    EnumDXGIInterface<IDXGIFactory, IDXGIAdapter>(m_pDXGIFactory, &IDXGIFactory::EnumAdapters, m_pDXGIAdapters);
+    AMF_RETURN_IF_FALSE(m_pDXGIAdapters.empty() == false, AMF_FAIL, L"GetDXGIInterface() - Failed to find any adapters");
+    return AMF_OK;
+}
+
+AMF_RESULT SwapChainDXGI::UpdateOutputs()
+{
+    AMF_RETURN_IF_FALSE(m_pDXGIAdapters.empty() == false, AMF_NOT_INITIALIZED, L"UpdateOutputs() - Adapters are not initialized");
+
+    m_pOutputs.clear();
+
+    for (IDXGIAdapter* pDXGIAdapter : m_pDXGIAdapters)
+    {
+        EnumDXGIInterface<IDXGIAdapter, IDXGIOutput>(pDXGIAdapter, &IDXGIAdapter::EnumOutputs, m_pOutputs);
     }
 
     return AMF_OK;
@@ -464,7 +495,6 @@ AMF_RESULT SwapChainDXGI::UpdateCurrentOutput()
         m_pOutputs.clear();
     }
     
-    // Todo: should we update output list and adapter?
     if (m_pOutputs.empty())
     {
         AMF_RESULT res = UpdateOutputs();
@@ -475,6 +505,8 @@ AMF_RESULT SwapChainDXGI::UpdateCurrentOutput()
     // Sets the current output by checking which output
     // corresponds to the monitor displaying the window
     const HMONITOR hMonitor = MonitorFromWindow((HWND)m_hwnd, MONITOR_DEFAULTTONEAREST);
+    AMF_RETURN_IF_FALSE(hMonitor != NULL, AMF_FAIL, L"UpdateCurrentOutput() - hMonitor NULL");
+
 
     // Don't search for new output
     if (m_pCurrentOutput != nullptr)
@@ -568,7 +600,7 @@ AMF_RESULT SwapChainDXGI::UpdateColorSpace()
     // 1. RGBA_F16 format with the scRGB colorspace (CCCS). This is the default format used in the DWM and is always available
     // 2. R10G10B10A2 (UINT10) format with BT.2100 colorspace. This is only supported when HDR is enabled and blending isn't required
 
-    bool hdrMode = false;
+    amf_bool hdrMode = false;
     if (HDREnabled() && desc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020) // HDR
     {
         if (GetFormat() == amf::AMF_SURFACE_RGBA_F16)

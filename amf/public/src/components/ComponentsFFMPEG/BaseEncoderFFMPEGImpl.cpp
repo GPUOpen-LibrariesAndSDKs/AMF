@@ -28,7 +28,7 @@ using namespace amf;
 //
 //
 //--------------------------------------------------------------------------------------------------------------------------------
-bool BaseEncoderFFMPEGImpl::SendThread::Process(amf_ulong& ulID, amf::AMFSurfacePtr& pSurfaceIn, int& outData)
+bool BaseEncoderFFMPEGImpl::SendThread::Process(amf_ulong& /*ulID*/, amf::AMFSurfacePtr& pSurfaceIn, int& /*outData*/)
 {
     int ret = 0;
     if (pSurfaceIn == nullptr)
@@ -46,7 +46,7 @@ bool BaseEncoderFFMPEGImpl::SendThread::Process(amf_ulong& ulID, amf::AMFSurface
     }
     // fill the frame information
     AVFrameEx  avFrame;
-    AMF_RESULT err = m_pEncoderFFMPEG->InitializeFrame(pSurfaceIn, avFrame);
+    m_pEncoderFFMPEG->InitializeFrame(pSurfaceIn, avFrame);
     AMFTransitFrame  transitFrame = {};
     transitFrame.pStorage = new AMFInterfaceImpl< AMFPropertyStorageImpl <AMFPropertyStorage>>();
     transitFrame.pts = pSurfaceIn->GetPts();
@@ -101,7 +101,7 @@ bool BaseEncoderFFMPEGImpl::SendThread::Process(amf_ulong& ulID, amf::AMFSurface
     return true;
 }
 //-------------------------------------------------------------------------------------------------
-// we can initialize PA in different modes, for external, 
+// we can initialize PA in different modes, for external,
 // internal inside encoder, or various debug modes
 // the template definition that creates this object doesn't
 // like the enumeration so leave the mode parameter as int
@@ -110,7 +110,7 @@ BaseEncoderFFMPEGImpl::BaseEncoderFFMPEGImpl(AMFContext* pContext)
     m_bEncodingEnabled(true),
     m_isEOF(false),
     m_videoFrameSubmitCount(0), m_videoFrameQueryCount(0),
-    m_format(AMF_SURFACE_NV12), 
+    m_format(AMF_SURFACE_NV12),
     m_width(0), m_height(0),
     m_pCodecContext(NULL),
     m_CodecID(AV_CODEC_ID_NONE),
@@ -244,20 +244,20 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::Terminate()
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::Drain()                                                   
-{  
+AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::Drain()
+{
     AMFTraceDebug(AMF_FACILITY, L"BaseEncoderFFMPEGImpl::Drain() - current input queue size %d",
         m_inputData.size());
 
     AMFLock lock(&m_Sync);
 
     m_isEOF = true;
-    
+
     return SubmitInput(nullptr);
 };
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::Flush()                                                   
-{  
+AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::Flush()
+{
     AMFTraceDebug(AMF_FACILITY, L"BaseEncoderFFMPEGImpl::Flush()");
 
     // dump all the remaining frames in the system
@@ -290,10 +290,10 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::Flush()
     // restart the thread
     AMF_RETURN_IF_FALSE(m_SendThread.Start(), AMF_UNEXPECTED, L"Flush() - m_SendThread.Start()");
 
-    return AMF_OK;  
+    return AMF_OK;
 };
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::SubmitInput(AMFData* pData)                               
+AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::SubmitInput(AMFData* pData)
 {
     // check some required parameters
     AMF_RETURN_IF_FALSE(m_pCodecContext != NULL, AMF_NOT_INITIALIZED, L"SubmitInput() - Codec Context not Initialized");
@@ -307,7 +307,7 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::SubmitInput(AMFData* pData)
        return m_isEOF ? AMF_EOF : AMF_OK;
     }
 
-    // update the first frame pts offset - we'll be using 
+    // update the first frame pts offset - we'll be using
     // this to figure out output pts information later on
     if (pData && (m_firstFramePts == -1))
     {
@@ -322,7 +322,7 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::SubmitInput(AMFData* pData)
     // start submitting information to the encoder
     AMFSurfacePtr spSurface;
 
-    if (pData != nullptr) 
+    if (pData != nullptr)
     {
         // check the input data type is AMFSurface
         // if it's not, we can't work with it
@@ -340,7 +340,7 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::SubmitInput(AMFData* pData)
             pPlane0->GetHeight());
 
         // check the input data matches what the encoder expects
-        // there's no point in somehow getting a frame that's of a 
+        // there's no point in somehow getting a frame that's of a
         // different format, or other properties encoder doesn't expect
         AMF_RETURN_IF_FALSE(spSurface->GetFormat() == m_format, AMF_INVALID_DATA_TYPE, L"SubmitInput() - format (%s) received, (%s) expected", AMFSurfaceGetFormatName(spSurface->GetFormat()), AMFSurfaceGetFormatName(m_format));
         AMF_RETURN_IF_FALSE(pPlane0->GetWidth() == m_width, AMF_INVALID_ARG, L"SubmitInput() - frame width received (%d), expected (%d)", pPlane0->GetWidth(), m_width);
@@ -369,7 +369,7 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::SubmitInput(AMFData* pData)
 };
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::QueryOutput(AMFData** ppData)
-{  
+{
     // check some required parameters
     AMF_RETURN_IF_FALSE(m_pCodecContext != NULL, AMF_NOT_INITIALIZED, L"QueryOutput() - Codec Context not Initialized");
     AMF_RETURN_IF_FALSE(ppData != NULL, AMF_INVALID_ARG, L"QueryOutput() - ppData == NULL");
@@ -386,14 +386,14 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::QueryOutput(AMFData** ppData)
     // retrieve the encoded packet - it is possible that
     // for some packets, the encoder needs more data, in
     // which case it will return AVERROR(EAGAIN)
-    // 
-    // AVERROR(EAGAIN): output is not available in the current state - 
-    //                  user must try to send input 
-    // AVERROR_EOF: the encoder has been fully flushed, and there will be no more output packets 
-    // AVERROR(EINVAL): codec not opened, or it is an encoder 
+    //
+    // AVERROR(EAGAIN): output is not available in the current state -
+    //                  user must try to send input
+    // AVERROR_EOF: the encoder has been fully flushed, and there will be no more output packets
+    // AVERROR(EINVAL): codec not opened, or it is an encoder
     // other errors: legitimate decoding errors
     {
-        AMFLock lock(&m_SyncAVCodec);
+        AMFLock lock2(&m_SyncAVCodec);
 
         int ret = avcodec_receive_packet(m_pCodecContext, &avPacket);
         if (ret == AVERROR(EAGAIN))

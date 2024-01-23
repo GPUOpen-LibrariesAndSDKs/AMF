@@ -28,6 +28,14 @@
 //
 
 
+1.4.33.0 (23.1.2024) version
+--------------------------
+   - Added native DX12 support for encoding and PreAnalysis
+   - Vulkan encoder became independent from Vulkan driver
+   - Switched to public Vulkan Khronos extensions for decoder
+   - AMF on Linux can now be used with AMD Pro Vulkan, and experimentally with RADV drivers
+   - Improvements to sample presenters
+
 1.4.32.0 (5.12.2023) version
 --------------------------
    - Added new FRC component and API doc

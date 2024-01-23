@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2017 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -75,7 +75,7 @@ namespace amf
     {
     protected:
         friend class MFCaptureManagerImpl;
-        
+
         //-------------------------------------------------------------------------------------------------
         class AMFOutputBase : public AMFInterfaceImpl < AMFPropertyStorageExImpl <AMFOutput> >
         {
@@ -145,8 +145,8 @@ namespace amf
 
             struct Format
             {
-                Format() : m_eFormat(AMF_SURFACE_UNKNOWN), m_iCodecID(0), 
-                    m_FrameSize(AMFConstructSize(0,0)), m_FrameRate(AMFConstructRate(0,1)), 
+                Format() : m_eFormat(AMF_SURFACE_UNKNOWN), m_iCodecID(0),
+                    m_FrameSize(AMFConstructSize(0,0)), m_FrameRate(AMFConstructRate(0,1)),
                     m_iStreamIndex(-1), m_iMediaTypeIndex(-1),
                     m_pCodecNameFound(L"")
                 {}
@@ -157,9 +157,9 @@ namespace amf
                 AMFRate                             m_FrameRate;
                 amf_int32                           m_iStreamIndex;
                 amf_int32                           m_iMediaTypeIndex;
-                wchar_t *                           m_pCodecNameFound;
+                const wchar_t *                     m_pCodecNameFound;
             };
-            Format                              m_Format;
+            Format                                  m_Format;
             CComPtr<IMFDXGIDeviceManager>           m_pDxgiDeviceManager;
         };
         //-------------------------------------------------------------------------------------------------

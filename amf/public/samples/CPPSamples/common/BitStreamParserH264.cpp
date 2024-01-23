@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -155,7 +155,7 @@ protected:
         amf_uint32 FrameCroppingRectRightOffset;
         amf_uint32 FrameCroppingRectTopOffset;
         amf_uint32 FrameCroppingRectBottomOffset;
-        // VUI 
+        // VUI
         bool timing_info_present_flag;
         amf_uint32 num_units_in_tick;
         amf_uint32 time_scale;
@@ -256,7 +256,7 @@ protected:
 
     AMFByteArray   m_ReadData;
     AMFByteArray   m_Extradata;
-    
+
     AMFByteArray   m_EBSPtoRBSPData;
 
     bool           m_bUseStartCodes;
@@ -363,7 +363,7 @@ int AvcParser::GetPictureHeight() const
     }
     const SpsData &sps = m_SpsMap.cbegin()->second;
     const amf_uint32 picHeightInMapUnits = sps.PicHeightInMapUnitsMinus1 + 1;
-    const amf_uint32 frameHeightInMbs = sps.FrameMbsOnlyFlag ? picHeightInMapUnits : picHeightInMapUnits * 2; 
+    const amf_uint32 frameHeightInMbs = sps.FrameMbsOnlyFlag ? picHeightInMapUnits : picHeightInMapUnits * 2;
 
     int height = frameHeightInMbs * MacroblocSize;
     if(sps.FrameCroppingFlag)
@@ -394,7 +394,7 @@ int AvcParser::GetAlignedHeight() const
     }
     const SpsData &sps = m_SpsMap.cbegin()->second;
     const amf_uint32 picHeightInMapUnits = sps.PicHeightInMapUnitsMinus1 + 1;
-    const amf_uint32 frameHeightInMbs = sps.FrameMbsOnlyFlag ? picHeightInMapUnits : picHeightInMapUnits * 2; 
+    const amf_uint32 frameHeightInMbs = sps.FrameMbsOnlyFlag ? picHeightInMapUnits : picHeightInMapUnits * 2;
 
     int height = frameHeightInMbs * MacroblocSize;
     return height; // return height aligned to microblocks. VideoDecoder will add ROI to AMFSurface if needed.
@@ -431,7 +431,7 @@ double AvcParser::GetFrameRate()  const
         const SpsData &sps = m_SpsMap.cbegin()->second;
         if(sps.timing_info_present_flag && sps.num_units_in_tick != 0)
         {
-            // according to the latest h264 standard nuit_field_based_flag is always = 1 and therefore this must be divided by two 
+            // according to the latest h264 standard nuit_field_based_flag is always = 1 and therefore this must be divided by two
             // some old clips may get wrong FPS. This is just a sample. Use container information
             return (double)sps.time_scale / sps.num_units_in_tick / 2;
         }
@@ -446,7 +446,7 @@ void     AvcParser::GetFrameRate(AMFRate *frameRate) const
         const SpsData &sps = m_SpsMap.cbegin()->second;
         if(sps.timing_info_present_flag && sps.num_units_in_tick != 0)
         {
-            // according to the latest h264 standard nuit_field_based_flag is always = 1 and therefore this must be divided by two 
+            // according to the latest h264 standard nuit_field_based_flag is always = 1 and therefore this must be divided by two
             // some old clips may get wrong FPS. This is just a sample. Use container information
             frameRate->num = sps.time_scale / 2;
             frameRate->den = sps.num_units_in_tick;
@@ -475,9 +475,9 @@ AMF_RESULT AvcParser::QueryOutput(amf::AMFData** ppData)
     std::vector<size_t> naluSizes;
     size_t dataOffset = 0;
     bool bSliceFound = false;
-    do 
+    do
     {
-        
+
         size_t naluSize = 0;
         size_t naluOffset = 0;
         size_t naluAnnexBOffset = dataOffset;
@@ -526,7 +526,7 @@ AMF_RESULT AvcParser::QueryOutput(amf::AMFData** ppData)
             NalUnitTypeSliceIdrPicture == naluType ||
             NalUnitTypeSliceOfNonIdrPicture == naluType)
         {
-            bSliceFound = true;  
+            bSliceFound = true;
             AccessUnitSigns naluAccessUnitsSigns;
 
             m_EBSPtoRBSPData.SetSize(naluSize);
@@ -636,7 +636,7 @@ AvcParser::NalUnitType   AvcParser::ReadNextNaluUnit(size_t *offset, size_t *nal
             if(ready == 0 )
             {
                 m_bEof = true;
-                newNalFound = startOffset != *offset; 
+                newNalFound = startOffset != *offset;
                 *offset = m_ReadData.GetSize();
                 break; // EOF
             }
@@ -656,7 +656,7 @@ AvcParser::NalUnitType   AvcParser::ReadNextNaluUnit(size_t *offset, size_t *nal
             {
                 zerosCount++;
             }
-            else 
+            else
             {
                 if (1 == ch && zerosCount > 1) // We found a start code in Annex B stream
                 {
@@ -664,7 +664,7 @@ AvcParser::NalUnitType   AvcParser::ReadNextNaluUnit(size_t *offset, size_t *nal
                     {
                         ready = i - zerosCount;
                         newNalFound = true; // new NAL
-                        break; 
+                        break;
                     }
                     else
                     {
@@ -693,9 +693,9 @@ void    AvcParser::FindSPSandPPS()
     bool bSPSFound = false;
     bool bPPSFound = false;
     size_t dataOffset = 0;
-    do 
+    do
     {
-        
+
         size_t naluSize = 0;
         size_t naluOffset = 0;
         NalUnitType   naluType = ReadNextNaluUnit(&dataOffset, &naluOffset, &naluSize);
@@ -763,13 +763,13 @@ bool AvcParser::SpsData::Parse(amf_uint8 *nalu, size_t /* size */)
     // See ITU-T Rec. H.264 (04/2013) Advanced video coding for generic audiovisual services, page 64
     if( ProfileIdc == 100 ||
         ProfileIdc == 110 ||
-        ProfileIdc == 122 || 
-        ProfileIdc == 244 || 
+        ProfileIdc == 122 ||
+        ProfileIdc == 244 ||
         ProfileIdc == 44 ||
-        ProfileIdc == 83 || 
-        ProfileIdc == 86 || 
+        ProfileIdc == 83 ||
+        ProfileIdc == 86 ||
         ProfileIdc == 118 ||
-        ProfileIdc == 128 || 
+        ProfileIdc == 128 ||
         ProfileIdc == 138 )
     {
         ChromaFormatIdc = Parser::ExpGolomb::readUe(nalu, offset);
@@ -855,7 +855,7 @@ bool AvcParser::SpsData::Parse(amf_uint8 *nalu, size_t /* size */)
         FrameCroppingRectBottomOffset = Parser::ExpGolomb::readUe(nalu, offset);
     }
     bool vui_parameters_present_flag = Parser::getBit(nalu, offset);
-    // partial read of VUI - need frame rate 
+    // partial read of VUI - need frame rate
     if(vui_parameters_present_flag)
     {
         bool aspect_ratio_info_present_flag = Parser::getBit(nalu, offset);
@@ -970,7 +970,7 @@ bool AvcParser::AccessUnitSigns::Parse(amf_uint8 *nalu, size_t /* size */, std::
 
     PicOrderCntLsb = 0;
     DeltaPicOrderCntBottom = 0;
-    if (0 == spsIt->second.PicOrderCntType) 
+    if (0 == spsIt->second.PicOrderCntType)
     {
         amf_uint32 picOrderCntLsbBitsCount = spsIt->second.Log2MaxPicOrderCntLsbMinus4 + 4;
         PicOrderCntLsb = Parser::readBits(nalu, offset, picOrderCntLsbBitsCount);
@@ -983,7 +983,7 @@ bool AvcParser::AccessUnitSigns::Parse(amf_uint8 *nalu, size_t /* size */, std::
 
     DeltaPicOrderCnt0 = 0;
     DeltaPicOrderCnt1 = 0;
-    if (1 == spsIt->second.PicOrderCntType && !spsIt->second.DeltaPicOrderAlwaysZero) 
+    if (1 == spsIt->second.PicOrderCntType && !spsIt->second.DeltaPicOrderAlwaysZero)
     {
         DeltaPicOrderCnt0 = Parser::ExpGolomb::readSe(nalu, offset);
 
@@ -1022,33 +1022,33 @@ bool AvcParser::AccessUnitSigns::IsNewPicture(const AccessUnitSigns &newSigns)
             return true;
         }
 
-        if (FieldPicFlag && newSigns.FieldPicFlag && 
+        if (FieldPicFlag && newSigns.FieldPicFlag &&
             BottomFieldFlag != newSigns.BottomFieldFlag)
         {
             return true;
         }
 
-        if ((NalRefIdc == 0 || newSigns.NalRefIdc == 0) && 
+        if ((NalRefIdc == 0 || newSigns.NalRefIdc == 0) &&
             NalRefIdc != newSigns.NalRefIdc)
         {
             return true;
         }
 
-        if (IdrPicFlag && newSigns.IdrPicFlag && 
+        if (IdrPicFlag && newSigns.IdrPicFlag &&
             IdrPicId != newSigns.IdrPicId)
         {
             return true;
         }
 
-        if ((PicOrderCntType == 0 && newSigns.PicOrderCntType == 0) && 
-            ((PicOrderCntLsb != newSigns.PicOrderCntLsb) || 
+        if ((PicOrderCntType == 0 && newSigns.PicOrderCntType == 0) &&
+            ((PicOrderCntLsb != newSigns.PicOrderCntLsb) ||
             (DeltaPicOrderCntBottom != newSigns.DeltaPicOrderCntBottom)))
         {
             return true;
         }
 
-        if ((PicOrderCntType == 1 && newSigns.PicOrderCntType == 1) && 
-            ((DeltaPicOrderCnt0 != newSigns.DeltaPicOrderCnt0) || 
+        if ((PicOrderCntType == 1 && newSigns.PicOrderCntType == 1) &&
+            ((DeltaPicOrderCnt0 != newSigns.DeltaPicOrderCnt0) ||
             (DeltaPicOrderCnt1 != newSigns.DeltaPicOrderCnt1)))
         {
             return true;
@@ -1124,7 +1124,7 @@ bool ExtraDataAvccBuilder::GetExtradata(AMFByteArray   &extradata)
 //    }
 
     *data++ = (static_cast<amf_uint8>(m_PPSCount)); // numOfPictureParameterSets
-    
+
     memcpy(data, m_PPSs.GetData(), m_PPSs.GetSize());
 
     data += m_PPSs.GetSize();
@@ -1142,7 +1142,7 @@ void ExtraDataAvccBuilder::SetAnnexB(amf_uint8 *data, size_t size)
         {
             zerosCount++;
         }
-        else 
+        else
         {
             if (1 == ch && zerosCount > 1) // We found a start code in Annex B stream
             {
@@ -1194,10 +1194,10 @@ size_t AvcParser::EBSPtoRBSP(amf_uint8 *streamBuffer,size_t begin_bytepos, size_
     amf_uint8 *streamBuffer_end=streamBuffer+end_bytepos;
     int iReduceCount=0;
     for(; streamBuffer_i!=streamBuffer_end; )
-    { 
+    {
         //starting from begin_bytepos to avoid header information
         //in NAL unit, 0x000000, 0x000001 or 0x000002 shall not occur at any amf_uint8-aligned position
-        register amf_uint8 tmp=*streamBuffer_i;
+        amf_uint8 tmp=*streamBuffer_i;
         if(count == ZEROBYTES_SHORTSTARTCODE)
         {
             if(tmp == 0x03)
@@ -1218,7 +1218,7 @@ size_t AvcParser::EBSPtoRBSP(amf_uint8 *streamBuffer,size_t begin_bytepos, size_
                 count = 0;
                 tmp = *streamBuffer_i;
             }
-            else if(tmp < 0x03) 
+            else if(tmp < 0x03)
             {
             }
         }

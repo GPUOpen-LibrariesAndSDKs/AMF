@@ -101,7 +101,6 @@ protected:
     virtual AMF_RESULT                  SetFormat(amf::AMF_SURFACE_FORMAT format) override;
     virtual D3DFORMAT                   GetSupportedD3DFormat(amf::AMF_SURFACE_FORMAT format) const;
 
-    virtual AMF_RESULT                  SetFullscreenState(amf_bool fullscreen);
 
     virtual AMF_RESULT                  UpdateOutputs();
     virtual AMF_RESULT                  UpdateCurrentOutput() override;
@@ -123,12 +122,10 @@ protected:
     struct OutputDescription
     {
         HMONITOR                        hMonitor;
-        std::vector<D3DDISPLAYMODE>     modes;
+        amf::amf_vector<D3DDISPLAYMODE> modes;
         D3DDISPLAYMODE                  fullscreenMode;
     };
 
-    std::vector<OutputDescription>      m_outputs;
+    amf::amf_vector<OutputDescription>  m_outputs;
     amf_int                             m_currentOutput;
-
-    WindowFullscreenContext             m_fullscreenContext;
 };

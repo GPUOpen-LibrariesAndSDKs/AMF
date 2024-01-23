@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -54,7 +54,7 @@ const AMFEnumDescriptionEntry AMF_SAMPLE_FORMAT_ENUM_DESCRIPTION[] =
     { AMFAF_S16P, L"S16P" },
     { AMFAF_S32P, L"S32P" },
     { AMFAF_FLTP, L"FLTP" }, // currently FFMPEG supports only this
-    { AMFAF_DBLP, L"DBLP" }, 
+    { AMFAF_DBLP, L"DBLP" },
 
     { AMFAF_UNKNOWN, 0 }  // This is end of description mark
 };
@@ -95,7 +95,7 @@ AMFAudioEncoderFFMPEGImpl::AMFAudioEncoderFFMPEGImpl(AMFContext* pContext)
         AMFPropertyInfoEnum(AUDIO_ENCODER_IN_AUDIO_SAMPLE_FORMAT, L"Sample Format In", AMFAF_FLTP, AMF_SAMPLE_FORMAT_ENUM_DESCRIPTION, false),
         AMFPropertyInfoInt64(AUDIO_ENCODER_IN_AUDIO_CHANNEL_LAYOUT, L"Channel layout in (3 - default)", 3, 0, INT_MAX, true),
         AMFPropertyInfoInt64(AUDIO_ENCODER_IN_AUDIO_BLOCK_ALIGN, L"Block Align In", 0, 0, INT_MAX, true),
-        
+
         AMFPropertyInfoInt64(AUDIO_ENCODER_OUT_AUDIO_BIT_RATE, L"Compression Bit Rate Out", 128000, 0, INT_MAX, false),
         AMFPropertyInfoInterface(AUDIO_ENCODER_OUT_AUDIO_EXTRA_DATA, L"Extra Data Out", NULL, false),
         AMFPropertyInfoInt64(AUDIO_ENCODER_OUT_AUDIO_SAMPLE_RATE, L"Sample Rate Out", 44100, 0, INT_MAX, false),
@@ -136,7 +136,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
     // find the correct codec
     const AVCodec* pCodec = avcodec_find_encoder((AVCodecID) codecID);
     AMF_RETURN_IF_FALSE(pCodec != nullptr, AMF_CODEC_NOT_SUPPORTED, L"FFmpeg codec %S is not supported", avcodec_get_name((AVCodecID) codecID));
-    
+
     // allocate the codec context
     m_pCodecContext = avcodec_alloc_context3(pCodec);
     AMF_RETURN_IF_FALSE(m_pCodecContext != nullptr, AMF_CODEC_NOT_SUPPORTED, L"FFmpeg codec %S could not allocate codec context", avcodec_get_name((AVCodecID) codecID));
@@ -178,7 +178,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
 
     // verify format in codec
     if (pCodec->sample_fmts != NULL)
-    { 
+    {
         bool bFound = false;
         for(int i = 0; ; i++)
         {
@@ -205,7 +205,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
     // set all default parameters
     //m_pCodecContext->strict_std_compliance = FF_COMPLIANCE_STRICT;
     m_pCodecContext->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
-    
+
     m_pCodecContext->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
     m_pCodecContext->time_base.num = 1;
@@ -213,7 +213,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
 
 
     //
-    // we set-up the information we want FFmpeg to use - now it's 
+    // we set-up the information we want FFmpeg to use - now it's
     // time to get the codec and be ready to start encoding
     if (avcodec_open2(m_pCodecContext, pCodec, NULL) < 0 || m_pCodecContext->codec == 0)
     {
@@ -223,10 +223,10 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
 
 
     //
-    // we've created the correct FFmpeg information, now 
+    // we've created the correct FFmpeg information, now
     // it's time to update the component properties with
     // the data that we obtained
-    // 
+    //
     // input properties
     AMF_RETURN_IF_FAILED(SetProperty(AUDIO_ENCODER_IN_AUDIO_CHANNELS, m_pCodecContext->channels));
     AMF_RETURN_IF_FAILED(SetProperty(AUDIO_ENCODER_IN_AUDIO_SAMPLE_RATE, m_sampleRate));
@@ -247,7 +247,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
     // we can't store the m_pCodecContext->extradata
     // directly as we wouldn't know its size (in one property)
     if (m_pCodecContext->extradata_size != 0)
-    { 
+    {
         AMFBufferPtr spBuffer;
         AMF_RESULT err = m_pContext->AllocBuffer(AMF_MEMORY_HOST, m_pCodecContext->extradata_size, &spBuffer);
         if ((err == AMF_OK) && (spBuffer->GetNative() != nullptr))
@@ -286,7 +286,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Terminate()
     m_firstFramePts = -1LL;
     m_firstFFMPEGPts = LLONG_MIN;
     m_samplePreProcRequired = false;
-	
+
     m_audioFrameSubmitCount = 0;
     m_audioFrameQueryCount = 0;
     m_bEof = false;
@@ -310,7 +310,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Drain()
 
 
     //
-    // if we have remaining frames, start pushing them as we 
+    // if we have remaining frames, start pushing them as we
     // need to consume them to fully drain the component
     // submit frames until the decoder is full
     while (m_preparedFrames.empty() == false)
@@ -337,31 +337,31 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Drain()
     // if we have a partial frame left, we need to submit it also
     if (m_pPartialFrame != nullptr)
     {
-        // at this point, the only thing that's left to 
+        // at this point, the only thing that's left to
         // send to the encoder is the final partial frame
         AMFAudioBufferPtr  pTempFrame = m_pPartialFrame;
         m_pPartialFrame = nullptr;
 
-        // also clear any possible recycled frames as they 
+        // also clear any possible recycled frames as they
         // would also have been allocated for the wrong size
         // and if we need a new partial frame it has got to
         // be the correct size
         m_recycledFrames.clear();
 
-        // NOTE: need to make the final frame proper so it contains only the 
-        //       partial information not a portion of a full frame which 
+        // NOTE: need to make the final frame proper so it contains only the
+        //       partial information not a portion of a full frame which
         //       will cause the encoder to get more info than it should
         SplitOrCombineFrames(pTempFrame, m_partialFrameSampleCount);
         AMF_RETURN_IF_FALSE(m_preparedFrames.empty() == false, AMF_FAIL, L"Drain() - we should've obtained a 'full' frame at this point");
 
         // we don't care about any remaining data in this case
-        // as the partial frame we split should've been the 
+        // as the partial frame we split should've been the
         // ending partial data to be submitted to the encoder
         m_pPartialFrame = nullptr;
         m_partialFrameSampleCount = 0;
 
-        // what can happen is that the remaining partial frame 
-        // might be able to generate more than one frame out 
+        // what can happen is that the remaining partial frame
+        // might be able to generate more than one frame out
         // (Ex: remaining samples 566, on 1536 sample size)
         // but we only care about the first frame generated
         // the rest would contain invalid information
@@ -379,9 +379,9 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Drain()
 
 
     //
-    // no more frames left to process, so it's time to 
+    // no more frames left to process, so it's time to
     // tell the encoder that no more frames are coming
-    // if the encoder can't start flushing frames it 
+    // if the encoder can't start flushing frames it
     // will return AMF_INPUT_FULL from SubmitInput
     return SubmitInput(nullptr);
 }
@@ -391,7 +391,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Flush()
     AMFLock lock(&m_sync);
 
     // need to flush the encoder
-    // NOTE: it will only work if encoder declares 
+    // NOTE: it will only work if encoder declares
     //       support for AV_CODEC_CAP_ENCODER_FLUSH
     // NOTE: if we can't flush the encoder we need
     //       to reinitialize it, otherwise we will
@@ -445,7 +445,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::SubmitInput(AMFData* pData)
         return m_bEof ? AMF_EOF : AMF_OK;
     }
 
-    // update the first frame pts offset - we'll be using 
+    // update the first frame pts offset - we'll be using
     // this to figure out output pts information later on
     if (pData && (m_firstFramePts == -1))
     {
@@ -464,69 +464,69 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::SubmitInput(AMFData* pData)
         AMF_RETURN_IF_FALSE(pAudioBuffer != nullptr, AMF_INVALID_ARG, L"SubmitInput() - Input should be AudioBuffer");
 
         // check the input data matches what the encoder expects
-        // there's no point in somehow getting a frame that's of a 
+        // there's no point in somehow getting a frame that's of a
         // different format, or other properties encoder doesn't expect
         AMF_RETURN_IF_FALSE(pAudioBuffer->GetSampleFormat() == m_inSampleFormat, AMF_INVALID_ARG, L"SubmitInput() - Input buffer sample format (%d) is different than what encoder was initialized to (%d)", pAudioBuffer->GetSampleFormat(), m_inSampleFormat);
         AMF_RETURN_IF_FALSE(pAudioBuffer->GetChannelCount() == m_channelCount, AMF_INVALID_ARG, L"SubmitInput() - Input buffer channel count (%d) is different than what encoder was initialized to (%d)", pAudioBuffer->GetChannelCount(), m_channelCount);
         AMF_RETURN_IF_FALSE(pAudioBuffer->GetSampleRate() == m_sampleRate, AMF_INVALID_ARG, L"SubmitInput() - Input buffer sample rate (%d) is different than what encoder was initialized to (%d)", pAudioBuffer->GetSampleRate(), m_sampleRate);
 
         // whatever information we receive, FFmpeg processes it
-        // in host memory, so we have to make sure the data is 
+        // in host memory, so we have to make sure the data is
         // in the correct memory, hence the Convert at this point
         AMF_RESULT err = pAudioBuffer->Convert(AMF_MEMORY_HOST);
         AMF_RETURN_IF_FAILED(err, L"SubmitInput() - Convert(AMF_MEMORY_HOST) failed");
 
 
         //
-        // if by any chance the frame size coming in is different what the 
+        // if by any chance the frame size coming in is different what the
         // encoder requires to process for the format specified, we need
         // to combine or split the frames properly because the encoder will
         // not do that internally
-        // 
-        // a good example for this would be from going from ac3 -> aac or 
+        //
+        // a good example for this would be from going from ac3 -> aac or
         // the other way around
         //
-        // If AV_CODEC_CAP_VARIABLE_FRAME_SIZE is set, then each frame can have any number of 
-        // samples. If it is not set, frame->nb_samples must be equal to avctx->frame_size for 
+        // If AV_CODEC_CAP_VARIABLE_FRAME_SIZE is set, then each frame can have any number of
+        // samples. If it is not set, frame->nb_samples must be equal to avctx->frame_size for
         // all frames except the last. The final frame may be smaller than avctx->frame_size
         //
         // NOTE: in some cases, for audio, the frame_size is set to 0, in which case the buffer
         //       should be passed directly to the encoder, without any combining or splitting
         //       (an example of this would be wav)
-        // 
-        // NOTE: if we're draining, so we set m_bEof, we're actually sending in 
+        //
+        // NOTE: if we're draining, so we set m_bEof, we're actually sending in
         //       the combined/split frames so we don't want to do that again
         //
         // NOTE: if by any chance we are splitting/combining the packets but the frame coming
-        //       in is the exact same size as required, if we don't have anything cached we 
-        //       should just send the frame as is, without any combine/split, but if we 
+        //       in is the exact same size as required, if we don't have anything cached we
+        //       should just send the frame as is, without any combine/split, but if we
         //       have a split frame or the cached is not empty, we have to add it so we don't
         //       send stuff out of order to the encoder
         const amf_int32  inSampleCount = pAudioBuffer->GetSampleCount();
         if (m_samplePreProcRequired && !m_bEof &&
-            (m_pCodecContext->frame_size > 0) && 
+            (m_pCodecContext->frame_size > 0) &&
             ((inSampleCount != m_pCodecContext->frame_size) || (m_preparedFrames.empty() == false) || (m_pPartialFrame != nullptr)) )
         {
-            // limit the size of the queue we use for storing processed frames 
-            // this should only matter when we go from large samples to small 
-            // samples as we can create multiple packets and we don't want the 
+            // limit the size of the queue we use for storing processed frames
+            // this should only matter when we go from large samples to small
+            // samples as we can create multiple packets and we don't want the
             // queue to increase to unmanageable size
-            // 
+            //
             // in that case, we don't process the incoming frame but we still
             // send what we have to the decoder
-            // 
-            // this way we don't have to check if the frame we receive is the 
+            //
+            // this way we don't have to check if the frame we receive is the
             // same one we didn't process as we leave the code in the same
             // state as it was before - as we didn't add the new frame to the
             // combined/split data
-            // 
+            //
             // NOTE: it is possible when we request the caller to resend the frame
             //       to create a completely new frame with the same data (in which
             //       case a frame with the same PTS would probably come), but it's
-            //       also possible that the old frame is dropped completely and a 
+            //       also possible that the old frame is dropped completely and a
             //       new one is sent instead, which is why checking previous frames
             //       doesn't always work properly
-            if (m_preparedFrames.size() <= AMF_MAX(3 * inSampleCount / m_pCodecContext->frame_size, 5))
+            if ((int) m_preparedFrames.size() <= AMF_MAX(3 * inSampleCount / m_pCodecContext->frame_size, 5))
             {
                 err = SplitOrCombineFrames(pAudioBuffer, m_pCodecContext->frame_size);
                 AMF_RETURN_IF_FAILED(err, L"SubmitInput() - Splitting or combining audio samples was required but failed");
@@ -536,14 +536,14 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::SubmitInput(AMFData* pData)
                 resendFrame = true;
             }
 
-            // if we haven't managed to form a 
+            // if we haven't managed to form a
             // full frame, then get more input
             if (m_preparedFrames.empty() == true)
             {
                 return AMF_NEED_MORE_INPUT;
             }
 
-            // if we have any combined or split frames we 
+            // if we have any combined or split frames we
             // should pick those to send to the encoder
             pAudioBuffer = m_preparedFrames.front();
         }
@@ -560,11 +560,11 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::SubmitInput(AMFData* pData)
         // since the data that we receive in SubmitInput should always contain a full frame
         // we should probably never have a have the need to handle partial buffer data
         //
-        // AVERROR(EAGAIN): input is not accepted in the current state - 
-        //                  user must read output with avcodec_receive_packet() 
-        //                  (once all output is read, the packet should be resent, and the call will not fail with EAGAIN). 
-        // AVERROR_EOF:     the encoder has been flushed, and no new frames can be sent to it 
-        // AVERROR(EINVAL): codec not opened, refcounted_frames not set, it is a decoder, or requires flush 
+        // AVERROR(EAGAIN): input is not accepted in the current state -
+        //                  user must read output with avcodec_receive_packet()
+        //                  (once all output is read, the packet should be resent, and the call will not fail with EAGAIN).
+        // AVERROR_EOF:     the encoder has been flushed, and no new frames can be sent to it
+        // AVERROR(EINVAL): codec not opened, refcounted_frames not set, it is a decoder, or requires flush
         // AVERROR(ENOMEM): failed to add packet to internal queue, or similar other errors: legitimate decoding errors
         ret = avcodec_send_frame(m_pCodecContext, &avFrame);
     }
@@ -574,11 +574,11 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::SubmitInput(AMFData* pData)
         m_bEof = true;
 
         // no more frames to encode so now it's time to drain the encoder
-        // draining the encoder should happen once 
+        // draining the encoder should happen once
         // otherwise an error code will be returned by avcodec_send_frame
-        // 
+        //
         // NOTE: to drain, we need to submit a NULL packet to avcodec_send_frame call
-        //       Sending the first flush packet will return success. 
+        //       Sending the first flush packet will return success.
         //       Subsequent ones are unnecessary and will return AVERROR_EOF
         ret = avcodec_send_frame(m_pCodecContext, NULL);
     }
@@ -586,9 +586,9 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::SubmitInput(AMFData* pData)
 
     //
     // handle the error returns from the encoder
-    // 
+    //
     // NOTE: it is possible the encoder is busy as encoded frames have not
-    //       been taken out yet, so it's possible that it will not accept even 
+    //       been taken out yet, so it's possible that it will not accept even
     //       to start flushing the data yet, so it can return AVERROR(EAGAIN)
     //       along the normal case when it can't accept a new frame to process
     if (ret == AVERROR(EAGAIN))
@@ -607,9 +607,9 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::SubmitInput(AMFData* pData)
         //       to return AMF_INPUT_FULL, so the pipeline knows to keep removing
         //       frames through QueryOutput
         //
-        // NOTE: the default is if we get normal frames which don't need to be 
+        // NOTE: the default is if we get normal frames which don't need to be
         //       combined or split, in which case the prepared frames is empty
-        return ((m_preparedFrames.empty() == true) || 
+        return ((m_preparedFrames.empty() == true) ||
                 (m_bEof == true) ||
                 (resendFrame == true)) ? AMF_INPUT_FULL : AMF_OK;
     }
@@ -635,7 +635,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::SubmitInput(AMFData* pData)
         m_inputData.push_back(transitFrame);
         m_audioFrameSubmitCount++;
 
-        // if the frame we received is a combined/split frame it's time to 
+        // if the frame we received is a combined/split frame it's time to
         // remove it from the list since it's been processed at this point
         if (isProcFrame == true)
         {
@@ -644,7 +644,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::SubmitInput(AMFData* pData)
 
         // if the queue is too large (and we don't want to make it really large
         // due to memory usage, when we go from a large frame to a smaller frame
-        // then ask the sender to resend the frame - we don't have to worry as 
+        // then ask the sender to resend the frame - we don't have to worry as
         // we don't reprocess the same frame to split or combine it
         if (resendFrame == true)
         {
@@ -675,17 +675,17 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::QueryOutput(AMFData** ppData
     // retrieve the encoded packet - it is possible that
     // for some packets, the encoder needs more data, in
     // which case it will return AVERROR(EAGAIN)
-    // 
-    // AVERROR(EAGAIN): output is not available in the current state - 
-    //                  user must try to send input 
-    // AVERROR_EOF: the encoder has been fully flushed, and there will be no more output packets 
-    // AVERROR(EINVAL): codec not opened, or it is an encoder 
+    //
+    // AVERROR(EAGAIN): output is not available in the current state -
+    //                  user must try to send input
+    // AVERROR_EOF: the encoder has been fully flushed, and there will be no more output packets
+    // AVERROR(EINVAL): codec not opened, or it is an encoder
     // other errors: legitimate decoding errors
     int ret = avcodec_receive_packet(m_pCodecContext, &avPacket);
     if (ret == AVERROR(EAGAIN))
     {
         // if we finished the packets in the encoder, we should get
-        // out as there's nothing to put out and we don't need to remove 
+        // out as there's nothing to put out and we don't need to remove
         // any of the queued input frames
         // we also don't have to unref the packet as nothing got out
         // of the encoder at this point
@@ -703,13 +703,13 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::QueryOutput(AMFData** ppData
 
 
     //
-    // if avcodec_receive_packet returns 0, 
+    // if avcodec_receive_packet returns 0,
     // a valid packet should have been provided
-    // 
-    // NOTE: For video, it should typically contain one compressed frame. 
-    //       For audio it may contain several compressed frames. 
-    //       Encoders are allowed to output empty packets, with no 
-    //       compressed data, containing only side data (e.g. to update 
+    //
+    // NOTE: For video, it should typically contain one compressed frame.
+    //       For audio it may contain several compressed frames.
+    //       Encoders are allowed to output empty packets, with no
+    //       compressed data, containing only side data (e.g. to update
     //       some stream parameters at the end of encoding)."
     if (ret >= 0 && avPacket.size > 0)
     {
@@ -723,7 +723,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::QueryOutput(AMFData** ppData
         amf_uint8 *pMemOut = static_cast<uint8_t*>(pBufferOut->GetNative());
         memcpy(pMemOut, avPacket.data, avPacket.size);
 
-        // get the pts fo the ffmpeg frame returned - we will 
+        // get the pts fo the ffmpeg frame returned - we will
         // calculate our pts relative to what ffmpeg gives us
         if (m_firstFFMPEGPts == LLONG_MIN)
         {
@@ -742,8 +742,8 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::QueryOutput(AMFData** ppData
 
         //
         // copy input data properties to the encoded packet
-        // now here we have to be a bit careful as there's no 
-        // exact way to match input frame with output packet(s) 
+        // now here we have to be a bit careful as there's no
+        // exact way to match input frame with output packet(s)
         // so we'll try to match based on pts and duration
         //               pts    duration
         //   frame m      |-----------------|
@@ -768,31 +768,31 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::QueryOutput(AMFData** ppData
             const amf_pts          inFrameDuration = transitFrame.pData->GetDuration();
 
             // if the current pts is past the end of the frame
-            // we should drop that frame as the frames should 
+            // we should drop that frame as the frames should
             // come in sequentially
             std::list<AMFTransitFrame>::const_iterator itNext = ++m_inputData.begin();
-            if ((pts > inFramePts + inFrameDuration) || 
+            if ((pts > inFramePts + inFrameDuration) ||
                 ((itNext != m_inputData.end()) && (pts == itNext->pData->GetPts())))
             {
                 m_inputData.pop_front();
                 continue;
             }
-            
+
             // we found the proper frame to copy data from
-            // due to round-off errors, we could have say for the 
-            // first frame pts = 10, duration 5, but the next 
+            // due to round-off errors, we could have say for the
+            // first frame pts = 10, duration 5, but the next
             // frame would have pts at 16 instead of 15 so we need
             // to take that into consideration
             // the change will not affect things much as the code
             // below will still pick between current and next frame
             // depending on which one is closer to the pts
             // without this, in the case mentioned, the first frame
-            // would never get deleted and the queue will keep growing 
+            // would never get deleted and the queue will keep growing
             if ((pts >= inFramePts) && (pts <= inFramePts + inFrameDuration))
             {
                 // check though if the frame is closer to the next frame, in which
                 // case it should probably copy from that frame
-                if ((itNext != m_inputData.end()) && 
+                if ((itNext != m_inputData.end()) &&
                     (abs((amf_int64) itNext->pData->GetPts() - (amf_int64) pts) < (pts - inFramePts)))
                 {
                     itNext->pData->CopyTo(pBufferOut, false);
@@ -817,8 +817,8 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::QueryOutput(AMFData** ppData
         m_audioFrameQueryCount++;
     }
 
-    // if we get a frame out from avcodec_receive_packet, we need 
-    // to repeat until we get an error that more input needs to 
+    // if we get a frame out from avcodec_receive_packet, we need
+    // to repeat until we get an error that more input needs to
     // be submitted or we get EOF
     // our documentation states that OK will return a frame out,
     // while repeat says no frame came out so it's up to the caller
@@ -858,7 +858,7 @@ AMF_RESULT  AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::GetNewFrame(AMFAudioBuffer*
         AMFAudioBufferPtr pRecycledFrame = m_recycledFrames.front();
         m_recycledFrames.pop_front();
 
-        // clear its properties so we can set/copy 
+        // clear its properties so we can set/copy
         // new ones from the passed in buffer
         pRecycledFrame->Clear();
 
@@ -883,12 +883,12 @@ AMF_RESULT  AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::SplitOrCombineFrames(AMFAud
 
 
     //
-    // For planar sample formats, each audio channel is in a separate 
-    // data plane, and linesize is the buffer size, in bytes, for a 
-    // single plane. All data planes must be the same size. 
+    // For planar sample formats, each audio channel is in a separate
+    // data plane, and linesize is the buffer size, in bytes, for a
+    // single plane. All data planes must be the same size.
     //      AAAAAAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBBBBB
-    // For packed sample formats, only the first data plane is used, 
-    // and samples for each channel are interleaved. In this case, 
+    // For packed sample formats, only the first data plane is used,
+    // and samples for each channel are interleaved. In this case,
     // linesize is the buffer size, in bytes, for the 1 plane.
     //      ABABABABABABABABABABABABABABABABABABABAB
     // NOTE: we are combining on the same format - we're not changing
@@ -902,8 +902,8 @@ AMF_RESULT  AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::SplitOrCombineFrames(AMFAud
 
 
     //
-    // while we have data in the input buffer we 
-    // want to create new frames that contain the 
+    // while we have data in the input buffer we
+    // want to create new frames that contain the
     // correct number of samples for the encoder
     amf_int32  inSamplesConsumed = 0;
     while (inSamplesConsumed < inSampleCount)
@@ -930,11 +930,11 @@ AMF_RESULT  AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::SplitOrCombineFrames(AMFAud
             // to copy the incoming properties into it
             pInBuffer->CopyTo(pFrameToFill, false);
 
-            // NOTE: Do we need to update the PTS and duration of 
+            // NOTE: Do we need to update the PTS and duration of
             //       the new packet at this point?
             pFrameToFill->SetPts(pInBuffer->GetPts() + inSamplesConsumed * inDuration / inSampleCount);
         }
-        
+
 
         //
         // do the data copy
@@ -947,7 +947,7 @@ AMF_RESULT  AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::SplitOrCombineFrames(AMFAud
         const amf_uint8* pSrcData         = static_cast<amf_uint8*>(pInBuffer->GetNative()) + srcOffset;
               amf_uint8* pDestData        = static_cast<amf_uint8*>(pFrameToFill->GetNative()) + destOffset;
         for (amf_int32 ch = 0; ch < planes; ch++)
-        { 
+        {
             // copy the data from the frame that came in, into the frame going out
             memcpy(pDestData, pSrcData, samplesToCopy * sampleSize * planar);
 
@@ -966,7 +966,7 @@ AMF_RESULT  AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::SplitOrCombineFrames(AMFAud
 
 
         //
-        // if the frame is full, add it to the 
+        // if the frame is full, add it to the
         // list of frames ready for the encoder
         if (existingSampleCount == bufferSamples)
         {
@@ -976,7 +976,7 @@ AMF_RESULT  AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::SplitOrCombineFrames(AMFAud
         }
         else if (existingSampleCount < bufferSamples)
         {
-            // otherwise, set the partial frame and exit the 
+            // otherwise, set the partial frame and exit the
             // loop as there should be no data left to process
             m_pPartialFrame = pFrameToFill;
             m_partialFrameSampleCount = existingSampleCount;
@@ -1017,7 +1017,7 @@ AMF_RESULT  AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::InitializeFrame(AMFAudioBuf
     // setup the data pointers in the AVFrame
     const amf_size  dstPlaneSize = sampleCount * sampleSize * planar;
     for (amf_int ch = 0; ch < planes; ch++)
-    { 
+    {
         avFrame.data[ch] = (uint8_t *)pInBuffer->GetNative() + ch * dstPlaneSize;
     }
     avFrame.extended_data = avFrame.data;

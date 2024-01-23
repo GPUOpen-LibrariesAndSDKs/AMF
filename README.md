@@ -14,8 +14,8 @@ AMF is a light-weight, portable multimedia framework that abstracts away most of
     * Windows Subsystem for Linux (DX12 Decoder and Converter Only)
     * Visual Studio&reg; 2019
 * Linux
-    * RHEL 9.2 / 8.8
-    * Ubuntu 22.04.2 / 20.04.5
+    * RHEL 9.3 / 8.9
+    * Ubuntu 22.04.4 / 20.04.5
     * SLED/SLES 15 SP5
 * Driver and AMF component installation instructions are available on the [Wiki page](https://github.com/GPUOpen-LibrariesAndSDKs/AMF/wiki).
     * The following table contains the driver versions in which the Linux pro driver started including the AMF runtime, otherwise, the AMF runtime is optional and has to be installed separately.
@@ -28,6 +28,7 @@ AMF is a light-weight, portable multimedia framework that abstracts away most of
       | \**All supported distros* | 20.40                             |
 
 * AMF SDK is backward compatible with all previous driver versions.
+* Version 1.4.33: AMD Radeon Software Adrenalin Edition 24.1.1 (23.40.02) or newer. Added native DX12 support for encoding and PreAnalysis. Switched to public Vulkan Khronos extensions for decoder. AMF on Linux can now be used with AMD Pro Vulkan, and experimentally with RADV drivers.
 * Version 1.4.32: AMD Radeon Software Adrenalin Edition 23.12.1 (23.30.13.01) or newer. Added new FRC component and API doc. Added new VQEnhancer doc. Improved presenters. Updated FFmpeg to 6.0.
 * Version 1.4.30: AMD Radeon Software Adrenalin Edition 23.5.2 (23.10.01.45) or newer. Added AMF wrappers for AVC / HEVC / AV1 FFmpeg software encoders, frame in -> slice / tile output support for AVC / HEVC / AV1 encoders, and multi-monitor support for DVR. Updated FFmpeg to 5.1.2.
 * Version 1.4.29: AMD Radeon Software Adrenalin Edition 23.1.2 (22.40.01.34) or newer. Added SmartAccess Video for AVC / HEVC / AV1. New options for VQEnhancer and AV1 encoder components. Switched to Markdown based API docs which enable easier open source developer contributions.
@@ -48,7 +49,9 @@ The AMF framework is compatible with most recent Radeon GPUs starting with the S
 ### Getting Started
 * Visual Studio solutions can be found in the `amf\public\samples` directory.
 * Additional documentation can be found in the `amf\doc` directory.
-* To build samples on Linux use 'makefile' in `amf\public\samples`
+* To build samples on Linux use 'makefile' in `amf\public\samples`.
+* Follow this guide to build your own first encoder application
+  * [Practical Guide for Video CODEC Encoder App Developers](https://github.com/GPUOpen-LibrariesAndSDKs/AMF/wiki/Guide%20for%20Video%20CODEC%20Encoder%20App%20Developers).
 
 ### Third-Party Software
 * FFmpeg is distributed under the terms of the LGPLv2.1.

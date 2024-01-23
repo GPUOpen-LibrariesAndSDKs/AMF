@@ -242,6 +242,9 @@ enum AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE_ENUM
 
 // misc
 #define AMF_VIDEO_ENCODER_HEVC_QUERY_TIMEOUT                        L"HevcQueryTimeout"             // amf_int64; default = 0 (no wait); timeout for QueryOutput call in ms.
+#define AMF_VIDEO_ENCODER_HEVC_MEMORY_TYPE                          L"HevcEncoderMemoryType"        // amf_int64(AMF_MEMORY_TYPE) , default is AMF_MEMORY_UNKNOWN, Values : AMF_MEMORY_DX11, AMF_MEMORY_DX9, AMF_MEMORY_UNKNOWN (auto)
+#define AMF_VIDEO_ENCODER_HEVC_ENABLE_SMART_ACCESS_VIDEO            L"HevcEnableEncoderSmartAccessVideo"         // amf_bool; default = false; true = enables smart access video feature
+#define AMF_VIDEO_ENCODER_HEVC_INPUT_QUEUE_SIZE                     L"HevcInputQueueSize"           // amf_int64; default 16; Set amf input queue size
 
 // Per-submission properties - can be set on input surface interface
 #define AMF_VIDEO_ENCODER_HEVC_END_OF_SEQUENCE                      L"HevcEndOfSequence"            // bool; default = false; generate end of sequence
@@ -318,11 +321,6 @@ enum AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_HEVC_CAP_QUERY_TIMEOUT_SUPPORT            L"HevcQueryTimeoutSupport"      // amf_bool - Timeout supported for QueryOutout call
 #define AMF_VIDEO_ENCODER_CAPS_HEVC_QUERY_TIMEOUT_SUPPORT           L"HevcQueryTimeoutSupport"      // amf_bool - Timeout supported for QueryOutout call (Deprecated, please use AMF_VIDEO_ENCODER_HEVC_CAP_QUERY_TIMEOUT_SUPPORT instead)
 #define AMF_VIDEO_ENCODER_HEVC_CAP_SUPPORT_SLICE_OUTPUT             L"HevcSupportSliceOutput"       // amf_bool - if slice output is supported
-
-// properties set on AMFComponent to control component creation
-#define AMF_VIDEO_ENCODER_HEVC_MEMORY_TYPE                          L"HevcEncoderMemoryType"        // amf_int64(AMF_MEMORY_TYPE) , default is AMF_MEMORY_UNKNOWN, Values : AMF_MEMORY_DX11, AMF_MEMORY_DX9, AMF_MEMORY_UNKNOWN (auto)
-
-#define AMF_VIDEO_ENCODER_HEVC_ENABLE_SMART_ACCESS_VIDEO            L"HevcEnableEncoderSmartAccessVideo"         // amf_bool; default = false; true = enables smart access video feature
 
 #define AMF_VIDEO_ENCODER_HEVC_CAP_SUPPORT_SMART_ACCESS_VIDEO       L"HevcEncoderSupportSmartAccessVideo"        // amf_bool; returns true if system supports SmartAccess Video
 

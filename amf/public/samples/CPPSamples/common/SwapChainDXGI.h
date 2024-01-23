@@ -70,14 +70,16 @@ protected:
     virtual AMF_RESULT                      CreateSwapChainForHwnd(IUnknown* pDevice, amf_int32 width, amf_int32 height, amf_uint bufferCount, amf_bool stereo);
     virtual AMF_RESULT                      CreateSwapChain(IUnknown* pDevice, amf_int32 width, amf_int32 height, amf::AMF_SURFACE_FORMAT format, amf_uint bufferCount, amf_bool fullscreen, amf_bool hdr, amf_bool stereo);
 
-    virtual AMF_RESULT                      Present(amf_bool waitForVSync);
+    virtual AMF_RESULT                      Present(amf_bool waitForVSync) override;
 
     virtual AMF_RESULT                      GetDXGIInterface(amf_bool reinit=false) = 0;
+    virtual AMF_RESULT                      GetDXGIDeviceAdapter(IDXGIAdapter** ppDXGIAdapter) = 0;
+    virtual AMF_RESULT                      GetDXGIAdapters();
 
     virtual AMF_RESULT                      SetFormat(amf::AMF_SURFACE_FORMAT format) override;
     virtual DXGI_FORMAT                     GetSupportedDXGIFormat(amf::AMF_SURFACE_FORMAT format) const;
-    virtual amf_bool                        GetFullscreenState();
-    virtual AMF_RESULT                      SetFullscreenState(amf_bool fullscreen);
+    amf_bool                                GetExclusiveFullscreenState() override;
+    AMF_RESULT                              SetExclusiveFullscreenState(amf_bool fullscreen) override;
 
     virtual AMF_RESULT                      UpdateOutputs();
     virtual AMF_RESULT                      UpdateCurrentOutput() override;
@@ -87,7 +89,7 @@ protected:
 
     // Store the most commonly used DXGI interfaces so we don't have to query everytime
     ATL::CComPtr<IDXGIDevice>               m_pDXGIDevice;
-    ATL::CComPtr<IDXGIAdapter>              m_pDXGIAdapter;     
+    amf::amf_vector<ATL::CComPtr<IDXGIAdapter>> m_pDXGIAdapters;     
     ATL::CComPtr<IDXGIFactory>              m_pDXGIFactory;     // Legacy swapchain
     ATL::CComPtr<IDXGIFactory2>             m_pDXGIFactory2;    // swapchain for hwnd 
 
@@ -95,7 +97,7 @@ protected:
     ATL::CComPtr<IDXGISwapChain1>           m_pSwapChain1;      // Swapchain creation
     ATL::CComPtr<IDXGISwapChain3>           m_pSwapChain3;      // For setting colorspace
 
-    std::vector<ATL::CComPtr<IDXGIOutput>>  m_pOutputs;
+    amf::amf_vector<ATL::CComPtr<IDXGIOutput>>  m_pOutputs;
     ATL::CComPtr<IDXGIOutput>               m_pCurrentOutput;
     ATL::CComPtr<IDXGIOutput6>              m_pCurrentOutput6;
 

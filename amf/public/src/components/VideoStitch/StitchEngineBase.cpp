@@ -1,4 +1,4 @@
-﻿// 
+﻿//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2017 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -58,7 +58,7 @@ StitchEngineBase::~StitchEngineBase()
 
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL StitchEngineBase::PrepareMesh(
-    amf_int32 widthInput, amf_int32 heightInput, 
+    amf_int32 widthInput, amf_int32 heightInput,
     amf_int32 /* widthOutput */, amf_int32 /* heightOutput */,
     AMFPropertyStorage *pStorage,
     AMFPropertyStorage *pStorageMain,
@@ -106,7 +106,7 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::PrepareMesh(
     AMFRect crop = {};
     res = pStorage->GetProperty(AMF_VIDEO_STITCH_CROP, &crop);
     amf_int32 widthInputOrg  = widthInput;
-    amf_int32 heightInputOrg = heightInput; 
+    amf_int32 heightInputOrg = heightInput;
 
     double crop_offset_x = 0;
     double crop_offset_y = 0;
@@ -125,8 +125,8 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::PrepareMesh(
     crop_offset_x /= widthInputOrg / 2.0;
     crop_offset_y /= heightInputOrg / 2.0;
 
-    double pitch = 0.0; 
-    double yaw = 0.0; 
+    double pitch = 0.0;
+    double yaw = 0.0;
     double roll = 0.0;
 
     pStorage->GetProperty(AMF_VIDEO_CAMERA_ANGLE_PITCH, &pitch);
@@ -135,7 +135,7 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::PrepareMesh(
 
     double hfov = M_PI / 2.0;
     pStorage->GetProperty(AMF_VIDEO_CAMERA_HFOV, &hfov);
-    
+
     if(lensCorrectionMode == AMF_VIDEO_STITCH_LENS_RECTILINEAR)
     {
         offset_z = 1.0 / tan(hfov / 2.0);
@@ -164,7 +164,7 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::PrepareMesh(
     }
 
     //---------------------------------------------------------------------------------------------
-    // square texture 
+    // square texture
     //---------------------------------------------------------------------------------------------
 
     float tex_l = 0.0f;
@@ -211,7 +211,7 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::PrepareMesh(
     XMMATRIX translation = XMMatrixTranslation((float)lensCorrOffX, (float)lensCorrOffY, 0);
     XMMATRIX zoom = XMMatrixTranslation(0, 0, (float)offset_z);
     XMMATRIX crop_translation = XMMatrixTranslation((float)crop_offset_x, (float)crop_offset_y, 0);
-    
+
     // normalized rect
     double leftB = -1.0;
     double topB = -1.0;
@@ -282,30 +282,30 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::PrepareMesh(
 
     point1 = XMVector3Transform(point1, textureReverse);
     point1 = XMVector3Transform(point1, aspect);
-    point1 = XMVector3Transform(point1, translation); 
-    point1 = XMVector3Transform(point1, zoom); 
-    point1 = XMVector3Transform(point1, orientation); 
+    point1 = XMVector3Transform(point1, translation);
+    point1 = XMVector3Transform(point1, zoom);
+    point1 = XMVector3Transform(point1, orientation);
 
     point2 = XMVector3Transform(point2, textureReverse);
     point2 = XMVector3Transform(point2, aspect);
-    point2 = XMVector3Transform(point2, translation); 
-    point2 = XMVector3Transform(point2, zoom); 
-    point2 = XMVector3Transform(point2, orientation); 
+    point2 = XMVector3Transform(point2, translation);
+    point2 = XMVector3Transform(point2, zoom);
+    point2 = XMVector3Transform(point2, orientation);
 
     point3 = XMVector3Transform(point3, textureReverse);
     point3 = XMVector3Transform(point3, aspect);
-    point3 = XMVector3Transform(point3, translation); 
-    point3 = XMVector3Transform(point3, zoom); 
-    point3 = XMVector3Transform(point3, orientation); 
+    point3 = XMVector3Transform(point3, translation);
+    point3 = XMVector3Transform(point3, zoom);
+    point3 = XMVector3Transform(point3, orientation);
 
     plane = XMPlaneFromPoints(point1, point2, point3);
 
     planeCenter = XMVectorSet( 0.0f, 0.0f, -1.0f, 0.0f);
     planeCenter = XMVector3Transform(planeCenter, textureReverse);
     planeCenter = XMVector3Transform(planeCenter, aspect);
-    planeCenter = XMVector3Transform(planeCenter, translation); 
-    planeCenter = XMVector3Transform(planeCenter, zoom); 
-    planeCenter = XMVector3Transform(planeCenter, orientation); 
+    planeCenter = XMVector3Transform(planeCenter, translation);
+    planeCenter = XMVector3Transform(planeCenter, zoom);
+    planeCenter = XMVector3Transform(planeCenter, orientation);
 
 
     float radiusCircular = 0;
@@ -341,8 +341,8 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::PrepareMesh(
           XMVECTOR vec= XMVectorSet(posx, posy, posz, 0.0f);
 
           vec = XMVector3Transform(vec, textureReverse);
-          vec = XMVector3Transform(vec, crop_translation); 
-          vec = XMVector3Transform(vec, translation); 
+          vec = XMVector3Transform(vec, crop_translation);
+          vec = XMVector3Transform(vec, translation);
           vec = XMVector3Transform(vec, aspect);
 
           switch(lensCorrectionMode)
@@ -362,7 +362,7 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::PrepareMesh(
               break;
           }
 
-          vec = XMVector3Transform(vec, zoom); 
+          vec = XMVector3Transform(vec, zoom);
           vec = XMVector3Transform(vec, orientation);
           v.Pos[0] = XMVectorGetX(vec);
           v.Pos[1] = XMVectorGetY(vec);
@@ -395,7 +395,7 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::GetTransform(amf_int32 /* widthInput *
     {
         XMMATRIX &worldViewProjection = *((XMMATRIX*)&transform);
         worldViewProjection = XMMatrixTranspose(XMMatrixIdentity());
-        
+
         for(int f = 0; f < 6; f++)
         {
             XMVECTOR Eye = XMVectorSet(0.0f ,0.0f, 0.0f, 0.0f);
@@ -449,10 +449,10 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::GetTransform(amf_int32 /* widthInput *
         XMMATRIX viewX = XMMatrixRotationX(orientationX);
         XMMATRIX viewY = XMMatrixRotationY(orientationY);
         XMMATRIX viewZ = XMMatrixRotationZ(orientationZ);
-        rotation =  viewY * (rotation * viewZ * viewX); // calc and store 
+        rotation =  viewY * (rotation * viewZ * viewX); // calc and store
         XMMATRIX projection = XMMatrixPerspectiveFovLH(XM_PIDIV2, (float)widthOutput / heightOutput, 0.1f, 10.0f);
         XMMATRIX &worldViewProjection = *((XMMATRIX*)&transform);
-        worldViewProjection = XMMatrixTranspose(orientation * rotation * projection); 
+        worldViewProjection = XMMatrixTranspose(orientation * rotation * projection);
     }
         break;
     case AMF_VIDEO_STITCH_OUTPUT_MODE_EQUIRECTANGULAR:
@@ -486,11 +486,11 @@ static XMVECTOR CorrectLensRadial(XMVECTOR src, double a, double b, double c)
 
 static void matrix_inv_mult( double m[3][3], double vector[3] )
 {
-    register int i;
-    register double v0 = vector[0];
-    register double v1 = vector[1];
-    register double v2 = vector[2];
-    
+    int i;
+    double v0 = vector[0];
+    double v1 = vector[1];
+    double v2 = vector[2];
+
     for(i=0; i<3; i++)
     {
         vector[i] = m[0][i] * v0 + m[1][i] * v1 + m[2][i] * v2;
@@ -499,8 +499,8 @@ static void matrix_inv_mult( double m[3][3], double vector[3] )
 
 static void matrix_matrix_mult( double m1[3][3],double m2[3][3],double result[3][3])
 {
-    register int i,k;
-    
+    int i,k;
+
     for(i=0;i<3;i++)
     {
         for(k=0; k<3; k++)
@@ -517,11 +517,11 @@ static void SetMatrix( double a, double b, double c , double m[3][3], int cl )
     mx[0][0] = 1.0 ;                mx[0][1] = 0.0 ;              mx[0][2] = 0.0;
     mx[1][0] = 0.0 ;                mx[1][1] = cos(a) ;           mx[1][2] = sin(a);
     mx[2][0] = 0.0 ;                mx[2][1] =-mx[1][2] ;         mx[2][2] = mx[1][1];
-    
+
     my[0][0] = cos(b);              my[0][1] = 0.0 ;              my[0][2] =-sin(b);
     my[1][0] = 0.0 ;                my[1][1] = 1.0 ;              my[1][2] = 0.0;
     my[2][0] = -my[0][2];           my[2][1] = 0.0 ;              my[2][2] = my[0][0];
-    
+
     mz[0][0] = cos(c) ;             mz[0][1] = sin(c) ;           mz[0][2] = 0.0;
     mz[1][0] =-mz[0][1] ;           mz[1][1] = mz[0][0] ;         mz[1][2] = 0.0;
     mz[2][0] = 0.0 ;                mz[2][1] = 0.0 ;              mz[2][2] = 1.0;
@@ -553,7 +553,7 @@ static XMVECTOR CorrectLensCircularFishEye(XMVECTOR src , double hfov, double f,
     double new_x = 0;
     double new_y = 0;
     double new_z = -new_r * cos(theta);
-    
+
     if(fabs(theta) > M_PI / 2.0)
     {
         transparency = 0.0f;
@@ -691,7 +691,7 @@ static float CalcTransparencyTex(float posx, float posy, float zoom_z)
      if(posx < 0 || posx > transparencyBorder )
      {
          transparencyVertex *= transparencyMin;
-     } 
+     }
      else if(posx < 0 + transparency)
      {
          float x0 = transparency;
@@ -714,7 +714,7 @@ static float CalcTransparencyTex(float posx, float posy, float zoom_z)
      if(posy < 0 || posy > transparencyBorder )
      {
          transparencyVertex = transparencyMin;
-     } 
+     }
      else if(posy < 0 + transparency)
      {
          float x0 = transparency;
@@ -742,16 +742,16 @@ static float CalcTransparencyTex(float posx, float posy, float zoom_z)
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL StitchEngineBase::ApplyMode(
     amf_int32 /* widthOutput */ , amf_int32 /* heightOutput */,
-    std::vector<TextureVertex> &vertices, 
+    std::vector<TextureVertex> &vertices,
     std::vector<amf_uint32> &verticesRowSize,
-    std::vector<TextureVertex> &verticesProjected, 
-    std::vector<amf_uint16> &indexes, 
+    std::vector<TextureVertex> &verticesProjected,
+    std::vector<amf_uint16> &indexes,
     AMFPropertyStorage *pStorage)
 {
     amf_int64 modeTmp = AMF_VIDEO_STITCH_OUTPUT_MODE_PREVIEW;
     pStorage->GetProperty(AMF_VIDEO_STITCH_OUTPUT_MODE, &modeTmp);
     AMF_VIDEO_STITCH_OUTPUT_MODE_ENUM outputMode = (AMF_VIDEO_STITCH_OUTPUT_MODE_ENUM)modeTmp;
-    
+
     verticesProjected.clear();
     indexes.clear();
 
@@ -769,8 +769,8 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::ApplyMode(
                 // 2 trinagles
                 for( int i = 0; i < 2; i++)
                 {
-                    int index1 = i == 0 ? base1 + x : base2 + x; 
-                    int index2 = i == 0 ? base2 + x : base1 + x + 1; 
+                    int index1 = i == 0 ? base1 + x : base2 + x;
+                    int index2 = i == 0 ? base2 + x : base1 + x + 1;
                     int index3 = i == 0 ? base1 + x + 1 : base2 + x + 1;
 
                     if(vertices[index1].Tex[2] != 0.0f || vertices[index2].Tex[2] != 0.0f || vertices[index3].Tex[2] != 0.0f) // cull transparent vertexes
@@ -808,8 +808,8 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::ApplyMode(
                 // 2 trinagles
                 for( int i = 0; i < 2; i++)
                 {
-                    int index1 = i == 0 ? base1 + x     : base2 + x; 
-                    int index2 = i == 0 ? base2 + x     : base1 + x + 1; 
+                    int index1 = i == 0 ? base1 + x     : base2 + x;
+                    int index2 = i == 0 ? base2 + x     : base1 + x + 1;
                     int index3 = i == 0 ? base1 + x + 1 : base2 + x + 1;
 
                     TextureVertex v1 = vertices[index1];
@@ -897,9 +897,9 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::ApplyMode(
                         float Distance2 = XMVectorGetX(XMVector2Length(XMVectorSubtract(point1, point2)));
 
 
-                        v4.Tex[0] = v1.Tex[0] - (v1.Tex[0] - v2.Tex[0])  * Distance1 / Distance2; 
-                        v4.Tex[1] = v1.Tex[1] - (v1.Tex[1] - v2.Tex[1])  * Distance1 / Distance2; 
-                        v4.Tex[2] = v1.Tex[2] - (v1.Tex[2] - v2.Tex[2])  * Distance1 / Distance2; 
+                        v4.Tex[0] = v1.Tex[0] - (v1.Tex[0] - v2.Tex[0])  * Distance1 / Distance2;
+                        v4.Tex[1] = v1.Tex[1] - (v1.Tex[1] - v2.Tex[1])  * Distance1 / Distance2;
+                        v4.Tex[2] = v1.Tex[2] - (v1.Tex[2] - v2.Tex[2])  * Distance1 / Distance2;
 
                         TextureVertex v5;
                         v5.Pos[0] = XMVectorGetX(point5_1);
@@ -910,9 +910,9 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::ApplyMode(
                         float Distance4 = XMVectorGetX(XMVector2Length(XMVectorSubtract(point1, point3)));
 
 
-                        v5.Tex[0] = v1.Tex[0] - (v1.Tex[0] - v3.Tex[0])  * Distance3 / Distance4; 
-                        v5.Tex[1] = v1.Tex[1] - (v1.Tex[1] - v3.Tex[1])  * Distance3 / Distance4; 
-                        v5.Tex[2] = v1.Tex[2] - (v1.Tex[2] - v3.Tex[2])  * Distance3 / Distance4; 
+                        v5.Tex[0] = v1.Tex[0] - (v1.Tex[0] - v3.Tex[0])  * Distance3 / Distance4;
+                        v5.Tex[1] = v1.Tex[1] - (v1.Tex[1] - v3.Tex[1])  * Distance3 / Distance4;
+                        v5.Tex[2] = v1.Tex[2] - (v1.Tex[2] - v3.Tex[2])  * Distance3 / Distance4;
 
 
                         if(v1.Tex[2] != 0.0f || v4.Tex[2] != 0.0f || v5.Tex[2] != 0.0f) // cull transparent vertexes
@@ -948,7 +948,7 @@ AMF_RESULT AMF_STD_CALL StitchEngineBase::ApplyMode(
                         {
                             verticesProjected.push_back(v1);
                             verticesProjected.push_back(v2);
-                            verticesProjected.push_back(v3); 
+                            verticesProjected.push_back(v3);
                         }
                     }
                 }
@@ -983,7 +983,7 @@ XMVECTOR CartesianToEquirectangular(XMVECTOR src)
 
     // from cartesan to spheric
     double r = sqrt(x *x + y * y + z * z);
-    double pheta = atan2(x, z); // azimuth - Longitude  -PI : PI 
+    double pheta = atan2(x, z); // azimuth - Longitude  -PI : PI
     double theta = acos(y / r); // elevation - Latitude   0 : PI
 
     // handle imprefections of acos

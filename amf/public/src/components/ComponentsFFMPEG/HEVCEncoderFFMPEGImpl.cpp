@@ -261,7 +261,7 @@ AMF_RESULT AMF_STD_CALL HEVCEncoderFFMPEGImpl::SetEncoderOptions(void)
 {
     char  errBuffer[AV_ERROR_MAX_STRING_SIZE] = { 0 };
     amf_int64  present = 0;
-    amf_int64 ret = 0;
+    amf_int    ret = 0;
     AMF_RETURN_IF_FAILED(GetProperty(AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET, &present));
     //hevc quiality ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo
     if (present == AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_BALANCED)

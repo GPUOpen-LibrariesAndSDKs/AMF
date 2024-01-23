@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2017 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -68,7 +68,7 @@ using namespace DirectX;
 static double   dForceFPS = 60.;
 #if defined( _M_AMD64)
 static int      iDefaultStreamCount = 6;
-#else 
+#else
 static int      iDefaultStreamCount = 6;
 #endif
 // test parameters
@@ -76,7 +76,7 @@ static amf::AMF_SURFACE_FORMAT eComposerInputDefault = amf::AMF_SURFACE_NV12; //
 amf::AMF_SURFACE_FORMAT StitchPipelineBase::m_eComposerOutputDefault = amf::AMF_SURFACE_RGBA; // use if most composer input is RGBA
 //amf::AMF_SURFACE_FORMAT StitchPipelineBase::m_eComposerOutputDefault = amf::AMF_SURFACE_RGBA_F16; // use if most composer input is RGBA
 
-// class serializes decoder submission to ge all frames from all streams in right order 
+// class serializes decoder submission to ge all frames from all streams in right order
 class StitchPipelineBase::DecoderSubmissionSync
 {
 protected:
@@ -177,7 +177,7 @@ public:
     virtual void Restart(){m_bEof = false;}
 
 
-    AMF_RESULT SubmitInput(amf::AMFData* pData) 
+    AMF_RESULT SubmitInput(amf::AMFData* pData)
     {
         AMF_RESULT res = AMF_OK;
         if(pData == NULL || m_bEof) // EOF
@@ -205,7 +205,7 @@ public:
                 return AMF_INPUT_FULL;
             }
         }
-        return res; 
+        return res;
     }
     virtual AMF_RESULT QueryOutput(amf::AMFData** ppData)
     {
@@ -236,7 +236,7 @@ StitchElement::StitchElement(amf::AMFComponent *pComponent, amf_int32 inputCount
     }
 
 AMF_RESULT StitchElement::SubmitInput(amf::AMFData* pData, amf_int32 slot)
-{ 
+{
     amf::AMFLock lock(&m_cs);
     if(m_bPause)
     {
@@ -252,13 +252,13 @@ AMF_RESULT StitchElement::SubmitInput(amf::AMFData* pData, amf_int32 slot)
 }
 
 AMF_RESULT StitchElement::OnEof()
-{ 
-    Drain(0); 
+{
+    Drain(0);
     return AMF_EOF;
 }
 
 AMF_RESULT StitchElement::SubmitInputInt(amf::AMFData* pData, amf_int32 slot)
-{ 
+{
     amf::AMFLock lock(&m_cs);
 
     AMF_RESULT res = AMF_OK;
@@ -310,13 +310,13 @@ AMF_RESULT StitchElement::QueryOutput(amf::AMFData** ppData)
     return res;
 }
 AMF_RESULT StitchElement::Drain(amf_int32 /* inputSlot */)
-{ 
+{
     amf::AMFLock lock(&m_cs);
     for(std::vector<Data>::iterator it = m_lastInputs.begin(); it != m_lastInputs.end(); it++)
     {
         it->data = NULL;
     }
-    return m_pComponent->Drain(); 
+    return m_pComponent->Drain();
 }
 AMF_RESULT StitchElement::Resubmit()
 {
@@ -326,7 +326,7 @@ AMF_RESULT StitchElement::Resubmit()
 
     for(amf_int32 i = 0; i <  m_iInputCount; i++)
     {
-        amf::AMFDataPtr     data = m_lastInputs[i].data; // need to store this pointer to avoid release during overwrite 
+        amf::AMFDataPtr     data = m_lastInputs[i].data; // need to store this pointer to avoid release during overwrite
         res = SubmitInputInt(data, i);
     }
     return AMF_OK;
@@ -388,7 +388,7 @@ StitchPipelineBase::StitchPipelineBase() :
 
     wchar_t text[1000];
     swprintf(text,L"INT (1-100) default - %d, number of input streams", iDefaultStreamCount);
-    
+
     SetParamDescription(StitchPipelineBase::PARAM_NAME_STREAM_COUNT, ParamCommon, text, ParamConverterInt64);
     SetParamDescription(StitchPipelineBase::PARAM_NAME_COMPOSITED_WIDTH, ParamCommon, L"Composited Frame width (integer, default = 3840)", ParamConverterInt64);
     SetParamDescription(StitchPipelineBase::PARAM_NAME_COMPOSITED_HEIGHT, ParamCommon, L"Composited Frame height (integer, default = 1920)", ParamConverterInt64);
@@ -475,12 +475,12 @@ StitchPipelineBase::StitchPipelineBase() :
 StitchPipelineBase::~StitchPipelineBase()
 {
     Terminate();
-	
+
 	for (; m_nFfmpegRefCount > 0; --m_nFfmpegRefCount)
     {
         g_AMFFactory.UnLoadExternalComponent(FFMPEG_DLL_NAME);
     }
-	
+
     g_AMFFactory.Terminate();
 }
 
@@ -533,7 +533,7 @@ AMF_RESULT StitchPipelineBase::InitMedia(const std::vector<std::wstring> &filena
     AMF_RESULT res = AMF_OK;
     amf::AMFContextPtr pContext;
     g_AMFFactory.GetFactory()->CreateContext(&pContext);
-    
+
     amf_int32 streamCount = (amf_int32)filenames.size();
     GetParam(PARAM_NAME_STREAM_COUNT, streamCount);
 
@@ -669,19 +669,19 @@ AMF_RESULT StitchPipelineBase::InitInternal()
     }
     //---------------------------------------------------------------------------------------------
     // Init context and devices
-   
+
     amf::AMF_SURFACE_FORMAT eComposerInput = eComposerInputDefault;
 
     // use this to try OpenCL
 //    res = m_pContext->InitOpenCL(NULL);
-  
+
     amf_int32 compositedWidth = 3840;
     amf_int32 compositedHeight = 1920;
     GetParam(PARAM_NAME_COMPOSITED_WIDTH, compositedWidth);
     GetParam(PARAM_NAME_COMPOSITED_HEIGHT, compositedHeight);
     bool bLowLatency = true;
     GetParam(PARAM_NAME_LOWLATENCY, bLowLatency);
-    
+
     bool bEncode = false;
     GetParam(StitchPipelineBase::PARAM_NAME_ENCODE, bEncode);
     //encoding
@@ -758,7 +758,7 @@ AMF_RESULT StitchPipelineBase::InitInternal()
     m_Converters.clear();
 
     PipelineElementPtr pPipelineElementDemuxerAudio;
-    
+
     amf_int32 audioChannel = enableAudio ? 0 : -1; //passthrough audio index for encoding only for now
     GetParam(StitchPipelineBase::PARAM_NAME_AUDIO_CH, audioChannel);
     audioChannel = (audioChannel >= streamCount) ? 0 : audioChannel;
@@ -780,8 +780,8 @@ AMF_RESULT StitchPipelineBase::InitInternal()
         {
             std::wstring filename = m_Media[ch].fileName;
             iAudioPinIndex = (audioChannel == ch) ? -1 : 0; //only enable the channel that matches
-            res = stream.InitDemuxer(m_pContext, filename.c_str(), pVideoDecoderID, frameSize, 
-                0, 0, 
+            res = stream.InitDemuxer(m_pContext, filename.c_str(), pVideoDecoderID, frameSize,
+                0, 0,
                 iVideoPinIndex, iAudioPinIndex, &m_paramsAudio, false, pExtraData);
             AMF_RETURN_IF_FAILED(res, L"stream.InitDemuxer() failed");
         }
@@ -904,7 +904,7 @@ AMF_RESULT StitchPipelineBase::InitInternal()
         res = Connect(encoder, 0, converter, 0, 1, CT_Direct);
         //muxer
         amf::AMFComponentPtr  pMuxer;
-        res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_MUXER, &pMuxer);
+        res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*) FFMPEG_MUXER, &pMuxer);
         AMF_RETURN_IF_FAILED(res, L"AMFCreateComponent( %s) failed", FFMPEG_MUXER);
 		++m_nFfmpegRefCount;
         m_pMuxer = amf::AMFComponentExPtr(pMuxer);
@@ -1047,7 +1047,7 @@ AMF_RESULT StitchPipelineBase::Stop()
 
     Pipeline::Stop();
 
-    
+
     for(std::vector<StitchStream>::iterator it = m_Streams.begin(); it != m_Streams.end(); it++)
     {
         it->Terminate();
@@ -1137,12 +1137,12 @@ AMF_RESULT StitchPipelineBase::Stop()
 
     if (m_pContext != NULL)
     {
-#if DEBUG_D3D11_LEAKS        
+#if DEBUG_D3D11_LEAKS
         ATL::CComQIPtr<ID3D11Debug>  pDebug((ID3D11Device*)m_pContext->GetDX11Device());
 #endif
         m_pContext->Terminate();
         m_pContext.Release();
-#if DEBUG_D3D11_LEAKS        
+#if DEBUG_D3D11_LEAKS
         if(pDebug != NULL)
         {
             pDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
@@ -1217,7 +1217,7 @@ AMF_RESULT StitchStream::InitDemuxer(
     else
     {
         amf::AMFComponentPtr  pDemuxer;
-        res = g_AMFFactory.LoadExternalComponent(pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_DEMUXER, &pDemuxer);
+        res = g_AMFFactory.LoadExternalComponent(pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*) FFMPEG_DEMUXER, &pDemuxer);
         AMF_RETURN_IF_FAILED(res, L"AMFCreateComponent  ( %s) failed", FFMPEG_DEMUXER);
 		++m_nFfmpegRefCount;
         m_pSource = amf::AMFComponentExPtr(pDemuxer);
@@ -1245,7 +1245,7 @@ AMF_RESULT StitchStream::InitDemuxer(
         amf_int64 frameCount = 0;
         m_pSource->GetProperty(FFMPEG_DEMUXER_FRAME_COUNT, &frameCount);
         m_pSource->GetProperty(FFMPEG_DEMUXER_DURATION, &m_duration);
-        
+
         amf_int32 outputs = m_pSource->GetOutputCount();
         for (amf_int32 output = 0; output < outputs; output++)
         {
@@ -1365,7 +1365,7 @@ AMF_RESULT StitchStream::GetMediaInfo(amf::AMFContext *pContext,
     else
     {
         amf::AMFComponentPtr  pDemuxer;
-        res = g_AMFFactory.LoadExternalComponent(pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_DEMUXER, &pDemuxer);
+        res = g_AMFFactory.LoadExternalComponent(pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*) FFMPEG_DEMUXER, &pDemuxer);
         AMF_RETURN_IF_FAILED(res, L"AMFCreateComponent( %s ) failed", FFMPEG_DEMUXER);
 		++m_nFfmpegRefCount;
 
@@ -1559,9 +1559,9 @@ AMF_RESULT StitchTemplate::ApplyToCamera(amf::AMFPropertyStorage *camera)
     res = camera->SetProperty(AMF_VIDEO_CAMERA_HFOV, hfov);
     res = camera->SetProperty(AMF_VIDEO_CAMERA_ANGLE_PITCH, pitch);
     res = camera->SetProperty(AMF_VIDEO_CAMERA_ANGLE_YAW, yaw);
-    res = camera->SetProperty(AMF_VIDEO_CAMERA_ANGLE_ROLL, roll);  
+    res = camera->SetProperty(AMF_VIDEO_CAMERA_ANGLE_ROLL, roll);
 
-    res = camera->SetProperty(AMF_VIDEO_STITCH_LENS_CORR_K1, lensK1); 
+    res = camera->SetProperty(AMF_VIDEO_STITCH_LENS_CORR_K1, lensK1);
     res = camera->SetProperty(AMF_VIDEO_STITCH_LENS_CORR_K2, lensK2);
     res = camera->SetProperty(AMF_VIDEO_STITCH_LENS_CORR_K3, lensK3);
     res = camera->SetProperty(AMF_VIDEO_STITCH_LENS_CORR_OFFX, lensOffX);
@@ -1596,7 +1596,7 @@ void StitchTemplate::Clear()
 
     crop = AMFConstructRect(0, 0, 0, 0);
 }
-static wchar_t * Properties[] =
+static const wchar_t * Properties[] =
 {
     AMF_VIDEO_CAMERA_ANGLE_PITCH,
     AMF_VIDEO_CAMERA_ANGLE_YAW,
@@ -1645,7 +1645,7 @@ AMF_RESULT StitchPipelineBase::Dump()
         {
 
             if(std::wstring(AMF_VIDEO_STITCH_LENS_MODE) == std::wstring(Properties[i]))
-            { 
+            {
                 amf_int64 value = 0;
                 input->GetProperty(Properties[i], &value);
                 switch(value)
@@ -1668,7 +1668,7 @@ AMF_RESULT StitchPipelineBase::Dump()
                 pos = sprintf(buf, "{%df, %df, %df, %df} // %S\n", (int)crop.left, (int)crop.top, (int)crop.right, (int)crop.bottom, Properties[i]);
             }
             else
-            { 
+            {
                 double value = 0;
                 input->GetProperty(Properties[i], &value);
                 pos = sprintf(buf, "%.6f, // %S\n", value, Properties[i]);
@@ -1916,8 +1916,8 @@ void ReadOneImage(std::string &text, StitchTemplate &t)
         case 'f':
             lensType = ReadOneValueInt(text, pos);
             //MM TODO integer: use projection format:
-            // 0 - rectilinear (normal lenses) 
-            // 1 - Panoramic (Scanning cameras like Noblex)   
+            // 0 - rectilinear (normal lenses)
+            // 1 - Panoramic (Scanning cameras like Noblex)
             // 2 - Circular fisheye
             // 3 - full-frame fisheye
             // 4 - PSphere, equirectangular
@@ -1993,7 +1993,7 @@ void ReadOneImage(std::string &text, StitchTemplate &t)
     {
         switch (lensType)
         {
-        case 0: //  rectilinear (normal lenses) 
+        case 0: //  rectilinear (normal lenses)
             t.lensMode = AMF_VIDEO_STITCH_LENS_RECTILINEAR;
             break;
         case 2: // Circular fisheye
@@ -2014,7 +2014,7 @@ void StitchPipelineBase::ParsePTGuiProject(const std::wstring &ptguifilename)
         return;
     }
 
-    //support upto 32 cameras    
+    //support upto 32 cameras
     m_Cameras.resize(32);
 
     std::fstream stm;
@@ -2039,7 +2039,7 @@ void StitchPipelineBase::ParsePTGuiProject(const std::wstring &ptguifilename)
             int index = 0;
             m_Cameras[index].Clear();
             while (true)
-            { 
+            {
                 if(!std::getline(stm, line))
                 {
                     break; //EOF
@@ -2072,7 +2072,7 @@ void StitchPipelineBase::ParsePTGuiProject(const std::wstring &ptguifilename)
                         break;
                     }
                 }
-            }        
+            }
             m_Cameras.resize(index);
         }
     }
@@ -2106,7 +2106,7 @@ AMF_RESULT StitchPipelineBase::InitVideoEncoder()
 
         encoderInputFormat = amf::AMF_SURFACE_NV12;
     }
-    
+
     amf_int32 compositedWidth = 3840;
     amf_int32 compositedHeight = 1920;
     GetParam(PARAM_NAME_COMPOSITED_WIDTH, compositedWidth);
@@ -2128,7 +2128,7 @@ AMF_RESULT StitchPipelineBase::InitVideoEncoder()
     PushParamsToPropertyStorage(encoderParams, ParamEncoderUsage, m_pEncoder);
     // override some usage parameters
     PushParamsToPropertyStorage(encoderParams, ParamEncoderStatic, m_pEncoder);
-    
+
     res = m_pEncoder->Init(encoderInputFormat, compositedWidth, compositedHeight);
     AMF_RETURN_IF_FAILED(res, L"m_pEncoder->Init() failed");
 
@@ -2272,7 +2272,7 @@ AMF_RESULT  StitchPipelineBase::InitZCam()
         m_pSourceZCam->SetProperty(ZCAMLIVE_AUDIO_MODE, isStreamingEnabled ? CAM_AUDIO_MODE_SILENT : CAM_AUDIO_MODE_NONE);
         // bool bLowLatency = true;
         // GetParam(PARAM_NAME_LOWLATENCY, bLowLatency);
-        m_pSourceZCam->SetProperty(ZCAMLIVE_LOWLATENCY, isStreamingEnabled ? 1 : 0); //streaming to youtube needs evenly spaced timestamp 
+        m_pSourceZCam->SetProperty(ZCAMLIVE_LOWLATENCY, isStreamingEnabled ? 1 : 0); //streaming to youtube needs evenly spaced timestamp
 
         if (CAMLIVE_MODE_THETAS == modeZCam)
         {
@@ -2329,7 +2329,7 @@ std::vector<MediaInfo>* StitchPipelineBase::GetMediaInfo()
         {
             mediaInfo.codecID = var.ToWString().c_str();
         }
-        
+
         amf_int32 streamCount = (amf_int32)m_Cameras.size();
         m_pSourceZCam->GetProperty(ZCAMLIVE_STREAMCOUNT, &streamCount);
         m_Media.clear();

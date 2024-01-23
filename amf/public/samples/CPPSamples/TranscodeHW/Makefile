@@ -31,8 +31,9 @@ target_name = TranscodeHW
 target_type = exe
 
 pp_include_dirs = \
- $(amf_root) \
- $(VK_SDK_PATH)/x86_64/include
+    $(amf_root) \
+    $(VK_SDK_PATH)/x86_64/include \
+    $(build_dir) \
 
 src_files = \
     public/samples/CPPSamples/TranscodeHW/TranscodeHW.cpp \
@@ -47,7 +48,7 @@ src_files = \
     $(public_common_dir)/PropertyStorageExImpl.cpp \
     $(public_common_dir)/Linux/ThreadLinux.cpp \
     $(public_common_dir)/VulkanImportTable.cpp \
-    $(samples_common_dir)/BackBufferPresenter.cpp \
+    $(public_common_dir)/OpenGLImportTable.cpp \
     $(samples_common_dir)/BitStreamParser.cpp \
     $(samples_common_dir)/BitStreamParserH264.cpp \
     $(samples_common_dir)/BitStreamParserH265.cpp \
@@ -65,13 +66,15 @@ src_files = \
     $(samples_common_dir)/TranscodePipeline.cpp \
     $(samples_common_dir)/SwapChain.cpp \
     $(samples_common_dir)/SwapChainVulkan.cpp \
+    $(samples_common_dir)/SwapChainOpenGL.cpp \
     $(samples_common_dir)/VideoPresenter.cpp \
     $(samples_common_dir)/VideoPresenterOpenGL.cpp \
     $(samples_common_dir)/VideoPresenterVulkan.cpp \
 
-
-shader_file = \
-    quad.frag \
-    quad.vert
+vulkan_shader_sources = \
+    $(amf_root)/$(samples_common_dir)/QuadVulkan_fs.frag \
+    $(amf_root)/$(samples_common_dir)/QuadVulkan_vs.vert
 
 include $(amf_root)/public/make/common_rules.mak
+
+$(build_dir)/public/samples/CPPSamples/common/VideoPresenterVulkan.o : $(vulkan_shader_headers)

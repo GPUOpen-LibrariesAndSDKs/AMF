@@ -31,7 +31,7 @@
 //
 #pragma once
 
-#include "BackBufferPresenter.h"
+#include "VideoPresenter.h"
 #include "SwapChainDX12.h"
 #include "d3dx12.h"
 
@@ -80,7 +80,7 @@ struct RootSignatureLayoutDX12
         return AddRootParam(param);
     }
 
-    inline amf_uint AddUnorderedAccessResource(amf_uint shaderRegister, amf_uint registerSpace, D3D12_ROOT_DESCRIPTOR_FLAGS flags, D3D12_SHADER_VISIBILITY visibility)
+    inline amf_uint AddUnorderedAccessResource( amf_uint shaderRegister, amf_uint registerSpace, D3D12_ROOT_DESCRIPTOR_FLAGS flags, D3D12_SHADER_VISIBILITY visibility)
     {
         CD3DX12_ROOT_PARAMETER1 param = {};
         param.InitAsUnorderedAccessView(shaderRegister, registerSpace, flags, visibility);
@@ -145,44 +145,29 @@ struct VertexBufferDX12 : public BufferDX12
 
 typedef BufferDX12 ConstantBufferDX12;
 
-class VideoPresenterDX12 : public BackBufferPresenter
+
+class VideoPresenterDX12 : public VideoPresenter
 {
 public:
-    VideoPresenterDX12(amf_handle hwnd, amf::AMFContext* pContext);
+    VideoPresenterDX12(amf_handle hwnd, amf::AMFContext* pContext, amf_handle hDisplay = nullptr);
 
     virtual                             ~VideoPresenterDX12();
 
-    virtual AMF_RESULT                  Present(amf::AMFSurface* pSurface);
-
     virtual bool                        SupportAllocator() const { return false; } // DX12 cannot support this, see AllocSurface for more info
-
     virtual amf::AMF_MEMORY_TYPE        GetMemoryType() const { return amf::AMF_MEMORY_DX12; }
-    virtual amf::AMF_SURFACE_FORMAT     GetInputFormat() const { return m_eInputFormat; }
-    virtual AMF_RESULT                  SetInputFormat(amf::AMF_SURFACE_FORMAT format);
-    virtual AMF_RESULT                  Flush();
 
-    virtual AMF_RESULT                  Init(amf_int32 width, amf_int32 height, amf::AMFSurface* pSurface);
-    virtual AMF_RESULT                  Terminate();
-
-    virtual AMF_RESULT AMF_STD_CALL     AllocSurface(amf::AMF_MEMORY_TYPE type, amf::AMF_SURFACE_FORMAT format,
-                                                     amf_int32 width, amf_int32 height, amf_int32 hPitch, amf_int32 vPitch, amf::AMFSurface** ppSurface);
-
-    virtual AMFSize                     GetSwapchainSize() { return m_swapChain.GetSize(); }
+    virtual AMF_RESULT                  Init(amf_int32 width, amf_int32 height, amf::AMFSurface* pSurface) override;
+    virtual AMF_RESULT                  Terminate() override;
 
 protected:
     typedef SwapChainDX12::BackBuffer RenderTarget;
 
-    // Todo: move to base class later
-    struct ViewProjection
-    {
-        ProjectionMatrix vertexTransform;
-        ProjectionMatrix texTransform;
-    };
 
     virtual AMF_RESULT                  RegisterDescriptors();
     virtual AMF_RESULT                  SetupRootLayout(RootSignatureLayoutDX12& layout);
     virtual AMF_RESULT                  GetQuadShaders(D3D12_SHADER_BYTECODE& vs, D3D12_SHADER_BYTECODE& ps) const;
     virtual AMF_RESULT                  BindPipelineResources();
+    virtual AMF_RESULT                  BindSampler();
 
     AMF_RESULT                          CreateBuffer(ID3D12Resource** ppBuffer, ID3D12Resource** ppBufferUpload, const D3D12_RESOURCE_DESC& resourceDesc);
     AMF_RESULT                          CreateVertexBuffer(ID3D12Resource** ppVertexBuffer, ID3D12Resource** ppVertexBufferUpload, D3D12_VERTEX_BUFFER_VIEW& vertexBufferView, amf_size vertexSize, amf_uint count);
@@ -195,15 +180,16 @@ protected:
                                                      { return UpdateBuffer(buffer.pBuffer, buffer.pUpload, pData, size, dstOffset, immediate); }
 
     AMF_RESULT                          CreateResourceView(amf::AMFSurface* pSurface, const DescriptorDX12& descriptor);
-
+    
+    virtual AMF_RESULT                  RenderSurface(amf::AMFSurface* pSurface, const RenderTargetBase* pRenderTarget, RenderViewSizeInfo& renderView) override;
     virtual AMF_RESULT                  UpdateStates(amf::AMFSurface* pSurface, const RenderTarget* pRenderTarget, RenderViewSizeInfo& renderView);
     virtual AMF_RESULT                  DrawBackground(const RenderTarget* pRenderTarget);
     virtual AMF_RESULT                  SetStates(amf_uint groupIndex);
     virtual AMF_RESULT                  DrawFrame(ID3D12Resource* pSrcSurface, const RenderTarget* pRenderTarget);
-
+    virtual AMF_RESULT                  DrawOverlay(amf::AMFSurface* /*pSurface*/, const RenderTarget* /*pRenderTarget*/) { return AMF_OK; }
+    
     virtual AMF_RESULT                  OnRenderViewResize(const RenderViewSizeInfo& newRenderView) override;
-    virtual void                        UpdateProcessor();
-    virtual AMFRect                     GetClientRect() override;
+    virtual AMF_RESULT                  ResizeSwapChain() override;
 
     static constexpr amf_uint           GROUP_QUAD_SURFACE = 0;
     static constexpr amf_uint           GROUP_QUAD_PIP = 1;
@@ -211,49 +197,26 @@ protected:
     amf::AMFContext2Ptr                 m_pContext2;
     CComPtr<ID3D12Device>               m_pDX12Device;
     DescriptorHeapPoolDX12              m_descriptorHeapPool;
-    SwapChainDX12                       m_swapChain;
     CommandBufferDX12                   m_cmdBuffer;
     RenderingPipelineDX12               m_quadPipeline;
 
-    ViewProjection                      m_viewProjection;
     ConstantBufferDX12                  m_viewProjectionBuffer;
-
-    ViewProjection                      m_pipViewProjection;
     ConstantBufferDX12                  m_pipViewProjectionBuffer;
 
     amf_uint                            m_srvRootIndex;
     amf_uint                            m_viewProjectionRootIndex;
     amf_uint                            m_samplerRootIndex;
+    SamplerMap<DescriptorDX12>          m_samplerDescriptorMap;
+    Interpolation                       m_lastBindedInterpolation;
 
 private:
     AMF_RESULT                          CreateSamplerStates();
     AMF_RESULT                          CreateQuadPipeline();
     AMF_RESULT                          PrepareStates();
 
-	AMF_RESULT                          CheckForResize(bool bForce, bool *bResized);
-	AMF_RESULT                          ResizeSwapChain();
-    AMF_RESULT                          RenderSurface(amf::AMFSurface* pSurface, const RenderTarget* pRenderTarget);
-    AMF_RESULT                          RenderSurface(amf::AMFSurface* pSurface, const RenderTarget* pRenderTarget, RenderViewSizeInfo& renderView);
-    AMF_RESULT                          ApplyCSC(amf::AMFSurface* pSurface);
-
-    amf::AMF_SURFACE_FORMAT             m_eInputFormat;
-
     DescriptorDX12                      m_srvDescriptors[SwapChainDX12::BACK_BUFFER_COUNT];
-    DescriptorDX12                      m_linearSamplerDescriptor;
-    DescriptorDX12                      m_pointSamplerDescriptor;
 
-	static const unsigned int           IndicesCount = 4;
     VertexBufferDX12                    m_vertexBuffer;
 
-	D3D12_VIEWPORT                      m_CurrentViewport;
     amf_uint                            m_currentSrvIndex;
-
-    amf::AMFCriticalSection             m_sect;
-
-    bool                                m_bResizeSwapChain;
-	AMFRect                             m_rectClientResize;
-
-	bool                                m_bFirstFrame;
-	static const float                  ClearColor[4];
-
 };

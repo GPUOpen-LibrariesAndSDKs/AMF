@@ -43,10 +43,16 @@
 #elif defined(__ANDROID__)
     #define VK_USE_PLATFORM_ANDROID_KHR
 #elif defined(__linux)
-    #define VK_USE_PLATFORM_XLIB_KHR
+    #if !defined(AMF_DISABLE_VK_USE_PLATFORM_XLIB_KHR)
+        #define VK_USE_PLATFORM_XLIB_KHR
+    #endif
 #endif
 
 #include "public/include/core/VulkanAMF.h"
+#if defined(VK_USE_PLATFORM_ANDROID_KHR)
+    #include "vulkan/vulkan_android.h"
+#endif
+
 
 //#define ENABLE_VALIDATION
 
@@ -68,7 +74,9 @@ struct VulkanImportTable
     PFN_vkGetPhysicalDeviceFormatProperties                 vkGetPhysicalDeviceFormatProperties;
     PFN_vkGetPhysicalDeviceImageFormatProperties            vkGetPhysicalDeviceImageFormatProperties;
     PFN_vkGetPhysicalDeviceProperties                       vkGetPhysicalDeviceProperties;
+    PFN_vkGetPhysicalDeviceExternalSemaphoreProperties      vkGetPhysicalDeviceExternalSemaphoreProperties;
     PFN_vkGetPhysicalDeviceQueueFamilyProperties            vkGetPhysicalDeviceQueueFamilyProperties;
+    PFN_vkGetPhysicalDeviceQueueFamilyProperties2           vkGetPhysicalDeviceQueueFamilyProperties2;
     PFN_vkGetPhysicalDeviceMemoryProperties                 vkGetPhysicalDeviceMemoryProperties;
     PFN_vkGetInstanceProcAddr                               vkGetInstanceProcAddr;
     PFN_vkGetDeviceProcAddr                                 vkGetDeviceProcAddr;
@@ -200,7 +208,6 @@ struct VulkanImportTable
     PFN_vkCmdExecuteCommands                                vkCmdExecuteCommands;
     PFN_vkGetPhysicalDeviceFeatures2                        vkGetPhysicalDeviceFeatures2;
 
-
     // public extensions
     PFN_vkDestroySurfaceKHR vkDestroySurfaceKHR;
     PFN_vkGetPhysicalDeviceSurfaceSupportKHR      vkGetPhysicalDeviceSurfaceSupportKHR;
@@ -221,13 +228,14 @@ struct VulkanImportTable
 
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
-    PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
+    PFN_vkCreateWin32SurfaceKHR         vkCreateWin32SurfaceKHR;
 #endif
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
     PFN_vkCreateXlibSurfaceKHR  vkCreateXlibSurfaceKHR;
 #endif
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
     PFN_vkCreateAndroidSurfaceKHR  vkCreateAndroidSurfaceKHR;
+    PFN_vkGetAndroidHardwareBufferPropertiesANDROID vkGetAndroidHardwareBufferPropertiesANDROID;
 #endif
     PFN_vkGetMemoryHostPointerPropertiesEXT vkGetMemoryHostPointerPropertiesEXT;
 

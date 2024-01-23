@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -144,7 +144,7 @@ void  ClearPacket(AVPacket* pPacket)
 //
 
 //-------------------------------------------------------------------------------------------------
-AMFFileDemuxerFFMPEGImpl::AMFOutputDemuxerImpl::AMFOutputDemuxerImpl(AMFFileDemuxerFFMPEGImpl* pHost, amf_int32 index) 
+AMFFileDemuxerFFMPEGImpl::AMFOutputDemuxerImpl::AMFOutputDemuxerImpl(AMFFileDemuxerFFMPEGImpl* pHost, amf_int32 index)
     : m_pHost(pHost),
       m_iIndexFFmpeg(index),
       m_bEnabled(false),
@@ -174,7 +174,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::AMFOutputDemuxerImpl::QueryOu
     AMF_RESULT  err    = AMF_OK;
     AVPacket*   packet = nullptr;
     if (!m_packetsCache.empty())
-    { 
+    {
         // don't forget to remove the packet from the list now that we "read" it
         packet = m_packetsCache.front();
         m_packetsCache.pop_front();
@@ -188,7 +188,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::AMFOutputDemuxerImpl::QueryOu
             if(err == AMF_EOF)
             {
                 if(m_pHost->IsCached())
-                { 
+                {
                     return AMF_OK;
                 }
             }
@@ -225,7 +225,7 @@ AMF_RESULT  AMFFileDemuxerFFMPEGImpl::AMFOutputDemuxerImpl::CachePacket(AVPacket
     AMF_RETURN_IF_FALSE(pPacket->stream_index == m_iIndexFFmpeg, AMF_INVALID_ARG, L"CachePacket() - invalid packet for stream passed in");
 
     if(!m_bEnabled)
-    { 
+    {
         ClearPacket(pPacket);
         return AMF_FAIL;
     }
@@ -307,7 +307,7 @@ AMFFileDemuxerFFMPEGImpl::AMFVideoOutputDemuxerImpl::AMFVideoOutputDemuxerImpl(A
     // allocate a buffer to store the extra data
     AMFBufferPtr spBuffer;
     if(ist->codecpar->extradata_size > 0)
-    { 
+    {
         AMF_RESULT err = m_pHost->m_pContext->AllocBuffer(AMF_MEMORY_HOST, ist->codecpar->extradata_size, &spBuffer);
         if ((err == AMF_OK) && spBuffer->GetNative())
         {
@@ -379,7 +379,7 @@ AMFFileDemuxerFFMPEGImpl::AMFAudioOutputDemuxerImpl::AMFAudioOutputDemuxerImpl(A
     // allocate a buffer to store the extra data
     AMFBufferPtr spBuffer;
     if(ist->codecpar->extradata_size != 0)
-    { 
+    {
     AMF_RESULT err = m_pHost->m_pContext->AllocBuffer(AMF_MEMORY_HOST, ist->codecpar->extradata_size, &spBuffer);
     if ((err == AMF_OK) && spBuffer->GetNative())
     {
@@ -389,7 +389,7 @@ AMFFileDemuxerFFMPEGImpl::AMFAudioOutputDemuxerImpl::AMFAudioOutputDemuxerImpl(A
     // figure out the surface format conversion
     AMF_AUDIO_FORMAT  audioFormat = GetAMFAudioFormat((AVSampleFormat)ist->codecpar->format);
 
-    if(ist->codecpar->channels == 0) // ffmpeg return 0 for some AAC files 
+    if(ist->codecpar->channels == 0) // ffmpeg return 0 for some AAC files
     {
         ist->codecpar->channels = 2;
     }
@@ -451,7 +451,7 @@ AMFFileDemuxerFFMPEGImpl::AMFFileDemuxerFFMPEGImpl(AMFContext* pContext)
     AMFPrimitivePropertyInfoMapBegin
         AMFPropertyInfoPath(FFMPEG_DEMUXER_PATH, L"File Path", L"", false),
         AMFPropertyInfoPath(FFMPEG_DEMUXER_URL, L"Stream URL", L"", false),
-        
+
         AMFPropertyInfoInt64(FFMPEG_DEMUXER_START_FRAME, L"StartFrame", 0, 0, LLONG_MAX, true),
         AMFPropertyInfoInt64(FFMPEG_DEMUXER_FRAME_COUNT, L"FramesNumber", 0, 0, LLONG_MAX, true),
         AMFPropertyInfoInt64(FFMPEG_DEMUXER_DURATION, L"Duration", 0, 0, LLONG_MAX, false),
@@ -459,7 +459,7 @@ AMFFileDemuxerFFMPEGImpl::AMFFileDemuxerFFMPEGImpl(AMFContext* pContext)
         AMFPropertyInfoBool(FFMPEG_DEMUXER_CHECK_MVC, L"Check MVC", true, false),
         AMFPropertyInfoBool(FFMPEG_DEMUXER_INDIVIDUAL_STREAM_MODE, L"Stream mode", true, false),
         AMFPropertyInfoBool(FFMPEG_DEMUXER_LISTEN, L"Listen", false, false)
-        
+
     AMFPrimitivePropertyInfoMapEnd
 
     InitFFMPEG();
@@ -528,9 +528,9 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Flush()
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::QueryOutput(AMFData** ppData)                             
-{  
-    // this mode is available if streaming mode (reading from individual 
+AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::QueryOutput(AMFData** ppData)
+{
+    // this mode is available if streaming mode (reading from individual
     // streams) is disabled - by default this is disabled...
     AMF_RETURN_IF_FALSE(!m_bStreamingMode, AMF_NOT_SUPPORTED, L"QueryOutput() - Bulk packet output has not been set");
 
@@ -539,7 +539,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::QueryOutput(AMFData** ppData)
 
     // when we check for MVC, we should fill the caches of the one/two/n streams
     // we created on Init.  This should be about 5 frames or so...
-    // to not seek back and re-read again, we will drain the caches first, 
+    // to not seek back and re-read again, we will drain the caches first,
     // in no particular order before we continue to read from the file...
     AVPacket* pPacket = nullptr;
     for (size_t idx = 0; idx < m_OutputStreams.size(); idx++)
@@ -669,7 +669,7 @@ amf_pts AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::GetDuration()
     return m_ptsDuration;
 }
 //-------------------------------------------------------------------------------------------------
-void AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::SetMinPosition(amf_pts pts) 
+void AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::SetMinPosition(amf_pts pts)
 {
     AMFLock lock(&m_sync);
 
@@ -681,7 +681,7 @@ void AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::SetMinPosition(amf_pts pts)
         amf_int64 newStartFrame   = (amf_int64) GetFrameFromPts(pts);
         amf_int64 oldEndFrame     = GetPropertyStartFrame() + GetPropertyFramesNumber();
 
-        // we need to recalculate if the new min position is 
+        // we need to recalculate if the new min position is
         // beyoond the last frame of the previous range
         amf_int64 newEndFrame     = (newStartFrame > oldEndFrame) ? (amf_int64) GetFrameFromPts(GetDuration()) : oldEndFrame;
         amf_int64 newFramesNumber = (newEndFrame - newStartFrame);
@@ -811,7 +811,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
     // if the URL is the same, ignore the call
     amf_wstring Url;
     amf_wstring Path;
-    
+
     GetPropertyWString(FFMPEG_DEMUXER_URL, &Url);
     GetPropertyWString(FFMPEG_DEMUXER_PATH, &Path);
 
@@ -820,7 +820,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
     const AVInputFormat* file_iformat = NULL;
     bool bStreaming = false;
     if(Url.length() >0)
-    { 
+    {
         if (m_Url == Url)
         {
             return AMF_OK;
@@ -877,9 +877,9 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
     amf_bool bImageFormat = false;
     AMF_RESULT res = OpenFile(convertedfilename, fmt, options, bImageFormat);
     AMF_RETURN_IF_FALSE(res==AMF_OK && m_pInputContext!=NULL, AMF_INVALID_ARG, L"Open() failed to open file %s", Url.c_str());
- 
+
     if(file_iformat!= NULL)
-    { 
+    {
         m_pInputContext->iformat = file_iformat;
     }
 
@@ -902,13 +902,13 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
             newOutput = new AMFVideoOutputDemuxerImpl(this, i);
             videoIndex = i;
         }
-        
+
         if (ist->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && m_iAudioStreamIndexFFmpeg == i)
         {
             newOutput = new AMFAudioOutputDemuxerImpl(this, i);
         }
         if(newOutput != NULL)
-        { 
+        {
             for(amf_vector<AMFOutputDemuxerImplPtr>::iterator it = m_OutputStreams.begin(); it != m_OutputStreams.end(); it++)
             {
                 if((*it)->m_iIndexFFmpeg == i)
@@ -922,8 +922,8 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::Open()
     }
     m_OutputStreams = outputStreams;
 
-    
-    
+
+
     if (m_iVideoStreamIndexFFmpeg >= 0 && m_pInputContext->streams[m_iVideoStreamIndexFFmpeg]->codecpar->codec_id == AV_CODEC_ID_H264)
     {
         bool checkMVC = true;
@@ -1000,7 +1000,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::ReadPacket(AVPacket **packet)
     pkt.dts = AV_NOPTS_VALUE;
     pkt.pts = AV_NOPTS_VALUE;
 //    amf_pts currTime = amf_high_precision_clock();
-    if (m_bForceEof || av_read_frame(m_pInputContext, &pkt) < 0) 
+    if (m_bForceEof || av_read_frame(m_pInputContext, &pkt) < 0)
     {
 //        AMFTraceInfo(AMF_FACILITY, L"ReadPacket() - EOF, END");
         return AMF_EOF;
@@ -1011,7 +1011,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::ReadPacket(AVPacket **packet)
     FFStream* fst = ffstream(ist);
     int64_t wrap = 1LL << ist->pts_wrap_bits;
 
-//    AMFTraceWarning(AMF_FACILITY, L"ReadPacket() %s pts=%" LPRId64 L", dts=% " LPRId64 L" first_dts=%" LPRId64, 
+//    AMFTraceWarning(AMF_FACILITY, L"ReadPacket() %s pts=%" LPRId64 L", dts=% " LPRId64 L" first_dts=%" LPRId64,
 //        pkt.stream_index == m_iVideoStreamIndexFFmpeg ? L"video" : L"audio",
 //        pkt.pts, pkt.dts, fst->first_dts);
 
@@ -1072,7 +1072,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::ReadPacket(AVPacket **packet)
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::FindNextPacket(amf_int32 streamIndex, AVPacket **packet, bool saveSkipped)
 {
-    // clear the return pointer in case we 
+    // clear the return pointer in case we
     // return with an error code...
     *packet = nullptr;
 
@@ -1085,7 +1085,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::FindNextPacket(amf_int32 stre
             return AMF_EOF;
         }
 
-        // read the next packet and assign it 
+        // read the next packet and assign it
         // to the appropriate cache/queue
         AVPacket* pTempPacket = nullptr;
         err = ReadPacket(&pTempPacket);
@@ -1098,17 +1098,17 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::FindNextPacket(amf_int32 stre
             return err;
         }
 
-        // we got a valid packet, assign it to 
+        // we got a valid packet, assign it to
         // the appropriate cache/queue
-        // NOTE: for now we skip all streams 
-        //       except 1 video and 1 audio 
+        // NOTE: for now we skip all streams
+        //       except 1 video and 1 audio
         const amf_int32  packetStreamIndex = pTempPacket->stream_index;
-        if ( ((m_iVideoStreamIndexFFmpeg != -1) && (packetStreamIndex == m_iVideoStreamIndexFFmpeg)) 
+        if ( ((m_iVideoStreamIndexFFmpeg != -1) && (packetStreamIndex == m_iVideoStreamIndexFFmpeg))
             ||
-             ((m_iAudioStreamIndexFFmpeg != -1) && (packetStreamIndex == m_iAudioStreamIndexFFmpeg)) 
+             ((m_iAudioStreamIndexFFmpeg != -1) && (packetStreamIndex == m_iAudioStreamIndexFFmpeg))
             )
         {
-            // nothing to do - code to handle correct packets 
+            // nothing to do - code to handle correct packets
             // right after this "if"
         }
         else
@@ -1116,7 +1116,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::FindNextPacket(amf_int32 stre
             ClearPacket(pTempPacket);
 //          pTempPacket = nullptr;
 
-            // if we're requesting packets from streams we don't 
+            // if we're requesting packets from streams we don't
             // handle at this point, return EOF...
             if (packetStreamIndex == streamIndex)
             {
@@ -1125,7 +1125,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::FindNextPacket(amf_int32 stre
             continue;
         }
 
-        // if it's not the packet for the stream we're 
+        // if it's not the packet for the stream we're
         // looking for, cache it in the other stream
         // if the packet we got is from the same index
         // as what we were looking for, it's time to exit
@@ -1205,12 +1205,12 @@ AMF_RESULT AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::BufferFromPacket(const AVPack
     void* pMem = pBuffer->GetNative();
     AMF_RETURN_IF_FALSE(pMem != NULL, AMF_INVALID_POINTER, L"BufferFromPacket() - GetMemory failed");
 
-    // copy the packet memory and don't forget to 
+    // copy the packet memory and don't forget to
     // clear data padding like it is done by FFMPEG
     memcpy(pMem, pPacket->data, pPacket->size);
     memset(reinterpret_cast<amf_int8*>(pMem)+pPacket->size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
-    // now that we created the buffer, it's time to update 
+    // now that we created the buffer, it's time to update
     // it's properties from the packet information...
     return UpdateBufferProperties(pBuffer, pPacket);
 }
@@ -1547,7 +1547,7 @@ amf_pts AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::CheckPtsRange(amf_pts pts)
     return pts;
 }
 //-------------------------------------------------------------------------------------------------
-void AMF_STD_CALL AMFFileDemuxerFFMPEGImpl::ReadRangeSettings() 
+void AMF_STD_CALL AMFFileDemuxerFFMPEGImpl::ReadRangeSettings()
 {
     AMFLock lock(&m_sync);
     m_ptsInitialMinPosition = GetMinPosition();
@@ -1565,9 +1565,9 @@ bool AMF_STD_CALL       AMFFileDemuxerFFMPEGImpl::IsCached()
     return false;
 }
 amf_int32   AMF_STD_CALL  AMFFileDemuxerFFMPEGImpl::GetOutputCount()
-{  
+{
     AMFLock lock(&m_sync);
-    return (amf_int32)m_OutputStreams.size();  
+    return (amf_int32)m_OutputStreams.size();
 };
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMFFileDemuxerFFMPEGImpl::OpenAsImageSequence(
@@ -1581,7 +1581,6 @@ AMF_RESULT AMFFileDemuxerFFMPEGImpl::OpenAsImageSequence(
     amf_string ext = filename.c_str() + posEnd;
     amf_string fmt = "%00d";
     std::string startNum = "";
-    amf_int32 index = 0;
     for (size_t idx = posEnd - 1; idx > posStart; idx--)
     {
         const char* pBuf = (filename.c_str() + idx);
@@ -1661,7 +1660,8 @@ AMF_RESULT AMFFileDemuxerFFMPEGImpl::OpenFile(
                 }
             }
 
-            if ((ist->codecpar->codec_id == AV_CODEC_ID_EXR) ||
+            if ((ist->codecpar->codec_id == AV_CODEC_ID_EXR)  ||
+                (ist->codecpar->codec_id == AV_CODEC_ID_TIFF) ||
                 (ist->codecpar->codec_id == AV_CODEC_ID_PNG))
             {
                 bIsImage = true;

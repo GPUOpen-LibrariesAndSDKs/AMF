@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="$(SolutionDir)..\..\public\samples\CPPSamples\common\QuadVulkan_fs.frag">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"%VK_SDK_PATH%/Bin/glslangvalidator.exe" -V "%(FullPath)" -o "$(IntermediateOutputPath)%(Filename)%(Extension).spv
+"$(SolutionDir)../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)%(Extension).spv" %(Filename)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"%VK_SDK_PATH%/Bin/glslangvalidator.exe" -V "%(FullPath)" -o "$(IntermediateOutputPath)%(Filename)%(Extension).spv
+"$(SolutionDir)../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)%(Extension).spv" %(Filename)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"%VK_SDK_PATH%/Bin/glslangvalidator.exe" -V "%(FullPath)" -o "$(IntermediateOutputPath)%(Filename)%(Extension).spv
+"$(SolutionDir)../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)%(Extension).spv" %(Filename)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"%VK_SDK_PATH%/Bin/glslangvalidator.exe" -V "%(FullPath)" -o "$(IntermediateOutputPath)%(Filename)%(Extension).spv
+"$(SolutionDir)../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)%(Extension).spv" %(Filename)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compiling Vulkan shaders...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compiling Vulkan shaders...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compiling Vulkan shaders...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compiling Vulkan shaders...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename)%(Extension).spv.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename)%(Extension).spv.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename)%(Extension).spv.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename)%(Extension).spv.h</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="$(SolutionDir)..\..\public\samples\CPPSamples\common\QuadVulkan_vs.vert">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"%VK_SDK_PATH%/Bin/glslangvalidator.exe" -V "%(FullPath)" -o "$(IntermediateOutputPath)%(Filename)%(Extension).spv
+"$(SolutionDir)../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)%(Extension).spv" %(Filename)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"%VK_SDK_PATH%/Bin/glslangvalidator.exe" -V "%(FullPath)" -o "$(IntermediateOutputPath)%(Filename)%(Extension).spv
+"$(SolutionDir)../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)%(Extension).spv" %(Filename)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"%VK_SDK_PATH%/Bin/glslangvalidator.exe" -V "%(FullPath)" -o "$(IntermediateOutputPath)%(Filename)%(Extension).spv
+"$(SolutionDir)../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)%(Extension).spv" %(Filename)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"%VK_SDK_PATH%/Bin/glslangvalidator.exe" -V "%(FullPath)" -o "$(IntermediateOutputPath)%(Filename)%(Extension).spv
+"$(SolutionDir)../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)%(Extension).spv" %(Filename)</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename)%(Extension).spv.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename)%(Extension).spv.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename)%(Extension).spv.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename)%(Extension).spv.h</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compiling Vulkan shaders...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compiling Vulkan shaders...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compiling Vulkan shaders...</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compiling Vulkan shaders...</Message>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </ExcludedFromBuild>
+    </CustomBuild>
+  </ItemGroup>
+</Project>

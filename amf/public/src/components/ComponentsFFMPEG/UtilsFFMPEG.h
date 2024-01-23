@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -43,15 +43,17 @@
 extern "C"
 {
 #if defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable:4244)
+    #pragma warning(push)
+    #pragma warning(disable:4244)
 #endif
+
     #include "libavformat/avformat.h"
     #include "libavformat/url.h"
     #include "libavcodec/avcodec.h"
     #include "libavutil/opt.h"
+
 #if defined(_MSC_VER)
-#pragma warning(pop)
+    #pragma warning(pop)
 #endif
 }
 

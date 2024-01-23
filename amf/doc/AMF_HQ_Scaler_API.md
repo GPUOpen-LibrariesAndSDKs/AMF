@@ -73,11 +73,13 @@ The AMF Video HQ Scaler component should be initialized using the following sequ
 The HQ scaler supports the following input and output formats:
 
 1. BRGA
-1. NV12
+1. NV12 [^1]
 1. RGBA
 1. R10G10B10A2
 1. RGBA_F16
-1. P010
+1. P010 [^1]
+
+[^1]: These formats are not supported when `AMF_HQ_SCALER_ALGORITHM` is set to `AMF_HQ_SCALER_ALGORITHM_VIDEOSR1_1`.
 
 The output format must be same as the input and the format conversion is not supported. The parameters of the output stream are set using the following properties:
 

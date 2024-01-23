@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2017 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -490,52 +490,52 @@ int AMFDataStreamZCamImpl::ConnectToCamera(SOCKET mySocket, struct addrinfo& add
     if (result == SOCKET_ERROR)
     {
         result = WSAGetLastError();
-        if (result == WSAEINPROGRESS || result == WSAEWOULDBLOCK) 
-        { 
-            struct timeval tv; 
+        if (result == WSAEINPROGRESS || result == WSAEWOULDBLOCK)
+        {
+            struct timeval tv;
             fd_set myset;
-            do 
-            { 
-                tv.tv_sec = 15; 
-                tv.tv_usec = 0; 
-                FD_ZERO(&myset); 
-                FD_SET(mySocket, &myset); 
-                result = select((int)mySocket + 1, NULL, &myset, NULL, &tv); 
+            do
+            {
+                tv.tv_sec = 15;
+                tv.tv_usec = 0;
+                FD_ZERO(&myset);
+                FD_SET(mySocket, &myset);
+                result = select((int)mySocket + 1, NULL, &myset, NULL, &tv);
 
-                if (result < 0 && (result = WSAGetLastError()) == WSAEINTR) 
-                { 
+                if (result < 0 && (result = WSAGetLastError()) == WSAEINTR)
+                {
                     AMFTraceError(L"AMFDataStreamZCamImpl", L"ConnectToCamera() failed!");
                     break;
-                } 
-                if (result > 0) 
-                { 
-                    // Socket selected for write 
+                }
+                if (result > 0)
+                {
+                    // Socket selected for write
                     int valopt;
-                    int lon = sizeof(valopt); 
-                    if (getsockopt(mySocket, SOL_SOCKET, SO_ERROR, (char*)(&valopt), &lon) < 0) 
-                    { 
+                    int lon = sizeof(valopt);
+                    if (getsockopt(mySocket, SOL_SOCKET, SO_ERROR, (char*)(&valopt), &lon) < 0)
+                    {
                         AMFTraceError(L"AMFDataStreamZCamImpl", L"ConnectToCamera() failed!");
                         result = WSAGetLastError();
                         break;
-                    } 
-                    // Check the value returned... 
-                    if (valopt) 
-                    { 
+                    }
+                    // Check the value returned...
+                    if (valopt)
+                    {
                         result = WSAEINTR;
                         break;
-                    } 
-                    result = 0; // connected 
-                    break; 
-                } 
-                else 
-                { 
-                    break; 
-                } 
-            } while (true); 
+                    }
+                    result = 0; // connected
+                    break;
+                }
+                else
+                {
+                    break;
+                }
+            } while (true);
         }
     }
 
-    iMode = 0; //back to blocking mode 
+    iMode = 0; //back to blocking mode
     iResult = ioctlsocket(mySocket, FIONBIO, &iMode);
     return result;
 }
@@ -590,8 +590,8 @@ int AMFDataStreamZCamImpl::SetupCamera(SOCKET& mySocket, const char* ipAddress, 
     char  recvbuf[1024];
     char  sendBuf[256];
 
-    char* httpData01 = "Connection: Keep-Alive\r\nAccept-Encoding: gzip, deflate\r\nUser-Agent: Mozilla/5.0\r\nHost: ";
-    char* httpData02 = "Connection: Keep-Alive\r\nUser-Agent: cpprestsdk/2.9.0\r\nHost: ";
+    const char* httpData01 = "Connection: Keep-Alive\r\nAccept-Encoding: gzip, deflate\r\nUser-Agent: Mozilla/5.0\r\nHost: ";
+    const char* httpData02 = "Connection: Keep-Alive\r\nUser-Agent: cpprestsdk/2.9.0\r\nHost: ";
     strcpy_s(sendBuf, "GET /ctrl/session HTTP/1.1\r\n");
     strcat_s(sendBuf, httpData01);
     SendCommand(mySocket, ipAddress, sendBuf, recvbuf, recvbuflen);
@@ -625,7 +625,7 @@ int AMFDataStreamZCamImpl::SendCommand(SOCKET mySocket, const char* ipCamera, ch
     strcat(sendBuf, ipCamera);
     strcat(sendBuf, "\r\n\r\n\0");
     int sendSize = send(mySocket, sendBuf, (int)strlen(sendBuf), 0);
-    
+
     if (sendSize != static_cast<int>(strlen(sendBuf)))
     {
         AMFTraceError(L"AMFDataStreamZCamImpl", L"SendCommand() failed!");

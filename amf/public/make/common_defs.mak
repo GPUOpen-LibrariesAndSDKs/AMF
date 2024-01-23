@@ -69,6 +69,7 @@
 #   build_info_vars - Variables that should be inspected and printed before the build
 #   custom_target - Custom target
 #   vulkan_shader_sources - Vulkan shader sources to compile. vulkan_shader_headers is output
+#   vulkan_shader_output_dir - Directory where compiled vulkan shaders to placed in
 #
 # Variables user can override from the command line:
 #   HOST_BITS - 32 or 64
@@ -219,3 +220,5 @@ endif
 
 build_info_vars = \
     amf_root target_name custom_target host_bits build_type exe_target_file target_type CXX LNK
+
+vulkan_shader_output_dir = $(build_dir)

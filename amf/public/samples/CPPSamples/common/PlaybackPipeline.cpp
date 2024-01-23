@@ -32,7 +32,7 @@
 #include "PlaybackPipeline.h"
 #include "AudioPresenterWin.h"
 #include "AudioPresenterLinux.h"
-#include "BackBufferPresenter.h"
+#include "VideoPresenter.h"
 
 PlaybackPipeline::PlaybackPipeline()
     : m_hwnd(NULL), m_hDisplay(NULL)
@@ -105,10 +105,7 @@ PlaybackPipeline::InitContext(amf::AMF_MEMORY_TYPE type)
 AMF_RESULT
 PlaybackPipeline::CreateVideoPresenter(amf::AMF_MEMORY_TYPE type, amf_int64 /*bitRate*/, double /*fps*/)
 {
-    BackBufferPresenterPtr pBackBufferPresenter;
-    AMF_RESULT res = BackBufferPresenter::Create(pBackBufferPresenter, type, m_hwnd, m_pContext, m_hDisplay);
-    m_pVideoPresenter = pBackBufferPresenter;
-    return res;
+    return VideoPresenter::Create(m_pVideoPresenter, type, m_hwnd, m_pContext, m_hDisplay);
 }
 
 AMF_RESULT

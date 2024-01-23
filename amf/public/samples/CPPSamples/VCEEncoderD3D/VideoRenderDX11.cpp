@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -37,7 +37,7 @@
 #include <DirectXMath.h>
 #include <float.h>
 
-const char DX11_Shader[] = 
+const char DX11_Shader[] =
 "//--------------------------------------------------------------------------------------\n"
 "// File: Tutorial04.fx                                                                  \n"
 "//                                                                                      \n"
@@ -143,7 +143,7 @@ AMF_RESULT VideoRenderDX11::Init(amf_handle hWnd, amf_handle /* hDisplay */, boo
     sd.SampleDesc.Quality = 0;
     sd.Windowed = TRUE;
 
-    ATL::CComQIPtr<IDXGIDevice> pDevice = m_pD3DDevice;
+    ATL::CComQIPtr<IDXGIDevice> pDevice(m_pD3DDevice);
 
     ATL::CComPtr<IDXGIAdapter> pAdapter;
     hr = pDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&pAdapter);
@@ -220,7 +220,7 @@ AMF_RESULT VideoRenderDX11::CreateObject()
     HRESULT hr = S_OK;
     // Compile the vertex shader
     ATL::CComPtr<ID3DBlob> pVSBlob;
-    res = CreateShader( "VS", "vs_4_0", &pVSBlob ); 
+    res = CreateShader( "VS", "vs_4_0", &pVSBlob );
     CHECK_HRESULT_ERROR_RETURN(hr, L"CreateShaderFromResource(VS) failed");
 
     ATL::CComPtr<ID3D11DeviceContext>        pD3D11Context;
@@ -276,7 +276,7 @@ AMF_RESULT VideoRenderDX11::CreateObject()
     D3D11_SUBRESOURCE_DATA InitData;
     ZeroMemory( &InitData, sizeof(InitData) );
     InitData.pSysMem = vertices;
-    
+
     hr = m_pD3DDevice->CreateBuffer( &bd, &InitData, &m_pVertexBuffer );
     CHECK_HRESULT_ERROR_RETURN(hr, L"CreateBuffer() - vertex failed");
 
@@ -326,7 +326,7 @@ AMF_RESULT VideoRenderDX11::CreateShader(LPCSTR szEntryPoint, LPCSTR szModel, ID
 
 
     hr = D3DCompile((LPCSTR)DX11_Shader, sizeof(DX11_Shader),
-                    NULL, NULL, NULL, szEntryPoint, szModel, 
+                    NULL, NULL, NULL, szEntryPoint, szModel,
                     dwShaderFlags, 0, ppBlobOut, &pErrorBlob);
 
     CHECK_HRESULT_ERROR_RETURN(hr, L"D3DCompile() failed");
@@ -342,7 +342,7 @@ AMF_RESULT VideoRenderDX11::RenderScene()
 
     float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
     pD3D11Context->ClearRenderTargetView( m_pRenderTargetView, ClearColor );
-    
+
 
     // Animate the cube
     m_fAnimation += XM_2PI/240;

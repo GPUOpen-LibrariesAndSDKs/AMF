@@ -77,7 +77,7 @@ public:
 
     AMF_RESULT          RegisterDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE heapType, amf_uint count, DescriptorDX12** ppDescriptors); // Array of descriptor pointers (for descriptors not stored in array)
     AMF_RESULT          RegisterDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE heapType, amf_uint count, DescriptorDX12* pDescriptors); // Array of descriptors
-    AMF_RESULT          SetHeapDescriptorFlags(D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags, bool replace = false);
+    AMF_RESULT          SetHeapDescriptorFlags(D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags, amf_bool replace = false);
 
     AMF_RESULT          CreateDescriptorHeaps();
     AMF_RESULT          DestroyHeapDescriptors();
@@ -131,7 +131,7 @@ private:
 
     ATL::CComPtr<ID3D12Device>                              m_pDevice;
     ATL::CComPtr<ID3D12GraphicsCommandList>                 m_pCmdList;
-    std::vector<ATL::CComPtr<ID3D12CommandAllocator>>	    m_pCmdAllocators;
+    amf::amf_vector<ATL::CComPtr<ID3D12CommandAllocator>>	m_pCmdAllocators;
     amf_uint                                                m_index;
 
     ATL::CComPtr<ID3D12Fence>                               m_pFence;
@@ -188,6 +188,7 @@ public:
 protected:
 
     AMF_RESULT                              GetDXGIInterface(amf_bool reinit=false) override;
+    AMF_RESULT                              GetDXGIDeviceAdapter(IDXGIAdapter** ppDXGIAdapter) override;
     AMF_RESULT                              SetupSwapChain(amf_int32 width, amf_int32 height, amf::AMF_SURFACE_FORMAT format, amf_bool fullscreen, amf_bool hdr, amf_bool stereo);
 
     AMF_RESULT                              CreateDescriptorHeap();

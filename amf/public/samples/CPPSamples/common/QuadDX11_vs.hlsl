@@ -27,27 +27,28 @@
 // THE SOFTWARE.
 //
 
-cbuffer ViewProjetion : register(b0)                                                  
-{                                                                                       
-    matrix vertexTransform;                                                             
-};                                                                                      
+cbuffer ViewProjection : register(b0)
+{
+    matrix vertexTransform;
+    matrix texTransform;
+};
 
-struct VS_INPUT                                                                         
-{                                                                                       
-    float4 Pos : POSITION;                                                              
-    float2 Tex : TEXCOORD0;                                                             
-};                                                                                      
+struct VS_INPUT
+{
+    float4 Pos : POSITION;
+    float2 Tex : TEXCOORD;
+};
 
-struct PS_INPUT                                                                         
-{                                                                                       
-    float4 Pos : SV_POSITION;                                                           
-    float2 Tex : TEXCOORD0;                                                             
-};                                                                                      
+struct PS_INPUT
+{
+    float4 Pos : SV_POSITION;
+    float2 Tex : TEXCOORD;
+};
 
-PS_INPUT main( VS_INPUT input )                                                           
-{                                                                                       
-    PS_INPUT output = (PS_INPUT)0;                                                      
-    output.Pos = mul(vertexTransform, float4(input.Pos.xyz, 1));
-    output.Tex = input.Tex;
-    return output;                                                                      
-}                                                                                       
+PS_INPUT main(VS_INPUT input)
+{
+    PS_INPUT output = (PS_INPUT)0;
+    output.Pos = mul(input.Pos, vertexTransform);
+    output.Tex = mul(float4(input.Tex, 0.0f, 1.0f), texTransform);
+    return output;
+}

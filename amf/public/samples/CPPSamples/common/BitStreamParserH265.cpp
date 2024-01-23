@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -68,7 +68,7 @@ public:
     virtual void                    SetFrameRate(double fps);
     virtual double                  GetFrameRate()  const;
     virtual void                    GetFrameRate(AMFRate *frameRate) const;
-    virtual const wchar_t*          GetCodecComponent() 
+    virtual const wchar_t*          GetCodecComponent()
     {
         if(m_SpsMap.size() != 0)
         {
@@ -94,16 +94,16 @@ protected:
     {
       NAL_UNIT_CODED_SLICE_TRAIL_N = 0, // 0
       NAL_UNIT_CODED_SLICE_TRAIL_R,     // 1
-  
+
       NAL_UNIT_CODED_SLICE_TSA_N,       // 2
       NAL_UNIT_CODED_SLICE_TLA_R,       // 3
-  
+
       NAL_UNIT_CODED_SLICE_STSA_N,      // 4
       NAL_UNIT_CODED_SLICE_STSA_R,      // 5
 
       NAL_UNIT_CODED_SLICE_RADL_N,      // 6
       NAL_UNIT_CODED_SLICE_RADL_R,      // 7
-  
+
       NAL_UNIT_CODED_SLICE_RASL_N,      // 8
       NAL_UNIT_CODED_SLICE_RASL_R,      // 9
 
@@ -510,7 +510,7 @@ protected:
 
     AMFByteArray   m_ReadData;
     AMFByteArray   m_Extradata;
-    
+
     AMFByteArray   m_EBSPtoRBSPData;
 
     bool           m_bUseStartCodes;
@@ -656,7 +656,7 @@ double HevcParser::GetFrameRate()  const
         const SpsData &sps = m_SpsMap.cbegin()->second;
         if(sps.vui_parameters_present_flag && sps.vui_parameters.vui_timing_info_present_flag && sps.vui_parameters.vui_num_units_in_tick)
         {
-            // according to the latest h264 standard nuit_field_based_flag is always = 1 and therefore this must be divided by two 
+            // according to the latest h264 standard nuit_field_based_flag is always = 1 and therefore this must be divided by two
             // some old clips may get wrong FPS. This is just a sample. Use container information
             return (double)sps.vui_parameters.vui_time_scale / sps.vui_parameters.vui_num_units_in_tick / 2;
         }
@@ -671,7 +671,7 @@ void     HevcParser::GetFrameRate(AMFRate *frameRate) const
         const SpsData &sps = m_SpsMap.cbegin()->second;
         if(sps.vui_parameters_present_flag && sps.vui_parameters.vui_timing_info_present_flag && sps.vui_parameters.vui_num_units_in_tick)
         {
-            // according to the latest h264 standard nuit_field_based_flag is always = 1 and therefore this must be divided by two 
+            // according to the latest h264 standard nuit_field_based_flag is always = 1 and therefore this must be divided by two
             // some old clips may get wrong FPS. This is just a sample. Use container information
             frameRate->num = sps.vui_parameters.vui_time_scale / 2;
             frameRate->den = sps.vui_parameters.vui_num_units_in_tick;
@@ -701,8 +701,8 @@ AMF_RESULT HevcParser::QueryOutput(amf::AMFData** ppData)
     size_t dataOffset = 0;
     bool bSliceFound = false;
 	amf_uint32 prev_slice_nal_unit_type = 0;
-	
-    do 
+
+    do
     {
 		size_t naluSize = 0;
         size_t naluOffset = 0;
@@ -872,15 +872,15 @@ HevcParser::NalUnitHeader   HevcParser::ReadNextNaluUnit(size_t *offset, size_t 
                 ready = 0;
                 m_pStream->Read(m_ReadData.GetData() + *offset, m_ReadSize, &ready);
 			}
-			
+
 
 			if (ready != m_ReadSize && ready != 0)
 			{
 				m_ReadData.SetSize(m_ReadData.GetSize() - (m_ReadSize - ready));
 			}
-				
-			
-			
+
+
+
 
             if(ready == 0 )
             {
@@ -888,7 +888,7 @@ HevcParser::NalUnitHeader   HevcParser::ReadNextNaluUnit(size_t *offset, size_t 
 				m_ReadData.SetSize(m_ReadData.GetSize() - m_ReadSize);
 
                 m_bEof = true;
-                newNalFound = startOffset != *offset; 
+                newNalFound = startOffset != *offset;
                 *offset = m_ReadData.GetSize();
                 break; // EOF
             }
@@ -910,7 +910,7 @@ HevcParser::NalUnitHeader   HevcParser::ReadNextNaluUnit(size_t *offset, size_t 
             {
                 zerosCount++;
             }
-            else 
+            else
             {
                 if (1 == ch && zerosCount >=2) // We found a start code in Annex B stream
                 {
@@ -918,7 +918,7 @@ HevcParser::NalUnitHeader   HevcParser::ReadNextNaluUnit(size_t *offset, size_t 
                     {
                         ready = i - zerosCount;
                         newNalFound = true; // new NAL
-                        break; 
+                        break;
                     }
                     else
                     {
@@ -947,9 +947,9 @@ void    HevcParser::FindSPSandPPS()
     ExtraDataBuilder extraDataBuilder;
 
     size_t dataOffset = 0;
-    do 
+    do
     {
-        
+
         size_t naluSize = 0;
         size_t naluOffset = 0;
         NalUnitHeader   naluHeader = ReadNextNaluUnit(&dataOffset, &naluOffset, &naluSize);
@@ -1012,7 +1012,7 @@ void    HevcParser::FindSPSandPPS()
 //-------------------------------------------------------------------------------------------------
 bool HevcParser::SpsData::Parse(amf_uint8 *nalu, size_t size)
 {
-    size_t offset = 16; // 2 bytes NALU header + 
+    size_t offset = 16; // 2 bytes NALU header +
     amf_uint32 activeVPS = Parser::readBits(nalu, offset,4);
     amf_uint32 max_sub_layer_minus1 = Parser::readBits(nalu, offset,3);
     sps_temporal_id_nesting_flag = Parser::getBit(nalu, offset);
@@ -1107,7 +1107,7 @@ bool HevcParser::SpsData::Parse(amf_uint8 *nalu, size_t size)
             lt_ref_pic_poc_lsb_sps[i] = Parser::readBits(nalu, offset,(log2_max_pic_order_cnt_lsb_minus4 + 4));
             used_by_curr_pic_lt_sps_flag[i] = Parser::getBit(nalu, offset);
             ltRPS.POCs[i]=lt_ref_pic_poc_lsb_sps[i];
-            ltRPS.used_by_curr_pic[i] = used_by_curr_pic_lt_sps_flag[i];            
+            ltRPS.used_by_curr_pic[i] = used_by_curr_pic_lt_sps_flag[i];
         }
     }
     sps_temporal_mvp_enabled_flag = Parser::getBit(nalu, offset);
@@ -1132,7 +1132,7 @@ bool HevcParser::PpsData::Parse(amf_uint8 *nalu, size_t size)
     size_t offset = 16; // 2 bytes NALU header
 
     amf_uint32 PPS_ID = Parser::ExpGolomb::readUe(nalu, offset);
-    
+
     pps_pic_parameter_set_id = PPS_ID;
     amf_uint32 activeSPS = Parser::ExpGolomb::readUe(nalu, offset);
 
@@ -1225,7 +1225,7 @@ void HevcParser::SpsData::ParsePTL(AMFH265_profile_tier_level_t *ptl, amf_bool p
         ptl->general_interlaced_source_flag = Parser::getBit(nalu, offset);
         ptl->general_non_packed_constraint_flag = Parser::getBit(nalu, offset);
         ptl->general_frame_only_constraint_flag = Parser::getBit(nalu, offset);
-        //readBits is limited to 32 
+        //readBits is limited to 32
 //        ptl->general_reserved_zero_44bits = Parser::readBits(nalu, offset,44);
         offset+=44;
     }
@@ -1239,7 +1239,7 @@ void HevcParser::SpsData::ParsePTL(AMFH265_profile_tier_level_t *ptl, amf_bool p
     if (maxNumSubLayersMinus1 > 0)
     {
         for(amf_uint32 i=maxNumSubLayersMinus1; i<8; i++)
-        {               
+        {
             ptl->reserved_zero_2bits[i] = Parser::readBits(nalu, offset,2);
         }
     }
@@ -1478,8 +1478,8 @@ void HevcParser::SpsData::ParseShortTermRefPicSet(AMFH265_short_term_RPS_t *rps,
             }
         }
         rps->num_negative_pics = i;
-        
-        
+
+
         for (int j=rps_ref[ref_idx].num_negative_pics - 1; j>= 0; j--)
         {
             amf_int32 delta_poc = delta_rps + rps_ref[ref_idx].deltaPOC[j];  //positive deltaPOC from ref_rps
@@ -1684,7 +1684,7 @@ bool HevcParser::ExtraDataBuilder::GetExtradata(AMFByteArray   &extradata)
         );
 
     amf_uint8 *data = extradata.GetData();
-    
+
     memset(data, 0, extradata.GetSize());
 
     *data = 0x01; // configurationVersion
@@ -1723,10 +1723,10 @@ size_t HevcParser::EBSPtoRBSP(amf_uint8 *streamBuffer,size_t begin_bytepos, size
     amf_uint8 *streamBuffer_end=streamBuffer+end_bytepos;
     int iReduceCount=0;
     for(; streamBuffer_i!=streamBuffer_end; )
-    { 
+    {
         //starting from begin_bytepos to avoid header information
         //in NAL unit, 0x000000, 0x000001 or 0x000002 shall not occur at any amf_uint8-aligned position
-        register amf_uint8 tmp=*streamBuffer_i;
+        amf_uint8 tmp=*streamBuffer_i;
         if(count == ZEROBYTES_SHORTSTARTCODE)
         {
             if(tmp == 0x03)
@@ -1747,7 +1747,7 @@ size_t HevcParser::EBSPtoRBSP(amf_uint8 *streamBuffer,size_t begin_bytepos, size
                 count = 0;
                 tmp = *streamBuffer_i;
             }
-            else if(tmp < 0x03) 
+            else if(tmp < 0x03)
             {
             }
         }

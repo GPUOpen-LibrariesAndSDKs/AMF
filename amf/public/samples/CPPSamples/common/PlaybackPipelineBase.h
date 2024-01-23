@@ -88,6 +88,9 @@ public:
     static const wchar_t* PARAM_NAME_FRC_MODE;
     static const wchar_t* PARAM_NAME_FRC_ENABLE_FALLBACK;
     static const wchar_t* PARAM_NAME_FRC_INDICATOR;
+    static const wchar_t* PARAM_NAME_EXCLUSIVE_FULLSCREEN;
+    static const wchar_t* PARAM_NAME_FRC_PROFILE;
+    static const wchar_t* PARAM_NAME_FRC_MV_SEARCH_MODE;
 
     virtual AMF_RESULT Play();
     virtual AMF_RESULT Pause();

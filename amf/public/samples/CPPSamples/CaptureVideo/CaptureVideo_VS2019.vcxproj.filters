@@ -76,9 +76,6 @@
     <ClCompile Include="..\..\..\..\public\common\TraceAdapter.cpp">
       <Filter>public\common</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\BackBufferPresenter.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\BitStreamParser.cpp">
       <Filter>common</Filter>
     </ClCompile>
@@ -177,6 +174,12 @@
     <ClCompile Include="..\common\SwapChainDX9.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="..\common\SwapChainOpenGL.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\OpenGLImportTable.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\components\ChromaKey\ChromaKeyImpl.h">
@@ -216,9 +219,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\public\common\TraceAdapter.h">
       <Filter>public\common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\BackBufferPresenter.h">
-      <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\BitStreamParser.h">
       <Filter>common</Filter>
@@ -318,6 +318,18 @@
     <ClInclude Include="..\common\SwapChainDX9.h">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\QuadOpenGL.vert.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\QuadOpenGL.frag.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\SwapChainOpenGL.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\OpenGLImportTable.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="CaptureVideo.ico" />
@@ -326,6 +338,12 @@
   <ItemGroup>
     <CustomBuild Include="..\..\..\src\components\ChromaKey\Programs\ChromaKeyProcess.cl">
       <Filter>protected\src\components\Chromakey\programs</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\common\QuadVulkan_vs.vert">
+      <Filter>common</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\common\QuadVulkan_fs.frag">
+      <Filter>common</Filter>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>

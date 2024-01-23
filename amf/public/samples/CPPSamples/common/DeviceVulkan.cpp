@@ -39,6 +39,7 @@
     #define VK_USE_PLATFORM_WIN32_KHR
 #endif
 #include "vulkan/vulkan.h"
+#include <unordered_set>
 
 #define AMF_FACILITY L"DeviceVulkan"
 
@@ -191,19 +192,16 @@ AMF_RESULT DeviceVulkan::CreateInstance()
 
     std::vector<const char*> instanceExtensions =
     {
-    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
-#if defined(_WIN32)
+        VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
         VK_KHR_SURFACE_EXTENSION_NAME,
-        VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
-#elif defined(__linux)
-        VK_KHR_SURFACE_EXTENSION_NAME,
-#if defined(__ANDROID__)
-        VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
-#else
-        VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
-#endif
-        VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
         VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME,
+        VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
+#if defined(_WIN32)
+        VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+#elif defined(__ANDROID__)
+        VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
+#elif defined(__linux)
+        VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
 #endif
     };
 
@@ -235,7 +233,7 @@ AMF_RESULT DeviceVulkan::CreateInstance()
     ///////////////////////
     VkApplicationInfo applicationInfo = {};
     applicationInfo.sType               = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    applicationInfo.apiVersion          = VK_API_VERSION_1_0;
+    applicationInfo.apiVersion          = VK_API_VERSION_1_3;
     applicationInfo.applicationVersion  = VK_MAKE_VERSION(1, 0, 0);
     applicationInfo.engineVersion       = VK_MAKE_VERSION(1, 0, 0);
     applicationInfo.pApplicationName    = "AMF Vulkan application";
@@ -278,13 +276,13 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
 
     uint32_t queueFamilyPropertyCount = 0;
 
-    GetVulkan()->vkGetPhysicalDeviceQueueFamilyProperties(m_VulkanDev.hPhysicalDevice, &queueFamilyPropertyCount, nullptr);
+    GetVulkan()->vkGetPhysicalDeviceQueueFamilyProperties2(m_VulkanDev.hPhysicalDevice, &queueFamilyPropertyCount, nullptr);
 
     AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS, AMF_FAIL, L"CreateDeviceAndQueues() queueFamilyPropertyCount = 0");
 
-    std::vector<VkQueueFamilyProperties> queueFamilyProperties{ queueFamilyPropertyCount };
+    std::vector<VkQueueFamilyProperties2> queueFamilyProperties{ queueFamilyPropertyCount };
 
-    GetVulkan()->vkGetPhysicalDeviceQueueFamilyProperties(m_VulkanDev.hPhysicalDevice, &queueFamilyPropertyCount, queueFamilyProperties.data());
+    GetVulkan()->vkGetPhysicalDeviceQueueFamilyProperties2(m_VulkanDev.hPhysicalDevice, &queueFamilyPropertyCount, queueFamilyProperties.data());
 
     m_uQueueGraphicsFamilyIndex  = UINT32_MAX;
     m_uQueueComputeFamilyIndex = UINT32_MAX;
@@ -294,34 +292,34 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
     amf_uint32 uQueueComputeIndex = UINT32_MAX;
     for(uint32_t i = 0; i < queueFamilyPropertyCount; i++)
     {
-        VkQueueFamilyProperties &queueFamilyProperty = queueFamilyProperties[i];
-        if (queuePriorities.size() < queueFamilyProperty.queueCount)
+        VkQueueFamilyProperties2 &queueFamilyProperty = queueFamilyProperties[i];
+        if (queuePriorities.size() < queueFamilyProperty.queueFamilyProperties.queueCount)
         {
-            queuePriorities.resize(queueFamilyProperty.queueCount, 1.0f);
+            queuePriorities.resize(queueFamilyProperty.queueFamilyProperties.queueCount, 1.0f);
         }
     }
     for (uint32_t i = 0; i < queueFamilyPropertyCount; i++)
     {
-        VkQueueFamilyProperties &queueFamilyProperty = queueFamilyProperties[i];
+        VkQueueFamilyProperties2 &queueFamilyProperty = queueFamilyProperties[i];
         VkDeviceQueueCreateInfo queueCreateInfo = {};
 
 
         queueCreateInfo.pQueuePriorities = &queuePriorities[0];
         queueCreateInfo.queueFamilyIndex = i;
-        queueCreateInfo.queueCount = queueFamilyProperty.queueCount;
+        queueCreateInfo.queueCount = queueFamilyProperty.queueFamilyProperties.queueCount;
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 
-        if ((queueFamilyProperty.queueFlags & VK_QUEUE_COMPUTE_BIT) && (queueFamilyProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0 && m_uQueueComputeFamilyIndex == UINT32_MAX)
+        if ((queueFamilyProperty.queueFamilyProperties.queueFlags & VK_QUEUE_COMPUTE_BIT) && (queueFamilyProperty.queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0 && m_uQueueComputeFamilyIndex == UINT32_MAX)
         {
             m_uQueueComputeFamilyIndex = i;
             uQueueComputeIndex = 0;
         }
-        if ((queueFamilyProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT) && m_uQueueGraphicsFamilyIndex == UINT32_MAX)
+        if ((queueFamilyProperty.queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT) && m_uQueueGraphicsFamilyIndex == UINT32_MAX)
         {
             m_uQueueGraphicsFamilyIndex = i;
             uQueueGraphicsIndex = 0;
         }
-        if (queueFamilyProperty.queueCount > 1)
+        if (queueFamilyProperty.queueFamilyProperties.queueCount > 1)
         {
             queueCreateInfo.queueCount = 1;
         }
@@ -339,6 +337,23 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
     deviceCreateInfo.pEnabledFeatures = &features;
 
 
+    VkPhysicalDeviceSynchronization2Features syncFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES};
+    syncFeatures.synchronization2 = VK_TRUE;
+    deviceCreateInfo.pNext = &syncFeatures;
+
+    VkPhysicalDeviceCoherentMemoryFeaturesAMD  coherentMemoryFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD};
+    coherentMemoryFeatures.deviceCoherentMemory = VK_TRUE;
+    syncFeatures.pNext = &coherentMemoryFeatures;
+
+    VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES};
+    coherentMemoryFeatures.pNext = &indexingFeatures;
+    indexingFeatures.descriptorBindingUniformBufferUpdateAfterBind = VK_TRUE;
+    indexingFeatures.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+    indexingFeatures.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
+    indexingFeatures.descriptorBindingStorageBufferUpdateAfterBind = VK_TRUE;
+    indexingFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind = VK_TRUE;
+    indexingFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind = VK_TRUE;
+
     std::vector<const char*> deviceLayers;
 
 #if defined(_DEBUG) && defined(ENABLE_VALIDATION)
@@ -354,6 +369,7 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
 
     deviceExtensions.insert(deviceExtensions.begin(), "VK_KHR_swapchain");
 
+
     deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
     deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t> (deviceExtensions.size());
 
@@ -367,8 +383,8 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
         for (unsigned int i = 0; i < deviceExtensions.size(); i++)
         {
             const char* pDevExtension = deviceExtensions[i];
-            if ((pDevExtension != nullptr) &&
-                (strstr(pDevExtension, "VK_AMD_video_encode") == nullptr))
+            if (pDevExtension != nullptr &&
+                (std::string(pDevExtension) !="VK_AMD_video_encode" && std::string(pDevExtension) != VK_AMD_DEVICE_COHERENT_MEMORY_EXTENSION_NAME))
             {
                 cleanDeviceExtensions.push_back(pDevExtension);
             }

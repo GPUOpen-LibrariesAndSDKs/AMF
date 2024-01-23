@@ -35,6 +35,13 @@
 #include "SwapChain.h"
 #include "public/common/TraceAdapter.h"
 #include <climits>
+#if defined(__ANDROID__)
+#include <android/native_window.h>
+#endif
+
+#if defined(__linux) && !defined(__ANDROID__)
+#include <X11/Xlib.h>
+#endif
 
 using namespace amf;
 
@@ -46,7 +53,6 @@ SwapChain::SwapChain(amf::AMFContext* pContext) :
     m_hDisplay(nullptr),
     m_size{},
     m_format(amf::AMF_SURFACE_UNKNOWN),
-    m_fullscreenEnabled(false),
     m_hdrEnabled(false),
     m_outputHDRMetaData{},
     m_colorSpace {},
@@ -65,7 +71,6 @@ AMF_RESULT SwapChain::Terminate()
     m_hDisplay = nullptr;
     m_size = {};
     SetFormat(AMF_SURFACE_UNKNOWN); // Set default format
-    m_fullscreenEnabled = false;
     m_hdrEnabled = false;
     m_outputHDRMetaData = {};
     m_colorSpace = {};
@@ -259,86 +264,40 @@ inline void* SwapChain::GetSurfaceNative(amf::AMFSurface* pSurface) const
     return GetNativePackedSurface<void>(pSurface, GetBackBuffers()[0]->GetMemoryType());
 }
 
-
-AMF_RESULT SetWindowFullscreenState(amf_handle hwnd, amf_handle hDisplay, amf_bool fullscreen, WindowFullscreenContext& context)
+AMFRect GetClientRect(amf_handle hwnd, amf_handle hDisplay)
 {
-    hDisplay; // Suppress unreferenced parameter warning (C4100)
-
-    AMF_RETURN_IF_FALSE(hwnd != nullptr, AMF_INVALID_ARG, L"SetWindowFullscreenState() - hwnd is NULL");
-
-    if (context.fullscreenState == fullscreen)
+    hDisplay; // Suppress unreferenced formal parameter warning (C4100)
+    AMFRect clientRect = { 0 };
+    if (hwnd == nullptr)
     {
-        return AMF_OK;
+        return clientRect;
     }
 
 #if defined(_WIN32)
-
-    // Should only set fullscreen if holding top-most window
-    if ((HWND)hwnd != ::GetAncestor((HWND)hwnd, GA_ROOT))
-    {
-        return AMF_OK;
-    }
-
-    LONG_PTR style = 0;
-    LONG_PTR exStyle = 0;
-    AMFPoint origin = {};
-    AMFSize size = {};
-    const HWND hWnd = (HWND)hwnd;
-    UINT posFlags = SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOACTIVATE;
-
-    if (fullscreen)
-    {
-        WINDOWINFO info;
-        ::GetWindowInfo(hWnd, &info);
-        context.windowModeRect = AMFConstructRect(info.rcClient.left, info.rcClient.top, info.rcClient.right, info.rcClient.bottom);
-        context.windowModeStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE);
-        context.windowModeExStyle = ::GetWindowLongPtr(hWnd, GWL_EXSTYLE);
-
-        style = WS_VISIBLE | WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
-        exStyle = WS_EX_APPWINDOW | WS_EX_TOPMOST;
-
-        // Get display information
-        DisplayInfo displayInfo = {};
-        AMF_RESULT res = GetDisplayInfo(hwnd, displayInfo);
-        AMF_RETURN_IF_FAILED(res, L"SetWindowFullscreenState() - GetDisplayInfo() failed");
-
-        origin.x = displayInfo.monitorRect.left;
-        origin.y = displayInfo.monitorRect.top;
-        size.width = displayInfo.monitorRect.Width();
-        size.height = displayInfo.monitorRect.Height();
-    }
-    else
-    {
-        style = context.windowModeStyle;
-        AMF_RETURN_IF_FALSE(style != 0, AMF_NOT_INITIALIZED, L"SetWindowFullscreenState() - Window mode not initialized");
-
-        exStyle = context.windowModeExStyle;
-        origin.x = context.windowModeRect.left;
-        origin.y = context.windowModeRect.top;
-        size.width = context.windowModeRect.Width();
-        size.height = context.windowModeRect.Height();
-    }
-
-    AMF_RETURN_IF_FALSE(size.width > 0 && size.height > 0, AMF_INVALID_RESOLUTION, L"SetWindowFullscreenState() - Invalid window size %ux%u", size.width, size.height);
-
-    ::SetWindowLongPtr(hWnd, GWL_STYLE, style);
-    ::SetWindowLongPtr(hWnd, GWL_EXSTYLE, exStyle);
-
-    ShowCursor(fullscreen ? FALSE : TRUE);
-
-    LONG ret = ::SetWindowPos(hWnd, fullscreen ? HWND_TOPMOST : HWND_NOTOPMOST, origin.x, origin.y, size.width, size.height, posFlags);
-    AMF_RETURN_IF_FALSE(ret != 0, AMF_FAIL, L"SetWindowFullscreenState() - SetWindowPos() failed, code=%d", GetLastError());
-
-    context.currentRect = AMFConstructRect(origin.x, origin.y, origin.x + size.width, origin.y + size.height);
-
+    RECT client;
+    ::GetClientRect((HWND)hwnd, &client);
+    clientRect = AMFConstructRect(client.left, client.top, client.right, client.bottom);
 #elif defined(__ANDROID__)
-    // TODO
+    ANativeWindow* pPresentNativeWindow = (ANativeWindow*)hwnd;
+    int height = ANativeWindow_getHeight(pPresentNativeWindow);
+    int width = ANativeWindow_getWidth(pPresentNativeWindow);
+    clientRect = AMFConstructRect(0, 0, width, height);
 #elif defined(__linux)
-    // TODO
-#else
-    return AMF_NOT_SUPPORTED;
-#endif
+    if (hDisplay == nullptr)
+    {
+        return clientRect;
+    }
 
-    context.fullscreenState = fullscreen;
-    return AMF_OK;
+    Window root_return;
+    amf_int x_return, y_return;
+    amf_uint width_return, height_return;
+    amf_uint border_width_return;
+    amf_uint depth_return;
+    XGetGeometry((Display*)hDisplay, (Window)hwnd, &root_return, &x_return, &y_return, &width_return,
+        &height_return, &border_width_return, &depth_return);
+
+    clientRect = AMFConstructRect(0, 0, width_return - 2 * border_width_return, height_return - 2 * border_width_return);
+#endif        
+
+    return clientRect;
 }

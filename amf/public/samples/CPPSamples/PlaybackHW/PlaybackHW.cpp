@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -72,7 +72,7 @@ class MyPlaybackPipeline : public PlaybackPipeline
              m_pVideoPresenter->ResizeIfNeeded();
          }
      }
-    
+
 };
 
 static MyPlaybackPipeline *s_pPipeline = NULL;
@@ -84,7 +84,7 @@ static MyPlaybackPipeline *s_pPipeline = NULL;
 #define MAX_LOADSTRING 100
 
 // Global Variables:
-static HWND    hToolbar; 
+static HWND    hToolbar;
 TCHAR szTitle[MAX_LOADSTRING];                    // The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 static  UINT_PTR uiTimerID = 0;
@@ -141,8 +141,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 int main(int argc, char* argv[])
 {
     int nCmdShow = 0;
+    XInitThreads();
     hInst = amf_handle(XOpenDisplay(NULL));
-    if (hInst == NULL) 
+    if (hInst == NULL)
     {
         printf("Cannot open display\n");
         return -1;
@@ -163,7 +164,7 @@ int main(int argc, char* argv[])
     }
 
     {
-        amf::AMFTraceSetGlobalLevel(AMF_TRACE_INFO); 
+        amf::AMFTraceSetGlobalLevel(AMF_TRACE_INFO);
         amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, true);
         amf::AMFTraceSetWriterLevel(AMF_TRACE_WRITER_DEBUG_OUTPUT, AMF_TRACE_INFO);
 
@@ -176,7 +177,7 @@ int main(int argc, char* argv[])
         if (parseCmdLineParameters(s_pPipeline))
 #else
         if (parseCmdLineParameters(s_pPipeline, argc, argv))
-#endif        
+#endif
         {
 
             if (!InitInstance(nCmdShow))
@@ -394,6 +395,11 @@ void UpdateMenuItems()
 	EnableMenuItem(hMenu,ID_HQSCALER_OFF,      MF_BYCOMMAND| ( currState == PipelineStateRunning                      ? MF_DISABLED : MF_ENABLED));
 
     CheckMenuItem(hMenu, ID_OPTIONS_FULLSCREEN, MF_BYCOMMAND | (bFullScreen ? MF_CHECKED : MF_UNCHECKED));
+
+    
+    bool bExclusiveFullscreen = false;
+    s_pPipeline->GetParam(PlaybackPipeline::PARAM_NAME_EXCLUSIVE_FULLSCREEN, bExclusiveFullscreen);
+    CheckMenuItem(hMenu, ID_OPTIONS_EXCLUSIVEFULLSCREEN, MF_BYCOMMAND | (bExclusiveFullscreen ? MF_CHECKED : MF_UNCHECKED));
 }
 
 //
@@ -428,6 +434,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             break;
         case ID_FILE_OPEN:
             FileOpen(hWnd);
+            s_pPipeline->CheckForResize();
             UpdateWindowStyle();
             break;
         case ID_FILE_OPENNETWORKSTREAM:
@@ -448,6 +455,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 s_pPipeline->Play();
                 UpdateMenuItems();
             }
+            s_pPipeline->CheckForResize();
 
             break;
         case ID_PLAYBACK_PAUSE:
@@ -503,6 +511,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             bool bFullScreen = false;
             s_pPipeline->GetParam(PlaybackPipeline::PARAM_NAME_FULLSCREEN, bFullScreen);
             s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_FULLSCREEN, !bFullScreen);
+            s_pPipeline->CheckForResize();
+            UpdateMenuItems();
+            break;
+        }
+        case ID_OPTIONS_EXCLUSIVEFULLSCREEN:
+        {
+            bool bExclusiveFullScreen = false;
+            s_pPipeline->GetParam(PlaybackPipeline::PARAM_NAME_EXCLUSIVE_FULLSCREEN, bExclusiveFullScreen);
+            s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_EXCLUSIVE_FULLSCREEN, !bExclusiveFullScreen);
+            s_pPipeline->CheckForResize();
             UpdateMenuItems();
             break;
         }
@@ -556,11 +574,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 
-void FileOpen(HWND hwnd) 
+void FileOpen(HWND hwnd)
 {
     OPENFILENAME ofn;       // common dialog box structure
     WCHAR szFile[260];       // buffer for file name
-     
+
     // Initialize OPENFILENAME
     ZeroMemory(&ofn, sizeof(ofn));
     ofn.lStructSize = sizeof(ofn);
@@ -612,7 +630,7 @@ HWND CreateClientWindow(HWND hWndParent)
 {
     WNDCLASSEX wcex;
 
-    static wchar_t *ChildClassName = L"Client";
+    static const wchar_t *ChildClassName = L"Client";
     wcex.cbSize = sizeof(WNDCLASSEX);
 
     wcex.style            = CS_HREDRAW | CS_VREDRAW;
@@ -635,7 +653,7 @@ HWND CreateClientWindow(HWND hWndParent)
     }
 
     HWND hClientWnd = CreateWindowEx( 0, ChildClassName, NULL, WS_CHILD | WS_VISIBLE,
-        0, 0, 100, 100, 
+        0, 0, 100, 100,
         hWndParent, (HMENU) (int) (1) , (HINSTANCE)hInst, NULL);
     return hClientWnd;
 }
@@ -683,11 +701,11 @@ static INT_PTR CALLBACK ToolbarDlgProc(HWND hwnd, UINT Message, WPARAM wParam, L
     case WM_HSCROLL:
     {
         if(LOWORD(wParam) == TB_THUMBTRACK)
-        { 
+        {
             bTrackingStarted = true;
         }
         if(LOWORD(wParam) == TB_ENDTRACK)
-        { 
+        {
             amf_int32 pos = (amf_int32)SendMessage(hSlider, TBM_GETPOS , 0, 0);
             s_pPipeline->Seek(static_cast<amf_pts>(s_pPipeline->GetProgressSize() * double(pos) / double(MAX_SLIDER_VALUE)));
             bTrackingStarted = false;
@@ -699,7 +717,7 @@ static INT_PTR CALLBACK ToolbarDlgProc(HWND hwnd, UINT Message, WPARAM wParam, L
         { // update scroll
             double duration =  s_pPipeline->GetProgressSize();
             if(duration != 0)
-            { 
+            {
                 amf_int32 pos = amf_int32(s_pPipeline->GetProgressPosition() * double(MAX_SLIDER_VALUE) / duration);
                 SendMessage(hSlider, TBM_SETPOS , TRUE, pos);
             }
@@ -718,13 +736,13 @@ void ToggleToolbar(HWND hwnd)
         CloseToolbar();
     }
     else
-    { 
+    {
         // modeless dialog
         hToolbar = CreateDialog((HINSTANCE)hInst, MAKEINTRESOURCE(IDD_TOOLBAR_DLG),  hwnd,  (DLGPROC) ToolbarDlgProc );
-        uiTimerToolbarID = ::SetTimer(hToolbar, 10001, 200, NULL); // timer for slider update 
-        ShowWindow(hToolbar, SW_SHOW); 
+        uiTimerToolbarID = ::SetTimer(hToolbar, 10001, 200, NULL); // timer for slider update
+        ShowWindow(hToolbar, SW_SHOW);
     }
-         
+
 }
 //-------------------------------------------------------------------------------------------------
 void CloseToolbar()
@@ -780,7 +798,7 @@ INT_PTR CALLBACK    OpenStreamProc(HWND hDlg, UINT message, WPARAM wParam, LPARA
             s_pPipeline->SetParamAsString(PlaybackPipelineBase::PARAM_NAME_URL_VIDEO, buf);
             GetWindowText(GetDlgItem(hDlg, IDC_EDIT_URL_AUDIO), buf, amf_countof(buf));
             s_pPipeline->SetParamAsString(PlaybackPipelineBase::PARAM_NAME_URL_AUDIO, buf);
-            
+
             bool bListen = IsDlgButtonChecked(hDlg, IDC_CHECK_LISTEN) == BST_CHECKED;
             s_pPipeline->SetParam(PlaybackPipelineBase::PARAM_NAME_LISTEN_FOR_CONNECTION, bListen);
 
@@ -883,17 +901,17 @@ bool                InitInstance(int)
     XWindowAttributes getWinAttr;
     XGetWindowAttributes(dpy, parentWnd, &getWinAttr);
 
-    hMainWindow = XCreateSimpleWindow(dpy, 
-        parentWnd, 
+    hMainWindow = XCreateSimpleWindow(dpy,
+        parentWnd,
 //        10, 10, 800, 600,
-        0, 0, getWinAttr.width, getWinAttr.height, 
+        0, 0, getWinAttr.width, getWinAttr.height,
         1, BlackPixel(dpy, screen_num), WhitePixel(dpy, screen_num));
     XSelectInput(dpy, hMainWindow, ExposureMask | KeyPressMask | StructureNotifyMask);
     XMapWindow(dpy, hMainWindow);
     XStoreName(dpy, hMainWindow, "PlaybackHW");
- 
-    WM_DELETE_WINDOW = XInternAtom(dpy, "WM_DELETE_WINDOW", False); 
-    XSetWMProtocols(dpy, hMainWindow, &WM_DELETE_WINDOW, 1); 
+
+    WM_DELETE_WINDOW = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(dpy, hMainWindow, &WM_DELETE_WINDOW, 1);
     hClientWindow = hMainWindow; // for now
 
     return true;
@@ -904,7 +922,7 @@ int                RunMessageLoop()
     Display* dpy = (Display*)hInst;
     XEvent e;
     bool bRun = true;
-    while (bRun) 
+    while (bRun)
     {
         XNextEvent(dpy, &e);
         switch(e.type)
@@ -926,8 +944,8 @@ int                RunMessageLoop()
             }
             break;
         }
-    }    
-    return 0;    
+    }
+    return 0;
 }
 
 void CloseInstance()

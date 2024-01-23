@@ -54,14 +54,14 @@ using namespace amf;
 
 //Cube data
 struct Vertex{
-	float pos[3];
-	float color[4];
+    float pos[3];
+    float color[4];
 };
 
 struct ModelView {
-	float model[16];
-	float view[16];
-	float proj[16];
+    float model[16];
+    float view[16];
+    float proj[16];
 };
 
 VideoRenderVulkan::VideoRenderVulkan(amf_int width, amf_int height, bool bInterlaced, amf_int frames, amf::AMFContext* pContext)
@@ -122,40 +122,40 @@ AMF_RESULT VideoRenderVulkan::Terminate()
         return AMF_OK;
     }
 
-    //VkSampler						m_hTextureSampler;
+    //VkSampler                        m_hTextureSampler;
     if(m_hDescriptorSet != NULL)
     {
-		GetVulkan()->vkFreeDescriptorSets(m_pVulkanDevice->hDevice, m_hDescriptorPool, 1, &m_hDescriptorSet);
+        GetVulkan()->vkFreeDescriptorSets(m_pVulkanDevice->hDevice, m_hDescriptorPool, 1, &m_hDescriptorSet);
         m_hDescriptorPool = NULL;
     }
-	if (m_hDescriptorPool != NULL)
-	{
-		GetVulkan()->vkDestroyDescriptorPool(m_pVulkanDevice->hDevice, m_hDescriptorPool, nullptr);
+    if (m_hDescriptorPool != NULL)
+    {
+        GetVulkan()->vkDestroyDescriptorPool(m_pVulkanDevice->hDevice, m_hDescriptorPool, nullptr);
         m_hDescriptorPool = NULL;
-	}
+    }
     DestroyBuffer(m_VertexBuffer);
     DestroyBuffer(m_IndexBuffer);
     DestroyBuffer(m_MVPBuffer);
 
 
-	if (m_hPipeline != NULL)
-	{
-		GetVulkan()->vkDestroyPipeline(m_pVulkanDevice->hDevice, m_hPipeline, nullptr);
+    if (m_hPipeline != NULL)
+    {
+        GetVulkan()->vkDestroyPipeline(m_pVulkanDevice->hDevice, m_hPipeline, nullptr);
         m_hPipeline = NULL;
-	}
-	if (m_hPipelineLayout != NULL)
-	{
-		GetVulkan()->vkDestroyPipelineLayout(m_pVulkanDevice->hDevice, m_hPipelineLayout, nullptr);
+    }
+    if (m_hPipelineLayout != NULL)
+    {
+        GetVulkan()->vkDestroyPipelineLayout(m_pVulkanDevice->hDevice, m_hPipelineLayout, nullptr);
         m_hPipelineLayout = NULL;
-	}
+    }
     if (m_hUniformLayout != NULL)
     {
-		GetVulkan()->vkDestroyDescriptorSetLayout(m_pVulkanDevice->hDevice, m_hUniformLayout, nullptr);
+        GetVulkan()->vkDestroyDescriptorSetLayout(m_pVulkanDevice->hDevice, m_hUniformLayout, nullptr);
         m_hUniformLayout = NULL;
     }
     if(m_CommandBuffers.size() > 0)
     {
-		GetVulkan()->vkFreeCommandBuffers(m_pVulkanDevice->hDevice, m_hCommandPool, (uint32_t)m_CommandBuffers.size(), m_CommandBuffers.data());
+        GetVulkan()->vkFreeCommandBuffers(m_pVulkanDevice->hDevice, m_hCommandPool, (uint32_t)m_CommandBuffers.size(), m_CommandBuffers.data());
     }
     m_CommandBuffers.clear();
 
@@ -172,31 +172,40 @@ AMF_RESULT VideoRenderVulkan::CreatePipelineInput()
 }
 AMF_RESULT VideoRenderVulkan::CreateDescriptorSetLayout()
 {
-	VkResult res = VK_INCOMPLETE;
+    VkResult res = VK_INCOMPLETE;
 
-	VkDescriptorSetLayoutBinding MVPLayoutBinding = {};
-		MVPLayoutBinding.binding = 0;
-		MVPLayoutBinding.descriptorCount = 1;
-		MVPLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		MVPLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    VkDescriptorSetLayoutBinding MVPLayoutBinding = {};
+        MVPLayoutBinding.binding = 0;
+        MVPLayoutBinding.descriptorCount = 1;
+        MVPLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        MVPLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
         /*
-	VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
-		samplerLayoutBinding.binding = 1;
-		samplerLayoutBinding.descriptorCount = 1;
-		samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		samplerLayoutBinding.pImmutableSamplers = nullptr;
+    VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
+        samplerLayoutBinding.binding = 1;
+        samplerLayoutBinding.descriptorCount = 1;
+        samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        samplerLayoutBinding.pImmutableSamplers = nullptr;
 
-	std::vector<VkDescriptorSetLayoutBinding> bindings = { MVPLayoutBinding, samplerLayoutBinding };
+    std::vector<VkDescriptorSetLayoutBinding> bindings = { MVPLayoutBinding, samplerLayoutBinding };
     */
-	std::vector<VkDescriptorSetLayoutBinding> bindings = { MVPLayoutBinding};
-	VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {};
-		layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutCreateInfo.bindingCount = (uint32_t)bindings.size();
-		layoutCreateInfo.pBindings = bindings.data();
+    std::vector<VkDescriptorSetLayoutBinding> bindings = { MVPLayoutBinding};
+    VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+    layoutCreateInfo.bindingCount = (uint32_t)bindings.size();
+    layoutCreateInfo.pBindings = bindings.data();
+    layoutCreateInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
 
-	res = GetVulkan()->vkCreateDescriptorSetLayout(m_pVulkanDevice->hDevice, &layoutCreateInfo, nullptr, &m_hUniformLayout);
+    VkDescriptorSetLayoutBindingFlagsCreateInfo flagsCreateInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO};
+    std::vector<VkDescriptorBindingFlags> bindingFlags;
+    bindingFlags.push_back(VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT /*| VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT*/);
+
+    flagsCreateInfo.bindingCount = (uint32_t)bindingFlags.size();
+    flagsCreateInfo.pBindingFlags = bindingFlags.data();
+
+    layoutCreateInfo.pNext = &flagsCreateInfo;
+
+    res = GetVulkan()->vkCreateDescriptorSetLayout(m_pVulkanDevice->hDevice, &layoutCreateInfo, nullptr, &m_hUniformLayout);
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkCreateDescriptorSetLayout() failed with error=" << res);
 
     return AMF_OK;
@@ -237,7 +246,7 @@ static AMF_RESULT LoadShaderFile(const wchar_t* pFileName, AMFByteArray &data)
 }
 AMF_RESULT VideoRenderVulkan::CreatePipeline()
 {
-	VkResult res = VK_INCOMPLETE;
+    VkResult res = VK_INCOMPLETE;
     AMF_RESULT resAMF = AMF_OK;
 
     const wchar_t*  pCubeShaderFileNameVert = L"cube.vert.spv";
@@ -251,227 +260,227 @@ AMF_RESULT VideoRenderVulkan::CreatePipeline()
     resAMF = LoadShaderFile(pCubeShaderFileNameFraq, fraqShader);
     CHECK_AMF_ERROR_RETURN(resAMF, L"LoadShaderFile(" << pCubeShaderFileNameFraq <<L") failed");
 
-	VkShaderModule vertModule;
-	VkShaderModule fragModule;
+    VkShaderModule vertModule;
+    VkShaderModule fragModule;
 
-	VkShaderModuleCreateInfo vertModuleCreateInfo = {};
-		vertModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		vertModuleCreateInfo.codeSize = vertShader.GetSize();
-		vertModuleCreateInfo.pCode = (uint32_t*)vertShader.GetData();
+    VkShaderModuleCreateInfo vertModuleCreateInfo = {};
+        vertModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        vertModuleCreateInfo.codeSize = vertShader.GetSize();
+        vertModuleCreateInfo.pCode = (uint32_t*)vertShader.GetData();
 
-	VkShaderModuleCreateInfo fragModuleCreateInfo = {};
-		fragModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		fragModuleCreateInfo.codeSize = fraqShader.GetSize();
-		fragModuleCreateInfo.pCode = (uint32_t*)fraqShader.GetData();
+    VkShaderModuleCreateInfo fragModuleCreateInfo = {};
+        fragModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        fragModuleCreateInfo.codeSize = fraqShader.GetSize();
+        fragModuleCreateInfo.pCode = (uint32_t*)fraqShader.GetData();
 
-	res = GetVulkan()->vkCreateShaderModule(m_pVulkanDevice->hDevice, &vertModuleCreateInfo, nullptr, &vertModule);
+    res = GetVulkan()->vkCreateShaderModule(m_pVulkanDevice->hDevice, &vertModuleCreateInfo, nullptr, &vertModule);
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkCreateShaderModule(" << pCubeShaderFileNameVert << L") failed with error=" << res);
 
-	res = GetVulkan()->vkCreateShaderModule(m_pVulkanDevice->hDevice, &fragModuleCreateInfo, nullptr, &fragModule);
+    res = GetVulkan()->vkCreateShaderModule(m_pVulkanDevice->hDevice, &fragModuleCreateInfo, nullptr, &fragModule);
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkCreateShaderModule(" << pCubeShaderFileNameFraq << L") failed with error=" << res);
 
-	VkPipelineShaderStageCreateInfo vertStageInfo = {};
-		vertStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		vertStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vertStageInfo.module = vertModule;
-		vertStageInfo.pName = "main";
+    VkPipelineShaderStageCreateInfo vertStageInfo = {};
+        vertStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        vertStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+        vertStageInfo.module = vertModule;
+        vertStageInfo.pName = "main";
 
-	VkPipelineShaderStageCreateInfo fragStageInfo = {};
-		fragStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		fragStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		fragStageInfo.module = fragModule;
-		fragStageInfo.pName = "main";
+    VkPipelineShaderStageCreateInfo fragStageInfo = {};
+        fragStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        fragStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        fragStageInfo.module = fragModule;
+        fragStageInfo.pName = "main";
 
-	VkPipelineShaderStageCreateInfo shaderStages[] = { vertStageInfo, fragStageInfo };
+    VkPipelineShaderStageCreateInfo shaderStages[] = { vertStageInfo, fragStageInfo };
 
-	//Fixed Stages
-	VkVertexInputBindingDescription vertexBindingDesc = {};
-	vertexBindingDesc.binding = 0;
-	vertexBindingDesc.stride = sizeof(Vertex);
-	vertexBindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    //Fixed Stages
+    VkVertexInputBindingDescription vertexBindingDesc = {};
+    vertexBindingDesc.binding = 0;
+    vertexBindingDesc.stride = sizeof(Vertex);
+    vertexBindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     VkVertexInputAttributeDescription vertexAttribDesc[2] = {0, 0};
 
-	//Position
-	vertexAttribDesc[0].binding = 0;
-	vertexAttribDesc[0].location = 0;
-	vertexAttribDesc[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-	vertexAttribDesc[0].offset = offsetof(Vertex, pos);
+    //Position
+    vertexAttribDesc[0].binding = 0;
+    vertexAttribDesc[0].location = 0;
+    vertexAttribDesc[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    vertexAttribDesc[0].offset = offsetof(Vertex, pos);
 
-	//Color
-	vertexAttribDesc[1].binding = 0;
-	vertexAttribDesc[1].location = 1;
-	vertexAttribDesc[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-	vertexAttribDesc[1].offset = offsetof(Vertex, color);
+    //Color
+    vertexAttribDesc[1].binding = 0;
+    vertexAttribDesc[1].location = 1;
+    vertexAttribDesc[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+    vertexAttribDesc[1].offset = offsetof(Vertex, color);
 
 
-	VkPipelineVertexInputStateCreateInfo vertInputInfo = {};
-		vertInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertInputInfo.vertexBindingDescriptionCount = 1;
-		vertInputInfo.pVertexBindingDescriptions = &vertexBindingDesc;
-		vertInputInfo.vertexAttributeDescriptionCount = (uint32_t)amf_countof(vertexAttribDesc);
-		vertInputInfo.pVertexAttributeDescriptions = vertexAttribDesc;
+    VkPipelineVertexInputStateCreateInfo vertInputInfo = {};
+        vertInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        vertInputInfo.vertexBindingDescriptionCount = 1;
+        vertInputInfo.pVertexBindingDescriptions = &vertexBindingDesc;
+        vertInputInfo.vertexAttributeDescriptionCount = (uint32_t)amf_countof(vertexAttribDesc);
+        vertInputInfo.pVertexAttributeDescriptions = vertexAttribDesc;
 
-	VkPipelineInputAssemblyStateCreateInfo inputAssemply = {};
-		inputAssemply.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-		inputAssemply.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		inputAssemply.primitiveRestartEnable = VK_FALSE;
+    VkPipelineInputAssemblyStateCreateInfo inputAssemply = {};
+        inputAssemply.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+        inputAssemply.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        inputAssemply.primitiveRestartEnable = VK_FALSE;
 
-	VkViewport viewport = {};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = (float)m_size.width;
-		viewport.height = (float)m_size.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
+    VkViewport viewport = {};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = (float)m_size.width;
+        viewport.height = (float)m_size.height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
 
-	VkRect2D scissor = {};
-		scissor.offset = { 0, 0 };
-		scissor.extent.width = m_size.width;
-		scissor.extent.height = m_size.height;
+    VkRect2D scissor = {};
+        scissor.offset = { 0, 0 };
+        scissor.extent.width = m_size.width;
+        scissor.extent.height = m_size.height;
 
-	VkPipelineViewportStateCreateInfo viewportState = {};
-		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-		viewportState.viewportCount = 1;
-		viewportState.pViewports = &viewport;
-		viewportState.scissorCount = 1;
-		viewportState.pScissors = &scissor;
+    VkPipelineViewportStateCreateInfo viewportState = {};
+        viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        viewportState.viewportCount = 1;
+        viewportState.pViewports = &viewport;
+        viewportState.scissorCount = 1;
+        viewportState.pScissors = &scissor;
 
-	VkPipelineRasterizationStateCreateInfo rasterizerInfo = {};
-		rasterizerInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-//		rasterizerInfo.depthClampEnable = VK_TRUE;
-		rasterizerInfo.depthClampEnable = VK_FALSE;
-		rasterizerInfo.rasterizerDiscardEnable = VK_FALSE;
-		rasterizerInfo.polygonMode = VK_POLYGON_MODE_FILL;
-		rasterizerInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizerInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;//VK_FRONT_FACE_COUNTER_CLOCKWISE;
-		rasterizerInfo.depthBiasEnable = VK_FALSE;
-		rasterizerInfo.lineWidth = 1.0f;
+    VkPipelineRasterizationStateCreateInfo rasterizerInfo = {};
+        rasterizerInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+//        rasterizerInfo.depthClampEnable = VK_TRUE;
+        rasterizerInfo.depthClampEnable = VK_FALSE;
+        rasterizerInfo.rasterizerDiscardEnable = VK_FALSE;
+        rasterizerInfo.polygonMode = VK_POLYGON_MODE_FILL;
+        rasterizerInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+        rasterizerInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;//VK_FRONT_FACE_COUNTER_CLOCKWISE;
+        rasterizerInfo.depthBiasEnable = VK_FALSE;
+        rasterizerInfo.lineWidth = 1.0f;
 
-	VkPipelineMultisampleStateCreateInfo multisampling = {};
-		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		multisampling.sampleShadingEnable = VK_FALSE;
-		multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    VkPipelineMultisampleStateCreateInfo multisampling = {};
+        multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        multisampling.sampleShadingEnable = VK_FALSE;
+        multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
-	VkPipelineColorBlendAttachmentState colorBlendAtt = {}; // Sets up color / alpha blending.
-		colorBlendAtt.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_A_BIT;
-		colorBlendAtt.blendEnable = VK_FALSE;
+    VkPipelineColorBlendAttachmentState colorBlendAtt = {}; // Sets up color / alpha blending.
+        colorBlendAtt.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_A_BIT;
+        colorBlendAtt.blendEnable = VK_FALSE;
 
-	VkPipelineColorBlendStateCreateInfo blendInfo = {};
-		blendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-		blendInfo.logicOpEnable = VK_FALSE;
-		blendInfo.logicOp = VK_LOGIC_OP_COPY;
-		blendInfo.attachmentCount = 1;
-		blendInfo.pAttachments = &colorBlendAtt;
+    VkPipelineColorBlendStateCreateInfo blendInfo = {};
+        blendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        blendInfo.logicOpEnable = VK_FALSE;
+        blendInfo.logicOp = VK_LOGIC_OP_COPY;
+        blendInfo.attachmentCount = 1;
+        blendInfo.pAttachments = &colorBlendAtt;
 
-	VkDescriptorSetLayout setLayouts[] = {m_hUniformLayout};
-	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
-		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = setLayouts;
+    VkDescriptorSetLayout setLayouts[] = {m_hUniformLayout};
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
+        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutInfo.setLayoutCount = 1;
+        pipelineLayoutInfo.pSetLayouts = setLayouts;
 
     VkPipelineDepthStencilStateCreateInfo depthStencilState = {};
-		depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-		depthStencilState.depthTestEnable = VK_TRUE;
-		depthStencilState.depthWriteEnable = VK_TRUE;
-		depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-		depthStencilState.depthBoundsTestEnable = VK_FALSE;
-		depthStencilState.back.failOp = VK_STENCIL_OP_KEEP;
-		depthStencilState.back.passOp = VK_STENCIL_OP_KEEP;
-		depthStencilState.back.compareOp = VK_COMPARE_OP_ALWAYS;
-		depthStencilState.stencilTestEnable = VK_FALSE;
-		depthStencilState.front = depthStencilState.back;
+        depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depthStencilState.depthTestEnable = VK_TRUE;
+        depthStencilState.depthWriteEnable = VK_TRUE;
+        depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+        depthStencilState.depthBoundsTestEnable = VK_FALSE;
+        depthStencilState.back.failOp = VK_STENCIL_OP_KEEP;
+        depthStencilState.back.passOp = VK_STENCIL_OP_KEEP;
+        depthStencilState.back.compareOp = VK_COMPARE_OP_ALWAYS;
+        depthStencilState.stencilTestEnable = VK_FALSE;
+        depthStencilState.front = depthStencilState.back;
 
 
-	res = GetVulkan()->vkCreatePipelineLayout(m_pVulkanDevice->hDevice, &pipelineLayoutInfo, nullptr, &m_hPipelineLayout);
+    res = GetVulkan()->vkCreatePipelineLayout(m_pVulkanDevice->hDevice, &pipelineLayoutInfo, nullptr, &m_hPipelineLayout);
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkCreatePipelineLayout() failed with error=" << res);
 
-	VkGraphicsPipelineCreateInfo pipelineInfo = {};
-		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipelineInfo.stageCount = 2;
-		pipelineInfo.pStages = shaderStages;
-		pipelineInfo.pVertexInputState = &vertInputInfo;
-		pipelineInfo.pInputAssemblyState = &inputAssemply;
-		pipelineInfo.pViewportState = &viewportState;
-		pipelineInfo.pRasterizationState = &rasterizerInfo;
-		pipelineInfo.pDepthStencilState = &depthStencilState;
-		pipelineInfo.pColorBlendState = &blendInfo;
-		pipelineInfo.pMultisampleState = &multisampling;
-		pipelineInfo.layout = m_hPipelineLayout;
-		pipelineInfo.renderPass = m_hRenderPass;
-		pipelineInfo.subpass = 0;
-		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+    VkGraphicsPipelineCreateInfo pipelineInfo = {};
+        pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo.stageCount = 2;
+        pipelineInfo.pStages = shaderStages;
+        pipelineInfo.pVertexInputState = &vertInputInfo;
+        pipelineInfo.pInputAssemblyState = &inputAssemply;
+        pipelineInfo.pViewportState = &viewportState;
+        pipelineInfo.pRasterizationState = &rasterizerInfo;
+        pipelineInfo.pDepthStencilState = &depthStencilState;
+        pipelineInfo.pColorBlendState = &blendInfo;
+        pipelineInfo.pMultisampleState = &multisampling;
+        pipelineInfo.layout = m_hPipelineLayout;
+        pipelineInfo.renderPass = m_hRenderPass;
+        pipelineInfo.subpass = 0;
+        pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-	res = GetVulkan()->vkCreateGraphicsPipelines(m_pVulkanDevice->hDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_hPipeline);
+    res = GetVulkan()->vkCreateGraphicsPipelines(m_pVulkanDevice->hDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_hPipeline);
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkCreateGraphicsPipelines() failed with error=" << res);
-	//cleanup
-	GetVulkan()->vkDestroyShaderModule(m_pVulkanDevice->hDevice, vertModule, nullptr);
-	GetVulkan()->vkDestroyShaderModule(m_pVulkanDevice->hDevice, fragModule, nullptr);
+    //cleanup
+    GetVulkan()->vkDestroyShaderModule(m_pVulkanDevice->hDevice, vertModule, nullptr);
+    GetVulkan()->vkDestroyShaderModule(m_pVulkanDevice->hDevice, fragModule, nullptr);
 
     return AMF_OK;
 }
 
 AMF_RESULT VideoRenderVulkan::CreateCommands()
 {
-	VkResult res = VK_INCOMPLETE;
+    VkResult res = VK_INCOMPLETE;
     AMF_RESULT resAMF = AMF_OK;
 
 
-	resAMF = CreateVertexBuffers();
+    resAMF = CreateVertexBuffers();
     CHECK_AMF_ERROR_RETURN(resAMF, L"CreateVertexBuffers() failed");
 
-	resAMF = CreateDescriptorSetPool();
+    resAMF = CreateDescriptorSetPool();
     CHECK_AMF_ERROR_RETURN(resAMF, L"CreateDescriptorSetPool() failed");
 
     m_CommandBuffers.resize(GetBackBufferCount());
 
-	VkCommandBufferAllocateInfo bufferAllocInfo = {};
-		bufferAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		bufferAllocInfo.commandPool = m_hCommandPool;
-		bufferAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		bufferAllocInfo.commandBufferCount = (uint32_t)m_CommandBuffers.size();
+    VkCommandBufferAllocateInfo bufferAllocInfo = {};
+        bufferAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        bufferAllocInfo.commandPool = m_hCommandPool;
+        bufferAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        bufferAllocInfo.commandBufferCount = (uint32_t)m_CommandBuffers.size();
 
-	res = GetVulkan()->vkAllocateCommandBuffers(m_pVulkanDevice->hDevice, &bufferAllocInfo, m_CommandBuffers.data());
+    res = GetVulkan()->vkAllocateCommandBuffers(m_pVulkanDevice->hDevice, &bufferAllocInfo, m_CommandBuffers.data());
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkAllocateCommandBuffers() failed with error=" << res);
 
-	for (uint32_t i = 0; i < m_CommandBuffers.size(); i++)
+    for (uint32_t i = 0; i < m_CommandBuffers.size(); i++)
     {
         BackBufferVulkan* pBackBuffer = (BackBufferVulkan*)m_pBackBuffers[i].get();
         VkCommandBuffer commandBuffer = m_CommandBuffers[i];
 
-		VkCommandBufferBeginInfo beginInfo = {};
-			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+        VkCommandBufferBeginInfo beginInfo = {};
+            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
-		GetVulkan()->vkBeginCommandBuffer(commandBuffer, &beginInfo);
+        GetVulkan()->vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
         VkClearValue clearColor = { 0.0f, 0.5f, 0.0f, 1.0f };
-		VkRenderPassBeginInfo renderPassInfo = {};
-			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			renderPassInfo.renderPass = m_hRenderPass;
-			renderPassInfo.framebuffer = pBackBuffer->m_hFrameBuffer;
-			renderPassInfo.renderArea.offset = { 0, 0 };
-			renderPassInfo.renderArea.extent.width = m_size.width;
-			renderPassInfo.renderArea.extent.height = m_size.height;
-			renderPassInfo.clearValueCount = 1;
-			renderPassInfo.pClearValues = &clearColor;
+        VkRenderPassBeginInfo renderPassInfo = {};
+            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderPassInfo.renderPass = m_hRenderPass;
+            renderPassInfo.framebuffer = pBackBuffer->m_hFrameBuffer;
+            renderPassInfo.renderArea.offset = { 0, 0 };
+            renderPassInfo.renderArea.extent.width = m_size.width;
+            renderPassInfo.renderArea.extent.height = m_size.height;
+            renderPassInfo.clearValueCount = 1;
+            renderPassInfo.pClearValues = &clearColor;
 
-		GetVulkan()->vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-		GetVulkan()->vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_hPipeline);
+        GetVulkan()->vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        GetVulkan()->vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_hPipeline);
 
-		VkBuffer vertexBuffers[] = { m_VertexBuffer.hBuffer };
-		VkDeviceSize offsets[] = {0};
-		GetVulkan()->vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-		GetVulkan()->vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer.hBuffer, 0, VK_INDEX_TYPE_UINT32);
+        VkBuffer vertexBuffers[] = { m_VertexBuffer.hBuffer };
+        VkDeviceSize offsets[] = {0};
+        GetVulkan()->vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+        GetVulkan()->vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer.hBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-		GetVulkan()->vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_hPipelineLayout, 0, 1, &m_hDescriptorSet, 0, nullptr);
+        GetVulkan()->vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_hPipelineLayout, 0, 1, &m_hDescriptorSet, 0, nullptr);
 
-		GetVulkan()->vkCmdDrawIndexed(commandBuffer, uint32_t(m_IndexBuffer.iSize / sizeof(uint32_t)), 1, 0, 0, 0);
+        GetVulkan()->vkCmdDrawIndexed(commandBuffer, uint32_t(m_IndexBuffer.iSize / sizeof(uint32_t)), 1, 0, 0, 0);
 
-		GetVulkan()->vkCmdEndRenderPass(commandBuffer);
-		res = GetVulkan()->vkEndCommandBuffer(commandBuffer);
+        GetVulkan()->vkCmdEndRenderPass(commandBuffer);
+        res = GetVulkan()->vkEndCommandBuffer(commandBuffer);
         CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkEndCommandBuffer() failed with error=" << res);
-	}
+    }
     return AMF_OK;
 }
 
@@ -501,69 +510,69 @@ AMF_RESULT VideoRenderVulkan::CreateVertexBuffers()
     };
 
 
-	MakeBuffer((void*)vertexes, sizeof(vertexes), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_VertexBuffer);
-	MakeBuffer((void*)indexes, sizeof(indexes), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_IndexBuffer);
-	MakeBuffer(NULL, sizeof(ModelView), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_MVPBuffer);
+    MakeBuffer((void*)vertexes, sizeof(vertexes), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_VertexBuffer);
+    MakeBuffer((void*)indexes, sizeof(indexes), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_IndexBuffer);
+    MakeBuffer(NULL, sizeof(ModelView), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_MVPBuffer);
     
     return AMF_OK;
 }
 AMF_RESULT VideoRenderVulkan::CreateDescriptorSetPool()
 {
-	VkResult res = VK_INCOMPLETE;
+    VkResult res = VK_INCOMPLETE;
 
-	VkDescriptorPoolSize poolSize = {};
-		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSize.descriptorCount = 1;
+    VkDescriptorPoolSize poolSize = {};
+        poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSize.descriptorCount = 1;
 
-	VkDescriptorPoolSize samplerSize = {};
-		samplerSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		samplerSize.descriptorCount = 1;
+    VkDescriptorPoolSize samplerSize = {};
+        samplerSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        samplerSize.descriptorCount = 1;
 
-	std::vector<VkDescriptorPoolSize> sizes = { poolSize, samplerSize };
-	VkDescriptorPoolCreateInfo poolCreateInfo = {};
-		poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolCreateInfo.poolSizeCount = (uint32_t)sizes.size();
-		poolCreateInfo.pPoolSizes = sizes.data();
-		poolCreateInfo.maxSets = 1;
-        poolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    std::vector<VkDescriptorPoolSize> sizes = { poolSize, samplerSize };
+    VkDescriptorPoolCreateInfo poolCreateInfo = {};
+        poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolCreateInfo.poolSizeCount = (uint32_t)sizes.size();
+        poolCreateInfo.pPoolSizes = sizes.data();
+        poolCreateInfo.maxSets = 1;
+        poolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT | VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
 
-	res = GetVulkan()->vkCreateDescriptorPool(m_pVulkanDevice->hDevice, &poolCreateInfo, nullptr, &m_hDescriptorPool);
+    res = GetVulkan()->vkCreateDescriptorPool(m_pVulkanDevice->hDevice, &poolCreateInfo, nullptr, &m_hDescriptorPool);
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkCreateDescriptorPool() failed with error=" << res);
 
-	VkDescriptorSetLayout layouts[] = { m_hUniformLayout };
-	VkDescriptorSetAllocateInfo allocInfo = {};
-		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorPool = m_hDescriptorPool;
-		allocInfo.descriptorSetCount = 1;
-		allocInfo.pSetLayouts = layouts;
+    VkDescriptorSetLayout layouts[] = { m_hUniformLayout };
+    VkDescriptorSetAllocateInfo allocInfo = {};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = m_hDescriptorPool;
+        allocInfo.descriptorSetCount = 1;
+        allocInfo.pSetLayouts = layouts;
 
-	res = GetVulkan()->vkAllocateDescriptorSets(m_pVulkanDevice->hDevice, &allocInfo, &m_hDescriptorSet);
+    res = GetVulkan()->vkAllocateDescriptorSets(m_pVulkanDevice->hDevice, &allocInfo, &m_hDescriptorSet);
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkAllocateDescriptorSets() failed with error=" << res);
 
-	VkDescriptorBufferInfo bufferInfo = {};
-		bufferInfo.buffer = m_MVPBuffer.hBuffer;
-		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(ModelView);
+    VkDescriptorBufferInfo bufferInfo = {};
+        bufferInfo.buffer = m_MVPBuffer.hBuffer;
+        bufferInfo.offset = 0;
+        bufferInfo.range = sizeof(ModelView);
 
     VkWriteDescriptorSet descriptorWrite = {};
-		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrite.dstSet = m_hDescriptorSet;
-		descriptorWrite.dstBinding = 0;
-		descriptorWrite.dstArrayElement = 0;
-		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptorWrite.descriptorCount = 1;
-		descriptorWrite.pBufferInfo = &bufferInfo;
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = m_hDescriptorSet;
+        descriptorWrite.dstBinding = 0;
+        descriptorWrite.dstArrayElement = 0;
+        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.pBufferInfo = &bufferInfo;
 
     std::vector<VkWriteDescriptorSet> descriptors = { descriptorWrite };
 
-	GetVulkan()->vkUpdateDescriptorSets(m_pVulkanDevice->hDevice, (uint32_t)descriptors.size(), descriptors.data(), 0, nullptr);
+    GetVulkan()->vkUpdateDescriptorSets(m_pVulkanDevice->hDevice, (uint32_t)descriptors.size(), descriptors.data(), 0, nullptr);
 
     return AMF_OK;
 }
 
 AMF_RESULT VideoRenderVulkan::UpdateMVP()
 {
-	VkResult res = VK_INCOMPLETE;
+    VkResult res = VK_INCOMPLETE;
 
     amf::Vector Eye ( 0.0f, 1.0f, -5.0f, 0.0f );
     amf::Vector At  ( 0.0f, 1.0f, 0.0f, 0.0f );
@@ -577,38 +586,38 @@ AMF_RESULT VideoRenderVulkan::UpdateMVP()
 
     ModelView mvp = {};
 
-	memcpy(mvp.model, world.k, sizeof(mvp.model));
-	memcpy(mvp.proj, proj.k, sizeof(mvp.proj));
-	memcpy(mvp.view, view.k, sizeof(mvp.view));
+    memcpy(mvp.model, world.k, sizeof(mvp.model));
+    memcpy(mvp.proj, proj.k, sizeof(mvp.proj));
+    memcpy(mvp.view, view.k, sizeof(mvp.view));
 
     void* bufferData = NULL;
-	res = GetVulkan()->vkMapMemory(m_pVulkanDevice->hDevice, m_MVPBuffer.hMemory, 0, sizeof(ModelView), 0, &bufferData);
+    res = GetVulkan()->vkMapMemory(m_pVulkanDevice->hDevice, m_MVPBuffer.hMemory, 0, sizeof(ModelView), 0, &bufferData);
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkMapMemory() failed with error=" << res);
 
-	memcpy(bufferData, &mvp, sizeof(ModelView));
-	GetVulkan()->vkUnmapMemory(m_pVulkanDevice->hDevice, m_MVPBuffer.hMemory);
+    memcpy(bufferData, &mvp, sizeof(ModelView));
+    GetVulkan()->vkUnmapMemory(m_pVulkanDevice->hDevice, m_MVPBuffer.hMemory);
 
     m_fAnimation += amf::AMF_PI *2.0f /240.f;
 
-	return AMF_OK;
+    return AMF_OK;
 }
 
 
 
 AMF_RESULT VideoRenderVulkan::Render(amf::AMFData** ppData)
 {
-	UpdateMVP();
+    UpdateMVP();
 
-	VkResult res = VK_INCOMPLETE;
+    VkResult res = VK_INCOMPLETE;
     AMF_RESULT resAMF = AMF_OK;
 
-	amf_uint32 imageIndex = 0;
+    amf_uint32 imageIndex = 0;
     resAMF = AcquireNextBackBufferIndex(imageIndex);
     CHECK_AMF_ERROR_RETURN(resAMF, L"AcquireBackBuffer() failed");
 
     BackBufferVulkan* pBackBuffer = (BackBufferVulkan*)m_pBackBuffers[imageIndex].get();
 
-	VkPipelineStageFlags waitFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    VkPipelineStageFlags waitFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
 /*
     AMFTraceInfo(AMF_FACILITY, L"+++++++++++++++vkQueueSubmit(GFX ) Start +++++++++++++");
@@ -616,29 +625,29 @@ AMF_RESULT VideoRenderVulkan::Render(amf::AMFData** ppData)
     {
         AMFTraceInfo(AMF_FACILITY, L"    Wait:   0x%llu", pBackBuffer->m_surface.Sync.hSemaphore);
     }
-	AMFTraceInfo(AMF_FACILITY, L"    Signal: 0x%llu", pBackBuffer->m_surface.Sync.hSemaphore);
+    AMFTraceInfo(AMF_FACILITY, L"    Signal: 0x%llu", pBackBuffer->m_surface.Sync.hSemaphore);
     AMFTraceInfo(AMF_FACILITY, L"+++++++++++++++vkQueueSubmit(GFX ) End  +++++++++++++");
 */
 
-	VkSubmitInfo submitInfo = {};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
     if(pBackBuffer->m_surface.Sync.hSemaphore != VK_NULL_HANDLE)
     {
         if(pBackBuffer->m_surface.Sync.bSubmitted)
         { 
-	        submitInfo.waitSemaphoreCount = 1;
-	        submitInfo.pWaitSemaphores = &pBackBuffer->m_surface.Sync.hSemaphore;
-	        submitInfo.pWaitDstStageMask = &waitFlags;
+            submitInfo.waitSemaphoreCount = 1;
+            submitInfo.pWaitSemaphores = &pBackBuffer->m_surface.Sync.hSemaphore;
+            submitInfo.pWaitDstStageMask = &waitFlags;
         }
-	    submitInfo.signalSemaphoreCount = 1;
-	    submitInfo.pSignalSemaphores = &pBackBuffer->m_surface.Sync.hSemaphore;
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = &pBackBuffer->m_surface.Sync.hSemaphore;
         pBackBuffer->m_surface.Sync.bSubmitted = true;
     }
     submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &m_CommandBuffers[imageIndex];
+    submitInfo.pCommandBuffers = &m_CommandBuffers[imageIndex];
 
-	res = GetVulkan()->vkQueueSubmit(m_hQueuePresent, 1, &submitInfo, NULL);
+    res = GetVulkan()->vkQueueSubmit(m_hQueuePresent, 1, &submitInfo, NULL);
     CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkQueueSubmit() failed with error=" << res);
 
     amf::AMFSurfacePtr pSwapChainSurface;

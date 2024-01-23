@@ -30,35 +30,17 @@
 // THE SOFTWARE.
 //
 #include "VideoPresenterDX12.h"
-
 #include "public/common/TraceAdapter.h"
-#include "public/include/components/VideoDecoderUVD.h"
-#include "public/include/components/VideoConverter.h"
-#include <DirectXMath.h>
-using namespace DirectX;
 
+// Auto generated to build_dir from QuadDX12_vs.h and QuadDX12_ps.h
+// and added to the include directory during compile
 #include "QuadDX12_vs.h"
 #include "QuadDX12_ps.h"
 
+using namespace amf;
 #pragma comment(lib, "d3d12.lib")
-#define USE_COLOR_TWITCH_IN_DISPLAY 0
 
 #define  AMF_FACILITY  L"VideoPresenterDX12"
-
-using namespace amf;
-
-namespace {
-
-    struct SimpleVertex
-    {
-        XMFLOAT3 position;
-        XMFLOAT2 texture;
-    };
-    struct CBNeverChanges
-    {
-        XMMATRIX mView;
-    };
-}
 
 template<class T>
 inline static T AlignValue(T value, T alignment)
@@ -66,26 +48,15 @@ inline static T AlignValue(T value, T alignment)
     return ((value + (alignment - 1)) & ~(alignment - 1));
 }
 
-const float VideoPresenterDX12::ClearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-
-VideoPresenterDX12::VideoPresenterDX12(amf_handle hwnd, amf::AMFContext* pContext) :
-    BackBufferPresenter(hwnd, pContext),
-    m_swapChain(pContext),
+VideoPresenterDX12::VideoPresenterDX12(amf_handle hwnd, AMFContext* pContext, amf_handle hDisplay) :
+    VideoPresenter(hwnd, pContext, hDisplay),
     m_pContext2(pContext),
-    m_CurrentViewport{ 0 },
-    m_rectClientResize{ 0 },
-    m_bResizeSwapChain(true),
-    m_bFirstFrame(true),
-    m_eInputFormat(AMF_SURFACE_BGRA),
     m_currentSrvIndex(0),
-    m_linearSamplerDescriptor{},
-    m_pointSamplerDescriptor{},
     m_srvRootIndex(0),
     m_samplerRootIndex(0),
-    m_viewProjectionRootIndex(0),
-    m_viewProjection{},
-    m_pipViewProjection{}
+    m_viewProjectionRootIndex(0)
 {
+    m_pSwapChain = std::make_unique<SwapChainDX12>(pContext);
     memset(m_srvDescriptors, 0, sizeof(m_srvDescriptors));
 }
 
@@ -94,9 +65,10 @@ VideoPresenterDX12::~VideoPresenterDX12()
     Terminate();
 }
 
-AMF_RESULT VideoPresenterDX12::Init(amf_int32 width, amf_int32 height, amf::AMFSurface* /* pSurface */)
+AMF_RESULT VideoPresenterDX12::Init(amf_int32 width, amf_int32 height, AMFSurface* /* pSurface */)
 {
     AMF_RETURN_IF_FALSE(width > 0 && height > 0, AMF_INVALID_ARG, L"Init() - Bad width/height: %ux%u", width, height);
+    AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_UNEXPECTED, L"Init() - m_pSwapChain is NULL");
 
     AMF_RETURN_IF_FALSE(m_hwnd != nullptr, AMF_NOT_INITIALIZED, L"Init() - m_hwnd is not initialized");
     //AMF_RETURN_IF_FALSE(m_hDisplay != nullptr, AMF_NOT_INITIALIZED, L"Init() - m_hDisplay is not initialized");
@@ -110,16 +82,17 @@ AMF_RESULT VideoPresenterDX12::Init(amf_int32 width, amf_int32 height, amf::AMFS
     res = m_descriptorHeapPool.Init(m_pDX12Device);
     AMF_RETURN_IF_FAILED(res, L"Init() - m_descriptorHeapPool Init() failed");
 
-    res = RegisterDescriptors(); // Must be done before SwapChainDX12::init()
+    res = RegisterDescriptors();
     AMF_RETURN_IF_FAILED(res, L"Init() - RegisterHeapDescriptors() failed");
 
-    res = m_swapChain.Init(m_hwnd, m_hDisplay, nullptr, width, height, m_eInputFormat, false, true);
+    res = m_pSwapChain->Init(m_hwnd, m_hDisplay, nullptr, width, height, GetInputFormat(), false, true);
     AMF_RETURN_IF_FAILED(res, L"Init() - SwapChainDX12::Init() failed");
 
     res = CreateSamplerStates();
     AMF_RETURN_IF_FAILED(res, L"Init() - CreateSamplerStates() failed");
 
-    res = m_cmdBuffer.Init(m_pDX12Device, D3D12_COMMAND_LIST_TYPE_DIRECT, m_swapChain.GetBackBufferCount(), L"DX12PresenterCmdBuffer");
+    res = m_cmdBuffer.Init(m_pDX12Device, D3D12_COMMAND_LIST_TYPE_DIRECT, 
+                           m_pSwapChain->GetBackBufferCount(), L"DX12PresenterCmdBuffer");
     AMF_RETURN_IF_FAILED(res, L"Init() - m_commandBuffer Init() failed");
 
     res = PrepareStates();
@@ -128,77 +101,13 @@ AMF_RESULT VideoPresenterDX12::Init(amf_int32 width, amf_int32 height, amf::AMFS
     res = CreateQuadPipeline();
     AMF_RETURN_IF_FAILED(res, L"Init() - CreateQuadPipeline() failed");
 
-    res = ResizeSwapChain();
-    AMF_RETURN_IF_FAILED(res, L"Init() - ResizeSwapChain() failed");
-
     return AMF_OK;
 }
 
-AMF_RESULT VideoPresenterDX12::Present(amf::AMFSurface* pSurface)
-{
-    AMF_RETURN_IF_FALSE(m_pDX12Device != nullptr, AMF_NO_DEVICE, L"Present() - DX12 device is not initialized");
-    AMF_RETURN_IF_FALSE(pSurface != nullptr, AMF_INVALID_ARG, L"Present() - pSurface is NULL");
-    AMF_RETURN_IF_FALSE(pSurface->GetFormat() == GetInputFormat(), AMF_INVALID_FORMAT, L"Present() - Surface format (%s)"
-        "does not match input format (%s)", amf::AMFSurfaceGetFormatName(pSurface->GetFormat()),
-        amf::AMFSurfaceGetFormatName(GetInputFormat()));
-
-    amf::AMFLock lock(&m_sect);
-
-    AMF_RESULT res = pSurface->Convert(GetMemoryType());
-    AMF_RETURN_IF_FAILED(res, L"Present() - Surface Convert() failed");
-
-    res = ApplyCSC(pSurface);
-    AMF_RETURN_IF_FAILED(res, L"Present() - ApplyCSC() failed");
-
-    bool bResized = false;
-    res = CheckForResize(false, &bResized);
-    AMF_RETURN_IF_FAILED(res, L"Present() - CheckForResize() failed");
-
-    if (m_bResizeSwapChain)
-    {
-        res = ResizeSwapChain();
-        AMF_RETURN_IF_FAILED(res, L"RenderSurface() - ResizeSwapChain() failed");
-    }
-
-    const BackBufferBase* pBuffer = nullptr;
-    res = m_swapChain.AcquireNextBackBuffer(&pBuffer);
-    AMF_RETURN_IF_FAILED(res, L"Present() - GetBackBuffer() failed");
-
-    const RenderTarget* pRenderTarget = (RenderTarget*)pBuffer;
-
-    res = RenderSurface(pSurface, pRenderTarget);
-    AMF_RETURN_IF_FAILED(res, L"Present() - RenderSurface() failed");
-
-    WaitForPTS(pSurface->GetPts());
-
-    res = m_swapChain.Present(m_bWaitForVSync);
-    AMF_RETURN_IF_FAILED(res, L"Present() - SwapChainDX12::Present() failed");
-
-    return AMF_OK;
-}
-
-AMF_RESULT VideoPresenterDX12::RenderSurface(amf::AMFSurface* pSurface, const RenderTarget* pRenderTarget)
-{
-    AMF_RETURN_IF_FALSE(pSurface != nullptr, AMF_INVALID_ARG, L"RenderSurface() - pSurface is NULL");
-    AMF_RETURN_IF_FALSE(pRenderTarget != nullptr, AMF_INVALID_ARG, L"RenderSurface() - pRenderTarget is NULL");
-
-    const AMFRect srcSurfaceRect = GetPlaneRect(pSurface->GetPlane(amf::AMF_PLANE_PACKED));
-    const AMFRect dstSurfaceRect = GetClientRect();
-    const AMFSize dstSurfaceSize = pRenderTarget->GetSize();
-
-    RenderViewSizeInfo renderView = {};
-    AMF_RESULT res = GetRenderViewSizeInfo(srcSurfaceRect, dstSurfaceSize, dstSurfaceRect, renderView);
-    AMF_RETURN_IF_FAILED(res, L"RenderSurface() - GetRenderViewSizeInfo() failed");
-
-    res = RenderSurface(pSurface, pRenderTarget, renderView);
-    AMF_RETURN_IF_FAILED(res, L"RenderSurface() - RenderSurface() failed");
-
-    return AMF_OK;
-}
-
-AMF_RESULT VideoPresenterDX12::RenderSurface(amf::AMFSurface* pSurface, const RenderTarget* pRenderTarget, RenderViewSizeInfo& renderView)
+AMF_RESULT VideoPresenterDX12::RenderSurface(amf::AMFSurface* pSurface, const RenderTargetBase* pRenderTarget, RenderViewSizeInfo& renderView)
 {
     AMF_RETURN_IF_FALSE(pSurface != nullptr, AMF_INVALID_ARG, L"RenderSurface() - pSrcSurface is NULL");
+    AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_NOT_INITIALIZED, L"RenderSurface() - m_pSwapChain is not initialized");
 
     RenderTarget* pTarget = (RenderTarget*)pRenderTarget;
     AMF_RETURN_IF_FALSE(pTarget != nullptr, AMF_INVALID_ARG, L"RenderSurface() - pDstSurface is NULL");
@@ -209,7 +118,8 @@ AMF_RESULT VideoPresenterDX12::RenderSurface(amf::AMFSurface* pSurface, const Re
     AMF_RETURN_IF_FALSE(m_pDX12Device != nullptr, AMF_NOT_INITIALIZED, L"RenderSurface() - DX12 device is not initialized");
     AMF_RETURN_IF_FALSE(m_cmdBuffer.GetList() != nullptr, AMF_NOT_INITIALIZED, L"AMF_NOT_INITIALIZED() - Command buffer is not initialized.");
 
-    AMF_RETURN_IF_FALSE(m_swapChain.GetQueue() != nullptr, AMF_NOT_INITIALIZED, L"AMF_NOT_INITIALIZED() - Swapchain Graphics Queue is not initialized.");
+    SwapChainDX12* pSwapChain = (SwapChainDX12*)m_pSwapChain.get();
+    AMF_RETURN_IF_FALSE(pSwapChain->GetQueue() != nullptr, AMF_NOT_INITIALIZED, L"AMF_NOT_INITIALIZED() - Swapchain Graphics Queue is not initialized.");
 
     AMFContext2::AMFDX12Locker dxlock(m_pContext2);
 
@@ -233,7 +143,7 @@ AMF_RESULT VideoPresenterDX12::RenderSurface(amf::AMFSurface* pSurface, const Re
     res = m_descriptorHeapPool.GetShaderDescriptorHeaps(pHeaps);
     AMF_RETURN_IF_FAILED(res, L"RenderSurface() - GetShaderDescriptorHeaps() failed");
     m_cmdBuffer.GetList()->SetDescriptorHeaps((UINT)pHeaps.size(), pHeaps.data());
-
+  
     res = DrawBackground(pTarget);
     AMF_RETURN_IF_FAILED(res, L"RenderSurface() - DrawBackground() failed");
 
@@ -242,6 +152,9 @@ AMF_RESULT VideoPresenterDX12::RenderSurface(amf::AMFSurface* pSurface, const Re
 
     res = DrawFrame(pSrcDXSurface, pTarget);
     AMF_RETURN_IF_FAILED(res, L"RenderSurface() - DrawFrame() failed");
+
+    res = DrawOverlay(pSurface, pTarget);
+    AMF_RETURN_IF_FAILED(res, L"RenderSurface() - DrawOverlay() failed");
 
     // PIP window
     if (m_enablePIP == true)
@@ -256,7 +169,7 @@ AMF_RESULT VideoPresenterDX12::RenderSurface(amf::AMFSurface* pSurface, const Re
     res = TransitionResource(&m_cmdBuffer, pSrcDXSurface, D3D12_RESOURCE_STATE_COMMON, false);
     AMF_RETURN_IF_FAILED(res, L"RenderSurface() - Failed to transition pSrcDXSurface to D3D12_RESOURCE_STATE_COMMON");
 
-    res = m_cmdBuffer.Execute(m_swapChain.GetQueue(), false);
+    res = m_cmdBuffer.Execute(pSwapChain->GetQueue(), false);
     AMF_RETURN_IF_FAILED(res, L"RenderSurface() - Command buffer Execute() failed");
 
     m_currentSrvIndex = (m_currentSrvIndex + 1) % amf_countof(m_srvDescriptors);
@@ -291,6 +204,11 @@ AMF_RESULT VideoPresenterDX12::UpdateStates(AMFSurface* pSurface, const RenderTa
     res = CreateResourceView(pSurface, srvDescriptor);
     AMF_RETURN_IF_FAILED(res, L"UpdateStates() - CreateResourceView() failed");
 
+    if (m_interpolation != m_lastBindedInterpolation)
+    {
+        BindSampler();
+    }
+
     return AMF_OK;
 }
 
@@ -313,8 +231,18 @@ AMF_RESULT VideoPresenterDX12::SetStates(amf_uint groupIndex)
     AMF_RETURN_IF_FAILED(res, L"SetStates() - Render pipeline SetStates() failed");
 
     /// Draw area
-    m_cmdBuffer.GetList()->RSSetViewports(1, &m_CurrentViewport);
-    D3D12_RECT rect = CD3DX12_RECT(0, 0, (LONG)m_CurrentViewport.Width, (LONG)m_CurrentViewport.Height);
+
+    const AMFSize size = GetSwapchainSize();
+    D3D12_VIEWPORT currentViewport = {};
+    // Update viewport
+    currentViewport.TopLeftX = 0;
+    currentViewport.TopLeftY = 0;
+    currentViewport.Width = FLOAT(size.width);
+    currentViewport.Height = FLOAT(size.height);
+    currentViewport.MinDepth = 0.0f;
+    currentViewport.MaxDepth = 1.0f;
+    m_cmdBuffer.GetList()->RSSetViewports(1, &currentViewport);
+    D3D12_RECT rect = CD3DX12_RECT(0, 0, (LONG)currentViewport.Width, (LONG)currentViewport.Height);
     m_cmdBuffer.GetList()->RSSetScissorRects(1, &rect);
 
     /// Input Assembly
@@ -350,21 +278,27 @@ AMF_RESULT VideoPresenterDX12::DrawFrame(ID3D12Resource* pSrcSurface, const Rend
 
 AMF_RESULT VideoPresenterDX12::Terminate()
 {
+    if (m_pSwapChain != nullptr)
+    {
+        m_pSwapChain->Terminate();
+    }
+
+    m_cmdBuffer.WaitForExecution();
+
     m_currentSrvIndex = 0;
     memset(m_srvDescriptors, 0, sizeof(m_srvDescriptors));
-    m_linearSamplerDescriptor = {};
-    m_pointSamplerDescriptor = {};
+    m_samplerDescriptorMap.clear();
 
     m_vertexBuffer = {};
 
     m_viewProjectionBuffer = {};
     m_pipViewProjectionBuffer = {};
 
-    m_CurrentViewport = {};
-
     m_quadPipeline.Terminate();
     m_cmdBuffer.Terminate();
     m_descriptorHeapPool.Terminate();
+
+    m_resizeSwapChain = false;
 
     return VideoPresenter::Terminate();
 }
@@ -374,9 +308,11 @@ AMF_RESULT VideoPresenterDX12::RegisterDescriptors()
     AMF_RESULT res = m_descriptorHeapPool.RegisterDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, amf_countof(m_srvDescriptors), m_srvDescriptors);
     AMF_RETURN_IF_FAILED(res, L"RegisterDescriptors() - RegisterDescriptors() failed to register SRV descriptors");
 
-    DescriptorDX12* pSamplerDescriptors[] = {&m_linearSamplerDescriptor, &m_pointSamplerDescriptor };
+    DescriptorDX12* pSamplerDescriptors[INTERPOLATION_COUNT] = {};
+    pSamplerDescriptors[0] = &m_samplerDescriptorMap[InterpolationLinear];
+    pSamplerDescriptors[1] = &m_samplerDescriptorMap[InterpolationPoint];
 
-    res = m_descriptorHeapPool.RegisterDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, amf_countof(pSamplerDescriptors), pSamplerDescriptors);
+    res = m_descriptorHeapPool.RegisterDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, INTERPOLATION_COUNT, pSamplerDescriptors);
     AMF_RETURN_IF_FAILED(res, L"RegisterDescriptors() - RegisterDescriptors() failed to register sampler heap descriptors");
 
     res = m_descriptorHeapPool.SetHeapDescriptorFlags(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
@@ -394,8 +330,8 @@ AMF_RESULT VideoPresenterDX12::RegisterDescriptors()
 AMF_RESULT VideoPresenterDX12::CreateSamplerStates()
 {
     AMF_RETURN_IF_FALSE(m_pDX12Device != nullptr, AMF_NOT_INITIALIZED, L"CreateSamplerStates() - m_pDX12Device is not initialized");
-    AMF_RETURN_IF_FALSE(VALID_DX12_DESCRIPTOR_CPU_HANDLE(m_linearSamplerDescriptor), AMF_NOT_INITIALIZED, L"CreateSamplerStates() - Linear sampler descriptor is not initialized");
-    AMF_RETURN_IF_FALSE(VALID_DX12_DESCRIPTOR_CPU_HANDLE(m_pointSamplerDescriptor), AMF_NOT_INITIALIZED, L"CreateSamplerStates() - Point sampler descriptor is not initialized");
+    AMF_RETURN_IF_FALSE(VALID_DX12_DESCRIPTOR_CPU_HANDLE(m_samplerDescriptorMap[InterpolationLinear]), AMF_NOT_INITIALIZED, L"CreateSamplerStates() - Linear sampler descriptor is not initialized");
+    AMF_RETURN_IF_FALSE(VALID_DX12_DESCRIPTOR_CPU_HANDLE(m_samplerDescriptorMap[InterpolationPoint]), AMF_NOT_INITIALIZED, L"CreateSamplerStates() - Point sampler descriptor is not initialized");
 
     D3D12_SAMPLER_DESC desc = {};
     desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
@@ -404,10 +340,10 @@ AMF_RESULT VideoPresenterDX12::CreateSamplerStates()
     desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
 
     desc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-    m_pDX12Device->CreateSampler(&desc, m_linearSamplerDescriptor.cpuHandle);
+    m_pDX12Device->CreateSampler(&desc, m_samplerDescriptorMap[InterpolationLinear].cpuHandle);
 
     desc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
-    m_pDX12Device->CreateSampler(&desc, m_pointSamplerDescriptor.cpuHandle);
+    m_pDX12Device->CreateSampler(&desc, m_samplerDescriptorMap[InterpolationPoint].cpuHandle);
 
     return AMF_OK;
 }
@@ -438,6 +374,7 @@ AMF_RESULT VideoPresenterDX12::GetQuadShaders(D3D12_SHADER_BYTECODE& vs, D3D12_S
 AMF_RESULT VideoPresenterDX12::CreateQuadPipeline()
 {
     AMF_RETURN_IF_FALSE(m_pDX12Device != nullptr, AMF_NOT_INITIALIZED, L"CreateQuadPipeline() - DX12 Device is not initialized.");
+    AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_NOT_INITIALIZED, L"CreateQuadPipeline() - m_pSwapChain is not initialized");
 
     RootSignatureLayoutDX12 layout = {};
     AMF_RESULT res = SetupRootLayout(layout);
@@ -446,8 +383,8 @@ AMF_RESULT VideoPresenterDX12::CreateQuadPipeline()
     // Define the vertex input layouts.
     constexpr D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
     {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(SimpleVertex, position), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(SimpleVertex, texture), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(Vertex, pos), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(Vertex, tex), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
     };
 
     // Describe and create the graphics pipeline state objects (PSOs).
@@ -460,7 +397,9 @@ AMF_RESULT VideoPresenterDX12::CreateQuadPipeline()
     psoDesc.SampleMask = UINT_MAX;
     psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
     psoDesc.NumRenderTargets = 1;  // count of formats
-    psoDesc.RTVFormats[0] = m_swapChain.GetDXGIFormat();
+
+    SwapChainDX12* pSwapChain = (SwapChainDX12*)m_pSwapChain.get();
+    psoDesc.RTVFormats[0] = pSwapChain->GetDXGIFormat();
     psoDesc.SampleDesc.Count = 1;
 
     GetQuadShaders(psoDesc.VS, psoDesc.PS);
@@ -480,17 +419,28 @@ AMF_RESULT VideoPresenterDX12::BindPipelineResources()
     // SRV will be bound later when rendering since we have
     // 4 SRVs and need to cycle between them
 
-    AMF_RESULT res = m_quadPipeline.BindDescriptorTable(m_linearSamplerDescriptor.gpuHandle, nullptr, m_samplerRootIndex, GROUP_QUAD_SURFACE);
+    AMF_RESULT res = m_quadPipeline.BindDescriptorTable(m_samplerDescriptorMap[m_interpolation].gpuHandle, nullptr, m_samplerRootIndex, GROUP_QUAD_SURFACE);
     AMF_RETURN_IF_FAILED(res, L"BindPipelineResources() - BindDescriptorTable() failed to bind sampler to quad group");
+
+    m_lastBindedInterpolation = m_interpolation;
 
     res = m_quadPipeline.BindRootCBV(m_viewProjectionBuffer.pBuffer, m_viewProjectionRootIndex, GROUP_QUAD_SURFACE);
     AMF_RETURN_IF_FAILED(res, L"BindPipelineResources() - SetupRootLayout() failed to bind view projection buffer to quad group");
 
-    res = m_quadPipeline.BindDescriptorTable(m_pointSamplerDescriptor.gpuHandle, nullptr, m_samplerRootIndex, GROUP_QUAD_PIP);
+    res = m_quadPipeline.BindDescriptorTable(m_samplerDescriptorMap[InterpolationPoint].gpuHandle, nullptr, m_samplerRootIndex, GROUP_QUAD_PIP);
     AMF_RETURN_IF_FAILED(res, L"BindPipelineResources() - SetupRootLayout() failed to bind point sampler to PIP quad group");
 
     res = m_quadPipeline.BindRootCBV(m_pipViewProjectionBuffer.pBuffer, m_viewProjectionRootIndex, GROUP_QUAD_PIP);
     AMF_RETURN_IF_FAILED(res, L"BindPipelineResources() - SetupRootLayout() failed to bind PIP view projection buffer to PIP quad group");
+
+    return AMF_OK;
+}
+
+AMF_RESULT VideoPresenterDX12::BindSampler()
+{
+    AMF_RESULT res = m_quadPipeline.BindDescriptorTable(m_samplerDescriptorMap[m_interpolation].gpuHandle, nullptr, m_samplerRootIndex, GROUP_QUAD_SURFACE);
+    AMF_RETURN_IF_FAILED(res, L"BindSampler() - BindDescriptorTable() failed to bind sampler to quad group");
+    m_lastBindedInterpolation = m_interpolation;
 
     return AMF_OK;
 }
@@ -506,21 +456,13 @@ AMF_RESULT VideoPresenterDX12::PrepareStates()
 
     AMF_RETURN_IF_FALSE(m_pDX12Device != nullptr, AMF_NOT_INITIALIZED, L"PrepareStates() - DX12 Device is not initialized.");
 
-    constexpr SimpleVertex vertices[4] =
-    {
-        { {  0.0f,  1.0f, 0.0f },   { 0.0f, 0.0f } }, // Top left
-        { {  1.0f,  1.0f, 0.0f },   { 1.0f, 0.0f } }, // top right
-        { {  0.0f,  0.0f, 0.0f },   { 0.0f, 1.0f } }, // bottom left
-        { {  1.0f,  0.0f, 0.0f },   { 1.0f, 1.0f } }, // bottom right
-    };
-
     // Create vertex buffer and view
-    AMF_RESULT res = CreateVertexBuffer(m_vertexBuffer, sizeof(SimpleVertex), amf_countof(vertices));
+    AMF_RESULT res = CreateVertexBuffer(m_vertexBuffer, sizeof(Vertex), amf_countof(QUAD_VERTICES_NORM));
     AMF_RETURN_IF_FAILED(res, L"PrepareStates() - CreateVertexBuffers() failed");
     NAME_D3D12_OBJECT(m_vertexBuffer.pBuffer);
     NAME_D3D12_OBJECT(m_vertexBuffer.pUpload);
 
-    res = UpdateBuffer(m_vertexBuffer, vertices, sizeof(vertices));
+    res = UpdateBuffer(m_vertexBuffer, QUAD_VERTICES_NORM, sizeof(QUAD_VERTICES_NORM));
     AMF_RETURN_IF_FAILED(res, L"PrepareStates() - UpdateBufferImmediate() failed to initialize vertex buffer");
 
     // Create the view projection constant buffer
@@ -639,9 +581,12 @@ AMF_RESULT VideoPresenterDX12::UpdateBuffer(ID3D12Resource* pBuffer, ID3D12Resou
     AMF_RETURN_IF_FALSE(pBufferUpload != nullptr, AMF_INVALID_ARG, L"UpdateBuffer() - pBufferUpload is NULL");
     AMF_RETURN_IF_FALSE(pData != nullptr, AMF_INVALID_ARG, L"UpdateBuffer() - pData is NULL");
     AMF_RETURN_IF_FALSE(size > 0, AMF_INVALID_ARG, L"UpdateBuffer() - size is 0");
+    AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_NOT_INITIALIZED, L"UpdateBuffer() - m_pSwapChain is not initialized");
 
     AMF_RETURN_IF_FALSE(m_cmdBuffer.GetList() != nullptr, AMF_NOT_INITIALIZED, L"UpdateBuffer() - Command buffer is not initialized");
-    AMF_RETURN_IF_FALSE(m_swapChain.GetQueue() != nullptr, AMF_NOT_INITIALIZED, L"UpdateBuffer() - Graphics queue is not initialized");
+
+    SwapChainDX12* pSwapChain = (SwapChainDX12*)m_pSwapChain.get();
+    AMF_RETURN_IF_FALSE(pSwapChain->GetQueue() != nullptr, AMF_NOT_INITIALIZED, L"UpdateBuffer() - Graphics queue is not initialized");
 
     UINT8* pMappedBuffer = nullptr;
     CD3DX12_RANGE readRange(0, 0); // We do not intend to read from this resource on the CPU.
@@ -671,7 +616,7 @@ AMF_RESULT VideoPresenterDX12::UpdateBuffer(ID3D12Resource* pBuffer, ID3D12Resou
 
     if (immediate == true)
     {
-        res = m_cmdBuffer.Execute(m_swapChain.GetQueue(), true);
+        res = m_cmdBuffer.Execute(pSwapChain->GetQueue(), true);
         AMF_RETURN_IF_FAILED(res, L"UpdateBuffer() - ExecuteCommandBuffer() after udate failed");
     }
 
@@ -700,90 +645,14 @@ AMF_RESULT VideoPresenterDX12::CreateResourceView(amf::AMFSurface* pSurface, con
     return AMF_OK;
 }
 
-AMFRect VideoPresenterDX12::GetClientRect()
-{
-    // If we have a valid window handle and not in fullscreen mode,
-    // Get the rect from the window
-    if (m_hwnd != nullptr && m_swapChain.FullscreenEnabled() == false)
-    {
-        return BackBufferPresenter::GetClientRect();
-    }
-    
-    const AMFSize size = GetSwapchainSize();
-    return AMFConstructRect(0, 0, size.width, size.height);
-}
-
-AMF_RESULT VideoPresenterDX12::CheckForResize(bool bForce, bool* bResized)
-{
-    AMF_RETURN_IF_FALSE(bResized != nullptr, AMF_INVALID_ARG, L"CheckForResize() - bResized is NULL");
-
-    *bResized = false;
-
-    if (bForce == true)
-    {
-        *bResized = true;
-        m_bResizeSwapChain = true;
-        return AMF_OK;
-    }
-    
-    // Check if we have changed the entered or exited fullscreen
-    if (m_swapChain.FullscreenEnabled() != m_bFullScreen)
-    {
-        *bResized = true;
-        m_bResizeSwapChain = true;
-        return AMF_OK;
-    }
-
-    AMFRect client = GetClientRect();
-    amf_int width = client.Width();
-    amf_int height = client.Height();
-
-    AMFSize swapchainSize = GetSwapchainSize();
-
-    if ((width == swapchainSize.width && height == swapchainSize.height) || width == 0 || height == 0)
-    {
-        return AMF_OK;
-    }
-
-    *bResized = true;
-    m_bResizeSwapChain = true;
-    return AMF_OK;
-}
-
 AMF_RESULT VideoPresenterDX12::ResizeSwapChain()
 {
-    AMFRect clientRect = GetClientRect();
+    AMF_RESULT res = m_cmdBuffer.WaitForExecution();
+    AMF_RETURN_IF_FAILED(res, L"ResizeSwapChain() - Command buffer WaitForExecution() failed");
 
-    m_cmdBuffer.WaitForExecution();
+    res = VideoPresenter::ResizeSwapChain();
+    AMF_RETURN_IF_FAILED(res, L"ResizeSwapChain() - VideoPresenter::ResizeSwapChain() failed");
 
-    AMF_RESULT res = m_swapChain.Resize(clientRect.Width(), clientRect.Height(), m_bFullScreen);
-    AMF_RETURN_IF_FAILED(res, L"ResizeSwapChain() - SwapChainDX12::ResizeSwapChain() failed");
-
-    AMFSize size = GetSwapchainSize();
-
-    // Update viewport
-    m_CurrentViewport.TopLeftX = 0;
-    m_CurrentViewport.TopLeftY = 0;
-    m_CurrentViewport.Width = FLOAT(size.width);
-    m_CurrentViewport.Height = FLOAT(size.height);
-    m_CurrentViewport.MinDepth = 0.0f;
-    m_CurrentViewport.MaxDepth = 1.0f;
-
-    // Update client rect
-    if (m_bFullScreen)
-    {
-        m_rectClient.left = 0;
-        m_rectClient.top = 0;
-        m_rectClient.right = size.width;
-        m_rectClient.bottom = size.height;
-    }
-    else
-    {
-        m_rectClient = GetClientRect();
-    }
-
-    UpdateProcessor();
-    m_bResizeSwapChain = false;
     return AMF_OK;
 }
 
@@ -792,130 +661,14 @@ AMF_RESULT VideoPresenterDX12::OnRenderViewResize(const RenderViewSizeInfo& newR
     AMF_RESULT res = VideoPresenter::OnRenderViewResize(newRenderView);
     AMF_RETURN_IF_FAILED(res, L"OnRenderViewResize() - VideoPresenter::OnRenderViewResize() failed");
 
-    memcpy(&m_viewProjection.vertexTransform, m_fNormalToViewMatrix, sizeof(m_fNormalToViewMatrix));
-    memcpy(&m_viewProjection.texTransform, m_fTextureMatrix, sizeof(m_fTextureMatrix));
-
     res = UpdateBuffer(m_viewProjectionBuffer, &m_viewProjection, sizeof(ViewProjection));
     AMF_RETURN_IF_FAILED(res, L"UpdateVertices() - UpdateBuffer() failed view projection");
-
-    memcpy(&m_pipViewProjection.vertexTransform, m_pipNormalToViewMatrix, sizeof(m_pipNormalToViewMatrix));
-    memcpy(&m_pipViewProjection.texTransform, m_pipTextureMatrix, sizeof(m_pipTextureMatrix));
 
     res = UpdateBuffer(m_pipViewProjectionBuffer, &m_pipViewProjection, sizeof(ViewProjection));
     AMF_RETURN_IF_FAILED(res, L"UpdateVertices() - UpdateBuffer() failed to update pip view projection");
 
     return AMF_OK;
 
-}
-
-AMF_RESULT VideoPresenterDX12::SetInputFormat(amf::AMF_SURFACE_FORMAT format)
-{
-    if (m_swapChain.FormatSupported(format) == false)
-    {
-        return AMF_NOT_SUPPORTED;
-    }
-
-    m_eInputFormat = format;
-    return AMF_OK;
-}
-
-AMF_RESULT VideoPresenterDX12::Flush()
-{
-    return BackBufferPresenter::Flush();
-}
-
-AMF_RESULT AMF_STD_CALL VideoPresenterDX12::AllocSurface(amf::AMF_MEMORY_TYPE /* type */, amf::AMF_SURFACE_FORMAT /* format */,
-    amf_int32 /* width */, amf_int32 /* height */, amf_int32 /* hPitch */, amf_int32 /* vPitch */, amf::AMFSurface** /*ppSurface*/)
-{
-    // DX12 does not support allocating back buffer surfaces
-    // In DX12, the only queue that can render onto the swapchain
-    // backbuffer is the direct graphics queue used to create it.
-    // Because of this, all rendering must be done in the presenter
-    return AMF_NOT_SUPPORTED;
-}
-
-void VideoPresenterDX12::UpdateProcessor()
-{
-    VideoPresenter::UpdateProcessor();
-
-    if (m_pProcessor == nullptr || m_pDX12Device == nullptr)
-    {
-        return;
-    }
-
-    // check and set color space and HDR support
-    SwapChainDX12::ColorSpace colorSpace;
-    AMF_RESULT res = m_swapChain.GetColorSpace(colorSpace);
-    if (res != AMF_OK)
-    {
-        AMFTraceError(AMF_FACILITY, L"UpdateProcessor() - GetColorSpace() failed");
-        return;
-    }
-
-    m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_TRANSFER_CHARACTERISTIC, colorSpace.transfer);
-    m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_COLOR_PRIMARIES, colorSpace.primaries);
-    m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_COLOR_RANGE, colorSpace.range);
-
-
-    AMFHDRMetadata hdrMetaData = {};
-    res = m_swapChain.GetOutputHDRMetaData(hdrMetaData);
-    if (res != AMF_OK)
-    {
-        AMFTraceError(AMF_FACILITY, L"UpdateProcessor() - GetOutputHDRMetaData() failed");
-        return;
-    }
-
-    if (hdrMetaData.maxMasteringLuminance != 0)
-    {
-        amf::AMFBufferPtr pHDRMetaDataBuffer;
-        res = m_pContext->AllocBuffer(amf::AMF_MEMORY_HOST, sizeof(AMFHDRMetadata), &pHDRMetaDataBuffer);
-        if (res != AMF_OK)
-        {
-            AMFTraceError(AMF_FACILITY, L"UpdateProcessor() - AllocBuffer() failed to allocate HDR metadata buffer");
-            return;
-        }
-
-        AMFHDRMetadata* pData = (AMFHDRMetadata*)pHDRMetaDataBuffer->GetNative();
-        memcpy(pData, &hdrMetaData, sizeof(AMFHDRMetadata));
-
-        m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_HDR_METADATA, pHDRMetaDataBuffer);
-    }
-}
-
-AMF_RESULT VideoPresenterDX12::ApplyCSC(amf::AMFSurface* pSurface)
-{
-#ifdef USE_COLOR_TWITCH_IN_DISPLAY
-    AMF_RETURN_IF_FALSE(pSurface != nullptr, AMF_INVALID_ARG, L"ApplyCSC() - pSurface is NULL");
-
-    if(m_bFirstFrame == false)
-    {
-        return AMF_OK;
-    }
-
-    amf::AMFVariant varBuf;
-    AMF_RESULT res = pSurface->GetProperty(AMF_VIDEO_DECODER_HDR_METADATA, &varBuf);
-    if (res != AMF_OK || varBuf.type != AMF_VARIANT_INTERFACE)
-    {
-        return AMF_OK;
-    }
-    
-    amf::AMFBufferPtr pBuffer(varBuf.pInterface);
-    if (pBuffer == nullptr)
-    {
-        return AMF_OK;
-    }
-    
-    AMFHDRMetadata* pHDRData = (AMFHDRMetadata*)pBuffer->GetNative();
-    
-    res = m_swapChain.SetHDRMetaData(pHDRData);
-    if (res == AMF_NOT_SUPPORTED)
-    {
-        return AMF_OK;
-    }
-    AMF_RETURN_IF_FAILED(res, L"ApplyCSC() - SetHDRMetaData() failed");
-
-#endif
-    return AMF_OK;
 }
 
 

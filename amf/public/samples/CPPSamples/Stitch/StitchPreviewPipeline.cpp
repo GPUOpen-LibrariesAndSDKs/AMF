@@ -30,7 +30,7 @@
 // THE SOFTWARE.
 //
 #include "StitchPreviewPipeline.h"
-#include "public/samples/CPPSamples/common/BackBufferPresenter.h"
+#include "public/samples/CPPSamples/common/VideoPresenter.h"
 #define _USE_MATH_DEFINES
 #include "math.h"
 #include "public/samples/CPPSamples/common/AudioPresenterWin.h"
@@ -93,11 +93,9 @@ StitchPreviewPipeline::InitContext(amf::AMF_MEMORY_TYPE type)
 AMF_RESULT
 StitchPreviewPipeline::CreateVideoPresenter(amf::AMF_MEMORY_TYPE type, amf_int32 /*compositedWidth*/, amf_int32 /*compositedHeight*/)
 {
-    BackBufferPresenterPtr pBackBufferPresenter;
-    AMF_RESULT res = BackBufferPresenter::Create(pBackBufferPresenter, type, m_hwnd, m_pContext);
-    m_pVideoPresenter = pBackBufferPresenter;
-    return res;
+    return VideoPresenter::Create(m_pVideoPresenter, type, m_hwnd, m_pContext);
 }
+
 void StitchPreviewPipeline::MouseShift(int x1,int y1, int x2, int y2)
 {
     if(m_pStitch == NULL)

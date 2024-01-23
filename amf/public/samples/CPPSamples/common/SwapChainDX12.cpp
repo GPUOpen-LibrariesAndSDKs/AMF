@@ -102,13 +102,15 @@ AMF_RESULT SwapChainDX12::Terminate()
     m_pDXGIFactory4 = nullptr;
     m_descriptorHeapPool.Terminate();
 
+    m_cmdBuffer.Terminate();
+
     return SwapChainDXGI::Terminate();
 }
 
 AMF_RESULT SwapChainDX12::GetDXGIInterface(amf_bool reinit)
 {
     // If we have the adapter, everything is already initialized
-    if (m_pDXGIAdapter != nullptr && reinit == false)
+    if (m_pDXGIFactory4 != nullptr && reinit == false)
     {
         return AMF_OK;
     }
@@ -117,7 +119,6 @@ AMF_RESULT SwapChainDX12::GetDXGIInterface(amf_bool reinit)
     m_pDXGIFactory4 = nullptr;
     m_pDXGIFactory2 = nullptr;
     m_pDXGIFactory = nullptr;
-    m_pDXGIAdapter = nullptr;
 
     m_pDX12Device = (ID3D12Device*)m_pContext2->GetDX12Device();
     AMF_RETURN_IF_INVALID_POINTER(m_pDX12Device, L"GetDXGIInterface() - GetDeviceDX12() returned NULL");
@@ -134,13 +135,23 @@ AMF_RESULT SwapChainDX12::GetDXGIInterface(amf_bool reinit)
     m_pDXGIFactory2 = m_pDXGIFactory4;
     m_pDXGIFactory = m_pDXGIFactory4;
 
-    /// TEST if adapter could be found using orginal device LUID.
-    LUID deviceUID = m_pDX12Device->GetAdapterLuid();
-    AMF_RETURN_IF_FALSE(deviceUID.HighPart != 0 || deviceUID.LowPart != 0, AMF_FAIL, L"GetDXGIInterface() - failed to retrieve the LUID from dx12 device.");
+    AMF_RESULT res = GetDXGIAdapters();
+    AMF_RETURN_IF_FAILED(res, L"GetDXGIInterface() - GetDXGIAdapters() failed");
 
-    hr = m_pDXGIFactory4->EnumAdapterByLuid(deviceUID, IID_PPV_ARGS(&m_pDXGIAdapter));
-    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"GetDXGIInterface() - failed to retrieve a matching dxgi adapter from a dxgi factory using LUID.");
+    return AMF_OK;
+}
 
+AMF_RESULT SwapChainDX12::GetDXGIDeviceAdapter(IDXGIAdapter** ppDXGIAdapter)
+{
+    if (m_pDXGIDevice != nullptr)
+    {
+        m_pDXGIDevice->GetAdapter( ppDXGIAdapter );
+    }
+    else if(m_pDXGIFactory4 != nullptr)
+    {
+        LUID luid = m_pDX12Device->GetAdapterLuid();
+        m_pDXGIFactory4->EnumAdapterByLuid(luid, __uuidof(IDXGIAdapter), (void **)ppDXGIAdapter);
+    }
     return AMF_OK;
 }
 
@@ -460,7 +471,7 @@ AMF_RESULT DescriptorHeapPoolDX12::RegisterDescriptors(D3D12_DESCRIPTOR_HEAP_TYP
     return AMF_OK;
 }
 
-AMF_RESULT DescriptorHeapPoolDX12::SetHeapDescriptorFlags(D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags, bool replace)
+AMF_RESULT DescriptorHeapPoolDX12::SetHeapDescriptorFlags(D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags, amf_bool replace)
 {
     AMF_RETURN_IF_FALSE(m_pDevice != nullptr, AMF_NOT_INITIALIZED, L"SetHeapDescriptorFlags() - Device is not initialized");
     AMF_RETURN_IF_FALSE(type >= 0 && type < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES, AMF_INVALID_ARG, L"RegisterHeapDescriptor() - unsupported heap type %d", type);
@@ -705,6 +716,8 @@ AMF_RESULT CommandBufferDX12::Terminate()
 
 AMF_RESULT CommandBufferDX12::CreateCommandBuffer(D3D12_COMMAND_LIST_TYPE type, amf_uint allocatorCount, const wchar_t* debugName)
 {
+    AMF_RETURN_IF_FALSE(m_pCmdList == nullptr, AMF_ALREADY_INITIALIZED, L"CreateCommandBuffer() - m_pCmdList was already initialized");
+
     amf_wstring allocatorName = debugName;
     allocatorName.append(L":CmdAllocator");
 

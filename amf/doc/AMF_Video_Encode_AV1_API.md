@@ -38,12 +38,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ### Contents
 
-1. [Introduction](#1-introduction)
-   - [1.1 Scope](#11-scope)
-   - [1.2 Pre-defined Encoder Usages](#12-pre-defined-encoder-usages)
-2. [AMF Video Encoder VCN-AV1 Component](#2-amf-video-encoder-vcn-av1-component)
-   - [2.1 Input Submission and Output Retrieval](#21-input-submission-and-output-retrieval)
-   - [2.2 Encode Parameters](#22-encode-parameters)
+- [Advanced Media Framework – AV1 Video Encoder](#advanced-media-framework--av1-video-encoder)
+      - [Programming Guide](#programming-guide)
+    - [Disclaimer](#disclaimer)
+    - [Copyright Notice](#copyright-notice)
+    - [MIT license](#mit-license)
+    - [Contents](#contents)
+  - [1 Introduction](#1-introduction)
+    - [1.1 Scope](#11-scope)
+    - [1.2 Pre-defined Encoder Usages](#12-pre-defined-encoder-usages)
+  - [2 AMF Video Encoder VCN-AV1 Component](#2-amf-video-encoder-vcn-av1-component)
+    - [2.1 Input Submission and Output Retrieval](#21-input-submission-and-output-retrieval)
+    - [2.2 Encode Parameters](#22-encode-parameters)
       - [2.2.1 Static Properties](#221-static-properties)
       - [2.2.2 Dynamic Properties](#222-dynamic-properties)
       - [2.2.3 Frame Per-Submission Properties](#223-frame-per-submission-properties)
@@ -52,17 +58,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
       - [2.2.6 SVC Properties](#226-svc-properties)
       - [2.2.7 LTR Properties](#227-ltr-properties)
       - [2.2.8 SmartAccess Video](#228-smartaccess-video)
-3. [Sample Applications](#3-sample-applications)
-   - [3.1 List of Parameters](#31-list-of-parameters)
-   - [3.2 Command line example](#32-command-line-example)
-      - [3.2.1 Transcoding application (TranscodeHW.exe)](#321-transcoding-application-transcodinghwexe)
+  - [3 Sample Applications](#3-sample-applications)
+    - [3.1 List of Parameters](#31-list-of-parameters)
+    - [3.2 Command line example](#32-command-line-example)
+      - [3.2.1 Transcoding application (TranscodeHW.exe)](#321-transcoding-application-transcodehwexe)
       - [3.2.2 D3D application (VCEEncoderD3D.exe)](#322-d3d-application-vceencoderd3dexe)
-4. [Annex A: Encoding & frame parameters description](#4-annex-a-encoding--frame-parameters-description)
-   - [Table A-1. Encoder parameters](#table-a-1-encoder-parameters)
-   - [Table A-2. Input frame and encoded data parameters](#table-a-2-input-frame-and-encoded-data-parameters)
-   - [Table A-3. Encoder capabilities exposed in AMFCaps interface](#table-a-3-encoder-capabilities-exposed-in-amfcaps-interface)
-   - [Table A-4. Encoder statistics feedback](#table-a-4-encoder-statistics-feedback)
-   - [Table A-5. Encoder PSNR/SSIM feedback](#table-a-5-encoder-psnrssim-feedback)
+  - [4 Annex A: Encoding \& frame parameters description](#4-annex-a-encoding--frame-parameters-description)
+    - [Table A-1. Encoder parameters](#table-a-1-encoder-parameters)
+    - [Table A-2. Input frame and encoded data parameters](#table-a-2-input-frame-and-encoded-data-parameters)
+    - [Table A-3. Encoder capabilities exposed in AMFCaps interface](#table-a-3-encoder-capabilities-exposed-in-amfcaps-interface)
+    - [Table A-4. Encoder statistics feedback](#table-a-4-encoder-statistics-feedback)
+    - [Table A-5. Encoder PSNR/SSIM feedback](#table-a-5-encoder-psnrssim-feedback)
 
 ## 1 Introduction
 
@@ -566,7 +572,7 @@ Render frame rate.
 
 ### 3.2 Command line example
 
-#### 3.2.1 Transcoding application (TranscodingHW.exe)
+#### 3.2.1 Transcoding application (TranscodeHW.exe)
 
 `TranscodeHW.exe -input input.h264 -output out.mp4 –codec AV1 -width 1280 -height 720 -Av1Usage transcoding -AV1RateControlMethod cbr -AV1TargetBitrate 100000`
 
@@ -1318,8 +1324,9 @@ Valid only when intra refresh is enabled.
 | :------------------------------------- | :-------- |
 | QUALITY_PRESET                         | amf_int64 |
 | QUERY_TIMEOUT                          | amf_int64 |
+| INPUT_QUEUE_SIZE                       | amf_int64 |
 | EXTRA_DATA                             | AMFBufferPtr |
-| OUTPUT_MODE                             | amf_int64 |
+| OUTPUT_MODE                            | amf_int64 |
 
 <p align="center">
 Table 8. Encoder miscellaneous parameters
@@ -1362,6 +1369,20 @@ Selects the quality preset in HW to balance between encoding speed and video qua
 
 **Description:**
 Timeout for QueryOutput call in ms.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_AV1_INPUT_QUEUE_SIZE`
+
+**Values:**
+`1` … `32`
+
+**Default Value:**
+`16`
+
+**Description:**
+Set encoder input queue size. For high-resolution sequence, recommend to set a smaller value to save storage. For low-resolution sequence, recommend to set a larger value to improve encoding speed.
 
 ---
 

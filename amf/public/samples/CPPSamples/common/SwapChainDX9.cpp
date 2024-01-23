@@ -45,8 +45,7 @@ SwapChainDX9::SwapChainDX9(AMFContext* pContext) :
     SwapChain(pContext),
     m_d3dFormat(D3DFMT_UNKNOWN),
     m_nextBufferNum(0),
-    m_currentOutput(-1),
-    m_fullscreenContext{}
+    m_currentOutput(-1)
 {
     for (amf_uint i = 0; i < amf_countof(m_pBackBuffers); ++i)
     {
@@ -60,7 +59,7 @@ SwapChainDX9::~SwapChainDX9()
     Terminate();
 }
 
-AMF_RESULT SwapChainDX9::Init(amf_handle hwnd, amf_handle hDisplay, AMFSurface* /*pSurface*/, amf_int32 width, amf_int32 height, AMF_SURFACE_FORMAT format, amf_bool fullscreen, amf_bool hdr, amf_bool stereo)
+AMF_RESULT SwapChainDX9::Init(amf_handle hwnd, amf_handle hDisplay, AMFSurface* /*pSurface*/, amf_int32 width, amf_int32 height, AMF_SURFACE_FORMAT format, amf_bool /*fullscreen*/, amf_bool hdr, amf_bool stereo)
 {
     AMF_RETURN_IF_FALSE(hwnd != nullptr, AMF_INVALID_ARG, L"Init() - hwnd is NULL");
 
@@ -78,9 +77,6 @@ AMF_RESULT SwapChainDX9::Init(amf_handle hwnd, amf_handle hDisplay, AMFSurface* 
     AMF_RESULT res = CreateSwapChain(width, height, format, stereo);
     AMF_RETURN_IF_FAILED(res, L"Init() - CreatSwapChain() failed");
 
-    res = SetFullscreenState(fullscreen);
-    AMF_RETURN_IF_FAILED(res, L"Init() - SetFullscreenState() failed");
-
     res = EnableHDR(hdr);
     AMF_RETURN_IF_FAILED(res, L"Init() - EnableHDR() failed");
 
@@ -94,12 +90,6 @@ AMF_RESULT SwapChainDX9::Terminate()
 
     m_outputs.clear();
     m_currentOutput = -1;
-
-    if (m_hwnd != nullptr)
-    {
-        SetFullscreenState(false);
-    }
-    m_fullscreenContext = {};
 
     TerminateSwapChain();
     return SwapChain::Terminate();
@@ -156,6 +146,11 @@ AMF_RESULT SwapChainDX9::CreateSwapChain(amf_int32 width, amf_int32 height, AMF_
 
 AMF_RESULT SwapChainDX9::TerminateSwapChain()
 {
+    if (m_pSwapChain != nullptr)
+    {
+        SetExclusiveFullscreenState(false);
+    }
+
     // release old swap chin
     m_pSwapChain = nullptr;
 
@@ -169,7 +164,7 @@ AMF_RESULT SwapChainDX9::TerminateSwapChain()
     return AMF_OK;
 }
 
-AMF_RESULT SwapChainDX9::Resize(amf_int32 width, amf_int32 height, amf_bool fullscreen, AMF_SURFACE_FORMAT format)
+AMF_RESULT SwapChainDX9::Resize(amf_int32 width, amf_int32 height, amf_bool /*fullscreen*/, AMF_SURFACE_FORMAT format)
 {
     if (format != AMF_SURFACE_UNKNOWN)
     {
@@ -179,9 +174,6 @@ AMF_RESULT SwapChainDX9::Resize(amf_int32 width, amf_int32 height, amf_bool full
 
     AMF_RESULT res = TerminateSwapChain();
     AMF_RETURN_IF_FAILED(res, L"Resize() - TerminateSwapChain() failed");
-
-    res = SetFullscreenState(fullscreen);
-    AMF_RETURN_IF_FAILED(res, L"Resize() - SetFullScreenState() failed");
 
     res = CreateSwapChain(width, height, format, m_stereoEnabled);
     AMF_RETURN_IF_FAILED(res, L"Resize() - CreatePresentationSwapChain() failed");
@@ -236,8 +228,8 @@ AMF_RESULT SwapChainDX9::Present(amf_bool waitForVSync)
 
 AMF_RESULT SwapChainDX9::Present(DWORD presentFlags)
 {
-    bool success = false;
-    for (int i = 0; i < PRESENT_TIMEOUT_COUNTER; i++)
+    amf_bool success = false;
+    for (amf_int i = 0; i < PRESENT_TIMEOUT_COUNTER; i++)
     {
         HRESULT hr = m_pSwapChain->Present(nullptr, nullptr, nullptr, nullptr, presentFlags);
         if (SUCCEEDED(hr))
@@ -334,18 +326,6 @@ D3DFORMAT SwapChainDX9::GetSupportedD3DFormat(AMF_SURFACE_FORMAT format) const
     return D3DFMT_UNKNOWN;
 }
 
-AMF_RESULT SwapChainDX9::SetFullscreenState(amf_bool fullscreen)
-{
-    // Fullscreen on DX9 only works if swapchain and device were both
-    // created with fullscreen settings so instead, fullscreen is set
-    // manually by controlling window position and size.
-
-    AMF_RESULT  res = SetWindowFullscreenState(m_hwnd, m_hDisplay, fullscreen, m_fullscreenContext);
-    AMF_RETURN_IF_FAILED(res, L"SetFullscreenState() - SetWindowFullscreenState() failed");
-    m_fullscreenEnabled = m_fullscreenContext.fullscreenState;
-    return AMF_OK;
-}
-
 AMF_RESULT SwapChainDX9::UpdateOutputs()
 {
     AMF_RETURN_IF_FALSE(m_pD3D9 != nullptr, AMF_NOT_INITIALIZED, L"UpdateOutputs() - m_pD3D9 is not initialized");
@@ -364,7 +344,7 @@ AMF_RESULT SwapChainDX9::UpdateOutputs()
         //    continue;
         //}
 
-        uint64_t biggestArea = 0; // Use biggest area to determine "fullscreen mode"
+        amf_uint64 biggestArea = 0; // Use biggest area to determine "fullscreen mode"
         for (D3DFORMAT format : formats)
         {
             HMONITOR hMonitor = m_pD3D9->GetAdapterMonitor(adapter);
@@ -378,7 +358,7 @@ AMF_RESULT SwapChainDX9::UpdateOutputs()
             output.hMonitor = hMonitor;
 
             UINT modeCount = m_pD3D9->GetAdapterModeCount(adapter, format);
-            int fullscreenModeIndex = -1;
+            amf_int fullscreenModeIndex = -1;
             for (UINT m = 0; m < modeCount; ++m)
             {
                 D3DDISPLAYMODE mode;
@@ -389,7 +369,7 @@ AMF_RESULT SwapChainDX9::UpdateOutputs()
                 }
                 output.modes.push_back(mode);
 
-                uint64_t area = mode.Width * mode.Height;
+                amf_uint64 area = mode.Width * mode.Height;
                 if (area > biggestArea)
                 {
                     biggestArea = area;

@@ -209,7 +209,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_ADAPTERID, kDefaultGPUIdx);
     s_pPipeline->SetParamAsString(DisplayDvrPipeline::PARAM_NAME_MONITORID, L"0");
 
-    wchar_t *component = L"AMD";
+    const wchar_t *component = L"AMD";
     s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_CAPTURE_COMPONENT, component);
 
 #if defined(_WIN32)

@@ -513,9 +513,9 @@ AMF_RESULT ParamConverterRate(const std::wstring& value, amf::AMFVariant& valueO
     amf::AMFVariant valueIn(value.c_str());
 
     AMFVariantChangeType(&valueOut, &valueIn, amf::AMF_VARIANT_RATE);
-    if (valueIn.rateValue.den == 0)
+    if (valueOut.rateValue.den == 0)
     {
-        valueIn.rateValue.den = 1;
+        valueOut.rateValue.den = 1;
     }
 
     return AMF_OK;
