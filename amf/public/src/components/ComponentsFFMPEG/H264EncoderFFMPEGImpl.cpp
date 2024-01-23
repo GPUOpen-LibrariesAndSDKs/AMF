@@ -273,7 +273,7 @@ AMF_RESULT AMF_STD_CALL H264EncoderFFMPEGImpl::SetEncoderOptions(void)
 {
     char  errBuffer[AV_ERROR_MAX_STRING_SIZE] = { 0 };
     amf_int64  preset = 0;
-    amf_int64 ret = 0;
+    amf_int    ret = 0;
 
     AMF_RETURN_IF_FAILED(GetProperty(AMF_VIDEO_ENCODER_QUALITY_PRESET, &preset));
     //h264 quiality ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo

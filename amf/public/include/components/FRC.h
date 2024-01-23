@@ -64,12 +64,25 @@ enum AMF_FRC_SNAPSHOT_MODE_TYPE {
     TOTAL_FRC_SNAPSHOT_MODES
 };
 
+enum AMF_FRC_PROFILE {
+    FRC_PROFILE_LOW = 0,
+    FRC_PROFILE_HIGH = 1,
+    FRC_PROFILE_SUPER = 2,
+    TOTAL_FRC_PROFILES
+};
+
+enum AMF_FRC_MV_SEARCH_MODE {
+    FRC_MV_SEARCH_NATIVE = 0,
+    FRC_MV_SEARCH_PERFORMANCE = 1,
+    TOTAL_FRC_MV_SEARCH_MODES
+};
+
 #define AMF_FRC_ENGINE_TYPE        L"FRCEngineType"           // AMF_MEMORY_TYPE (DX12, OPENCL, default : DX12)" - determines how the object is initialized and what kernels to use
 #define AMF_FRC_OUTPUT_SIZE        L"FRCSOutputSize"          // AMFSize - output scaling width/hieight
-#define AMF_FRC_KEEP_ASPECT_RATIO  L"KeepAspectRatio"         // bool (default=false) Keep aspect ratio if scaling.
-#define AMF_FRC_FROM_SRGB          L"FromSRGB"                // bool (default=true) Convert to SRGB.
 #define AMF_FRC_MODE               L"FRCMode"                 // FRC mode (0-off, 1-on (call at x2 source FPS), 2-only interpolated, 3-x2 Present)
 #define AMF_FRC_ENABLE_FALLBACK	   L"FRCEnableFallback"		  // FRC enable fallback mode
 #define AMF_FRC_INDICATOR          L"FRCIndicator"            // bool (default : false)
+#define AMF_FRC_PROFILE		       L"FRCProfile"		      // FRC profile
+#define AMF_FRC_MV_SEARCH_MODE     L"FRCMVSEARCHMODE"         // FRC MV search mode
 
 #endif //#ifndef AMFFRC_h

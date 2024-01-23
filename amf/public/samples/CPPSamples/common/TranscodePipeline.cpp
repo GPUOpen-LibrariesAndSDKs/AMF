@@ -789,7 +789,7 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
         PipelineElementPtr pConverterElement = PipelineElementPtr(new AMFComponentElement(m_pConverter));
 
         CHECK_AMF_ERROR_RETURN(
-            BackBufferPresenter::Create(m_pPresenter, engineMemoryType, previewTarget, m_pContext),
+            VideoPresenter::Create(m_pPresenter, engineMemoryType, previewTarget, m_pContext),
             "Failed to create a video presenter"
         );
 
@@ -1287,7 +1287,7 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamRe
     {
         // Init Presenter
         CHECK_AMF_ERROR_RETURN(
-            BackBufferPresenter::Create(m_pPresenter, presenterEngine, hwnd, m_pContext, display),
+            VideoPresenter::Create(m_pPresenter, presenterEngine, hwnd, m_pContext, display),
             "Failed to create a video presenter"
         );
 

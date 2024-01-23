@@ -34,42 +34,95 @@
 #include "public/include/components/HQScaler.h"
 #include "public/common/TraceAdapter.h"
 
+#ifdef _WIN32
+#include "VideoPresenterDX9.h"
+#include "VideoPresenterDX11.h"
+#include "VideoPresenterDX12.h"
+#endif
+
+// VideoPresenterOpenGL has not been implemented for Android
+#if !defined(__ANDROID__)
+#include "VideoPresenterOpenGL.h"
+#endif
+
+#if !defined(DISABLE_VULKAN)
+#include "VideoPresenterVulkan.h"
+#endif
+
 using namespace amf;
+
+//#define USE_COLOR_TWITCH_IN_DISPLAY
 
 #define AMF_FACILITY L"VideoPresenter"
 
-#define WAIT_THRESHOLD 5 * AMF_SECOND / 1000LL // 5 ms
+#define WAIT_THRESHOLD          (5   * AMF_MILLISECOND) // 5 ms
 
-#define DROP_THRESHOLD 10 * AMF_SECOND / 1000LL // 10 ms
+#define DROP_THRESHOLD          (10  * AMF_MILLISECOND) // 10 ms
 
-VideoPresenter::VideoPresenter() :
+#define RESIZE_CHECK_TIME       (2   * AMF_MILLISECOND) // 2 ms
+
+#define RESIZE_CHECK_THRESHOLD  (4   * AMF_MILLISECOND) // 4 ms
+
+// if elapsed pts/local time difference more than this, then resync
+#define RESYNC_THRESHOLD        (100  * AMF_MILLISECOND) // 100 ms
+
+const VideoPresenter::Vertex VideoPresenter::QUAD_VERTICES_NORM[4]
+{
+    { {  0.0f,  1.0f, 0.0f },   { 0.0f, 0.0f } }, // Top left
+    { {  1.0f,  1.0f, 0.0f },   { 1.0f, 0.0f } }, // top right
+    { {  0.0f,  0.0f, 0.0f },   { 0.0f, 1.0f } }, // bottom left
+    { {  1.0f,  0.0f, 0.0f },   { 1.0f, 1.0f } }, // bottom right
+};
+
+const VideoPresenter::Interpolation VideoPresenter::PIP_INTERPOLATION = VideoPresenter::InterpolationPoint;
+
+VideoPresenter::VideoPresenter(amf_handle hwnd, AMFContext* pContext, amf_handle hDisplay) :
+    m_pContext(pContext),
+    m_hwnd(hwnd),
+    m_hDisplay(hDisplay),
+
+    m_inputFormat(AMF_SURFACE_UNKNOWN),
+    m_inputFrameSize{},
+    m_subresourceIndex(0),
+
+    m_state(ModePlaying),
+    m_pAVSync(nullptr),
+    m_doWait(true),
     m_startTime(-1LL),
     m_startPts(-1LL),
-    m_state(ModePlaying),
-    m_iFrameCount(0),
-    m_FpsStatStartTime(0),
-    m_iFramesDropped(0),
-    m_dLastFPS(0),
-    m_instance(0),
-    m_pProcessor(NULL),
-    m_pHQScaler(NULL),
-    m_currentTime(0),
-    m_bDoWait(true),
-    m_pAVSync(NULL),
-    m_iSubresourceIndex(0),
-    m_sourceVertexRect(AMFConstructRect(0, 0, 0, 0)),
-    m_destVertexRect(AMFConstructRect(0, 0, 0, 0)),
-    m_InputFrameSize(AMFConstructSize(0, 0)),
     m_ptsDropThreshold(DROP_THRESHOLD),
-    m_bFullScreen(false),
-	m_bWaitForVSync(false),
-    m_viewScale(1.0f),
+    m_pLastFrame(nullptr),
+
+    m_currentTime(0),
+    m_frameCount(0),
+    m_fpsStatStartTime(0),
+    m_lastFPS(0),
+    m_framesDropped(0),
+    m_firstFrame(true),
+
+    m_fullscreen(false),
+    m_exclusiveFullscreen(false),
+    m_fullscreenContext{},
+    m_waitForVSync(false),
+    m_resizeSwapChain(false),
+
+    m_pProcessor(nullptr),
+    m_pHQScaler(nullptr),
+    m_renderToBackBuffer(false),
+
     m_viewOffsetX(0),
     m_viewOffsetY(0),
+    m_viewScale(1.0f),
+    m_orientation(0),
+
+    m_interpolation(InterpolationLinear),
+
     m_enablePIP(false),
     m_pipZoomFactor(4),
-    m_pipFocusPos({ 0.45f, 0.45f }),
+    m_pipFocusPos{ 0.45f, 0.45f },
 
+    m_viewProjection{},
+    m_pipViewProjection{},
     m_srcToClientTransform{},
     m_srcToViewTransform{},
     m_normToViewTransform{},
@@ -77,53 +130,149 @@ VideoPresenter::VideoPresenter() :
     m_texNormToViewTransform{},
     m_pipVertexTransform{},
     m_pipTexTransform{},
-    m_renderView{}
+    m_renderView{},
+    m_resizing{}
 {
     amf_increase_timer_precision();
 }
+
 VideoPresenter::~VideoPresenter()
 {
+    Terminate();
 }
 
-AMF_RESULT VideoPresenter::Reset()
+AMF_RESULT VideoPresenter::Create(VideoPresenterPtr& pPresenter, AMF_MEMORY_TYPE type, amf_handle hwnd, AMFContext* pContext, amf_handle hDisplay)
 {
-    m_iFrameCount = 0;
-    m_FpsStatStartTime = 0;
-    m_iFramesDropped = 0;
-    m_startTime = -1LL;
-    m_startPts = -1LL;
+    switch (type)
+    {
+#ifdef _WIN32
+    case AMF_MEMORY_DX9:
+        pPresenter = std::make_shared<VideoPresenterDX9>(hwnd, pContext);
+        return AMF_OK;
+    case AMF_MEMORY_DX11:
+        pPresenter = std::make_shared<VideoPresenterDX11>(hwnd, pContext);
+        return AMF_OK;
+    case AMF_MEMORY_DX12:
+        pPresenter = std::make_shared<VideoPresenterDX12>(hwnd, pContext);
+        return AMF_OK;
+#endif
+    case AMF_MEMORY_OPENGL:
+#if defined(__ANDROID__)
+        AMFTraceError(AMF_FACILITY, L"VideoPresenterOpenGL has not been implemented for Android");
+        return AMF_NOT_SUPPORTED;
+#else
+        pPresenter = std::make_shared<VideoPresenterOpenGL>(hwnd, pContext);
+        return AMF_OK;
+#endif
+    case AMF_MEMORY_VULKAN:
+#if defined(DISABLE_VULKAN)
+#ifdef _WIN32
+        pContext->InitDX11(NULL);
+        pPresenter = std::make_shared<VideoPresenterDX11>(hwnd, pContext);
+#endif
+        UNREFERENCED_PARAMETER(hDisplay);
+#else
+        pPresenter = std::make_shared<VideoPresenterVulkan>(hwnd, pContext, hDisplay);
+#endif
+        return AMF_OK;
+    default:
+        return AMF_NOT_SUPPORTED;
+    }
+}
 
+AMF_RESULT VideoPresenter::SetInputFormat(AMF_SURFACE_FORMAT format)
+{
+    AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_NOT_INITIALIZED, L"SetInputFormat() - SwapChain is not initialized");
+
+    AMFLock lock(&m_cs);
+
+    if (m_pSwapChain->FormatSupported(format) == false)
+    {
+        return AMF_NOT_SUPPORTED;
+    }
+
+    m_inputFormat = format;
     return AMF_OK;
 }
-AMF_RESULT VideoPresenter::Init(amf_int32 width, amf_int32 height, amf::AMFSurface* /*pSurface*/)
+
+AMF_RESULT VideoPresenter::Init(amf_int32 width, amf_int32 height, AMFSurface* /*pSurface*/)
 {
-    m_iFrameCount = 0;
-    m_FpsStatStartTime = 0;
-    m_iFramesDropped = 0;
-    m_InputFrameSize.width = width;
-    m_InputFrameSize.height = height;
+    AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_NOT_INITIALIZED, L"Init() - m_pSwapChain not initialized");
+
+    AMFLock lock(&m_cs);
+    
+    Reset();
+
+    m_inputFrameSize.width = width;
+    m_inputFrameSize.height = height;
+    m_firstFrame = true;
+
+    if (m_inputFormat == AMF_SURFACE_UNKNOWN)
+    {
+        SetInputFormat(m_pSwapChain->GetFormat());
+    }
+    //ResizeIfNeeded(); //DX9 will crash if trying to resize here
+
     return AMF_OK;
 }
 
 AMF_RESULT VideoPresenter::Terminate()
 {
+    AMFLock lock(&m_cs);
+
+    Reset();
     SetProcessor(NULL, NULL);
+    if (m_pSwapChain != nullptr)
+    {
+        m_pSwapChain->Terminate();
+    }
+    m_fullscreenContext = {};
+    m_renderView = {};
+
     return AMF_OK;
 }
 
-AMF_RESULT VideoPresenter::SubmitInput(amf::AMFData* pData)
+AMF_RESULT VideoPresenter::Reset()
 {
+    AMFLock lock(&m_cs);
+
+    // Waiting
+    m_startTime = -1LL;
+    m_startPts = -1LL;
+
+    // Playback
+    m_state = ModePlaying;
+    m_currentTime = 0;
+
+    // Stats
+    m_frameCount = 0;
+    m_framesDropped = 0;
+    m_fpsStatStartTime = 0;
+    m_lastFPS = 0;
+
+    // Presenter variables
+    m_firstFrame = false;
+    m_pTrackSurfaces.clear();
+    m_pLastFrame = nullptr;
+    m_resizeSwapChain = false;
+
+    return AMF_OK;
+}
+
+AMF_RESULT VideoPresenter::SubmitInput(AMFData* pData)
+{
+    AMFLock lock(&m_cs);
     if(m_bFrozen)
     {
         return AMF_OK;
     }
 
-    if(pData)
+    if(pData != nullptr)
     {
         m_currentTime = pData->GetPts();
         if(m_pAVSync != NULL)
         {
-             //AMFTraceWarning(AMF_FACILITY, L"First PTS=%5.2f", (double)pData->GetPts() / 10000);
+             //AMFTraceWarning(AMF_FACILITY, L"First PTS=%5.2f", (amf_double)pData->GetPts() / 10000);
             if (m_pAVSync->IsVideoStarted() == false)
             {
                 m_pAVSync->VideoStarted();
@@ -131,25 +280,371 @@ AMF_RESULT VideoPresenter::SubmitInput(amf::AMFData* pData)
             m_pAVSync->SetVideoPts(pData->GetPts());
         }
 
+        m_frameCount++;
+        
+        AMFSurfacePtr pSurface(pData);
+        lock.Unlock();
+        const bool keep = WaitForPTS(pSurface->GetPts());
+        lock.Lock();
+        if (keep == false)
+        {
+            m_framesDropped++;
+            return AMF_OK;
+        }
+
+        AMF_RESULT res = AMF_OK;
         switch(m_state)
         {
         case ModeStep:
             m_state = ModePaused;
-            return Present(amf::AMFSurfacePtr(pData));
+            res = Present(pSurface);
+            break;
         case ModePlaying:
-            return Present(amf::AMFSurfacePtr(pData));
+            res = Present(pSurface);
+            break;
         case ModePaused:
             return AMF_INPUT_FULL;
+        default:
+            return AMF_WRONG_STATE;
         }
-        return AMF_WRONG_STATE;
+
+        m_firstFrame = false;
+        //m_pLastFrame = pSurface; // Todo: What if the surface is used elsewhere?
+        //amf_sleep(1);
+        return res;
     }
+    return AMF_OK;
+}
+
+amf_bool VideoPresenter::WaitForPTS(amf_pts pts, amf_bool realWait)
+{
+    amf_bool ret = true;
+    if (m_state == ModeStep || m_state == ModePaused)
+    {
+        return ret;
+    }
+
+    // diff is difference between elapsed pts and elapsed amf_high_precision_clock
+    // if elapsed > local (positive diff), then pts is in the 'future'
+    // if local > elapsed (negative diff), then pts is in the 'past'
+    amf_pts diff = -RESYNC_THRESHOLD;
+    if (m_startTime != -1LL && pts > 0 && pts >= m_startPts)
+    {
+        diff = CalculatePtsWaitDiff(pts);
+        if (diff >= RESYNC_THRESHOLD || diff < 0)
+        {
+            AMFTraceDebug(AMF_FACILITY, L"Resync #%d pts=%5.2f ms diff=%5.2f ms", (int)m_frameCount, (amf_double)pts / AMF_MILLISECOND, (amf_double)diff / AMF_MILLISECOND);
+            if (diff < -m_ptsDropThreshold) // ignore lags < 10 ms
+            {
+                //                AMFTraceWarning(AMF_FACILITY, L"+++ Drop Frame #%d pts=%5.2f time=%5.2f diff=%5.2f %s", (int)m_frameCount, (amf_double)pts / 10000., (amf_double)currTime / 10000., (amf_double)diff / 10000., bRealWait ? L"R" : L"");
+                AMFTraceDebug(AMF_FACILITY, L"+++ Drop Frame #%d pts=%5.2f diff=%5.2f", (int)m_frameCount, (amf_double)pts / AMF_MILLISECOND, (amf_double)diff / AMF_MILLISECOND);
+                ret = false;
+            }
+            diff = -RESYNC_THRESHOLD;
+        }
+    }
+
+    if (diff >= 0)
+    {
+        if (m_doWait && realWait && diff > WAIT_THRESHOLD) // ignore delays < 5 ms
+        {
+            m_waiter.Wait(diff);
+        }
+
+        // update FPS = alpha filter
+        if ((m_frameCount % 100) == 0)
+        {
+            amf_pts presentTime = amf_high_precision_clock() - m_startTime;
+            amf_double currFPS = amf_double(AMF_SECOND) / ((presentTime - m_fpsStatStartTime) / 100.);
+            m_lastFPS = currFPS;
+            m_fpsStatStartTime = presentTime;
+        }
+    }
+    else
+    {
+        m_startTime = amf_high_precision_clock();
+        m_startPts = pts;
+        m_fpsStatStartTime = 0;
+    }
+
+    return ret;
+}
+
+AMF_RESULT VideoPresenter::Present(AMFSurface* pSurface)
+{
+    AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_NOT_INITIALIZED, L"Present() - SwapChain is not set");
+    AMF_RETURN_IF_FALSE(pSurface != nullptr, AMF_INVALID_ARG, L"Present() - pSurface is NULL");
+    AMF_RETURN_IF_FALSE(pSurface->GetFormat() == GetInputFormat(), AMF_INVALID_FORMAT, L"Present() - Surface format (%s)"
+        "does not match input format (%s)", AMFSurfaceGetFormatName(pSurface->GetFormat()),
+        AMFSurfaceGetFormatName(GetInputFormat()));
+
+    AMF_RESULT res = pSurface->Convert(GetMemoryType());
+    AMF_RETURN_IF_FAILED(res, L"Present() - Surface Convert() failed");
+
+    AMFLock lock(&m_cs);
+
+#if defined(_WIN32) // Called seperately on Linux
+    res = CheckForResize(false);
+    AMF_RETURN_IF_FAILED(res, L"Present() - CheckForResize() failed");
+#endif
+    if (m_resizeSwapChain == true && CanResize() == true)
+    {
+#if defined(_WIN32)
+        lock.Unlock();
+        res = ResizeSwapChain();
+        lock.Lock();
+        AMF_RETURN_IF_FAILED(res, L"Present() - ResizeSwapChain() failed");
+#endif
+    }
+
+    if (m_renderToBackBuffer == true)
+    {
+        amf_uint index = 0;
+        res = m_pSwapChain->GetBackBufferIndex(pSurface, index);
+        AMF_RETURN_IF_FALSE(res == AMF_OK || res == AMF_NOT_FOUND, res, L"Present() - GetBackBufferIndex() failed");
+    }
+
+    if (m_renderToBackBuffer == false || res == AMF_NOT_FOUND)
+    {
+        res = RenderToSwapChain(pSurface);
+        AMF_RETURN_IF_FAILED(res, L"Present() - RenderToSwapChain() failed");
+    }
+
+    res = m_pSwapChain->Present(m_waitForVSync);
+    AMF_RETURN_IF_FAILED(res, L"Present() - SwapChain Present() failed");
+#if defined(__ANDROID__)
+#elif defined(__linux)
+    XFlush((Display*)m_hDisplay);
+#endif
+
+    UpdateProcessor();
+
+    if (m_resizeSwapChain)
+    {
+        return AMF_RESOLUTION_UPDATED;
+    }
+
+    return AMF_OK;
+}
+
+AMF_RESULT VideoPresenter::RenderToSwapChain(amf::AMFSurface* pSurface)
+{
+    AMF_RETURN_IF_FALSE(pSurface != nullptr, AMF_INVALID_ARG, L"RenderToSwapChain() - pSurface is NULL");
+    AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_NOT_INITIALIZED, L"RenderToSwapChain() - m_pSwapChain not initialized");
+
+    const RenderTargetBase* pRenderTarget = nullptr;
+    AMF_RESULT res = m_pSwapChain->AcquireNextBackBuffer(&pRenderTarget);
+    AMF_RETURN_IF_FAILED(res, L"RenderToSwapChain() - AcquireNextBackBuffer() failed");
+
+    res = RenderSurface(pSurface, pRenderTarget);
+    if (res != AMF_OK)
+    {
+        AMF_RESULT dropRes = m_pSwapChain->DropBackBuffer(pRenderTarget);
+        AMF_RETURN_IF_FALSE(dropRes == AMF_OK || dropRes == AMF_NOT_FOUND, dropRes, L"RenderToSwapChain() - DropBackBuffer() failed");
+    }
+    AMF_RETURN_IF_FAILED(res, L"RenderToSwapChain() - RenderSurface() failed");
+
+    return AMF_OK;
+}
+
+AMF_RESULT VideoPresenter::RenderSurface(amf::AMFSurface* pSurface, const RenderTargetBase* pRenderTarget)
+{
+    AMF_RETURN_IF_FALSE(pSurface != nullptr, AMF_INVALID_ARG, L"RenderSurface() - pSurface is NULL");
+    AMF_RETURN_IF_FALSE(pRenderTarget != nullptr, AMF_INVALID_ARG, L"RenderSurface() - pRenderTarget is NULL");
+
+    const AMFRect srcSurfaceRect = GetPlaneRect(pSurface->GetPlane(amf::AMF_PLANE_PACKED));
+    const AMFRect dstSurfaceRect = GetClientRect(m_hwnd, m_hDisplay);
+    const AMFSize dstSurfaceSize = pRenderTarget->GetSize();
+
+    RenderViewSizeInfo renderView = {};
+    AMF_RESULT res = GetRenderViewSizeInfo(srcSurfaceRect, dstSurfaceSize, dstSurfaceRect, renderView);
+    AMF_RETURN_IF_FAILED(res, L"RenderSurface() - GetRenderViewSizeInfo() failed");
+
+    res = RenderSurface(pSurface, pRenderTarget, renderView);
+    AMF_RETURN_IF_FAILED(res, L"RenderSurface() - RenderSurface() failed");
+
+    return AMF_OK;
+}
+
+AMFRate VideoPresenter::GetDisplayRefreshRate()
+{
+    constexpr AMFRate DEFAULT_RATE = { 60, 1 };
+
+#if defined(_WIN32)
+    if (m_hwnd == nullptr)
+    {
+        return DEFAULT_RATE;
+    }
+
+    DisplayInfo displayInfo;
+    AMF_RESULT res = GetDisplayInfo(m_hwnd, displayInfo);
+    if (res != AMF_OK)
+    {
+        AMFTraceError(AMF_FACILITY, L"GetDisplayRefreshRate() - GetDisplayInfo() failed");
+        return DEFAULT_RATE;
+    }
+
+    return displayInfo.frequency;
+#else
+    return DEFAULT_RATE;
+#endif
+}
+
+AMF_RESULT VideoPresenter::CheckForResize(amf_bool force)
+{
+    AMFLock lock(&m_cs);
+    AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_NOT_INITIALIZED, L"CheckForResize() - SwapChain is not initialized");
+
+    if (m_resizeSwapChain == true)
+    {
+        return AMF_OK;
+    }
+
+    if (force == true || m_fullscreen != m_fullscreenContext.fullscreenState)
+    {
+        m_resizeSwapChain = true;
+        return AMF_OK;
+    }
+
+    AMFRect  rectClient = GetClientRect(m_hwnd, m_hDisplay);
+    const amf_int clientWidth = rectClient.Width();
+    const amf_int clientHeight = rectClient.Height();
+    
+    if (clientWidth == 0 || clientHeight == 0)
+    {
+        return AMF_OK;
+    }
+    
+    const AMFSize swapChainSize = GetSwapchainSize();
+
+    if (clientWidth == swapChainSize.width && clientHeight == swapChainSize.height)
+    {
+        return AMF_OK;
+    }
+
+    m_resizeSwapChain = true;
+    return AMF_OK;
+}
+
+AMF_RESULT VideoPresenter::ResizeSwapChain()
+{
+    AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_NOT_INITIALIZED, L"ResizeSwapChain() - SwapChain is not initialized");
+
+    AMFLock lock(&m_cs);
+
+    if (m_resizeSwapChain == false || m_resizing == true)
+    {
+        return AMF_OK;
+    }
+    m_resizeSwapChain = false;
+
+    m_resizing = true;
+
+    if (m_pTrackSurfaces.find(m_pLastFrame.GetPtr()) != m_pTrackSurfaces.end())
+    {
+        m_pLastFrame = nullptr;
+    }
+
+    while (CanResize() == false)
+    {
+        lock.Unlock();
+        amf_sleep(1);
+        lock.Lock();
+    }
+
+    SetFullscreenState(m_fullscreen);
+
+    const AMFRect rect = GetClientRect(m_hwnd, m_hDisplay);
+
+    RenderViewSizeInfo newRenderView = {};
+    AMFSize dstSize = { rect.Width(), rect.Height() };
+    AMFRect srcRect = { 0, 0, m_inputFrameSize.width, m_inputFrameSize.height };
+    if (m_inputFrameSize.width == 0 && m_inputFrameSize.height == 0)
+    {
+        srcRect = { 0, 0, rect.Width(), rect.Height() };
+    }
+    AMF_RESULT res = GetRenderViewSizeInfo(srcRect, dstSize, rect, newRenderView);
+    if (res != AMF_OK)
+    {
+        AMFTraceWarning(AMF_FACILITY, L"ResizeSwapChain() - GetRenderViewSizeInfo() failed %s", AMFGetResultText(res));
+    }
+
+    res = ResizeRenderView(newRenderView);
+    if (res != AMF_OK)
+    {
+        AMFTraceWarning(AMF_FACILITY, L"ResizeSwapChain() - ResizeRenderView() failed %s", AMFGetResultText(res));
+    }
+
+    res = m_pSwapChain->Resize(rect.Width(), rect.Height(), m_fullscreen);
+    m_resizing = false;
+    AMF_RETURN_IF_FAILED(res, L"ResizeSwapChain() - SwapChain Resize() failed");
+
+    UpdateProcessor();
+
+    return AMF_OK;
+}
+
+void AMF_STD_CALL VideoPresenter::ResizeIfNeeded()
+{
+    if (m_pSwapChain == nullptr || m_pSwapChain->IsInitialized() == false)
+    {
+        return;
+    }
+
+    AMF_RESULT res = CheckForResize(false);
+    if (res != AMF_OK)
+    {
+        AMFTraceError(AMF_FACILITY, L"ResizeIfNeeded() - CheckForResize() failed");
+    }
+
+    res = ResizeSwapChain();
+    if (res != AMF_OK)
+    {
+        AMFTraceError(AMF_FACILITY, L"ResizeIfNeeded() - ResizeSwapChain() failed");
+    }
+}
+
+AMF_RESULT VideoPresenter::ApplyCSC(AMFSurface* pSurface)
+{
+    AMFLock lock(&m_cs);
+
+    pSurface; // Suppress C4100 Unreferenced parameter warning
+#ifdef USE_COLOR_TWITCH_IN_DISPLAY
+    AMF_RETURN_IF_FALSE(pSurface != nullptr, AMF_INVALID_ARG, L"ApplyCSC() - pSurface is NULL");
+
+    if (m_firstFrame == false || m_pSwapChain == nullptr)
+    {
+        return AMF_OK;
+    }
+
+    AMFVariant varBuf;
+    AMF_RESULT res = pSurface->GetProperty(AMF_VIDEO_DECODER_HDR_METADATA, &varBuf);
+    if (res != AMF_OK || varBuf.type != AMF_VARIANT_INTERFACE)
+    {
+        return AMF_OK;
+    }
+
+    AMFBufferPtr pBuffer(varBuf.pInterface);
+    if (pBuffer == nullptr)
+    {
+        return AMF_OK;
+    }
+
+    AMFHDRMetadata* pHDRData = (AMFHDRMetadata*)pBuffer->GetNative();
+
+    res = m_pSwapChain->SetHDRMetaData(pHDRData);
+    if (res == AMF_NOT_SUPPORTED)
+    {
+        return AMF_OK;
+    }
+    AMF_RETURN_IF_FAILED(res, L"ApplyCSC() - SetHDRMetaData() failed");
+
+#endif
     return AMF_OK;
 }
 
 AMF_RESULT VideoPresenter::CalcOutputRect(const AMFRect* pSrcRect, const AMFRect* pScreenRect, AMFRect* pOutputRect) const
 {
-    amf::AMFLock lock(&m_cs);
-
     amf_double dDstRatio = pScreenRect->Height() / (amf_double)pScreenRect->Width();
     amf_double dSrcRatio = pSrcRect->Height() / (amf_double)pSrcRect->Width();
 
@@ -178,26 +673,27 @@ AMF_RESULT VideoPresenter::CalcOutputRect(const AMFRect* pSrcRect, const AMFRect
 AMF_RESULT VideoPresenter::GetRenderViewSizeInfo(const AMFRect& srcSurfaceRect, const AMFSize& dstSurfaceSize, const AMFRect& dstSurfaceRect, RenderViewSizeInfo& renderView) const
 {
     AMF_RETURN_IF_FALSE(srcSurfaceRect.Width() > 0 && srcSurfaceRect.Height() > 0, AMF_INVALID_ARG, L"GetRenderViewRects() - Invalid src size (%dx%d)", srcSurfaceRect.Width(), srcSurfaceRect.Height());
-    AMF_RETURN_IF_FALSE(dstSurfaceRect.Width() > 0 && dstSurfaceRect.Height() > 0, AMF_INVALID_ARG, L"GetRenderViewRects() - Invalid dst size (%dx%d)", dstSurfaceRect.Width(), dstSurfaceRect.Height());
+    // dst may be 0,0 when minimized
+    AMF_RETURN_IF_FALSE(dstSurfaceRect.Width() >= 0 && dstSurfaceRect.Height() >= 0, AMF_INVALID_ARG, L"GetRenderViewRects() - Invalid dst size (%dx%d)", dstSurfaceRect.Width(), dstSurfaceRect.Height());
 
     renderView.srcRect = srcSurfaceRect;
     renderView.srcSize = AMFConstructSize(srcSurfaceRect.Width(), srcSurfaceRect.Height());
     renderView.dstSize = dstSurfaceSize;
     renderView.rotation = GetOrientationRadians();
-
+    
     AMF_RESULT res = ScaleAndCenterRect(renderView.srcRect, dstSurfaceRect, renderView.rotation, renderView.dstRect);
     AMF_RETURN_IF_FAILED(res, L"GetRenderViewRects() - ScaleAndCenterRect() failed");
-    AMF_RETURN_IF_FALSE(renderView.dstRect.Width() > 0 && renderView.dstRect.Height() > 0, AMF_UNEXPECTED,
+    AMF_RETURN_IF_FALSE(renderView.dstRect.Width() >= 0 && renderView.dstRect.Height() >= 0, AMF_UNEXPECTED,
         L"GetRenderViewRects() - Invalid output rect size (%dx%d)", renderView.dstRect.Width(), renderView.dstRect.Height());
 
     res = TransformRect(renderView.dstRect, m_viewOffsetX, m_viewOffsetY, m_viewScale);
     AMF_RETURN_IF_FAILED(res, L"GetRenderViewRects() - TransformRect() failed");
 
-    renderView.pipDstRect = AMFConstructRect(0,
-        (amf_int32)(renderView.dstSize.height - renderView.srcSize.height * PIP_SIZE_FACTOR),
-        (amf_int32)(renderView.srcSize.width * PIP_SIZE_FACTOR),
-        (amf_int32)renderView.dstSize.height);
-
+    renderView.pipDstRect = AMFConstructRect(0, 
+                                            (amf_int32)(renderView.dstSize.height - renderView.srcSize.height * PIP_SIZE_FACTOR),
+                                            (amf_int32)(renderView.srcSize.width * PIP_SIZE_FACTOR),
+                                            (amf_int32)renderView.dstSize.height);
+    
     renderView.pipSrcRect.left = (amf_int32)m_pipFocusPos.x + renderView.dstRect.left;
     renderView.pipSrcRect.top = (amf_int32)m_pipFocusPos.y + renderView.dstRect.top;
     renderView.pipSrcRect.right = renderView.pipSrcRect.left + renderView.pipDstRect.Width() / m_pipZoomFactor;
@@ -214,17 +710,17 @@ AMF_RESULT VideoPresenter::OnRenderViewResize(const RenderViewSizeInfo& newRende
     const AMFRect& textureViewRect = GetTextureViewRect();
 
     AMF_RESULT res = CalcVertexTransformation(newRenderView.srcSize, newRenderView.dstRect, newRenderView.dstSize, vertexViewRect,
-        newRenderView.rotation, &m_srcToClientTransform, &m_srcToViewTransform, &m_normToViewTransform);
+                                               newRenderView.rotation, &m_srcToClientTransform, &m_srcToViewTransform, &m_normToViewTransform);
     AMF_RETURN_IF_FAILED(res, L"OnRenderViewResize() - CalcVertexTransformMatrix() failed to get view vertex transform");
 
-    TransformationToMatrix(m_normToViewTransform, m_fNormalToViewMatrix);
+    TransformationToMatrix(m_normToViewTransform, m_viewProjection.vertexTransform);
     m_clientToSrcTransform = Inverse(m_srcToClientTransform);
 
     if (newRenderView.srcRect != m_renderView.srcRect || newRenderView.srcSize != m_renderView.srcSize)
     {
         res = ProjectRectToView(newRenderView.srcSize, newRenderView.srcRect, textureViewRect, m_texNormToViewTransform);
         AMF_RETURN_IF_FAILED(res, L"OnRenderViewResize() - ProjectRectToView() failed to get view texture transform");
-        TransformationToMatrix(m_texNormToViewTransform, m_fTextureMatrix);
+        TransformationToMatrix(m_texNormToViewTransform, m_viewProjection.texTransform);
     }
 
     // Pip vertex transform
@@ -232,7 +728,7 @@ AMF_RESULT VideoPresenter::OnRenderViewResize(const RenderViewSizeInfo& newRende
     {
         res = ProjectRectToView(newRenderView.dstSize, newRenderView.pipDstRect, vertexViewRect, m_pipVertexTransform);
         AMF_RETURN_IF_FAILED(res, L"OnRenderViewResize() - ProjectRectToView() failed to get PIP view vertex transform");
-        TransformationToMatrix(m_pipVertexTransform, m_pipNormalToViewMatrix);
+        TransformationToMatrix(m_pipVertexTransform, m_pipViewProjection.vertexTransform);
     }
 
     // Pip texture transform
@@ -254,7 +750,7 @@ AMF_RESULT VideoPresenter::OnRenderViewResize(const RenderViewSizeInfo& newRende
             -textureViewRect.Height() / (amf_float)newRenderView.srcRect.Height());
 
         Translate(m_pipTexTransform, texViewRectCenter.x, texViewRectCenter.y);
-        TransformationToMatrix(m_pipTexTransform, m_pipTextureMatrix);
+        TransformationToMatrix(m_pipTexTransform, m_pipViewProjection.texTransform);
     }
 
     return AMF_OK;
@@ -262,6 +758,8 @@ AMF_RESULT VideoPresenter::OnRenderViewResize(const RenderViewSizeInfo& newRende
 
 AMF_RESULT VideoPresenter::ResizeRenderView(const RenderViewSizeInfo& newRenderView)
 {
+    AMFLock lock(&m_cs);
+
     if (m_renderView != newRenderView)
     {
         AMF_RESULT res = OnRenderViewResize(newRenderView);
@@ -273,71 +771,17 @@ AMF_RESULT VideoPresenter::ResizeRenderView(const RenderViewSizeInfo& newRenderV
     return AMF_OK;
 }
 
-bool VideoPresenter::WaitForPTS(amf_pts pts, bool bRealWait)
+AMF_RESULT VideoPresenter::SetProcessor(AMFComponent *processor, AMFComponent* pHQScaler)
 {
-
-    bool bRet = true;
-    amf_pts currTime = amf_high_precision_clock();
-
-    if(m_startTime != -1LL)
+    AMFLock lock(&m_cs);
+    if(m_pProcessor != nullptr)
     {
-        currTime -= m_startTime;
-        pts -= m_startPts;
-
-        amf_pts diff = pts - currTime;
-        bool bWaited = false;
-        if(diff >  WAIT_THRESHOLD && m_bDoWait && bRealWait) // ignore delays < 5 ms 
-        {
-            m_waiter.Wait(diff);
-            bWaited = true;
-        } 
-//      AMFTraceWarning(AMF_FACILITY, L"+++ Present Frame #%d pts=%5.2f time=%5.2f diff=%5.2f %s", (int)m_iFrameCount, (float)pts / 10000., (float)currTime / 10000., float(diff) / 10000., bRealWait ? L"R" : L"");
-        if(diff < -m_ptsDropThreshold) // ignore lags < 10 ms 
-        {
-            if(m_iFrameCount == 1)
-            {
-//                m_startTime += currTime;
-            }
-            else
-            {
-                m_iFramesDropped++;
-
-//                AMFTraceWarning(AMF_FACILITY, L"+++ Drop Frame #%d pts=%5.2f time=%5.2f diff=%5.2f %s", (int)m_iFrameCount, (double)pts / 10000., (double)currTime / 10000., (double)diff / 10000., bRealWait ? L"R" : L"");
-                bRet = false;
-            }
-        }
-
-            // update FPS = alpha filter
-        if( (m_iFrameCount % 100) == 0)
-        {
-            amf_pts presentTime = amf_high_precision_clock()- m_startTime;
-            double currFPS = double(AMF_SECOND) / ((presentTime - m_FpsStatStartTime) / 100.);
-            m_dLastFPS = currFPS;
-            m_FpsStatStartTime = presentTime;
-        }
-    }
-    else
-    {
-        m_startTime = currTime;
-        m_startPts = pts;
-        m_FpsStatStartTime = 0;
-    }
-    m_iFrameCount++;
-
-    return bRet;
-}
-
-AMF_RESULT VideoPresenter::SetProcessor(amf::AMFComponent *processor, amf::AMFComponent* pHQScaler)
-{
-    amf::AMFLock lock(&m_cs);
-    if(m_pProcessor != NULL)
-    {
-        m_pProcessor->SetOutputDataAllocatorCB(NULL);
+        m_pProcessor->SetOutputDataAllocatorCB(nullptr);
     }
 
-    if (m_pHQScaler != NULL)
+    if (m_pHQScaler != nullptr)
     {
-        m_pHQScaler->SetOutputDataAllocatorCB(NULL);
+        m_pHQScaler->SetOutputDataAllocatorCB(nullptr);
     }
 
     m_pProcessor = processor;
@@ -345,57 +789,232 @@ AMF_RESULT VideoPresenter::SetProcessor(amf::AMFComponent *processor, amf::AMFCo
 
     if (SupportAllocator())
     {
-        amf::AMFComponent* pAllocatorUser = (m_pHQScaler != NULL) ? m_pHQScaler : m_pProcessor;
+        AMFComponent* pAllocatorUser = (m_pHQScaler != nullptr) ? m_pHQScaler : m_pProcessor;
         if (pAllocatorUser != nullptr)
         {
             pAllocatorUser->SetOutputDataAllocatorCB(this);
         }
     }
 
+    SetRenderToBackBuffer((m_pProcessor != NULL) && SupportAllocator());
+
     UpdateProcessor();
     return AMF_OK;
 }
 
-void  VideoPresenter::UpdateProcessor()
+void VideoPresenter::UpdateProcessor()
 {
-    amf::AMFLock lock(&m_cs);
+    AMFLock lock(&m_cs);
 
-    if (m_pProcessor != NULL || m_pHQScaler != NULL)
+    if (m_pProcessor != nullptr && m_pHQScaler == nullptr)
     {
-        AMFRect srcRect = { 0, 0, m_InputFrameSize.width, m_InputFrameSize.height };
-        AMFRect outputRect;
-        CalcOutputRect(&srcRect, &m_rectClient, &outputRect);
+        AMFSize outputSize = {};
+        AMFRect outputRect = {};
 
-        if (m_pProcessor != NULL && (m_pHQScaler == NULL))
+        if (m_renderToBackBuffer == true)
         {
-            // what we want to do here is check for the properties if they exist
-            // as the HQ scaler has different property names than CSC
-            const amf::AMFPropertyInfo* pParamInfo = nullptr;
-            if ((m_pProcessor->GetPropertyInfo(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, &pParamInfo) == AMF_OK) && pParamInfo)
-            {
-                m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, ::AMFConstructSize(m_rectClient.Width(), m_rectClient.Height()));
-                m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_RECT, outputRect);
-            }
+            AMFRect rectClient = GetClientRect(m_hwnd, m_hDisplay);
+            ScaleAndCenterRect(SizeToRect(m_inputFrameSize), rectClient, 0, outputRect);
+            outputSize = RectToSize(rectClient);
+        }
+        else
+        {
+            outputSize = m_inputFrameSize;
+            outputRect = SizeToRect(outputSize);
         }
 
-        // Need to comment this out for now because it sets the HQScaler resolution to the window size instead of using the scaling ratio
-        //if (m_pHQScaler != NULL)
-        //{
-        //    const amf::AMFPropertyInfo* pParamInfo = nullptr;
-        //    if ((m_pHQScaler->GetPropertyInfo(AMF_HQ_SCALER_OUTPUT_SIZE, &pParamInfo) == AMF_OK) && pParamInfo)
-        //    {
-        //        m_pHQScaler->SetProperty(AMF_HQ_SCALER_OUTPUT_SIZE, ::AMFConstructSize(m_rectClient.Width(), m_rectClient.Height()));
-        //    }
-        //}
+        // what we want to do here is check for the properties if they exist
+        // as the HQ scaler has different property names than CSC
+        const AMFPropertyInfo* pParamInfo = nullptr;
+        if ((m_pProcessor->GetPropertyInfo(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, &pParamInfo) == AMF_OK) && pParamInfo)
+        {
+            m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, outputSize);
+            m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_RECT, outputRect);
+        }
+    }
+
+    if (m_pHQScaler != NULL)
+    {
+        const AMFPropertyInfo* pParamInfo = nullptr;
+        if ((m_pHQScaler->GetPropertyInfo(AMF_HQ_SCALER_OUTPUT_SIZE, &pParamInfo) == AMF_OK) && pParamInfo)
+        {
+            AMFRect rectClient = GetClientRect(m_hwnd, m_hDisplay);
+            m_pHQScaler->SetProperty(AMF_HQ_SCALER_OUTPUT_SIZE, ::AMFConstructSize(rectClient.Width(), rectClient.Height()));
+        }
+    }
+
+    if (m_pProcessor == nullptr || m_pSwapChain == nullptr)
+    {
+        return;
+    }
+
+    // check and set color space and HDR support
+    SwapChain::ColorSpace colorSpace;
+    AMF_RESULT res = m_pSwapChain->GetColorSpace(colorSpace);
+    if (res != AMF_OK)
+    {
+        AMFTraceError(AMF_FACILITY, L"UpdateProcessor() - GetColorSpace() failed");
+        return;
+    }
+
+    m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_TRANSFER_CHARACTERISTIC, colorSpace.transfer);
+    m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_COLOR_PRIMARIES, colorSpace.primaries);
+    m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_COLOR_RANGE, colorSpace.range);
+
+
+    AMFHDRMetadata hdrMetaData = {};
+    res = m_pSwapChain->GetOutputHDRMetaData(hdrMetaData);
+    if (res != AMF_OK)
+    {
+        AMFTraceError(AMF_FACILITY, L"UpdateProcessor() - GetOutputHDRMetaData() failed");
+        return;
+    }
+
+    if (hdrMetaData.maxMasteringLuminance != 0)
+    {
+        AMFBufferPtr pHDRMetaDataBuffer;
+        res = m_pContext->AllocBuffer(AMF_MEMORY_HOST, sizeof(AMFHDRMetadata), &pHDRMetaDataBuffer);
+        if (res != AMF_OK)
+        {
+            AMFTraceError(AMF_FACILITY, L"UpdateProcessor() - AllocBuffer() failed to allocate HDR metadata buffer");
+            return;
+        }
+
+        AMFHDRMetadata* pData = (AMFHDRMetadata*)pHDRMetaDataBuffer->GetNative();
+        memcpy(pData, &hdrMetaData, sizeof(AMFHDRMetadata));
+
+        m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_HDR_METADATA, pHDRMetaDataBuffer);
     }
 }
 
-AMFRect VideoPresenter::GetSourceRect()
+AMF_RESULT AMF_STD_CALL VideoPresenter::AllocSurface(AMF_MEMORY_TYPE /*type*/, AMF_SURFACE_FORMAT /*format*/, amf_int32 /*width*/,
+    amf_int32 /*height*/, amf_int32 /*hPitch*/, amf_int32 /*vPitch*/, AMFSurface** ppSurface)
 {
+    if (SupportAllocator() == false || m_renderToBackBuffer == false)
+    {
+        return AMF_NOT_SUPPORTED;
+    }
+
+    AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_NOT_INITIALIZED, L"RenderToSwapChain() - SwapChain is not set");
+    //AMF_RETURN_IF_FALSE(format == m_pSwapChain->GetFormat(), AMF_INVALID_ARG, L"AllocSurface() - Format (%s)"
+    //    "does not match swapchain format (%s)", AMFSurfaceGetFormatName(format),
+    //    AMFSurfaceGetFormatName(GetInputFormat()));
+
+    //const AMFSize swapChainSize = GetSwapchainSize();
+    //AMF_RETURN_IF_FALSE(width == 0 || width == swapChainSize.width, AMF_INVALID_ARG, L"AllocSurface() - width(%d) must be either 0 or equal swapchain width(%d)", width, swapChainSize.width);
+    //AMF_RETURN_IF_FALSE(height == 0 || height == swapChainSize.height, AMF_INVALID_ARG, L"AllocSurface() - height(%d) must be either 0 or equal swapchain height(%d)", height, swapChainSize.height);
+
+    AMF_RETURN_IF_FALSE(ppSurface != nullptr, AMF_INVALID_ARG, L"AllocSurface() - ppSurface is NULL");
+
+
+    {
+        AMFLock lock(&m_cs);
+        CheckForResize(false);
+
+        if (m_resizeSwapChain == true && (CanResize() == false))
+        {
+            AMFTraceWarning(AMF_FACILITY, L"AllocSurface() - swapchain resize needed");
+            return AMF_INPUT_FULL;
+        }
+    }
+    ResizeIfNeeded();
+    //while (m_pSwapChain->GetBackBuffersAvailable() == 0)
+    //{
+    //    if (m_bFrozen)
+    //    {
+    //        return AMF_INPUT_FULL;
+    //    }
+    //    amf_sleep(1);
+    //}
+
+    //if (m_resizeSwapChain == true)
+    //{
+    //    //AMF_RESULT res = ResizeSwapChain();
+    //    //AMF_RETURN_IF_FAILED(res, L"AllocSurface() - ResizeSwapChain() failed");
+    //}
+    AMFLock lock(&m_cs);
+
+    while (m_resizing)
+    {
+        lock.Unlock();
+        amf_sleep(1);
+        lock.Lock();
+    }
+
+    AMF_RESULT res = m_pSwapChain->AcquireNextBackBuffer(ppSurface);
+    AMF_RETURN_IF_FAILED(res, L"AllocSurface() - AcquireNextBackBuffer() failed");
+
+    // check and set color space, should be used by caller (processor) to determine if target is HDR, etc
+    SwapChain::ColorSpace colorSpace = {};
+    res = m_pSwapChain->GetColorSpace(colorSpace);
+    if (res == AMF_OK)
+    {
+        (*ppSurface)->SetProperty(AMF_VIDEO_COLOR_TRANSFER_CHARACTERISTIC, colorSpace.transfer);
+        (*ppSurface)->SetProperty(AMF_VIDEO_COLOR_PRIMARIES, colorSpace.primaries);
+        (*ppSurface)->SetProperty(AMF_VIDEO_COLOR_RANGE, colorSpace.range);
+    }
+
+    (*ppSurface)->AddObserver(this);
+    m_pTrackSurfaces.insert(*ppSurface);
+
+    //res = (*ppSurface)->Convert(type);
+    //AMF_RETURN_IF_FAILED(res, L"AllocSurface() - Convert() failed");
+
+    return AMF_OK;
+}
+
+void AMF_STD_CALL VideoPresenter::OnSurfaceDataRelease(AMFSurface* pSurface)
+{
+    if (pSurface == nullptr)
+    {
+        return;
+    }
+
+    AMFLock lock(&m_cs);
+
+    auto it = m_pTrackSurfaces.find(pSurface);
+
+    if (it == m_pTrackSurfaces.end())
+    {
+        return;
+    }
+
+    pSurface->RemoveObserver(this);
+    m_pTrackSurfaces.erase(it);
+
+    if (m_pSwapChain != nullptr)
+    {
+        // Drop backbuffer if acquired
+        AMF_RESULT res = m_pSwapChain->DropBackBuffer(pSurface);
+        if (res != AMF_OK && res != AMF_NOT_FOUND)
+        {
+            AMFTraceError(AMF_FACILITY, L"OnSurfaceDataRelease() - DropBackBuffer() failed unexpectedly");
+        }
+    }
+}
+
+AMF_RESULT VideoPresenter::Freeze()
+{
+    AMFLock lock(&m_cs);
+    return PipelineElement::Freeze();
+}
+
+AMF_RESULT VideoPresenter::UnFreeze()
+{
+    AMFLock lock(&m_cs);
+    m_startTime = -1LL;
+    m_startPts = -1LL;
+    return PipelineElement::UnFreeze();
+}
+
+AMFRect VideoPresenter::GetSourceRect() const
+{
+    AMFLock lock(&m_cs);
+
     AMFRect out = {};
     if (m_pProcessor == nullptr)
     {
-        out = m_sourceVertexRect;
+        out = m_renderView.srcRect;
     }
     else
     {
@@ -404,40 +1023,128 @@ AMFRect VideoPresenter::GetSourceRect()
     return out;
 }
 
-AMF_RESULT VideoPresenter::Freeze()
+AMF_RESULT VideoPresenter::Resume()
 {
-    amf::AMFLock lock(&m_cs);
-    return PipelineElement::Freeze();
-}
-
-AMF_RESULT VideoPresenter::UnFreeze()
-{
-    amf::AMFLock lock(&m_cs);
-    m_startTime = -1LL;
-    m_startPts = -1LL;
-    return PipelineElement::UnFreeze();
-}
-
-AMF_RESULT VideoPresenter::Resume() 
-{ 
-    amf::AMFLock lock(&m_cs);
-    m_state = ModePlaying; 
+    AMFLock lock(&m_cs);
+    m_state = ModePlaying;
     m_startTime = -1LL;
     m_startPts = -1LL;
     return AMF_OK;
 }
 
-AMF_RESULT              VideoPresenter::SetSubresourceIndex(amf_int32 index)
+AMF_RESULT VideoPresenter::DropFrame()
 {
-    m_iSubresourceIndex = index;
+    AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_NOT_INITIALIZED, L"RenderToSwapChain() - SwapChain is not set");
+    AMFLock lock(&m_cs);
+    return m_pSwapChain->DropLastBackBuffer();
+}
+
+AMF_RESULT VideoPresenter::SetFullscreenState(amf_bool fullscreen)
+{
+    // Fullscreen on DX9 only works if swapchain and device were both
+    // created with fullscreen settings so instead, fullscreen is set
+    // manually by controlling window position and size.
+    AMF_RESULT res = AMF_NOT_IMPLEMENTED;
+    if (true == m_exclusiveFullscreen)
+    {
+        res = m_pSwapChain->SetExclusiveFullscreenState(fullscreen);
+        //AMF_RETURN_IF_FALSE(res == AMF_OK || res == AMF_NOT_IMPLEMENTED, res, L"SetFullscreenState() - SetWindowFullscreenState() failed");
+        if (res == AMF_OK)
+        {
+            m_fullscreenContext.fullscreenState = fullscreen;
+            return res;
+        }
+        AMFTraceWarning(AMF_FACILITY, L"SetFullscreenState() SetExclusiveFullscreenState failed %s - fall back to borderless window", AMFGetResultText(res));
+    }
+
+    // fall back to windowed fullscreen if not implemented or failed
+    res = SetWindowFullscreenState(m_hwnd, m_hDisplay, fullscreen);
+    AMF_RETURN_IF_FAILED(res, L"SetFullscreenState() - SetWindowFullscreenState() failed");
+
+    m_fullscreenContext.fullscreenState = fullscreen;
+    return res;
+}
+
+AMF_RESULT VideoPresenter::SetWindowFullscreenState(amf_handle hwnd, amf_handle hDisplay, amf_bool fullscreen)
+{
+    hDisplay; // Suppress unreferenced parameter warning (C4100)
+
+    AMF_RETURN_IF_FALSE(hwnd != nullptr, AMF_INVALID_ARG, L"SetWindowFullscreenState() - hwnd is NULL");
+
+    if (m_fullscreenContext.fullscreenState == fullscreen)
+    {
+        return AMF_OK;
+    }
+
+#if defined(_WIN32)
+
+    // Should only set fullscreen if holding top-most window
+    if ((HWND)hwnd != ::GetAncestor((HWND)hwnd, GA_ROOT))
+    {
+        return AMF_OK;
+    }
+
+    LONG_PTR style = 0;
+    LONG_PTR exStyle = 0;
+    AMFPoint origin = {};
+    AMFSize size = {};
+    const HWND hWnd = (HWND)hwnd;
+    UINT posFlags = SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOACTIVATE;
+
+    if (fullscreen)
+    {
+        WINDOWINFO info;
+        ::GetWindowInfo(hWnd, &info);
+        m_fullscreenContext.windowModeRect = AMFConstructRect(info.rcWindow.left, info.rcWindow.top, info.rcWindow.right, info.rcWindow.bottom);
+        m_fullscreenContext.windowModeStyle = ::GetWindowLongPtr(hWnd, GWL_STYLE);
+        m_fullscreenContext.windowModeExStyle = ::GetWindowLongPtr(hWnd, GWL_EXSTYLE);
+
+        style = WS_VISIBLE | WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
+        exStyle = WS_EX_APPWINDOW | WS_EX_TOPMOST;
+
+        // Get display information
+        DisplayInfo displayInfo = {};
+        AMF_RESULT res = GetDisplayInfo(hwnd, displayInfo);
+        AMF_RETURN_IF_FAILED(res, L"SetWindowFullscreenState() - GetDisplayInfo() failed");
+
+        origin.x = displayInfo.monitorRect.left;
+        origin.y = displayInfo.monitorRect.top;
+        size.width = displayInfo.monitorRect.Width();
+        size.height = displayInfo.monitorRect.Height();
+    }
+    else
+    {
+        style = m_fullscreenContext.windowModeStyle;
+        AMF_RETURN_IF_FALSE(style != 0, AMF_NOT_INITIALIZED, L"SetWindowFullscreenState() - Window mode not initialized");
+
+        exStyle = m_fullscreenContext.windowModeExStyle;
+        origin.x = m_fullscreenContext.windowModeRect.left;
+        origin.y = m_fullscreenContext.windowModeRect.top;
+        size.width = m_fullscreenContext.windowModeRect.Width();
+        size.height = m_fullscreenContext.windowModeRect.Height();
+    }
+
+    AMF_RETURN_IF_FALSE(size.width > 0 && size.height > 0, AMF_INVALID_RESOLUTION, L"SetWindowFullscreenState() - Invalid window size %ux%u", size.width, size.height);
+
+    ::SetWindowLongPtr(hWnd, GWL_STYLE, style);
+    ::SetWindowLongPtr(hWnd, GWL_EXSTYLE, exStyle);
+
+    //ShowCursor(fullscreen ? FALSE : TRUE);
+
+    LONG ret = ::SetWindowPos(hWnd, fullscreen ? HWND_TOPMOST : HWND_NOTOPMOST, origin.x, origin.y, size.width, size.height, posFlags);
+    AMF_RETURN_IF_FALSE(ret != 0, AMF_FAIL, L"SetWindowFullscreenState() - SetWindowPos() failed, code=%d", GetLastError());
+
+#elif defined(__ANDROID__)
+    // TODO
+#elif defined(__linux)
+    // TODO
+#else
+    return AMF_NOT_SUPPORTED;
+#endif
+
+    m_fullscreenContext.fullscreenState = fullscreen;
     return AMF_OK;
 }
-
-amf_int32               VideoPresenter::GetSubresourceIndex()
-{
-    return m_iSubresourceIndex;
-}
-
 
 // Utility functions
 AMF_RESULT TransformRect(AMFRect& rect, amf_int offsetX, amf_int offsetY, amf_float scale)
@@ -458,7 +1165,7 @@ AMF_RESULT TransformRect(AMFRect& rect, amf_int offsetX, amf_int offsetY, amf_fl
     return AMF_OK;
 }
 
-AMFRect GetPlaneRect(amf::AMFPlane* pPlane)
+AMFRect GetPlaneRect(AMFPlane* pPlane)
 {
     return pPlane == nullptr ? 
         AMFConstructRect(0, 0, 0, 0) : 
@@ -467,7 +1174,6 @@ AMFRect GetPlaneRect(amf::AMFPlane* pPlane)
                         pPlane->GetOffsetX() + pPlane->GetWidth(),      // Right
                         pPlane->GetOffsetY() + pPlane->GetHeight());    // Bottom
 }
-
 
 AMF_RESULT ScaleAndCenterRect(const AMFRect& srcRect, const AMFRect& dstRect, amf_float rotation, AMFRect& outputRect)
 {
@@ -481,7 +1187,7 @@ AMF_RESULT ScaleAndCenterRect(const AMFRect& srcRect, const AMFRect& dstRect, am
     const amf_int32 dstHeight = dstRect.Height();
 
     AMF_RETURN_IF_FALSE(srcWidth > 0 && srcHeight > 0, AMF_INVALID_ARG, L"ScaleAndCenterRect() - src size is invalid: %dx%d", srcWidth, srcHeight);
-    AMF_RETURN_IF_FALSE(dstWidth > 0 && dstHeight > 0, AMF_INVALID_ARG, L"ScaleAndCenterRect() - dst size is invalid: %dx%d", dstWidth, dstHeight);
+    AMF_RETURN_IF_FALSE(dstWidth >= 0 && dstHeight >= 0, AMF_INVALID_ARG, L"ScaleAndCenterRect() - dst size is invalid: %dx%d", dstWidth, dstHeight);
 
     const amf_float rotSin = sinf(rotation);
     const amf_float rotCos = cosf(rotation);
@@ -540,10 +1246,10 @@ void Rotate(Transformation2D& transformation, amf_float radians)
     Transformation2D result;
     result.scaleLinear.x = transformation.scaleLinear.x * cosVal + transformation.scaleOrtho.x * sinVal;
     result.scaleOrtho.x = transformation.scaleOrtho.x * cosVal - transformation.scaleLinear.x * sinVal;
-
+    
     result.scaleLinear.y = transformation.scaleLinear.y * cosVal - transformation.scaleOrtho.y * sinVal;
     result.scaleOrtho.y = transformation.scaleOrtho.y * cosVal + transformation.scaleLinear.y * sinVal;
-
+    
     result.translation.x = transformation.translation.x * cosVal + transformation.translation.y * sinVal;
     result.translation.y = transformation.translation.y * cosVal - transformation.translation.x * sinVal;
     transformation = result;
@@ -553,12 +1259,12 @@ Transformation2D Combine(const Transformation2D& left, const Transformation2D& r
 {
     Transformation2D result = {};
     // Applies left to right
-    result.scaleLinear.x = left.scaleLinear.x * right.scaleLinear.x + left.scaleOrtho.y * right.scaleOrtho.x;
-    result.scaleOrtho.x = left.scaleOrtho.x * right.scaleLinear.x + left.scaleLinear.y * right.scaleOrtho.x;
-
+    result.scaleLinear.x = left.scaleLinear.x * right.scaleLinear.x + left.scaleOrtho.y  * right.scaleOrtho.x;
+    result.scaleOrtho.x =  left.scaleOrtho.x  * right.scaleLinear.x + left.scaleLinear.y * right.scaleOrtho.x;
+    
     result.scaleLinear.y = left.scaleOrtho.x * right.scaleOrtho.y + left.scaleLinear.y * right.scaleLinear.y;
     result.scaleOrtho.y = left.scaleLinear.x * right.scaleOrtho.y + left.scaleOrtho.y * right.scaleLinear.y;
-
+    
     result.translation.x = left.scaleLinear.x * right.translation.x + left.scaleOrtho.y * right.translation.y + left.translation.x;
     result.translation.y = left.scaleOrtho.x * right.translation.x + left.scaleLinear.y * right.translation.y + left.translation.y;
 
@@ -576,20 +1282,20 @@ Transformation2D Inverse(const Transformation2D& transformation)
     //
     // Using the inverse determinant formula for 2x2 matrix on the left
 
-    const amf_float determinant = transformation.scaleLinear.x * transformation.scaleLinear.y -
-        transformation.scaleOrtho.x * transformation.scaleOrtho.y;
+    const amf_float determinant = transformation.scaleLinear.x * transformation.scaleLinear.y - 
+                              transformation.scaleOrtho.x * transformation.scaleOrtho.y;
 
     // Adjugate divided by determinant
     inverse.scaleLinear.x = transformation.scaleLinear.y / determinant;
     inverse.scaleLinear.y = transformation.scaleLinear.x / determinant;
-    inverse.scaleOrtho.x = -transformation.scaleOrtho.x / determinant;
-    inverse.scaleOrtho.y = -transformation.scaleOrtho.y / determinant;
+    inverse.scaleOrtho.x = -transformation.scaleOrtho.x  / determinant;
+    inverse.scaleOrtho.y = -transformation.scaleOrtho.y  / determinant;
 
     // Now we have to add the translations to the matrix
     // To add this, we can just transform the translation with the inverse matrix so far
     // and add it as a translation to the 4th column
     inverse.translation.x = -transformation.translation.x * inverse.scaleLinear.x - transformation.translation.y * inverse.scaleOrtho.y;
-    inverse.translation.y = -transformation.translation.x * inverse.scaleOrtho.x - transformation.translation.y * inverse.scaleLinear.y;
+    inverse.translation.y = -transformation.translation.x * inverse.scaleOrtho.x  - transformation.translation.y * inverse.scaleLinear.y;
 
     return inverse;
 }
@@ -611,8 +1317,8 @@ void MatrixToTransformation(const amf_float matrix[4][4], Transformation2D& tran
     transformation.scaleLinear.x = matrix[0][0];
     transformation.scaleLinear.y = matrix[1][1];
 
-    transformation.scaleOrtho.x = matrix[1][0];
-    transformation.scaleOrtho.y = matrix[0][1];
+    transformation.scaleOrtho.x  = matrix[1][0];
+    transformation.scaleOrtho.y  = matrix[0][1];
 
     transformation.translation.x = matrix[0][3];
     transformation.translation.y = matrix[1][3];
@@ -668,7 +1374,7 @@ amf_bool IsIdentity(const amf_float matrix[4][4])
 }
 
 AMF_RESULT CalcVertexTransformation(const AMFSize& srcSize, const AMFRect& dstRect, const AMFSize& dstSize, const AMFRect& viewRect,
-    amf_float rotation, Transformation2D* pSrcToDst, Transformation2D* pSrcToView, Transformation2D* pNormToView)
+                                    amf_float rotation, Transformation2D* pSrcToDst, Transformation2D* pSrcToView, Transformation2D* pNormToView)
 {
     // Computes a projection matrix for vertex shader to map a src surface onto the view.
     //
@@ -729,7 +1435,7 @@ AMF_RESULT CalcVertexTransformation(const AMFSize& srcSize, const AMFRect& dstRe
     // Scale so that the out edge of the rotated boundary
     // is scaled to touch the the dstRect bounds
     Scale(transformation, dstRectWidth / (srcWidth * abs(rotCos) + srcHeight * abs(rotSin)),
-        dstRectHeight / (srcHeight * abs(rotCos) + srcWidth * abs(rotSin)));
+                          dstRectHeight / (srcHeight * abs(rotCos) + srcWidth * abs(rotSin)));
 
     // Move from origin to dstRect center
     Translate(transformation, dstRectCenter.x, dstRectCenter.y);
@@ -760,8 +1466,8 @@ AMF_RESULT CalcVertexTransformation(const AMFSize& srcSize, const AMFRect& dstRe
     {
         transformation.scaleLinear.x *= srcWidth;
         transformation.scaleLinear.y *= srcHeight;
-        transformation.scaleOrtho.x *= srcWidth;
-        transformation.scaleOrtho.y *= srcHeight;
+        transformation.scaleOrtho.x  *= srcWidth;
+        transformation.scaleOrtho.y  *= srcHeight;
 
         *pNormToView = transformation;
     }
@@ -781,7 +1487,7 @@ AMF_RESULT ProjectRectToView(const AMFSize& srcSize, const AMFRect& srcRect, con
     const amf_int32 viewRectHeight = -viewRect.Height();
 
     AMF_RETURN_IF_FALSE(srcWidth > 0 && srcHeight > 0, AMF_INVALID_ARG, L"ProjectRectToView() - srcSize is invalid: %dx%d", srcWidth, srcHeight);
-    AMF_RETURN_IF_FALSE(srcRectWidth > 0 && srcRectHeight > 0, AMF_INVALID_ARG, L"ProjectRectToView() - srcRect is invalid: %dx%d", srcRectWidth, srcRectHeight);
+    AMF_RETURN_IF_FALSE(srcRectWidth >= 0 && srcRectHeight >= 0, AMF_INVALID_ARG, L"ProjectRectToView() - srcRect is invalid: %dx%d", srcRectWidth, srcRectHeight);
     AMF_RETURN_IF_FALSE(viewRectWidth != 0 && viewRectHeight != 0, AMF_INVALID_ARG, L"ProjectRectToView() - viewRect is invalid: %dx%d", viewRectWidth, viewRectHeight);
 
     const AMFFloatPoint2D srcCenter = GetCenterFloatPoint(srcSize);

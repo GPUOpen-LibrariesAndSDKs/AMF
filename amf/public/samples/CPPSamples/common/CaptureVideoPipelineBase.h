@@ -37,7 +37,7 @@
 #include "public/include/components/VideoConverter.h"
 #include "public/include/components/FFMPEGVideoDecoder.h"
 #include "public/samples/CPPSamples/common/BitStreamParser.h"
-#include "public/samples/CPPSamples/common/BackBufferPresenter.h"
+#include "public/samples/CPPSamples/common/VideoPresenter.h"
 #include "public/samples/CPPSamples/common/ParametersStorage.h"
 #include "public/samples/CPPSamples/common/Pipeline.h"
 #include "public/common/Thread.h"

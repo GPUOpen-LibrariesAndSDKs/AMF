@@ -31,76 +31,53 @@
 //
 #pragma once
 
-#include "BackBufferPresenter.h"
+#include "VideoPresenter.h"
 #include "SwapChainDX9.h"
 
 #include <comdef.h>
 #include <d3d9.h>
-#include <DirectXMath.h>
 
-class VideoPresenterDX9 : public BackBufferPresenter
+class VideoPresenterDX9 : public VideoPresenter
 {
 public:
-    VideoPresenterDX9(amf_handle hwnd, amf::AMFContext* pContext);
+    VideoPresenterDX9(amf_handle hwnd, amf::AMFContext* pContext, amf_handle hDisplay=nullptr);
 
     virtual                             ~VideoPresenterDX9();
 
-    virtual AMF_RESULT                  Present(amf::AMFSurface* pSurface);
+    virtual amf_bool                    SupportAllocator() const { return false; }
     virtual amf::AMF_MEMORY_TYPE        GetMemoryType() const { return amf::AMF_MEMORY_DX9; }
-    virtual amf::AMF_SURFACE_FORMAT     GetInputFormat() const { return m_eInputFormat; }
-    virtual AMF_RESULT                  SetInputFormat(amf::AMF_SURFACE_FORMAT format);
 
-    virtual bool                        SupportAllocator() const { return true; }
-    virtual AMF_RESULT                  Flush();
-
-    virtual AMF_RESULT                  Init(amf_int32 width, amf_int32 height, amf::AMFSurface* pSurface);
-    virtual AMF_RESULT                  Terminate();
-
-    // amf::AMFDataAllocatorCB interface
-    virtual AMF_RESULT AMF_STD_CALL     AllocSurface(amf::AMF_MEMORY_TYPE type, amf::AMF_SURFACE_FORMAT format,
-        amf_int32 width, amf_int32 height, amf_int32 hPitch, amf_int32 vPitch, amf::AMFSurface** ppSurface);
-    // amf::AMFSurfaceObserver interface
-    virtual void AMF_STD_CALL           OnSurfaceDataRelease(amf::AMFSurface* pSurface);
-
-    virtual AMFSize                     GetSwapchainSize() { return m_swapChain.GetSize(); }
+    virtual AMF_RESULT                  Init(amf_int32 width, amf_int32 height, amf::AMFSurface* pSurface) override;
+    virtual AMF_RESULT                  Terminate() override;
 
 protected:
-
-    struct SimpleVertex
-    {
-        DirectX::XMFLOAT3 position;
-        DirectX::XMFLOAT2 texture;
-    };
-
     typedef SwapChainDX9::BackBuffer RenderTarget;
 
     virtual AMF_RESULT                  CreateShaders(IDirect3DVertexShader9** ppVertexShader, IDirect3DPixelShader9** ppPixelShader);
 
-    AMF_RESULT                          RenderSurface(amf::AMFSurface* pSurface, const RenderTarget* pRenderTarget);
-    AMF_RESULT                          RenderSurface(amf::AMFSurface* pSrcSurface, const RenderTarget* pRenderTarget, const RenderViewSizeInfo& renderView);
+    virtual AMF_RESULT                  RenderSurface(amf::AMFSurface* pSurface, const RenderTargetBase* pRenderTarget, RenderViewSizeInfo& renderView) override;
+    virtual AMF_RESULT                  UpdateStates(amf::AMFSurface* pSurface, const RenderTarget* pRenderTarget, RenderViewSizeInfo& renderView);
     virtual AMF_RESULT                  DrawBackground(const RenderTarget* pRenderTarget);
     virtual AMF_RESULT                  SetStates();
+    virtual AMF_RESULT                  SetPipStates();
     virtual AMF_RESULT                  DrawFrame(IDirect3DSurface9* pSrcSurface, const RenderTarget* pRenderTarget);
     virtual AMF_RESULT                  DrawFrame(IDirect3DTexture9* pSrcTexture, const RenderTarget* pRenderTarget);
-    AMF_RESULT                          DropFrame();
     virtual AMF_RESULT                  DrawOverlay(amf::AMFSurface* /* pSurface */, const RenderTarget* /*pRenderTarget*/) { return AMF_OK; }
 
     AMF_RESULT                          UpdateVertexBuffer(IDirect3DVertexBuffer9* buffer, void* pData, size_t size);
 
     IDirect3DDevice9ExPtr               m_pDevice;
-    SwapChainDX9                        m_swapChain;
+
+    static constexpr D3DCOLOR D3DClearColor = D3DCOLOR_RGBA(amf_uint8(ClearColor[0] * 255), 
+                                                            amf_uint8(ClearColor[1] * 255), 
+                                                            amf_uint8(ClearColor[2] * 255), 
+                                                            amf_uint8(ClearColor[3] * 255));
+
 private:
     AMF_RESULT                          CreateShaders();
     AMF_RESULT                          PrepareStates();
 
-    AMF_RESULT                          CheckForResize(bool bForce);
-    AMF_RESULT                          ResizeSwapChain();
-
-    AMF_RESULT                          UpdateVertices(const AMFRect& srcRect, const AMFSize& srcSize, const AMFRect& dstRect, const AMFSize& dstSize, amf_float rotation);
     AMF_RESULT                          RenderScene(amf::AMFSurface* pSrcSurface, const RenderTarget* pRenderTarget);
-
-    amf::AMFCriticalSection             m_sect;
-
 
     IDirect3DVertexShader9Ptr           m_pVertexShader;
     IDirect3DPixelShader9Ptr            m_pPixelShader;
@@ -112,18 +89,5 @@ private:
     IDirect3DStateBlock9Ptr             m_pRasterizerState;
     IDirect3DStateBlock9Ptr             m_pBlendState;
     IDirect3DStateBlock9Ptr             m_pDefaultState;
-
-    D3DVIEWPORT9                        m_currentViewport;
-
-    amf::AMF_SURFACE_FORMAT             m_eInputFormat;
-
-    amf_float                           m_fScale;
-    amf_int                             m_iOffsetX;
-    amf_int                             m_iOffsetY;
-    amf_bool                            m_bUpdateVertices;
-
-    DirectX::XMFLOAT4X4                 m_srcToClientMatrixInverse;
-    
-    std::vector<amf::AMFSurface*>       m_TrackSurfaces; // raw pointer  doent want keep references to ensure object is destroying
-    amf_bool                            m_bResizeSwapChain;
+    SamplerMap<IDirect3DStateBlock9Ptr> m_pSamplerStateMap;
 };

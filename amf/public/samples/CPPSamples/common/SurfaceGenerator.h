@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (C) 2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -35,6 +35,7 @@
 #include <tchar.h>
 #include <d3d9.h>
 #include <d3d11.h>
+#include <d3d12.h>
 #endif
 
 #include "public/common/TraceAdapter.h"
@@ -48,6 +49,7 @@ AMF_RESULT ReadSurface(PipelineElementPtr pPipelineElPtr, amf::AMFSurface** ppSu
 #ifdef _WIN32
 AMF_RESULT FillSurfaceDX9(amf::AMFContext* pContext, amf::AMFSurface* pSurface, amf_bool isRefFrame);
 AMF_RESULT FillSurfaceDX11(amf::AMFContext* pContext, amf::AMFSurface* pSurface, amf_bool isRefFrame);
+AMF_RESULT FillSurfaceDX12(amf::AMFContext* pContext, amf::AMFSurface* pSurface, amf_bool isRefFrame);
 #endif
 AMF_RESULT FillSurfaceVulkan(amf::AMFContext* pContext, amf::AMFSurface* pSurface, amf_bool isRefFrame);
 AMF_RESULT FillRGBASurfaceWithColor(amf::AMFSurface* pSurface, amf_uint8 R, amf_uint8 G, amf_uint8 B);

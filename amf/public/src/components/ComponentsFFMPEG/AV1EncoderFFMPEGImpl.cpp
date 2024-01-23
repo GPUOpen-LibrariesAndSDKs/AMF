@@ -188,7 +188,7 @@ AMF_RESULT AMF_STD_CALL AV1EncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT format, am
     // input properties
     char  errBuffer[AV_ERROR_MAX_STRING_SIZE] = { 0 };
     amf_int64  preset = 0;
-    amf_int64 ret = 0;
+    amf_int    ret = 0;
     AMF_RETURN_IF_FAILED(GetProperty(AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET, &preset));
     //Quality and compression efficiency vs speed trade-off
     if (preset == AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_SPEED)

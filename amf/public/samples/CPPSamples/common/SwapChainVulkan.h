@@ -76,7 +76,7 @@ public:
     virtual ~CommandBufferVulkan();
 
     virtual AMF_RESULT      Init(amf::AMFVulkanDevice* pDevice, const VulkanImportTable* pImportTable, VkCommandPool hCommandPool);
-    virtual AMF_RESULT      Terminate();
+    virtual AMF_RESULT      Terminate() override;
 
     virtual AMF_RESULT      StartRecording(amf_bool reset=true);
     virtual AMF_RESULT      EndRecording();
@@ -127,7 +127,7 @@ public:
     virtual AMF_RESULT                  Init(amf_handle hwnd, amf_handle hDisplay, amf::AMFSurface* pSurface, amf_int32 width, amf_int32 height,
                                              amf::AMF_SURFACE_FORMAT format, amf_bool fullscreen = false, amf_bool hdr = false, amf_bool stereo = false) override;
 
-    virtual AMF_RESULT                  Terminate();
+    virtual AMF_RESULT                  Terminate() override;
 
     virtual AMF_RESULT                  Present(amf_bool waitForVSync) override;
 
@@ -164,10 +164,10 @@ protected:
     AMF_RESULT                          CreateFrameBuffers();
     AMF_RESULT                          CreateCommandPool();
 
-    AMF_RESULT                          SetFormat(amf::AMF_SURFACE_FORMAT format);
+    virtual AMF_RESULT                  SetFormat(amf::AMF_SURFACE_FORMAT format) override;
     VkFormat                            GetSupportedVkFormat(amf::AMF_SURFACE_FORMAT format);
 
-    virtual AMF_RESULT                  UpdateCurrentOutput() { return AMF_OK; }
+    virtual AMF_RESULT                  UpdateCurrentOutput() override { return AMF_OK; }
 
     virtual const BackBufferBasePtr*    GetBackBuffers() const override { return m_hSwapChain != NULL ? m_pBackBuffers.data() : nullptr; }
     virtual AMF_RESULT                  BackBufferToSurface(const BackBufferBase* pBuffer, amf::AMFSurface** ppSurface) const override;
@@ -192,8 +192,6 @@ protected:
     amf::amf_list<amf_uint>             m_droppedBuffers;
     amf::amf_list<amf_uint>             m_acquiredBuffers;
 
-    std::list<VkSemaphore>              m_Semaphores;
+    amf::amf_list<VkSemaphore>          m_Semaphores;
     amf_uint                            m_lastPresentedImageIndex;
-
-    WindowFullscreenContext             m_fullscreenContext;
 };

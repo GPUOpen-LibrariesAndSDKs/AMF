@@ -27,7 +27,7 @@
 // THE SOFTWARE.
 //
 
-cbuffer ViewProjetion : register(b0)                                                  
+cbuffer ViewProjection : register(b0)
 {                                                                                       
     matrix vertexTransform;                                                             
     matrix texTransform;                                                                

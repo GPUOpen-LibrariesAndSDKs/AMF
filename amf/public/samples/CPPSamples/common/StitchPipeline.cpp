@@ -124,7 +124,7 @@ void StitchPipeline::ToggleOutputMode()
             m_pVideoPresenter ->SetProcessor(m_pStitch);
         }
 
-        ((BackBufferPresenter*)m_pVideoPresenter.get())->SetRenderToBackBuffer(value != AMF_VIDEO_STITCH_OUTPUT_MODE_CUBEMAP);
+        m_pVideoPresenter->SetRenderToBackBuffer(value != AMF_VIDEO_STITCH_OUTPUT_MODE_CUBEMAP);
     }
     
     if(m_pVideoPresenter->GetMode() ==  VideoPresenter::ModePaused)

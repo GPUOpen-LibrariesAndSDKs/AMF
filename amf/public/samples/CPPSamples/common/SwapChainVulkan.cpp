@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -51,8 +51,7 @@ SwapChainVulkan::SwapChainVulkan(amf::AMFContext* pContext) :
     m_hSwapChain(NULL),
     m_hRenderPass(NULL),
     m_hCommandPool(NULL),
-    m_lastPresentedImageIndex(0),
-    m_fullscreenContext{}
+    m_lastPresentedImageIndex(0)
 {
     SetFormat(AMF_SURFACE_UNKNOWN); // Set default format
 }
@@ -67,7 +66,6 @@ AMF_RESULT SwapChainVulkan::Init(amf_handle hwnd, amf_handle hDisplay, AMFSurfac
 {
     AMF_RETURN_IF_FALSE(hwnd != nullptr, AMF_INVALID_ARG, L"CreateSwapChain() - hwnd is NULL");
     //AMF_RETURN_IF_FALSE(hDisplay != nullptr, AMF_INVALID_ARG, L"CreateSwapChain() - hDisplay is NULL");
-
     m_hwnd = hwnd;
     m_hDisplay = hDisplay;
 
@@ -78,13 +76,13 @@ AMF_RESULT SwapChainVulkan::Init(amf_handle hwnd, amf_handle hDisplay, AMFSurfac
 
     res = m_ImportTable.LoadFunctionsTable();
     AMF_RETURN_IF_FAILED(res, L"Init() - LoadFunctionsTable() failed - check if the proper Vulkan SDK is installed");
-    
+
     res = m_ImportTable.LoadInstanceFunctionsTableExt(m_pVulkanDevice->hInstance, false);
     AMF_RETURN_IF_FAILED(res, L"Init() - LoadInstanceFunctionsTableExt() failed - check if the proper Vulkan SDK is installed");
-    
+
     res = m_ImportTable.LoadDeviceFunctionsTableExt(m_pVulkanDevice->hDevice);
     AMF_RETURN_IF_FAILED(res, L"Init() - LoadDeviceFunctionsTableExt() failed - check if the proper Vulkan SDK is installed");
-    
+
     res = CreateSurface();
     AMF_RETURN_IF_FAILED(res, L"Init() - CreateSurface() failed");
 
@@ -119,6 +117,7 @@ AMF_RESULT SwapChainVulkan::Terminate()
         return AMF_OK;
     }
 
+    AMFContext1::AMFVulkanLocker vkLock(m_pContext1);
     VkResult vkres = GetVulkan()->vkQueueWaitIdle(m_hQueuePresent);
     if (vkres != VK_SUCCESS)
     {
@@ -149,7 +148,7 @@ AMF_RESULT SwapChainVulkan::Terminate()
         GetVulkan()->vkDestroyRenderPass(m_pVulkanDevice->hDevice, m_hRenderPass, nullptr);
         m_hRenderPass = NULL;
     }
-    for (std::list<VkSemaphore>::iterator it = m_Semaphores.begin(); it != m_Semaphores.end(); it++)
+    for (amf_list<VkSemaphore>::iterator it = m_Semaphores.begin(); it != m_Semaphores.end(); it++)
     {
         GetVulkan()->vkDestroySemaphore(m_pVulkanDevice->hDevice, *it, nullptr); // delete copy of semaphore since it could be replaced in surface
     }
@@ -165,12 +164,6 @@ AMF_RESULT SwapChainVulkan::Terminate()
     m_uQueuePresentFamilyIndex = UINT32_MAX;
     m_uQueueComputeFamilyIndex = UINT32_MAX;
  
-    if (m_hwnd != nullptr)
-    {
-        SetWindowFullscreenState(m_hwnd, m_hDisplay, false, m_fullscreenContext);
-    }
-    m_fullscreenContext = {};
-
     VulkanContext::Terminate();
     return SwapChain::Terminate();
 }
@@ -182,6 +175,7 @@ AMF_RESULT SwapChainVulkan::TerminateSwapChain()
         return AMF_OK;
     }
 
+    AMFContext1::AMFVulkanLocker vkLock(m_pContext1);
     VkResult vkres = GetVulkan()->vkQueueWaitIdle(m_hQueuePresent);
     if (vkres != VK_SUCCESS)
     {
@@ -225,10 +219,6 @@ AMF_RESULT SwapChainVulkan::CreateSwapChain(amf_int32 width, amf_int32 height, a
     AMF_RETURN_IF_FALSE(m_pVulkanDevice->hDevice != nullptr, AMF_NOT_INITIALIZED, L"CreateSwapChain() - m_pVulkanDevice->hDevice is not initialized");
     AMF_RETURN_IF_FALSE(m_hSurfaceKHR != NULL, AMF_NOT_INITIALIZED, L"CreateSwapChain() - m_hSurfaceKHR is not initialized");
 
-    AMF_RESULT res = SetWindowFullscreenState(m_hwnd, m_hDisplay, fullscreen, m_fullscreenContext);
-    AMF_RETURN_IF_FAILED(res, L"CreateSwapChain() - SetWindowFullscreenState() failed");
-    m_fullscreenEnabled = m_fullscreenContext.fullscreenState;
-
     // Get image count
     VkSurfaceCapabilitiesKHR surfaceCapabilities = {};
     VkResult vkres = GetVulkan()->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_pVulkanDevice->hPhysicalDevice, m_hSurfaceKHR, &surfaceCapabilities);
@@ -248,15 +238,13 @@ AMF_RESULT SwapChainVulkan::CreateSwapChain(amf_int32 width, amf_int32 height, a
     }
     else
     {
-        m_size.width = AMF_CLAMP((amf_uint32)width, surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width);
-        m_size.height = AMF_CLAMP((amf_uint32)height, surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height);
+        m_size.width = (amf_uint32)width;
+        m_size.height = (amf_uint32)height;
     }
-
     VkExtent2D windowExtent = { (amf_uint32)m_size.width, (amf_uint32)m_size.height};
-    m_fullscreenEnabled = fullscreen;
 
     // Find format
-    res = SetFormat(format);
+    AMF_RESULT res = SetFormat(format);
     AMF_RETURN_IF_FAILED(res, L"CreateSwapChain() - SetFormat() failed");
 
     const VkSurfaceFormatKHR surfaceFormats[] = { {m_surfaceFormat.format, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR} };
@@ -272,7 +260,7 @@ AMF_RESULT SwapChainVulkan::CreateSwapChain(amf_int32 width, amf_int32 height, a
 
     // We can pass the old swapchain if we have one to the new one
     // and in some implementations of Vulkan it might be able to
-    // "resuse" some parts of it making creation potentially faster 
+    // "resuse" some parts of it making creation potentially faster
     VkSwapchainKHR hOldSwapChain = m_hSwapChain;
 
     // create swap chain
@@ -285,7 +273,11 @@ AMF_RESULT SwapChainVulkan::CreateSwapChain(amf_int32 width, amf_int32 height, a
     swapChainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
     swapChainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE; //Potentially change for compute queue VK_SHARING_MODE_CONCURRENT
     swapChainCreateInfo.preTransform = surfaceCapabilities.currentTransform;
+#if defined(__ANDROID__)
+    swapChainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+#else
     swapChainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+#endif
     swapChainCreateInfo.clipped = VK_TRUE;
     swapChainCreateInfo.oldSwapchain = hOldSwapChain;
     swapChainCreateInfo.queueFamilyIndexCount = 1;
@@ -523,7 +515,7 @@ AMF_RESULT SwapChainVulkan::CreateRenderPass()
         subPassDesc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
         subPassDesc.colorAttachmentCount = 1;
         subPassDesc.pColorAttachments = &colorAttRef;
-    
+
     VkSubpassDependency subDep = {};
         subDep.srcSubpass = VK_SUBPASS_EXTERNAL;
         subDep.dstSubpass = 0;
@@ -531,7 +523,7 @@ AMF_RESULT SwapChainVulkan::CreateRenderPass()
         subDep.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
         subDep.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         subDep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    
+
     VkRenderPassCreateInfo renderPassInfo = {};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
         renderPassInfo.attachmentCount = 1;
@@ -609,6 +601,7 @@ AMF_RESULT SwapChainVulkan::CreateImageViews()
         // surface properties
         pBuffer->m_surface.hImage = images[i];
         pBuffer->m_surface.eUsage = static_cast<amf_uint32>(amf::AMF_SURFACE_USAGE_DEFAULT);
+        pBuffer->m_surface.eAccess = static_cast<amf_uint32>(amf::AMF_MEMORY_CPU_DEFAULT);
         pBuffer->m_surface.hMemory = 0;
         pBuffer->m_surface.iSize = 0;      // memory size
         pBuffer->m_surface.eFormat = m_surfaceFormat.format;
@@ -623,7 +616,7 @@ AMF_RESULT SwapChainVulkan::CreateImageViews()
     }
 
     // Reuse existing semaphores on resize
-    // Resize semaphore list to image count by 
+    // Resize semaphore list to image count by
     // creating/destroying missing/extra semaphores
     if (imageCount < (amf_uint32)m_Semaphores.size())
     {
@@ -683,7 +676,7 @@ AMF_RESULT SwapChainVulkan::Resize(amf_int32 width, amf_int32 height, amf_bool f
 {
     AMF_RETURN_IF_FALSE(m_pVulkanDevice != nullptr, AMF_NOT_INITIALIZED, L"ResizeSwapChain() - m_pVulkanDevice is not initialized");
 
-    if (m_size.width == width && m_size.height == height && fullscreen == m_fullscreenEnabled && m_format == format)
+    if (m_size.width == width && m_size.height == height && m_format == format)
     {
         return AMF_OK;
     }
@@ -691,7 +684,12 @@ AMF_RESULT SwapChainVulkan::Resize(amf_int32 width, amf_int32 height, amf_bool f
     AMF_RESULT res = TerminateSwapChain();
     AMF_RETURN_IF_FAILED(res, L"ResizeSwapchain() - TerminateSwapChain() failed");
 
-    VkResult vkres = GetVulkan()->vkDeviceWaitIdle(m_pVulkanDevice->hDevice);
+    VkResult vkres = VK_SUCCESS;
+    {
+        AMFContext1::AMFVulkanLocker vkLock(m_pContext1);
+
+        vkres = GetVulkan()->vkDeviceWaitIdle(m_pVulkanDevice->hDevice);
+    }
     ASSERT_RETURN_IF_VK_FAILED(vkres, AMF_VULKAN_FAILED, L"ResizeSwapChain() - vkDeviceWaitIdle() failed");
 
     res = CreateSwapChain(width, height, fullscreen, format);
@@ -752,13 +750,13 @@ AMF_RESULT SwapChainVulkan::AcquireNextBackBufferIndex(amf_uint& index)
     AMF_RETURN_IF_FALSE(m_pVulkanDevice->hDevice != nullptr, AMF_NOT_INITIALIZED, L"AcquireBackBuffer() - m_pVulkanDevice->hDevice is not initialized");
     AMF_RETURN_IF_FALSE(m_hSwapChain != NULL, AMF_NOT_INITIALIZED, L"AcquireBackBuffer() - m_hSwapChain is not initialized");
     AMF_RETURN_IF_FALSE(m_Semaphores.size() > 0, AMF_FAIL, L"AcquireBackBuffer() - no free semaphore");
- 
+
     amf_uint32 imageIndex = 0;
 
     // Vulkan swapchains don't have any method to "return" acquired images
     // If we try to acquire more images than available before presenting
     // it will timeout and return error
-    // For dropped frames, we can just store the index in m_droppedImages 
+    // For dropped frames, we can just store the index in m_droppedImages
     // and pass it back to the caller here for it to be reused.
     if (m_droppedBuffers.empty())
     {
@@ -774,7 +772,7 @@ AMF_RESULT SwapChainVulkan::AcquireNextBackBufferIndex(amf_uint& index)
         imageIndex = m_droppedBuffers.front();
         m_droppedBuffers.pop_front();
     }
-    
+
     // This should never happen
     AMF_RETURN_IF_FALSE(imageIndex < m_pBackBuffers.size(), AMF_UNEXPECTED, L"AcquireBackBuffer() - Acquired image index (%u) out of bounds, must be in range [0, %zu]", imageIndex, m_pBackBuffers.size());
     BackBuffer* pBuffer = (BackBuffer*)m_pBackBuffers[imageIndex].get();
@@ -817,14 +815,14 @@ AMF_RESULT SwapChainVulkan::Present(amf_bool waitForVSync)
     VkSwapchainKHR swapChains[] = { m_hSwapChain };
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    
+
     if(pBuffer->m_surface.Sync.bSubmitted)
     {
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores = &pBuffer->m_surface.Sync.hSemaphore;
         pBuffer->m_surface.Sync.bSubmitted = false;
     }
-    
+
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
     presentInfo.pImageIndices = &index;
@@ -856,6 +854,7 @@ AMF_RESULT SwapChainVulkan::Present(amf_bool waitForVSync)
     //vkDeviceWaitIdle(m_pVulkanDevice->hDevice);
     if (waitForVSync)
     {
+        AMFContext1::AMFVulkanLocker vkLock(m_pContext1);
         GetVulkan()->vkQueueWaitIdle(m_hQueuePresent);
     }
     return AMF_OK;
@@ -1008,7 +1007,7 @@ AMF_RESULT VulkanContext::MakeBuffer(const void* pData, amf_size size, amf_uint3
     buffer.iAllocatedSize = memReqs.size;
 
     if(pData != nullptr)
-    { 
+    {
         res = UpdateBuffer(buffer, pData, size, 0);
         AMF_RETURN_IF_FAILED(res, L"MakeBuffer() - UpdateBuffer() failed");
     }
@@ -1242,7 +1241,7 @@ AMF_RESULT VulkanContext::TransitionSurface(CommandBufferVulkan* pBuffer, amf::A
     AMF_RESULT res = pBuffer->SyncResource(&pSurface->Sync, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
     AMF_RETURN_IF_FAILED(res, L"TransitionResource() - SyncResource() failed");
 
-    GetVulkan()->vkCmdPipelineBarrier(pBuffer->GetBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+    GetVulkan()->vkCmdPipelineBarrier(pBuffer->GetBuffer(), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
         0,
         0, nullptr,
         0, nullptr,
@@ -1314,7 +1313,7 @@ AMF_RESULT CommandBufferVulkan::Terminate()
         GetVulkan()->vkDestroyFence(m_pVulkanDevice->hDevice, m_hFence, nullptr);
         m_hFence = NULL;
     }
-    
+
     m_waitSemaphores.clear();
     m_signalSemaphores.clear();
     m_waitFlags.clear();

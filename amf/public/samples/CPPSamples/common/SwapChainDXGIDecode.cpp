@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -64,7 +64,7 @@ SwapChainDXGIDecode::~SwapChainDXGIDecode()
 
 AMF_RESULT SwapChainDXGIDecode::GetDXGIInterface(amf_bool reinit)
 {
-    if (m_pDXGIAdapter != nullptr && reinit == false)
+    if (m_pDXGIFactory != nullptr && reinit == false)
     {
         return AMF_OK;
     }
@@ -74,7 +74,6 @@ AMF_RESULT SwapChainDXGIDecode::GetDXGIInterface(amf_bool reinit)
     m_pDXGIFactoryMedia = nullptr;
     m_pDXGIFactory = nullptr;
     m_pDXGIFactory2 = nullptr;
-    m_pDXGIAdapter = nullptr;
 
     switch (m_memoryType)
     {
@@ -104,16 +103,25 @@ AMF_RESULT SwapChainDXGIDecode::GetDXGIInterface(amf_bool reinit)
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"Init() - CreateDXGIFactory1() failed to create DXGIFactory");
     m_pDXGIFactory->QueryInterface(&m_pDXGIFactory2);
 
-    hr = m_pDXGIDevice->GetAdapter(&m_pDXGIAdapter);
-    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"Init() - GetAdapter() failed");
+    AMF_RESULT res = GetDXGIAdapters();
+    AMF_RETURN_IF_FAILED(res, L"GetDXGIInterface() - GetDXGIAdapters() failed");
 
+    return AMF_OK;
+}
+
+AMF_RESULT SwapChainDXGIDecode::GetDXGIDeviceAdapter(IDXGIAdapter** ppDXGIAdapter)
+{
+    if (m_pDXGIDevice != nullptr)
+    {
+        m_pDXGIDevice->GetAdapter( ppDXGIAdapter );
+    }
     return AMF_OK;
 }
 
 AMF_RESULT SwapChainDXGIDecode::Init(amf_handle hwnd, amf_handle hDisplay, amf::AMFSurface* pSurface, amf_int32 width, amf_int32 height, amf::AMF_SURFACE_FORMAT format, amf_bool /*fullscreen*/, amf_bool hdr, amf_bool stereo)
 {
     AMF_RETURN_IF_FALSE(hwnd != nullptr, AMF_INVALID_ARG, L"Init() - Window handle is NULL");
-    AMF_RETURN_IF_FALSE(width > 0 && height > 0, AMF_INVALID_ARG, L"Init() - Invalid width/height: width=%d height=%d", width, height);
+    AMF_RETURN_IF_FALSE(width >= 0 && height >= 0, AMF_INVALID_ARG, L"Init() - Invalid width/height: width=%d height=%d", width, height);
 
     if (stereo || hdr)
     {
@@ -145,7 +153,7 @@ AMF_RESULT SwapChainDXGIDecode::Terminate()
     m_pDXGIFactoryMedia = nullptr;
     m_pDevice = nullptr;
 
-    return SwapChain::Terminate();
+    return SwapChainDXGI::Terminate();
 }
 
 AMF_RESULT SwapChainDXGIDecode::TerminateSwapChain()
@@ -154,6 +162,8 @@ AMF_RESULT SwapChainDXGIDecode::TerminateSwapChain()
 
     m_pDecodeTexture = nullptr;
     m_pVisualSurfaceRoot = nullptr;
+    m_pScaleTransform = nullptr;
+    m_pTransformGroup = nullptr;
 
     m_pDCompTarget = nullptr;
     m_pDCompDevice = nullptr;
@@ -256,11 +266,11 @@ AMF_RESULT SwapChainDXGIDecode::CreateSwapChain(AMFSurface* pSurface, amf_int32 
 
     // Create swap chain for composition surface
     DXGI_DECODE_SWAP_CHAIN_DESC descVideoSwap = {};
-    CComQIPtr<IDXGIResource> spDXGResource = m_pDecodeTexture;
+    CComQIPtr<IDXGIResource> spDXGResource(m_pDecodeTexture);
     hr = m_pDXGIFactoryMedia->CreateDecodeSwapChainForCompositionSurfaceHandle(m_pDevice, m_hDCompositionSurfaceHandle, &descVideoSwap, spDXGResource, nullptr, &m_pSwapChainDecode);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_FAIL, L"CreateSwapChain() - CreateDecodeSwapChainForCompositionSurfaceHandle() failed");
 
-    // Init swap chain 
+    // Init swap chain
     hr = m_pSwapChainDecode->SetColorSpace(DXGI_MULTIPLANE_OVERLAY_YCbCr_FLAG_BT709);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_FAIL, L"CreateSwapChain() - SetColorSpace() failed");
 
@@ -268,19 +278,31 @@ AMF_RESULT SwapChainDXGIDecode::CreateSwapChain(AMFSurface* pSurface, amf_int32 
     hr = m_pSwapChainDecode->SetSourceRect(&sourceRect);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_FAIL, L"CreateSwapChain() - SetSourceRect() failed");
 
-    RECT dstRect = { 0, 0, width, height };
-    hr = m_pSwapChainDecode->SetTargetRect(&dstRect);
+    UINT destWidth = 0;
+    UINT destHeight = 0;
+    m_pSwapChainDecode->GetDestSize(&destWidth, &destHeight);
+
+    float scaleWidth = 1.0;
+    float scaleHeight = 1.0;
+    if (width > 0 && height > 0 && destWidth > 0 && destHeight > 0)
+    {
+        scaleWidth = (float)width / destWidth;
+        scaleHeight = (float)height / destHeight;
+    }
+
+    RECT targetRect = { 0, 0, (LONG)destWidth, (LONG)destHeight };
+    hr = m_pSwapChainDecode->SetTargetRect(&targetRect);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_FAIL, L"CreateSwapChain() - SetTargetRect() failed");
     m_size = AMFConstructSize(width, height);
 
 //  CComPtr<IUnknown> pUnknownSurface;
 //  hr = m_pDCompDevice->CreateSurfaceFromHandle(m_hDCompositionSurfaceHandle, &pUnknownSurface);
 //  ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"CreateSurfaceFromHandle() failed");
-// 
+//
 //  CComPtr<IDCompositionVisual2>        pVisualSurfaceRoot;
 //  hr = m_pDCompDevice->CreateVisual(&pVisualSurfaceRoot);
 //  ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"CreateVisual() failed");
-// 
+//
 //  hr = m_pVisualSurface->SetContent(pUnknownSurface);
 //  hr = pVisualSurfaceRoot->AddVisual(m_pVisualSurface, TRUE, nullptr);
 
@@ -293,6 +315,29 @@ AMF_RESULT SwapChainDXGIDecode::CreateSwapChain(AMFSurface* pSurface, amf_int32 
         pVisualSurface3->SetVisible(TRUE);
     }
     fDCompositionAttachMouseDragToHwnd(m_pVisualSurfaceRoot, (HWND)m_hwnd, TRUE);
+
+    if (false)
+    {
+        // scale to full window
+        hr = m_pDCompDevice->CreateScaleTransform(&m_pScaleTransform);
+        ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"CreateDCSwapChain() - CreateScaleTransform() failed");
+
+        // Set the scaling origin to the upper-right corner of the visual.
+        hr = m_pScaleTransform->SetCenterX(0.0f);
+        hr = m_pScaleTransform->SetCenterY(0.0f);
+        // Set the scaling factor to three for both the width and height. 
+        hr = m_pScaleTransform->SetScaleX(scaleWidth);
+        hr = m_pScaleTransform->SetScaleY(scaleHeight);
+
+        // Create the transform group.
+        IDCompositionTransform* pTransforms[] = { m_pScaleTransform };
+        hr = m_pDCompDevice->CreateTransformGroup(pTransforms, amf_countof(pTransforms), &m_pTransformGroup);
+        ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"CreateDCSwapChain() - CreateTransformGroup() failed");
+
+        // Apply the transform group to the visual.
+        hr = m_pVisualSurfaceRoot->SetTransform(m_pTransformGroup);
+        ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"CreateDCSwapChain() - SetTransform() failed");
+    }
 
     // Commit all direct composition commands
     hr = m_pDCompDevice->Commit();
@@ -322,6 +367,7 @@ AMF_RESULT SwapChainDXGIDecode::Submit(amf::AMFSurface* pSurface)
         AMF_RETURN_IF_FAILED(res, L"Submit() - CreateSwapChain() failed");
     }
 
+    m_pSurface = pSurface;
     return AMF_OK;
 }
 
@@ -343,11 +389,11 @@ AMF_RESULT SwapChainDXGIDecode::Present(amf_bool waitForVSync)
     AMF_RESULT err = m_pSurface->GetProperty(L"TextureArrayIndex", &index);
     AMF_RETURN_IF_FAILED(err, L"Present() - Failed to get surface TextureArrayIndex property")
 
-    for (int i = 0; i < 100; i++)
+    for (amf_int i = 0; i < 100; i++)
     {
         HRESULT hr = m_pSwapChainDecode->PresentBuffer((UINT)index, syncInterval, presentFlags);
 
-        // If the GPU is busy at the moment present was called and if 
+        // If the GPU is busy at the moment present was called and if
         // it did not execute or schedule the operation, we get the
         // DXGI_ERROR_WAS_STILL_DRAWING error. Therefore we should try
         // presenting again after a delay

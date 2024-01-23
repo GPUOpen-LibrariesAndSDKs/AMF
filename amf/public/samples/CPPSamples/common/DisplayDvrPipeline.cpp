@@ -526,7 +526,7 @@ AMF_RESULT DisplayDvrPipeline::InitAudio()
     m_pAudioCapture->GetProperty(AUDIOCAPTURE_FRAMESIZE, &streamFrameSize);
 
     // Audio converter
-    res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_AUDIO_CONVERTER, &m_pAudioConverter);
+    res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*) FFMPEG_AUDIO_CONVERTER, &m_pAudioConverter);
     CHECK_AMF_ERROR_RETURN(res, L"LoadExternalComponent(" << FFMPEG_AUDIO_CONVERTER << L") failed");
 
     m_pAudioConverter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_BIT_RATE, streamBitRate);
@@ -537,7 +537,7 @@ AMF_RESULT DisplayDvrPipeline::InitAudio()
     m_pAudioConverter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_BLOCK_ALIGN, streamBlockAlign);
 
     // Audio encoder
-    res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_AUDIO_ENCODER, &m_pAudioEncoder);
+    res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*) FFMPEG_AUDIO_ENCODER, &m_pAudioEncoder);
     CHECK_AMF_ERROR_RETURN(res, L"LoadExternalComponent(" << FFMPEG_AUDIO_ENCODER << L") failed");
 
     m_pAudioEncoder->SetProperty(AUDIO_ENCODER_AUDIO_CODEC_ID, kFFMPEG_AAC_CODEC_ID);
@@ -571,7 +571,7 @@ AMF_RESULT DisplayDvrPipeline::InitMuxer(
     AMF_RESULT res = AMF_OK;
 
     amf::AMFComponentPtr  pMuxer;
-    res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", FFMPEG_MUXER, &pMuxer);
+    res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*) FFMPEG_MUXER, &pMuxer);
     CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << FFMPEG_DEMUXER << L") failed");
     amf::AMFComponentExPtr  pMuxerEx(pMuxer);
     amf_int32 streamIdx = (amf_int32)m_pMuxer.size();

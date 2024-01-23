@@ -38,7 +38,7 @@
 #include "public/include/components/VideoEncoderVCE.h"
 #include "public/include/components/VideoEncoderHEVC.h"
 #include "public/samples/CPPSamples/common/BitStreamParser.h"
-#include "public/samples/CPPSamples/common/BackBufferPresenter.h"
+#include "public/samples/CPPSamples/common/VideoPresenter.h"
 #include "public/samples/CPPSamples/common/ParametersStorage.h"
 #include "public/samples/CPPSamples/common/Pipeline.h"
 #include "public/common/Thread.h"

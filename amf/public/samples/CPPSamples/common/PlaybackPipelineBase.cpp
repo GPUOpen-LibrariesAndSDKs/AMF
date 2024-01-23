@@ -65,6 +65,9 @@ const wchar_t* PlaybackPipelineBase::PARAM_NAME_FRC_INFO = L"FRCINFO";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_FRC_MODE = L"FRCMODE";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_FRC_ENABLE_FALLBACK = L"FRCENABLEFALLBACK";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_FRC_INDICATOR = L"FRCINDICATOR";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_EXCLUSIVE_FULLSCREEN = L"EXCLUSIVE_FULLSCREEN";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_FRC_PROFILE = L"FRCPROFILE";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_FRC_MV_SEARCH_MODE = L"FRCPERFORMANCE";
 
 PlaybackPipelineBase::PlaybackPipelineBase() :
     m_iVideoWidth(0),
@@ -104,9 +107,13 @@ PlaybackPipelineBase::PlaybackPipelineBase() :
     SetParamDescription(PARAM_NAME_FRC_MODE, ParamCommon, L"FRC Mode,  default off", ParamConverterInt64);
     SetParamDescription(PARAM_NAME_FRC_ENABLE_FALLBACK, ParamCommon, L"FRC enable fallback, true, false, default false", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_FRC_INDICATOR, ParamCommon, L"FRC Indicator,  default off", ParamConverterBoolean);
+    SetParamDescription(PARAM_NAME_EXCLUSIVE_FULLSCREEN, ParamCommon, L"Specifies exclusive fullscreen mode, true, false, default true", ParamConverterBoolean);
+    SetParamDescription(PARAM_NAME_FRC_PROFILE, ParamCommon, L"FRC Profile,  default High", ParamConverterInt64);
+    SetParamDescription(PARAM_NAME_FRC_MV_SEARCH_MODE, ParamCommon, L"FRC Performance,  default Off", ParamConverterInt64);
 
     SetParam(PARAM_NAME_LISTEN_FOR_CONNECTION, false);
     SetParam(PARAM_NAME_FULLSCREEN, false);
+    SetParam(PARAM_NAME_EXCLUSIVE_FULLSCREEN, true);
     SetParam(PARAM_NAME_PIP, false);
     SetParam(PARAM_NAME_PIP_ZOOM_FACTOR, 0.4f);
     SetParam(PARAM_NAME_PIP_FOCUS_X, 0);
@@ -121,6 +128,8 @@ PlaybackPipelineBase::PlaybackPipelineBase() :
     SetParam(PARAM_NAME_FRC_MODE,   FRC_OFF);
     SetParam(PARAM_NAME_FRC_ENABLE_FALLBACK, true);
     SetParam(PARAM_NAME_FRC_INDICATOR, false);
+    SetParam(PARAM_NAME_FRC_PROFILE, FRC_PROFILE_HIGH);
+    SetParam(PARAM_NAME_FRC_MV_SEARCH_MODE, FRC_MV_SEARCH_NATIVE);
 #if defined(_WIN32)
     SetParam(PlaybackPipelineBase::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_DX11);
 #elif defined(__linux)
@@ -631,6 +640,14 @@ AMF_RESULT  PlaybackPipelineBase::InitFRC()
 
         GetParam(PlaybackPipelineBase::PARAM_NAME_FRC_INDICATOR, frcFlag);
         m_pFRC->SetProperty(AMF_FRC_INDICATOR, frcFlag);
+
+        amf_int64 frcProfile = FRC_PROFILE_HIGH;
+        GetParam(PlaybackPipelineBase::PARAM_NAME_FRC_PROFILE, frcProfile);
+        m_pFRC->SetProperty(AMF_FRC_PROFILE, frcProfile);
+
+        amf_int64 frcMVSearchMode = FRC_MV_SEARCH_NATIVE;
+        GetParam(PlaybackPipelineBase::PARAM_NAME_FRC_MV_SEARCH_MODE, frcMVSearchMode);
+        m_pFRC->SetProperty(AMF_FRC_MV_SEARCH_MODE, frcMVSearchMode);
 
         res = m_pFRC->Init(bForceScalingRGB ? m_pVideoPresenter->GetInputFormat() : m_eDecoderFormat, m_iVideoWidth, m_iVideoHeight);
         CHECK_AMF_ERROR_RETURN(res, L"m_pFRC->Init() failed with err=%d");
@@ -1191,6 +1208,12 @@ void PlaybackPipelineBase::OnParamChanged(const wchar_t* name)
             GetParam(PARAM_NAME_FULLSCREEN, bFullScreen);
             m_pVideoPresenter->SetFullScreen(bFullScreen);
         }
+        else if (std::wstring(name) == std::wstring(PARAM_NAME_EXCLUSIVE_FULLSCREEN))
+        {
+            bool bExclusive = false;
+            GetParam(PARAM_NAME_EXCLUSIVE_FULLSCREEN, bExclusive);
+            m_pVideoPresenter->SetExclusiveFullscreen(bExclusive);
+        }
         else if (std::wstring(name) == std::wstring(PARAM_NAME_DOTIMING))
         {
             bool bDoTiming = true;
@@ -1504,6 +1527,10 @@ AMF_RESULT  PlaybackPipelineBase::InitVideo(amf::AMFOutput* pOutput, amf::AMF_ME
     bool bFullScreen = false;
     GetParam(PARAM_NAME_FULLSCREEN, bFullScreen);
     m_pVideoPresenter->SetFullScreen(bFullScreen);
+
+    bool bExclusiveFullScreen = false;
+    GetParam(PARAM_NAME_EXCLUSIVE_FULLSCREEN, bExclusiveFullScreen);
+    m_pVideoPresenter->SetExclusiveFullscreen(bExclusiveFullScreen);
 
     bool bEnablePIP = false;
     GetParam(PARAM_NAME_PIP, bEnablePIP);

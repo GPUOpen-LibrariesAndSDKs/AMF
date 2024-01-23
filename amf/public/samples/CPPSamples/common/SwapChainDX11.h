@@ -57,11 +57,11 @@ public:
     virtual                             ~SwapChainDX11();
 
     virtual AMF_RESULT                  Init(amf_handle hwnd, amf_handle hDisplay, amf::AMFSurface* pSurface, amf_int32 width, amf_int32 height,
-                                             amf::AMF_SURFACE_FORMAT format, amf_bool fullscreen = false, amf_bool hdr = false, amf_bool stereo = false);
+                                             amf::AMF_SURFACE_FORMAT format, amf_bool fullscreen = false, amf_bool hdr = false, amf_bool stereo = false) override;
 
-    virtual AMF_RESULT                  Terminate();
+    virtual AMF_RESULT                  Terminate() override;
 
-    virtual AMF_RESULT                  Present(amf_bool waitForVSync);
+    virtual AMF_RESULT                  Present(amf_bool waitForVSync) override;
 
     virtual amf_uint                    GetBackBufferCount() const override             { return 1; }
     virtual amf_uint                    GetBackBuffersAcquireable() const override      { return 1; }
@@ -74,12 +74,14 @@ public:
     // Leave format as AMF_SURFACE_UNKNOWN to keep format
     // width
     virtual AMF_RESULT                  Resize(amf_int32 width, amf_int32 height, amf_bool fullscreen, 
-                                               amf::AMF_SURFACE_FORMAT format=amf::AMF_SURFACE_UNKNOWN);
+                                               amf::AMF_SURFACE_FORMAT format=amf::AMF_SURFACE_UNKNOWN) override;
 
     static constexpr amf_uint BACK_BUFFER_COUNT = 4;
 
 protected:
     AMF_RESULT                          GetDXGIInterface(amf_bool reinit = false) override;
+    AMF_RESULT                          GetDXGIDeviceAdapter(IDXGIAdapter** ppDXGIAdapter) override;
+
     AMF_RESULT                          SetupSwapChain(amf_int32 width, amf_int32 height, amf::AMF_SURFACE_FORMAT format, amf_bool fullscreen, amf_bool hdr, amf_bool stereo);
     AMF_RESULT                          CreateFrameBuffers();
     AMF_RESULT                          DeleteFrameBuffers();

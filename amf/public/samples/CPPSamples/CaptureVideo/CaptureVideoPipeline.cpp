@@ -30,7 +30,7 @@
 // THE SOFTWARE.
 //
 #include "CaptureVideoPipeline.h"
-#include "public/samples/CPPSamples/common/BackBufferPresenter.h"
+#include "public/samples/CPPSamples/common/VideoPresenter.h"
 
 CaptureVideoPipeline::CaptureVideoPipeline()
     : m_hwnd(NULL)
@@ -94,10 +94,7 @@ AMF_RESULT CaptureVideoPipeline::CreateVideoPresenter(
     amf_int32 /* compositedWidth */,
     amf_int32 /* compositedHeight */ )
 {
-    BackBufferPresenterPtr pBackBufferPresenter;
-    AMF_RESULT res = BackBufferPresenter::Create(pBackBufferPresenter, type, m_hwnd, m_pContext);
-    m_pVideoPresenter = pBackBufferPresenter;
-    return res;
+    return VideoPresenter::Create(m_pVideoPresenter, type, m_hwnd, m_pContext);
 }
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------

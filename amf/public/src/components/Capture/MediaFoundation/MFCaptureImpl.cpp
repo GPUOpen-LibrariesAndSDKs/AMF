@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2017 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -102,7 +102,7 @@ AMF_RESULT          AMF_STD_CALL MFCaptureManagerImpl::Update()
 
     for (UINT32 i = 0; i < count; i++)
     {
-        Device device; 
+        Device device;
         device.video = ppActivateSources[i];
 
         LPWSTR pName = 0;
@@ -118,11 +118,11 @@ AMF_RESULT          AMF_STD_CALL MFCaptureManagerImpl::Update()
         if(pID != NULL)
         {
             device.id = pID;
-            
+
         }
         CoTaskMemFree(pID);
         AMFTraceInfo(AMF_FACILITY, L"Video Device: %s ,link = %s", device.name.c_str(), device.id.c_str());
-        
+
         GUID typeGUID;
         ppActivateSources[i]->GetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, &typeGUID);
 
@@ -156,11 +156,11 @@ AMF_RESULT          AMF_STD_CALL MFCaptureManagerImpl::Update()
         LPWSTR pID = 0;
 //        hr = ppActivateSources[i]->GetAllocatedString(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_AUDCAP_ENDPOINT_ID, &pID, 0);
         hr = ppActivateSources[i]->GetAllocatedString(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_AUDCAP_SYMBOLIC_LINK, &pID, 0);
-        
+
         if(pID != NULL)
         {
             id = pID;
-            
+
         }
         CoTaskMemFree(pID);
         AMFTraceInfo(AMF_FACILITY, L"Audio Device: %s, link = %s", name.c_str(), id.c_str());
@@ -320,7 +320,7 @@ void AMFMFCaptureImpl::AMFOutputBase::PollingThread::Run()
         HRESULT hr = S_OK;
         AMF_RESULT res = AMF_OK;
         CComPtr<IMFSample>       pSample;
-        
+
         DWORD streamIndex, flags;
         LONGLONG llTimeStamp;
         hr = m_pHost->m_pReader->ReadSample((DWORD)m_pHost->m_iSelectedIndex, 0, &streamIndex, &flags, &llTimeStamp, &pSample);
@@ -429,8 +429,8 @@ AMF_RESULT  AMF_STD_CALL    AMFMFCaptureImpl::AMFVideoOutput::GetInitAttributes(
         return AMF_OK;
     }
 
-    // Function MFCreateDXGIDeviceManager exists only on Windows 8+. So we have to 
-    // obtain its address dynamically to be able work on Windows 7. 
+    // Function MFCreateDXGIDeviceManager exists only on Windows 8+. So we have to
+    // obtain its address dynamically to be able work on Windows 7.
 
     HMODULE mfplatDll = LoadLibrary(L"mfplat.dll");
     AMF_RETURN_IF_FALSE(mfplatDll != NULL, AMF_FAIL, L"Failed to load mfplat.dll");
@@ -439,9 +439,9 @@ AMF_RESULT  AMF_STD_CALL    AMFMFCaptureImpl::AMFVideoOutput::GetInitAttributes(
 
     LPMFCreateDXGIDeviceManager mfCreateDXGIDeviceManager = (LPMFCreateDXGIDeviceManager)GetProcAddress(mfplatDll, "MFCreateDXGIDeviceManager");
     AMF_RETURN_IF_FALSE(mfCreateDXGIDeviceManager != NULL, AMF_FAIL, L"Failed to get address of MFCreateDXGIDeviceManager()");
-    
+
     UINT resetToken;
-    
+
     HRESULT hr = mfCreateDXGIDeviceManager(&resetToken, &m_pDxgiDeviceManager);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_FAIL, L"mfCreateDXGIDeviceManager() failed");
 
@@ -556,7 +556,7 @@ AMF_RESULT AMF_STD_CALL   AMFMFCaptureImpl::AMFVideoOutput::SelectSource(IMFMedi
                 continue;
             }
 
-            wchar_t *pType = L"";
+            const wchar_t *pType = L"";
             GUID guidMajor = GUID_NULL;
             hr = pMediaType->GetGUID(MF_MT_MAJOR_TYPE, &guidMajor);
 
@@ -573,7 +573,7 @@ AMF_RESULT AMF_STD_CALL   AMFMFCaptureImpl::AMFVideoOutput::SelectSource(IMFMedi
                 pType = L"Image";
             }
 
-                
+
 
             GUID guidSubType = GUID_NULL;
             hr = pMediaType->GetGUID(MF_MT_SUBTYPE, &guidSubType);
@@ -581,7 +581,7 @@ AMF_RESULT AMF_STD_CALL   AMFMFCaptureImpl::AMFVideoOutput::SelectSource(IMFMedi
             amf_int64 codec = 0;
             amf_int64 format = 0;
 
-            wchar_t * codecName = L"";
+            const wchar_t * codecName = L"";
 
             if(guidSubType == MFVideoFormat_NV12) { format = AMF_SURFACE_NV12;}
             else if(guidSubType == MFVideoFormat_RGB32) {format = AMF_SURFACE_RGBA;}
@@ -634,11 +634,11 @@ AMF_RESULT AMF_STD_CALL   AMFMFCaptureImpl::AMFVideoOutput::SelectSource(IMFMedi
 
 
             if(framesizeRequested.width != 0 && framesizeRequested.height != 0)
-                
+
             {
-                if(static_cast<amf_uint32>(framesizeRequested.width) != width || 
+                if(static_cast<amf_uint32>(framesizeRequested.width) != width ||
                    static_cast<amf_uint32>(framesizeRequested.height) != height)
-                { 
+                {
                     continue;
                 }
             }
@@ -649,7 +649,7 @@ AMF_RESULT AMF_STD_CALL   AMFMFCaptureImpl::AMFVideoOutput::SelectSource(IMFMedi
 
             for(int k = 0; k < amf_countof(StandardResolutions); k++)
             {
-                if(static_cast<amf_uint32>(StandardResolutions[k].width) == width && 
+                if(static_cast<amf_uint32>(StandardResolutions[k].width) == width &&
                    static_cast<amf_uint32>(StandardResolutions[k].height) == height)
                 {
                     if(double(numerator) / denominator > double(StandardResolutionsFound[k].m_FrameRate.num) / StandardResolutionsFound[k].m_FrameRate.den) // maximum frame rate
@@ -724,7 +724,7 @@ AMF_RESULT AMF_STD_CALL   AMFMFCaptureImpl::AMFVideoOutput::SelectSource(IMFMedi
             SetProperty(AMF_STREAM_EXTRA_DATA, AMFInterfacePtr(pBuffer));
         }
     }
-     AMFTraceInfo(AMF_FACILITY, L"Selected: Stream:%d Media:%d %s %d %dx%d@%5.2f" , m_Format.m_iStreamIndex, m_Format.m_iMediaTypeIndex, AMFSurfaceGetFormatName(m_Format.m_eFormat), 
+     AMFTraceInfo(AMF_FACILITY, L"Selected: Stream:%d Media:%d %s %d %dx%d@%5.2f" , m_Format.m_iStreamIndex, m_Format.m_iMediaTypeIndex, AMFSurfaceGetFormatName(m_Format.m_eFormat),
          m_Format.m_iCodecID, m_Format.m_FrameSize.width, m_Format.m_FrameSize.height, double(m_Format.m_FrameRate.num) / m_Format.m_FrameRate.den);
 
     return AMF_OK;
@@ -756,7 +756,7 @@ AMF_RESULT  AMF_STD_CALL    AMFMFCaptureImpl::AMFVideoOutput::ConvertData(IMFSam
                 CComPtr<ID3D11Device> pSurfaceDevice;
                 pSurface->GetDevice(&pSurfaceDevice);
                 if(pSurfaceDevice == (ID3D11Device*)m_pHost->m_pContext->GetDX11Device())
-                { 
+                {
                     AMFSurfacePtr pSurfaceOut;
 
                     pSurface->SetPrivateData(AMFTextureArrayIndexGUID, sizeof(subResourceIndex), &subResourceIndex);
@@ -765,7 +765,7 @@ AMF_RESULT  AMF_STD_CALL    AMFMFCaptureImpl::AMFVideoOutput::ConvertData(IMFSam
                     {
                         *ppData = pSurfaceOut;
                         (*ppData)->Acquire();
-                        pSurfaceOut->AddObserver(new InputSampleTracker(pSample));  
+                        pSurfaceOut->AddObserver(new InputSampleTracker(pSample));
 
                         return AMF_OK;
                     }
@@ -793,7 +793,7 @@ AMF_RESULT  AMF_STD_CALL    AMFMFCaptureImpl::AMFVideoOutput::ConvertData(IMFSam
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
-static const AMFEnumDescriptionEntry AMF_CAPTURE_AUDIO_FORMAT_DESC[] = 
+static const AMFEnumDescriptionEntry AMF_CAPTURE_AUDIO_FORMAT_DESC[] =
 {
     {AMFAF_UNKNOWN, L"UNKNOWN" },
     {AMFAF_S16 , L"S16" },
@@ -959,17 +959,17 @@ AMF_RESULT AMF_STD_CALL   AMFMFCaptureImpl::AMFAudioOutput::SelectSource(IMFMedi
             {
                 continue;
             }
-            
+
             samplerateFound = sampleRate;
             guidFoundFormat = guidSubType;
             channelsFound = channels;
 
-            if(guidFoundFormat == MFAudioFormat_PCM) 
-            { 
+            if(guidFoundFormat == MFAudioFormat_PCM)
+            {
                 codecFound = 0;
                 UINT32 bits = 0;
                 hr = pMediaType->GetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE  , &bits);
-                
+
                 switch(bits)
                 {
                 case 16: formatFound = AMFAF_S16; break;
@@ -1047,7 +1047,7 @@ AMF_RESULT  AMF_STD_CALL    AMFMFCaptureImpl::AMFAudioOutput::ConvertData(IMFSam
     }
 
     amf_int32 samples = lenData / (bytesInSample * m_iChannels);
-    
+
     AMFAudioBufferPtr pBuffer;
     res = m_pHost->m_pContext->AllocAudioBuffer(AMF_MEMORY_HOST, m_eFormat, samples, m_iSampleRate, m_iChannels, &pBuffer);
     AMF_RETURN_IF_FAILED(res, L"AllocAudioBuffer() failed");

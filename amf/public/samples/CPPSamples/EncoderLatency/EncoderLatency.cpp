@@ -98,12 +98,65 @@ static const wchar_t*  PARAM_NAME_WORKALGORITHM = L"ALGORITHM";
 static const wchar_t*  PARAM_NAME_PRERENDER     = L"PRERENDER";
 static const wchar_t*  PARAM_NAME_VCN_INSTANCE  = L"VCNINSTANCE";
 static const wchar_t*  PARAM_NAME_REALTIME      = L"REALTIME";
+#if defined(_WIN32)
+static const wchar_t*  PARAM_NAME_PRIORITY      = L"PRIORITY";
+struct PriorityParam
+{
+    static AMF_RESULT Converter(const std::wstring& value, amf::AMFVariant& valueOut)
+    {
+        amf_int64 paramValue = amf::AMFVariant(value.c_str()).ToInt64();
+        std::wstring uppValue = toUpper(value);
 
+        if (uppValue == L"IDLE")
+        {
+            paramValue = IDLE_PRIORITY_CLASS;
+        }
+        else if (uppValue == L"BELOW_NORMAL")
+        {
+            paramValue = BELOW_NORMAL_PRIORITY_CLASS;
+        }
+        else if (uppValue == L"NORMAL")
+        {
+            paramValue = NORMAL_PRIORITY_CLASS;
+        }
+        else if (uppValue == L"ABOVE_NORMAL")
+        {
+            paramValue = ABOVE_NORMAL_PRIORITY_CLASS;
+        }
+        else if (uppValue == L"HIGH")
+        {
+            paramValue = HIGH_PRIORITY_CLASS;
+        }
+        else if (uppValue == L"REALTIME")
+        {
+            paramValue = REALTIME_PRIORITY_CLASS;
+        }
+        valueOut = amf_int64(paramValue);
+        return AMF_OK;
+    }
+
+    static amf_wstring ToString(amf_int64 priorityClass)
+    {
+#define CASE(x) case x: return L#x
+        switch (priorityClass)
+        {
+            CASE(IDLE_PRIORITY_CLASS);
+            CASE(BELOW_NORMAL_PRIORITY_CLASS);
+            CASE(NORMAL_PRIORITY_CLASS);
+            CASE(ABOVE_NORMAL_PRIORITY_CLASS);
+            CASE(HIGH_PRIORITY_CLASS);
+            CASE(REALTIME_PRIORITY_CLASS);
+        }
+        return amf::amf_string_format(L"Priority Unknown(%lld)", priorityClass);
+#undef CASE
+    }
+};
+#endif
 
 AMF_RESULT RegisterParams(ParametersStorage* pParams)
 {
     pParams->SetParamDescription(PARAM_NAME_WORKALGORITHM, ParamCommon, L"'ASAP' or 'OneInOne' frames submission algorithm", NULL);
-    pParams->SetParamDescription(PARAM_NAME_ENGINE, ParamCommon, L"Memory type: DX9Ex, DX11, Vulkan (h.264 only)", ParamConverterMemoryType);
+    pParams->SetParamDescription(PARAM_NAME_ENGINE, ParamCommon, L"Memory type: DX9Ex, DX11, DX12, Vulkan (h.264 only)", ParamConverterMemoryType);
     pParams->SetParamDescription(PARAM_NAME_CODEC, ParamCommon, L"Codec name (AVC or H264, HEVC or H265, AV1)", ParamConverterCodec);
     pParams->SetParamDescription(PARAM_NAME_INPUT_FORMAT, ParamCommon, L"Supported file formats: RGBA_F16, R10G10B10A2, NV12, P010", ParamConverterFormat);
     pParams->SetParamDescription(PARAM_NAME_INPUT_FRAMES, ParamCommon, L"Output number of frames", ParamConverterInt64);
@@ -116,6 +169,9 @@ AMF_RESULT RegisterParams(ParametersStorage* pParams)
     pParams->SetParamDescription(PARAM_NAME_INPUT_WIDTH, ParamCommon, L"Input file width", ParamConverterInt64);
     pParams->SetParamDescription(PARAM_NAME_INPUT_HEIGHT, ParamCommon, L"Input file height", ParamConverterInt64);
     pParams->SetParamDescription(PARAM_NAME_REALTIME, ParamCommon, L"Bool, Keep real-time framerate, default false", ParamConverterBoolean);
+#if defined(_WIN32)
+    pParams->SetParamDescription(PARAM_NAME_PRIORITY, ParamCommon, L"Sets process priority class: (Idle, Below_Normal, Normal, Above_Normal, High, Realtime)", PriorityParam::Converter);
+#endif
 
     return AMF_OK;
 }
@@ -196,7 +252,6 @@ AMF_RESULT ReadParams(ParametersStorage* params, int argc, char* argv[])
     {
         return AMF_FAIL;
     }
-
 
     // load paramters
     if (params->GetParam(PARAM_NAME_INPUT_FRAMES, frameCount) == AMF_OK)
@@ -561,6 +616,19 @@ int main(int argc, char* argv[])
         return -1;
     }
 
+#if defined(_WIN32)
+    {
+        amf_int64 priorityClass = NORMAL_PRIORITY_CLASS;
+        if (params.GetParam(PARAM_NAME_PRIORITY, priorityClass) == AMF_OK)
+        {
+            amf_bool bResult = SetPriorityClass(GetCurrentProcess(), static_cast<DWORD>(priorityClass));
+            wprintf(L"SetPriorityClass(GetCurrentProcess(), %s) returned %s\n",
+                    PriorityParam::ToString(priorityClass).c_str(),
+                    (bResult == true ? L"true" : L"false"));
+        }
+    }
+#endif
+
     res = g_AMFFactory.Init();
     if (res != AMF_OK)
     {
@@ -598,6 +666,12 @@ int main(int argc, char* argv[])
     {
         res = context->InitDX11(NULL); // can be DX11 device
         AMF_RETURN_IF_FAILED(res, L"InitDX11(NULL) failed");
+        PrepareFillFromHost(context, memoryTypeIn, formatIn, widthIn, heightIn, false);
+    }
+    else if (memoryTypeIn == amf::AMF_MEMORY_DX12)
+    {
+        res = amf::AMFContext2Ptr(context)->InitDX12(NULL); // can be DX11 device
+        AMF_RETURN_IF_FAILED(res, L"InitDX12(NULL) failed");
         PrepareFillFromHost(context, memoryTypeIn, formatIn, widthIn, heightIn, false);
     }
 #endif
@@ -714,7 +788,7 @@ int main(int argc, char* argv[])
             }
             amf_sleep(1); // input queue is full: wait and try again
         }
-        
+
         // Need to request stop before waiting for stop
         if (thread.RequestStop() == false)
         {

@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -87,11 +87,11 @@ AMF_RESULT          AMF_STD_CALL DLCaptureManagerImpl::Update()
         }
         BOOL supportsFullDuplex = FALSE;
         if (deckLinkAttributes->GetFlag(BMDDeckLinkSupportsFullDuplex, &supportsFullDuplex) != S_OK)
-        { 
+        {
             supportsFullDuplex = FALSE;
         }
         // at this point we need just input
-        CComQIPtr<IDeckLinkInput> input = pDL;
+        CComQIPtr<IDeckLinkInput> input(pDL);
 
         if(input != NULL)
         {
@@ -165,7 +165,7 @@ struct DisplayModeMap
     BMDDisplayMode                  modeDL;
     AMFSize                         frameSize;
 };
-static DisplayModeMap s_displayModeMap[] = 
+static DisplayModeMap s_displayModeMap[] =
 {
     { AMF_DECKLINK_DISPLAY_MODE_UNKNOWN         , bmdModeUnknown      ,{0, 0}},
     { AMF_DECKLINK_DISPLAY_MODE_NTSC            , bmdModeNTSC         ,{ 720,  486}},
@@ -252,7 +252,7 @@ struct VideoFormatMap
     AMF_SURFACE_FORMAT  formatAMF;
     BMDPixelFormat      formatDL;
 };
-static VideoFormatMap s_VideoFormatMap[] = 
+static VideoFormatMap s_VideoFormatMap[] =
 {
     { AMF_SURFACE_Y210,       bmdFormat10BitYUV },
     { AMF_SURFACE_UYVY,       bmdFormat8BitYUV  },
@@ -286,7 +286,7 @@ static const AMFEnumDescriptionEntry AMF_CAPTURE_VIDEO_MEMORY_TYPE_DESC[] =
     {0, NULL}
 };
 //-------------------------------------------------------------------------------------------------
-static const AMFEnumDescriptionEntry AMF_CAPTURE_AUDIO_FORMAT_DESC[] = 
+static const AMFEnumDescriptionEntry AMF_CAPTURE_AUDIO_FORMAT_DESC[] =
 {
     {AMFAF_S16 , L"S16" },
     {AMFAF_S32 , L"S32" },
@@ -302,7 +302,7 @@ BMDAudioSampleType FromAMFToDLAudioType(AMF_AUDIO_FORMAT  typeAMF)
     return BMDAudioSampleType(0);
 }
 
-static const AMFEnumDescriptionEntry  AMF_CAPTURE_CHANNELS_DESC[] = 
+static const AMFEnumDescriptionEntry  AMF_CAPTURE_CHANNELS_DESC[] =
 {
     {2 , L"2" },
     {8 , L"8" },
@@ -368,7 +368,7 @@ AMF_RESULT  AMF_STD_CALL  AMFDeckLinkDeviceImpl::UpdateFromDeckLink()
         SetProperty(AMF_CAPTURE_DEVICE_NAME, (wchar_t*)pName);
         ::SysFreeString(pName);
     }
-    
+
     CComPtr<IDeckLinkDisplayModeIterator>  pModeIterator;
     m_pDLInput->GetDisplayModeIterator(&pModeIterator);
     AMF_RETURN_IF_FALSE(pModeIterator != NULL, AMF_FAIL, L"GetDisplayModeIterator() failed");
@@ -450,14 +450,14 @@ AMF_RESULT  AMF_STD_CALL  AMFDeckLinkDeviceImpl::InitDeckLink()
 
         amf_int64 memoryType = AMF_MEMORY_DX11;
         pVideoStream->GetProperty(AMF_STREAM_VIDEO_MEMORY_TYPE, &memoryType);
-        m_eVideoMemoryType = AMF_MEMORY_TYPE(memoryType); 
+        m_eVideoMemoryType = AMF_MEMORY_TYPE(memoryType);
 
         BMDDisplayMode      mode = bmdModeUnknown;
         for(amf_vector<Mode>::iterator it = m_SupportedModes.begin(); it != m_SupportedModes.end(); it++)
         {
             if(it->framesize.width == framesize.width && it->framesize.height == framesize.height &&
-                
-                fabs(double(it->framerate.num) / it->framerate.den  - double (framerate.num) / framerate.den) < 0.00001 && 
+
+                fabs(double(it->framerate.num) / it->framerate.den  - double (framerate.num) / framerate.den) < 0.00001 &&
                 it->field == bmdProgressiveFrame // hard - coded progressive for now
                 // TODO it->flag ???
                 )
@@ -502,7 +502,7 @@ AMF_RESULT  AMF_STD_CALL  AMFDeckLinkDeviceImpl::InitDeckLink()
         ASSERT_RETURN_IF_HR_FAILED(hr, AMF_FAIL, L"SetCallback() failed");
 
 
-        hr = m_pDLInput->EnableVideoInput(mode, pixelFormat, inputFlags); // bmdVideoInputEnableFormatDetection ??? 
+        hr = m_pDLInput->EnableVideoInput(mode, pixelFormat, inputFlags); // bmdVideoInputEnableFormatDetection ???
         ASSERT_RETURN_IF_HR_FAILED(hr, AMF_FAIL, L"EnableVideoInput() failed");
 
 
@@ -568,7 +568,7 @@ AMF_RESULT  AMF_STD_CALL  AMFDeckLinkDeviceImpl::AllocOutputPool()
 
     AMFOutputPtr pVideoStream = GetStream(AMF_STREAM_VIDEO);
     if(pVideoStream != NULL)
-    { 
+    {
         bool bEnableVideo = false;
         pVideoStream->GetProperty(AMF_STREAM_ENABLED, &bEnableVideo);
         if(bEnableVideo)
@@ -600,7 +600,7 @@ AMF_RESULT  AMF_STD_CALL  AMFDeckLinkDeviceImpl::AllocOutputPool()
                 break;
             case AMF_SURFACE_UYVY:
                 surfaceVirtualSize *= 2;
-                //MM to test only 
+                //MM to test only
 //                surfaceVirtualSize *= 2;
                 //
                 break;
@@ -733,7 +733,7 @@ AMF_RESULT  AMF_STD_CALL  AMFDeckLinkDeviceImpl::GetOutput(amf_int32 index, AMFO
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
-AMFDeckLinkDeviceImpl::AMFVideoOutput::AMFVideoOutput(AMFDeckLinkDeviceImpl* pHost) : 
+AMFDeckLinkDeviceImpl::AMFVideoOutput::AMFVideoOutput(AMFDeckLinkDeviceImpl* pHost) :
     m_pHost(pHost)
 {
     AMFPrimitivePropertyInfoMapBegin
@@ -810,14 +810,14 @@ AMF_RESULT AMF_STD_CALL  AMFDeckLinkDeviceImpl::AMFVideoOutput::QueryOutput(AMFD
     }
 
     if(found == m_pHost->m_SurfacePool.end())
-    { 
+    {
         return AMF_REPEAT; // not ready
     }
 
     AMFTraceInfo(AMF_FACILITY, L"QueryOutput() size=%u vm=0x%X", found->size, found->virtualMemory);
 
-    AMFSurfacePtr pOutput; 
-    
+    AMFSurfacePtr pOutput;
+
     switch(m_pHost->m_eVideoMemoryType)
     {
     case AMF_MEMORY_DX11:
@@ -827,7 +827,7 @@ AMF_RESULT AMF_STD_CALL  AMFDeckLinkDeviceImpl::AMFVideoOutput::QueryOutput(AMFD
     }
 //    pOutput->Duplicate(pOutput->GetMemoryType(), ppData);
 //    found->transferred = false;
-  
+
     /*
     amf_int64 formatAMF = AMF_SURFACE_UNKNOWN;
     GetProperty(AMF_STREAM_VIDEO_FORMAT, &formatAMF);
@@ -878,7 +878,7 @@ void AMF_STD_CALL AMFDeckLinkDeviceImpl::OnSurfaceDataRelease(AMFSurface* pSurfa
     }
 }
 //-------------------------------------------------------------------------------------------------
-AMFDeckLinkDeviceImpl::AMFAudioOutput::AMFAudioOutput(AMFDeckLinkDeviceImpl* pHost)  : 
+AMFDeckLinkDeviceImpl::AMFAudioOutput::AMFAudioOutput(AMFDeckLinkDeviceImpl* pHost)  :
 m_pHost(pHost)
 {
     AMFPrimitivePropertyInfoMapBegin
@@ -926,7 +926,7 @@ HRESULT STDMETHODCALLTYPE	VideoMemoryAllocator::AllocateBuffer(unsigned int buff
             found = it;
         }
         if(it->trackedSurface != NULL)
-        { 
+        {
             inTransit++;
         }
         else if(it->transferred)
@@ -938,7 +938,7 @@ HRESULT STDMETHODCALLTYPE	VideoMemoryAllocator::AllocateBuffer(unsigned int buff
     {
         AMFOutputPtr pVideoStream = m_pHost->GetStream(AMF_STREAM_VIDEO);
         if(pVideoStream != NULL)
-        { 
+        {
             amf_int64 poolSize = 5;
             pVideoStream->GetProperty(AMF_STREAM_VIDEO_SURFACE_POOL, &poolSize);
             if(poolSize == 0)
@@ -1076,7 +1076,7 @@ HRESULT STDMETHODCALLTYPE	CaptureCallback::VideoInputFrameArrived(IDeckLinkVideo
         long rowBytes= videoFrame->GetRowBytes();
 
 
-        CComPtr<IDeckLinkVideoFrameAncillary> pAuxData; 
+        CComPtr<IDeckLinkVideoFrameAncillary> pAuxData;
         videoFrame->GetAncillaryData(&pAuxData);
         if(pAuxData != NULL)
         {
@@ -1161,7 +1161,7 @@ HRESULT	STDMETHODCALLTYPE	CaptureCallback::VideoInputFormatChanged(BMDVideoInput
         {
             AMFOutputPtr pVideoStream = m_pHost->GetStream(AMF_STREAM_VIDEO);
             if(pVideoStream != NULL)
-            { 
+            {
                 pVideoStream->SetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, it->framesize);
                 pVideoStream->SetProperty(AMF_STREAM_VIDEO_FRAME_RATE, it->framerate);
 

@@ -63,7 +63,7 @@ struct BackBufferBase
     virtual amf::AMF_MEMORY_TYPE GetMemoryType() const = 0;
     virtual AMFSize GetSize() const = 0;
 
-    virtual bool operator==(const BackBufferBase& other) const
+    virtual amf_bool operator==(const BackBufferBase& other) const
     {
         return GetNative() == other.GetNative();
     }
@@ -115,7 +115,8 @@ public:
     virtual amf::AMF_SURFACE_FORMAT     GetFormat() const                                                               { return m_format; }
 
     // Fullscreen
-    virtual amf_bool                    FullscreenEnabled()                                                             { return m_fullscreenEnabled; }
+    virtual amf_bool                    GetExclusiveFullscreenState()                                                   { return false; }
+    virtual AMF_RESULT                  SetExclusiveFullscreenState(amf_bool /*fullscreen*/)                            { return AMF_NOT_IMPLEMENTED; }
 
     // HDR
     virtual amf_bool                    HDRSupported()                                                                  { return false; }
@@ -138,6 +139,9 @@ public:
     virtual amf_bool                    StereoSupported()                                                               { return false; }
     virtual amf_bool                    StereoEnabled()                                                                 { return m_stereoEnabled; }
 
+    // To check if Init has been called
+    amf_bool                            IsInitialized()                                                                 { return m_hwnd != nullptr; }
+
 protected:
     SwapChain(amf::AMFContext* pContext);
 
@@ -159,7 +163,6 @@ protected:
     amf_handle                          m_hDisplay;
 
     AMFSize                             m_size;
-    amf_bool                            m_fullscreenEnabled;
     amf::AMF_SURFACE_FORMAT             m_format;
     amf_bool                            m_hdrEnabled;
     AMFHDRMetadata                      m_outputHDRMetaData;
@@ -201,17 +204,6 @@ Native_T* GetNativePackedSurface(amf::AMFSurface* pSurface, amf::AMF_MEMORY_TYPE
 #define GetPackedSurfaceDX11(pSurface)      GetNativePackedSurface<ID3D11Texture2D>     (pSurface, amf::AMF_MEMORY_DX11)
 #define GetPackedSurfaceDX12(pSurface)      GetNativePackedSurface<ID3D12Resource>      (pSurface, amf::AMF_MEMORY_DX12)
 #define GetPackedSurfaceVulkan(pSurface)    GetNativePackedSurface<amf::AMFVulkanView>  (pSurface, amf::AMF_MEMORY_VULKAN)
+#define GetPackedSurfaceOpenGL(pSurface)    GetNativePackedSurface<void>                (pSurface, amf::AMF_MEMORY_OPENGL)
 
-struct WindowFullscreenContext
-{
-    amf_bool    fullscreenState;
-    AMFRect     windowModeRect;
-    AMFRect     currentRect;
-#ifdef _WIN32
-    DEVMODEW    windowModeDevMode;
-    LONG_PTR    windowModeStyle;
-    LONG_PTR    windowModeExStyle;
-#endif
-};
-
-AMF_RESULT SetWindowFullscreenState(amf_handle hwnd, amf_handle hDisplay, amf_bool fullscreen, WindowFullscreenContext& context);
+AMFRect GetClientRect(amf_handle hwnd, amf_handle hDisplay = nullptr);

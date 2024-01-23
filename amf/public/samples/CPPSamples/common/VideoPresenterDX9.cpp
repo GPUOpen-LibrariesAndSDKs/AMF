@@ -31,39 +31,25 @@
 //
 #include "VideoPresenterDX9.h"
 #include <public/common/TraceAdapter.h>
-#include <DirectXMath.h>
-#include <atlcomcli.h>
 
+// Auto generated to build_dir from QuadDX9_vs.h and QuadDX9_ps.h
+// and added to the include directory during compile
 #include "QuadDX9_vs.h"
 #include "QuadDX9_ps.h"
 
-using namespace DirectX;
+using namespace amf;
 
 #define AMF_FACILITY L"VideoPresenterDX9"
-
-static const D3DCOLOR ClearColor = D3DCOLOR_RGBA(0, 0, 0, 0);
-
-// TODO: These are shared between all DX presenters (and maybe vulkan?). Move later
-static const AMFRect vertexViewRect = AMFConstructRect(-1, 1, 1, -1);
-static const AMFRect texViewRect = AMFConstructRect(0, 1, 1, 0);
 
 // Register numbers
 #define TEXTURE_REG                    0 // (QuadDX9_ps.hlsl - Texture2D txDiffuse : register(t0);)
 #define VERTEX_TRANSFORM_MATRIX_REG    0 // (QuadDX9_vs.hlsl - float4x4 vertexTransform : register (c0);)
 #define TEXTURE_TRANSFORM_MATRIX_REG   4 // (QuadDX9_vs.hlsl - float4x4 textureTransform : register (c4);)
 
-VideoPresenterDX9::VideoPresenterDX9(amf_handle hwnd, amf::AMFContext* pContext) :
-    BackBufferPresenter(hwnd, pContext),
-    m_swapChain(m_pContext),
-    m_eInputFormat(amf::AMF_SURFACE_BGRA),
-    m_currentViewport{},
-    m_fScale(1.0f),
-    m_iOffsetX(0),
-    m_iOffsetY(0),
-    m_bUpdateVertices(false),
-    m_bResizeSwapChain(false)
+VideoPresenterDX9::VideoPresenterDX9(amf_handle hwnd, AMFContext* pContext, amf_handle hDisplay) :
+    VideoPresenter(hwnd, pContext, hDisplay)
 {
-
+    m_pSwapChain = std::make_unique<SwapChainDX9>(pContext);
 }
 
 VideoPresenterDX9::~VideoPresenterDX9()
@@ -71,10 +57,11 @@ VideoPresenterDX9::~VideoPresenterDX9()
     Terminate();
 }
 
-AMF_RESULT VideoPresenterDX9::Init(amf_int32 width, amf_int32 height, amf::AMFSurface* pSurface)
+AMF_RESULT VideoPresenterDX9::Init(amf_int32 width, amf_int32 height, AMFSurface* pSurface)
 {
     AMF_RETURN_IF_FALSE(width > 0 && height > 0, AMF_INVALID_ARG, L"Init() - Invalid width/height: %ux%u", width, height);
     AMF_RETURN_IF_FALSE(m_hwnd != nullptr, AMF_NOT_INITIALIZED, L"Init() - m_hwnd is not initialized");
+    AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_UNEXPECTED, L"Init() - m_pSwapChain is NULL");
 
     AMF_RESULT res = VideoPresenter::Init(width, height);
     AMF_RETURN_IF_FAILED(res, L"Init() - VideoPresenter::Init() failed");
@@ -82,8 +69,8 @@ AMF_RESULT VideoPresenterDX9::Init(amf_int32 width, amf_int32 height, amf::AMFSu
     m_pDevice = static_cast<IDirect3DDevice9Ex*>(m_pContext->GetDX9Device());
     AMF_RETURN_IF_FALSE(m_pDevice != nullptr, AMF_NO_DEVICE, L"Init() - Failed to get DX9 device");
 
-    res = m_swapChain.Init(m_hwnd, m_hDisplay, pSurface, width, height, GetInputFormat());
-    AMF_RETURN_IF_FAILED(res, L"Init() - m_swapChain.Init() failed");
+    res = m_pSwapChain->Init(m_hwnd, m_hDisplay, pSurface, width, height, GetInputFormat());
+    AMF_RETURN_IF_FAILED(res, L"Init() - m_pSwapChain->Init() failed");
 
     res = CreateShaders();
     AMF_RETURN_IF_FAILED(res, L"Init() - CreateShaders() failed");
@@ -108,21 +95,8 @@ AMF_RESULT VideoPresenterDX9::Terminate()
     m_pRasterizerState = nullptr;
     m_pBlendState = nullptr;
     m_pDefaultState = nullptr;
+    m_pSamplerStateMap.clear();
 
-    m_currentViewport = {};
-
-    for (std::vector<amf::AMFSurface*>::iterator it = m_TrackSurfaces.begin(); it != m_TrackSurfaces.end(); it++)
-    {
-        (*it)->RemoveObserver(this);
-    }
-    m_TrackSurfaces.clear();
-
-    m_fScale = 1.0f;
-    m_iOffsetX = 0;
-    m_iOffsetY = 0;
-    m_bUpdateVertices = false;
-
-    m_swapChain.Terminate();
     return VideoPresenter::Terminate();
 }
 
@@ -155,7 +129,7 @@ AMF_RESULT VideoPresenterDX9::PrepareStates()
     AMF_RETURN_IF_FALSE(m_pBlendState == nullptr, AMF_ALREADY_INITIALIZED, L"PrepareStates() - m_pBlendState is already initialized");
 
     // Create vertex buffer (quad will be set later)
-    constexpr UINT size = sizeof(SimpleVertex) * 4;
+    constexpr UINT size = sizeof(QUAD_VERTICES_NORM);
     constexpr DWORD usage = D3DUSAGE_WRITEONLY;
     constexpr D3DPOOL pool = D3DPOOL_DEFAULT;
     HRESULT hr = m_pDevice->CreateVertexBuffer(size, usage, 0, pool, &m_pVertexBuffer, nullptr);
@@ -172,32 +146,11 @@ AMF_RESULT VideoPresenterDX9::PrepareStates()
     hr = m_pDevice->CreateVertexDeclaration(layout, &m_pVertexLayout);
     AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"PrepareStates() - CreateVertexDeclaration() failed");
 
-    SimpleVertex vertices[4];
-    memset(vertices, 0, sizeof(vertices));
-
-    // top left
-    vertices[0].position = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
-    vertices[0].texture = DirectX::XMFLOAT2(0.0f, 0.0f);
-
-    // top right
-    vertices[1].position = DirectX::XMFLOAT3(1.0f, 1.0f, 0.0f);
-    vertices[1].texture = DirectX::XMFLOAT2(1.0f, 0.0f);
-
-    // bottom left
-    vertices[2].position = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
-    vertices[2].texture = DirectX::XMFLOAT2(0.0f, 1.0f);
-
-    // bottom right
-    // Second triangle.
-    vertices[3].position = DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f);
-    vertices[3].texture = DirectX::XMFLOAT2(1.0f, 1.0f);
-
     // Update vertex buffer
     // After updating it once, we don't need to touch the vertex since we use
     // projection matrices for changing the vertex positions dynamically
-    AMF_RESULT res = UpdateVertexBuffer(m_pVertexBuffer, vertices, sizeof(vertices));
+    AMF_RESULT res = UpdateVertexBuffer(m_pVertexBuffer, (void*)QUAD_VERTICES_NORM, sizeof(QUAD_VERTICES_NORM));
     AMF_RETURN_IF_FAILED(res, L"UpdateVertices() - UpdateVertexBuffer() failed");
-
 
     // Capture the default state
     m_pDevice->CreateStateBlock(D3DSBT_ALL, &m_pDefaultState);
@@ -205,11 +158,11 @@ AMF_RESULT VideoPresenterDX9::PrepareStates()
 
     // We use a static sampler defined in the shader so no need to create one here
 
-    #define SetRenderStateCheck(state, value) \
-    {\
-        HRESULT err = m_pDevice->SetRenderState(state, value);\
-        ASSERT_RETURN_IF_HR_FAILED(err, AMF_DIRECTX_FAILED, L"PrepareStates() - Failed to set render state " L#state " to %ul", value);\
-    }
+#define SetRenderStateCheck(state, value) \
+{\
+    HRESULT err = m_pDevice->SetRenderState(state, value);\
+    ASSERT_RETURN_IF_HR_FAILED(err, AMF_DIRECTX_FAILED, L"PrepareStates() - Failed to set render state " L#state " to %ul", value);\
+}
 
     // Create depth stencil state
     // set Z-buffer off
@@ -269,101 +222,49 @@ AMF_RESULT VideoPresenterDX9::PrepareStates()
     hr = m_pDevice->EndStateBlock(&m_pBlendState);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"PrepareStates() - EndStateBlock() failed to record blend state");
 
+#undef SetRenderStateCheck
+
+    hr = m_pDevice->BeginStateBlock();
+
+    hr = m_pDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetSamplerState() failed to set D3DSAMP_MAGFILTER to D3DTEXF_LINEAR");
+    hr = m_pDevice->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetSamplerState() failed to set D3DSAMP_MINFILTER to D3DTEXF_LINEAR");
+    hr = m_pDevice->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
+    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetSamplerState() failed to set D3DSAMP_MIPFILTER to D3DTEXF_LINEAR");
+
+    hr = m_pDevice->EndStateBlock(&m_pSamplerStateMap[InterpolationLinear]);
+    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"PrepareStates() - EndStateBlock() failed to record linear sampler state");
+
+    hr = m_pDevice->BeginStateBlock();
+
+    hr = m_pDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetSamplerState() failed to set D3DSAMP_MAGFILTER to D3DTEXF_POINT");
+    hr = m_pDevice->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetSamplerState() failed to set D3DSAMP_MINFILTER to D3DTEXF_POINT");
+    hr = m_pDevice->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_POINT);
+    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetSamplerState() failed to set D3DSAMP_MIPFILTER to D3DTEXF_POINT");
+
+    hr = m_pDevice->EndStateBlock(&m_pSamplerStateMap[InterpolationPoint]);
+    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"PrepareStates() - EndStateBlock() failed to record point sampler state");
+
     return AMF_OK;
 }
 
-AMF_RESULT VideoPresenterDX9::Present(amf::AMFSurface* pSurface)
+AMF_RESULT VideoPresenterDX9::RenderSurface(AMFSurface* pSurface, const RenderTargetBase* pRenderTarget, RenderViewSizeInfo& renderView)
 {
-    AMF_RETURN_IF_FALSE(m_pDevice != nullptr, AMF_NOT_INITIALIZED, L"Present() - m_pDevice is not initialized");
-    AMF_RETURN_IF_FALSE(pSurface != nullptr, AMF_INVALID_ARG, L"Present() - pSurface is NULL");
-    AMF_RETURN_IF_FALSE(pSurface->GetFormat() == GetInputFormat(), AMF_INVALID_FORMAT, L"Present() - Surface format (%s)"
-        "does not match input format (%s)", amf::AMFSurfaceGetFormatName(pSurface->GetFormat()),
-        amf::AMFSurfaceGetFormatName(GetInputFormat()));
-    
-    AMF_RESULT res = pSurface->Convert(GetMemoryType());
-    AMF_RETURN_IF_FAILED(res, L"Present() - Surface Convert() failed");
+    AMF_RETURN_IF_FALSE(pSurface != nullptr, AMF_INVALID_ARG, L"RenderSurface() - pSrcSurface is NULL");
 
-    res = CheckForResize(false);
-    AMF_RETURN_IF_FAILED(res, L"Present() - CheckForResize() failed");
+    RenderTarget* pTarget = (RenderTarget*)pRenderTarget;
+    AMF_RETURN_IF_FALSE(pTarget != nullptr, AMF_INVALID_ARG, L"RenderSurface() - pRenderTarget is NULL");
 
-    amf_uint index = 0;
-    res = m_swapChain.GetBackBufferIndex(pSurface, index);
-    AMF_RETURN_IF_FALSE(res == AMF_OK || res == AMF_NOT_FOUND, res, L"Present() - GetBackBufferIndex() failed");
-
-    if (m_bRenderToBackBuffer == false || res == AMF_NOT_FOUND)
-    {
-        if (m_bResizeSwapChain)
-        {
-            res = ResizeSwapChain();
-            AMF_RETURN_IF_FAILED(res, L"Present() - ResizeSwapChain() failed");
-        }
-
-        const BackBufferBase* pBuffer = nullptr;
-        res = m_swapChain.AcquireNextBackBuffer(&pBuffer);
-        AMF_RETURN_IF_FAILED(res, L"Present() - AcquireNextBackBuffer() failed");
-
-        const RenderTarget* pRenderTarget = (RenderTarget*)pBuffer;
-        res = RenderSurface(pSurface, pRenderTarget);
-        if (res != AMF_OK)
-        {
-            m_swapChain.DropBackBuffer(pBuffer);
-        }
-        AMF_RETURN_IF_FAILED(res, L"Present() - RenderSurface() failed");
-    }
-
-    WaitForPTS(pSurface->GetPts());
-
-    amf::AMFContext::AMFDX9Locker lockDX9(m_pContext);
-    amf::AMFLock lock(&m_sect);
-
-    res = m_swapChain.Present(m_bWaitForVSync);
-    AMF_RETURN_IF_FAILED(res, L"Present() - SwapChain Present() failed");
-
-    if (m_bResizeSwapChain)
-    {
-        return AMF_RESOLUTION_UPDATED;
-    }
-    
-    return AMF_OK;
-}
-
-AMF_RESULT VideoPresenterDX9::RenderSurface(amf::AMFSurface* pSurface, const RenderTarget* pRenderTarget)
-{
-    AMF_RETURN_IF_FALSE(pSurface != nullptr, AMF_INVALID_ARG, L"RenderSurface() - pSurface is NULL");
-    AMF_RETURN_IF_FALSE(pSurface->GetFormat() == GetInputFormat(), AMF_INVALID_FORMAT, L"Present() - Surface format (%s)"
-        "does not match input format (%s)", amf::AMFSurfaceGetFormatName(pSurface->GetFormat()),
-        amf::AMFSurfaceGetFormatName(GetInputFormat()));
-    AMF_RETURN_IF_FALSE(pRenderTarget != nullptr, AMF_UNEXPECTED, L"RenderSurface() - pRenderTarget is NULL");
-
-    amf::AMFContext::AMFDX9Locker dxlock(m_pContext);
-    amf::AMFLock lock(&m_sect);
-
-    const AMFRect srcSurfaceRect = GetPlaneRect(pSurface->GetPlane(amf::AMF_PLANE_PACKED));
-    const AMFRect dstSurfaceRect = GetClientRect();
-    const AMFSize dstSurfaceSize = pRenderTarget->GetSize();
-
-    RenderViewSizeInfo renderView = {};
-    AMF_RESULT res = GetRenderViewSizeInfo(srcSurfaceRect, dstSurfaceSize, dstSurfaceRect, renderView);
-    AMF_RETURN_IF_FAILED(res, L"RenderSurface() - GetRenderViewSizeInfo() failed");
-
-    res = RenderSurface(pSurface, pRenderTarget, renderView);
-    AMF_RETURN_IF_FAILED(res, L"RenderSurface() - BitBltRender() failed");
-    
-    return AMF_OK;
-}
-
-AMF_RESULT VideoPresenterDX9::RenderSurface(amf::AMFSurface* pSrcSurface, const RenderTarget* pRenderTarget, const RenderViewSizeInfo& renderView)
-{
-    AMF_RETURN_IF_FALSE(pSrcSurface != nullptr, AMF_INVALID_ARG, L"RenderSurface() - pSrcSurface is NULL");
-    AMF_RETURN_IF_FALSE(pRenderTarget != nullptr, AMF_INVALID_ARG, L"RenderSurface() - pRenderTarget is NULL");
-
-    AMF_RESULT res = ResizeRenderView(renderView);
-    AMF_RETURN_IF_FAILED(res, L"RenderSurface() - ResizeRenderView() failed");
+    AMF_RESULT res = UpdateStates(pSurface, pTarget, renderView);
+    AMF_RETURN_IF_FAILED(res, L"RenderSurface() - UpdateStates() failed");
 
     HRESULT hr = m_pDevice->BeginScene();
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"RenderSurface() - BeginScene() failed");
 
-    res = RenderScene(pSrcSurface, pRenderTarget);
+    res = RenderScene(pSurface, pTarget);
 
     hr = m_pDevice->EndScene();
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"RenderSurface() - EndScene() failed");
@@ -374,10 +275,21 @@ AMF_RESULT VideoPresenterDX9::RenderSurface(amf::AMFSurface* pSrcSurface, const 
     return AMF_OK;
 }
 
-AMF_RESULT VideoPresenterDX9::RenderScene(amf::AMFSurface* pSrcSurface, const RenderTarget* pRenderTarget)
+AMF_RESULT VideoPresenterDX9::UpdateStates(AMFSurface* /*pSurface*/, const RenderTarget* /*pRenderTarget*/, RenderViewSizeInfo& renderView)
+{
+    AMF_RESULT res = ResizeRenderView(renderView);
+    AMF_RETURN_IF_FAILED(res, L"UpdateStates() - ResizeRenderView() failed");
+
+    return AMF_OK;
+}
+
+AMF_RESULT VideoPresenterDX9::RenderScene(AMFSurface* pSrcSurface, const RenderTarget* pRenderTarget)
 {
     AMF_RETURN_IF_FALSE(pSrcSurface != nullptr, AMF_INVALID_ARG, L"RenderScene() - pSrcSurface is NULL");
     AMF_RETURN_IF_FALSE(pRenderTarget != nullptr, AMF_INVALID_ARG, L"RenderScene() - pRenderTarget is NULL");
+
+    IDirect3DSurface9* pDXSurface = GetPackedSurfaceDX9(pSrcSurface);
+    AMF_RETURN_IF_FALSE(pDXSurface != nullptr, AMF_INVALID_ARG, L"RenderScene() - surface has NULL packed plane native");
 
     AMF_RESULT res = DrawBackground(pRenderTarget); // Clears the background
     AMF_RETURN_IF_FAILED(res, L"RenderScene() - DrawBackground() failed");
@@ -385,14 +297,20 @@ AMF_RESULT VideoPresenterDX9::RenderScene(amf::AMFSurface* pSrcSurface, const Re
     res = SetStates();
     AMF_RETURN_IF_FAILED(res, L"RenderScene() - SetStates() failed");
 
-    amf::AMFPlane* pPlane = pSrcSurface->GetPlane(amf::AMF_PLANE_PACKED);
-    AMF_RETURN_IF_FALSE(pPlane != nullptr, AMF_INVALID_ARG, L"RenderScene() - Packed plane does not exist, invalid format");
-
-    res = DrawFrame((IDirect3DSurface9*)pPlane->GetNative(), pRenderTarget);
+    res = DrawFrame(pDXSurface, pRenderTarget);
     AMF_RETURN_IF_FAILED(res, L"RenderScene() - DrawFrame() failed");
 
     res = DrawOverlay(pSrcSurface, pRenderTarget);
     AMF_RETURN_IF_FAILED(res, L"RenderScene() - DrawOverlay() failed");
+
+    if (m_enablePIP == true)
+    {
+        res = SetPipStates();
+        AMF_RETURN_IF_FAILED(res, L"RenderScene() - SetPipStates() failed");
+
+        res = DrawFrame(pDXSurface, pRenderTarget);
+        AMF_RETURN_IF_FAILED(res, L"RenderScene() - DrawFrame() PIP failed");
+    }
 
     return AMF_OK;
 }
@@ -405,7 +323,7 @@ AMF_RESULT VideoPresenterDX9::DrawBackground(const RenderTarget* pRenderTarget)
     HRESULT hr = m_pDevice->SetRenderTarget(0, pRenderTarget->pBuffer);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"DrawBackground() - SetRenderTarget() failed");
 
-    hr = m_pDevice->Clear(0, nullptr, D3DCLEAR_TARGET, ClearColor, 0, 0);
+    hr = m_pDevice->Clear(0, nullptr, D3DCLEAR_TARGET, D3DClearColor, 0, 0);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"DrawBackground() - Clear() failed");
 
     return AMF_OK;
@@ -419,6 +337,7 @@ AMF_RESULT VideoPresenterDX9::SetStates()
     AMF_RETURN_IF_FALSE(m_pDepthStencilState != nullptr, AMF_NOT_INITIALIZED, L"SetStates() - m_pDepthStencilState is not initialized");
     AMF_RETURN_IF_FALSE(m_pRasterizerState != nullptr, AMF_NOT_INITIALIZED, L"SetStates() - m_pRasterizerState is not initialized");
     AMF_RETURN_IF_FALSE(m_pBlendState != nullptr, AMF_NOT_INITIALIZED, L"SetStates() - m_pBlendState is not initialized");
+    AMF_RETURN_IF_FALSE(m_pSamplerStateMap[m_interpolation] != nullptr, AMF_NOT_INITIALIZED, L"SetStates() - m_pSamplerStateMap[m_interpolation] is not initialized");
     AMF_RETURN_IF_FALSE(m_pVertexBuffer != nullptr, AMF_NOT_INITIALIZED, L"SetStates() - m_pVertexBuffer is not initialized");
     AMF_RETURN_IF_FALSE(m_pVertexLayout != nullptr, AMF_NOT_INITIALIZED, L"SetStates() - m_pVertexLayout is not initialized");
 
@@ -446,22 +365,51 @@ AMF_RESULT VideoPresenterDX9::SetStates()
     hr = m_pDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetStates() - SetRenderState() failed to set D3DRS_LIGHTING");
 
+    // Sampler
+    hr = m_pSamplerStateMap[m_interpolation]->Apply();
+    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetStates() - m_pSamplerState->Apply() failed");
+
     // Set vertex buffer
-    hr = m_pDevice->SetStreamSource(0, m_pVertexBuffer, 0, sizeof(SimpleVertex));
+    hr = m_pDevice->SetStreamSource(0, m_pVertexBuffer, 0, sizeof(Vertex));
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetStates() - SetStreamSource() failed");
 
     hr = m_pDevice->SetVertexDeclaration(m_pVertexLayout);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetStates() - SetVertexDeclaration() failed");
 
-    hr = m_pDevice->SetVertexShaderConstantF(VERTEX_TRANSFORM_MATRIX_REG, (float*)m_fNormalToViewMatrix, 4);
+    hr = m_pDevice->SetVertexShaderConstantF(VERTEX_TRANSFORM_MATRIX_REG, (amf_float*)m_viewProjection.vertexTransform, 4);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetStates() - SetVertexShaderConstantF() failed to set vertex transform matrix");
 
-    hr = m_pDevice->SetVertexShaderConstantF(TEXTURE_TRANSFORM_MATRIX_REG, (float*)m_fTextureMatrix, 4);
+    hr = m_pDevice->SetVertexShaderConstantF(TEXTURE_TRANSFORM_MATRIX_REG, (amf_float*)m_viewProjection.texTransform, 4);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetStates() - SetVertexShaderConstantF() failed to set texture transform matrix");
 
     // Viewport
-    hr = m_pDevice->SetViewport(&m_currentViewport);                                // Viewport
+    const AMFSize size = GetSwapchainSize();
+    D3DVIEWPORT9 currentViewport = {};
+    currentViewport.X = 0;
+    currentViewport.Y = 0;
+    currentViewport.Width = DWORD(size.width);
+    currentViewport.Height = DWORD(size.height);
+    currentViewport.MinZ = 0.0f;
+    currentViewport.MaxZ = 1.0f;
+    hr = m_pDevice->SetViewport(&currentViewport);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetStates() - SetViewport() failed");
+
+    return AMF_OK;
+}
+
+AMF_RESULT VideoPresenterDX9::SetPipStates()
+{
+    AMF_RETURN_IF_FALSE(m_pDevice != nullptr, AMF_NOT_INITIALIZED, L"SetPipStates() - m_pDevice is not initialized");
+    AMF_RETURN_IF_FALSE(m_pSamplerStateMap[InterpolationPoint] != nullptr, AMF_NOT_INITIALIZED, L"SetPipStates() - PIP sampler state is not initialized");
+
+    HRESULT hr = m_pDevice->SetVertexShaderConstantF(VERTEX_TRANSFORM_MATRIX_REG, (amf_float*)m_pipViewProjection.vertexTransform, 4);
+    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetPipStates() - SetVertexShaderConstantF() failed to set vertex transform matrix");
+
+    hr = m_pDevice->SetVertexShaderConstantF(TEXTURE_TRANSFORM_MATRIX_REG, (amf_float*)m_pipViewProjection.texTransform, 4);
+    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetPipStates() - SetVertexShaderConstantF() failed to set texture transform matrix");
+
+    hr = m_pSamplerStateMap[PIP_INTERPOLATION]->Apply();
+    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SetPipStates() - m_pSamplerState->Apply() failed");
 
     return AMF_OK;
 }
@@ -520,112 +468,6 @@ AMF_RESULT VideoPresenterDX9::DrawFrame(IDirect3DTexture9* pSrcTexture, const Re
     return AMF_OK;
 }
 
-AMF_RESULT AMF_STD_CALL VideoPresenterDX9::AllocSurface(amf::AMF_MEMORY_TYPE type, amf::AMF_SURFACE_FORMAT format,
-            amf_int32 width, amf_int32 height, amf_int32 /* hPitch */, amf_int32 /* vPitch */, amf::AMFSurface** ppSurface)
-{
-    if(!m_bRenderToBackBuffer)
-    {
-        return AMF_NOT_IMPLEMENTED;
-    }
-
-    AMF_RETURN_IF_FALSE(format == m_eInputFormat, AMF_INVALID_ARG, L"AllocSurface() - Format (%s)"
-        "does not match swapchain format (%s)", amf::AMFSurfaceGetFormatName(format),
-        amf::AMFSurfaceGetFormatName(GetInputFormat()));
-
-    const AMFSize swapChainSize = GetSwapchainSize();
-    AMF_RETURN_IF_FALSE(width == 0 || width == swapChainSize.width, AMF_INVALID_ARG, L"AllocSurface() - width(%d) must be either 0 or equal swapchain width(%d)", width, swapChainSize.width);
-    AMF_RETURN_IF_FALSE(height == 0 || width == swapChainSize.height, AMF_INVALID_ARG, L"AllocSurface() - height(%d) must be either 0 or equal swapchain height(%d)", height, swapChainSize.height);
-
-    // wait till buffers are released
-    while(m_swapChain.GetBackBuffersAvailable() == 0)
-    {
-        if(m_bFrozen)
-        {
-            return AMF_INPUT_FULL;
-        }
-        amf_sleep(1);
-    }
-
-    if(m_bResizeSwapChain)
-    {
-        // wait till all buffers are released
-        while(m_swapChain.GetBackBuffersAvailable() < m_swapChain.GetBackBufferCount() || m_TrackSurfaces.empty() == false)
-        {
-            amf_sleep(1);
-        }
-
-        AMF_RESULT res = ResizeSwapChain();
-        AMF_RETURN_IF_FAILED(res, L"AllocSurface() - ResizeSwapChain() failed");
-    }
-
-    amf::AMFLock lock(&m_sect);
-    
-    m_swapChain.AcquireNextBackBuffer(ppSurface);
-
-    AMF_RESULT res = (*ppSurface)->Convert(type);
-    AMF_RETURN_IF_FAILED(res, L"AllocSurface() - Convert() failed");
-
-    m_TrackSurfaces.push_back(*ppSurface);
-    return AMF_OK;
-}
-
-AMF_RESULT VideoPresenterDX9::CheckForResize(bool bForce)
-{
-    if (bForce == true || m_bFullScreen != m_swapChain.FullscreenEnabled())
-    {
-        m_bResizeSwapChain = true;
-        return AMF_OK;
-    }
-
-    AMFRect client = GetClientRect();
-    if (client.Width() == 0 || client.Height() == 0)
-    {
-        return AMF_OK;
-    }
-
-    AMFSize swapChainSize = GetSwapchainSize();
-
-    if (client.Width() == swapChainSize.width && client.Height() == swapChainSize.height)
-    {
-        return AMF_OK;
-    }
-
-    m_bResizeSwapChain = true;
-    return AMF_OK;
-}
-
-AMF_RESULT VideoPresenterDX9::ResizeSwapChain()
-{
-    for (std::vector<amf::AMFSurface*>::iterator it = m_TrackSurfaces.begin(); it != m_TrackSurfaces.end(); it++)
-    {
-        (*it)->RemoveObserver(this);
-    }
-    m_TrackSurfaces.clear();
-
-    AMF_RESULT res = m_swapChain.Resize(0, 0, m_bFullScreen);
-    AMF_RETURN_IF_FAILED(res, L"ResizeSwapChain() - SwapChain Resize() failed");
-
-    AMFSize swapChainSize = GetSwapchainSize();
-    m_rectClient = AMFConstructRect(0, 0, swapChainSize.width, swapChainSize.height);
-
-    m_currentViewport.X = 0;
-    m_currentViewport.Y = 0;
-    m_currentViewport.Width = DWORD(swapChainSize.width);
-    m_currentViewport.Height = DWORD(swapChainSize.height);
-    m_currentViewport.MinZ = 0.0f;
-    m_currentViewport.MaxZ = 1.0f;
-
-    UpdateProcessor();
-    m_bResizeSwapChain = false;
-
-    return AMF_OK;
-}
-
-AMF_RESULT VideoPresenterDX9::DropFrame()
-{
-    return m_swapChain.DropLastBackBuffer();
-}
-
 AMF_RESULT VideoPresenterDX9::UpdateVertexBuffer(IDirect3DVertexBuffer9* buffer, void* pData, size_t size)
 {
     AMF_RETURN_IF_FALSE(buffer != nullptr, AMF_INVALID_ARG, L"UpdateVertexBuffer() - buffer is NULL");
@@ -642,39 +484,4 @@ AMF_RESULT VideoPresenterDX9::UpdateVertexBuffer(IDirect3DVertexBuffer9* buffer,
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"UpdateVertexBuffer() - Failed to unlock vertex buffer");
 
     return AMF_OK;
-}
-
-AMF_RESULT VideoPresenterDX9::SetInputFormat(amf::AMF_SURFACE_FORMAT format)
-{
-    if (m_swapChain.FormatSupported(format) == false)
-    {
-        return AMF_NOT_SUPPORTED;
-    }
-
-    m_eInputFormat = format;
-    return AMF_OK;
-}
-
-void AMF_STD_CALL VideoPresenterDX9::OnSurfaceDataRelease(amf::AMFSurface* pSurface)
-{
-    if (pSurface == nullptr)
-    {
-        return;
-    }
-
-    amf::AMFLock lock(&m_sect);
-    for(std::vector<amf::AMFSurface*>::iterator it = m_TrackSurfaces.begin(); it != m_TrackSurfaces.end(); it++)
-    {
-        if( *it == pSurface)
-        {
-            pSurface->RemoveObserver(this);
-            m_TrackSurfaces.erase(it);
-            break;
-        }
-    }
-}
-
-AMF_RESULT VideoPresenterDX9::Flush()
-{
-    return BackBufferPresenter::Flush();
 }

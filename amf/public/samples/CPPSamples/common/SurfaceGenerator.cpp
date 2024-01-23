@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (C) 2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -135,6 +135,66 @@ AMF_RESULT FillSurfaceDX11(amf::AMFContext* pContext, amf::AMFSurface* pSurface,
 
     xPos += 2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
     yPos += 2; //DX9 NV12 surfaces do not accept odd positions - do not use ++
+
+    return AMF_OK;
+}
+AMF_RESULT FillSurfaceDX12(amf::AMFContext* pContext, amf::AMFSurface* pSurface, amf_bool isRefFrame)
+{
+    AMF_RESULT res = AMF_OK;
+
+    amf::AMFComputePtr pCompute;
+    pContext->GetCompute(amf::AMF_MEMORY_DX12, &pCompute);
+    AMF_RETURN_IF_INVALID_POINTER(pCompute);
+
+    for (amf_uint32 i = 0; i < pSurface->GetPlanesCount(); i++)
+    {
+        amf::AMFPlane* pPlaneDst = pSurface->GetPlaneAt(i);
+        AMF_RETURN_IF_INVALID_POINTER(pPlaneDst);
+
+        amf_size origin[3] = { 0, 0, 0 };
+        amf_size region[3] = { (amf_size)pPlaneDst->GetWidth(), (amf_size)pPlaneDst->GetHeight(), 1 };
+
+        amf::AMFPlane* pPlaneSrc = (isRefFrame) ? pColor3->GetPlaneAt(i) : pColor1->GetPlaneAt(i);
+
+        res = pCompute->CopyPlane(pPlaneSrc, origin, region, pPlaneDst, origin);
+        AMF_RETURN_IF_FAILED(res, L"Background AMFCompute::CopyPlane() falied");
+
+        pPlaneSrc = (isRefFrame) ? pColor4->GetPlaneAt(i) : pColor2->GetPlaneAt(i);
+
+        //MM looks like there is a bug in D3D12 CopyTextureRegion copying UV-plane - copies W & H x2  compare to requested regionColor
+
+        amf_int32 srcWidth = pPlaneSrc->GetWidth();
+        amf_int32 srcHeight = pPlaneSrc->GetHeight();
+
+        amf_size regionColor[3] = { (amf_size)srcWidth, (amf_size)srcHeight, 1 };
+        amf_size originColor[3] = { (amf_size)xPos / (i + 1), (amf_size)yPos / (i + 1), 0 };
+
+        res = pCompute->CopyPlane(pPlaneSrc, origin, regionColor, pSurface->GetPlaneAt(i), originColor);
+
+        AMF_RETURN_IF_FAILED(res, L"Rectangle AMFCompute::CopyPlane() falied");
+
+    }
+
+    pCompute->FlushQueue();
+
+    xPos += 2; //NV12 surfaces do not accept odd positions - do not use ++
+    yPos += 2; //NV12 surfaces do not accept odd positions - do not use ++
+
+    amf::AMFPlane* pPlaneDst = pSurface->GetPlaneAt(0);
+    AMF_RETURN_IF_INVALID_POINTER(pPlaneDst);
+
+    // get surface dimensions
+    amf_int32 width = pPlaneDst->GetWidth();
+    amf_int32 height = pPlaneDst->GetHeight();
+
+    if (xPos + rectSize > width)
+    {
+        xPos = 0;
+    }
+    if (yPos + rectSize > height)
+    {
+        yPos = 0;
+    }
 
     return AMF_OK;
 }
@@ -499,9 +559,13 @@ AMF_RESULT FillSurface(amf::AMFContextPtr pContext, amf::AMFSurface** ppSurfaceI
         {
             FillSurfaceDX9(pContext, *ppSurfaceIn, false);
         }
-        else
+        else if (memoryType == amf::AMF_MEMORY_DX11)
         {
             FillSurfaceDX11(pContext, *ppSurfaceIn, false);
+        }
+        else if (memoryType == amf::AMF_MEMORY_DX12)
+        {
+            FillSurfaceDX12(pContext, *ppSurfaceIn, false);
         }
 #endif
         if (memoryType != amf::AMF_MEMORY_DX9)

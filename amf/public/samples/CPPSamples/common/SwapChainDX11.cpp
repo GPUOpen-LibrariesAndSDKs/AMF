@@ -72,7 +72,7 @@ AMF_RESULT SwapChainDX11::Terminate()
 
 AMF_RESULT SwapChainDX11::GetDXGIInterface(amf_bool reinit)
 {
-    if (m_pDXGIAdapter != nullptr && reinit == false)
+    if (m_pDXGIFactory != nullptr && reinit == false)
     {
         return AMF_OK;
     }
@@ -81,7 +81,6 @@ AMF_RESULT SwapChainDX11::GetDXGIInterface(amf_bool reinit)
     m_pDXGIDevice = nullptr;
     m_pDXGIFactory = nullptr;
     m_pDXGIFactory2 = nullptr;
-    m_pDXGIAdapter = nullptr;
 
     // Get D3D device
     m_pDX11Device = static_cast<ID3D11Device*>(m_pContext->GetDX11Device());
@@ -104,44 +103,18 @@ AMF_RESULT SwapChainDX11::GetDXGIInterface(amf_bool reinit)
 
     hr = m_pDXGIFactory->QueryInterface(&m_pDXGIFactory2);
 
-    // Get DXGI adapter associated with the device
-    CComPtr<IDXGIAdapter> pDeviceAdapter;
-    hr = m_pDXGIDevice->GetAdapter(&pDeviceAdapter);
-    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"GetDXGIInterface() - Failed to get DXGI adapter");
+    AMF_RESULT res = GetDXGIAdapters();
+    AMF_RETURN_IF_FAILED(res, L"GetDXGIInterface() - GetDXGIAdapters() failed");
 
-    // Get description to get the adapter LUID
-    DXGI_ADAPTER_DESC deviceAdapterDesc = {};
-    pDeviceAdapter->GetDesc(&deviceAdapterDesc);
+    return AMF_OK;
+}
 
-    // Enum adapters and find one that matches the same LUID as the device adapter
-    for (UINT i = 0;; ++i)
+AMF_RESULT SwapChainDX11::GetDXGIDeviceAdapter(IDXGIAdapter** ppDXGIAdapter)
+{
+    if (m_pDXGIDevice != nullptr)
     {
-        CComPtr<IDXGIAdapter> pAdapter;
-        hr = m_pDXGIFactory->EnumAdapters(i, &pAdapter);
-        if (FAILED(hr) || pAdapter == nullptr)
-        {
-            break;
-        }
-
-        DXGI_ADAPTER_DESC desc;
-        pDeviceAdapter->GetDesc(&desc);
-
-        if (desc.AdapterLuid.HighPart == deviceAdapterDesc.AdapterLuid.HighPart && 
-            desc.AdapterLuid.LowPart == deviceAdapterDesc.AdapterLuid.LowPart)
-        {
-            m_pDXGIAdapter = pAdapter;
-            break;
-        }
+        m_pDXGIDevice->GetAdapter( ppDXGIAdapter );
     }
-    
-    // Worst case, just take the default adapter
-    if (m_pDXGIAdapter == nullptr)
-    {
-        hr = m_pDXGIFactory->EnumAdapters(0, &m_pDXGIAdapter);
-        ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"GetDXGIInterface() - EnumAdapters() failed");
-    }
-
-    AMF_RETURN_IF_FALSE(m_pDXGIAdapter != nullptr, AMF_FAIL, L"GetDXGIInterface() - Failed to find adapter");
     return AMF_OK;
 }
 
@@ -177,7 +150,7 @@ AMF_RESULT SwapChainDX11::CreateFrameBuffers()
 
     D3D11_RENDER_TARGET_VIEW_DESC RenderTargetViewDescription = {};
     RenderTargetViewDescription.Format = GetDXGIFormat();
-    RenderTargetViewDescription.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;            // render target view is a Texture2D array
+    RenderTargetViewDescription.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;                 // render target view is a Texture2D array
     RenderTargetViewDescription.Texture2DArray.MipSlice = 0;                                   // each array element is one Texture2D
     RenderTargetViewDescription.Texture2DArray.ArraySize = 1;
     RenderTargetViewDescription.Texture2DArray.FirstArraySlice = 0;                            // first Texture2D of the array is the left eye view
@@ -197,9 +170,9 @@ AMF_RESULT SwapChainDX11::CreateFrameBuffers()
 
 AMF_RESULT SwapChainDX11::DeleteFrameBuffers()
 {
-    ID3D11DeviceContext* pContext = nullptr;
-    m_pDX11Device->GetImmediateContext(&pContext);
-    pContext->Flush();
+    CComPtr<ID3D11DeviceContext> spContext;
+    m_pDX11Device->GetImmediateContext(&spContext);
+    spContext->Flush();
 
     *((BackBuffer*)m_pBackBuffer.get()) = {};
     return AMF_OK;

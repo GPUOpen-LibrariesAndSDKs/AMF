@@ -61,8 +61,10 @@ VulkanImportTable::VulkanImportTable() :
     vkGetPhysicalDeviceFormatProperties(nullptr),
     vkGetPhysicalDeviceImageFormatProperties(nullptr),
     vkGetPhysicalDeviceProperties(nullptr),
+    vkGetPhysicalDeviceExternalSemaphoreProperties(nullptr),
     vkGetPhysicalDeviceProperties2KHR(nullptr),
     vkGetPhysicalDeviceQueueFamilyProperties(nullptr),
+    vkGetPhysicalDeviceQueueFamilyProperties2(nullptr),
     vkGetPhysicalDeviceMemoryProperties(nullptr),
     vkGetInstanceProcAddr(nullptr),
     vkGetDeviceProcAddr(nullptr),
@@ -260,7 +262,9 @@ AMF_RESULT VulkanImportTable::LoadFunctionsTable()
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetPhysicalDeviceFormatProperties);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetPhysicalDeviceImageFormatProperties);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetPhysicalDeviceProperties);
+    GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetPhysicalDeviceExternalSemaphoreProperties);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetPhysicalDeviceQueueFamilyProperties);
+    GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetPhysicalDeviceQueueFamilyProperties2);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetPhysicalDeviceMemoryProperties);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetInstanceProcAddr);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetDeviceProcAddr);
@@ -391,21 +395,18 @@ AMF_RESULT VulkanImportTable::LoadFunctionsTable()
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkCmdEndRenderPass);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkCmdExecuteCommands);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetPhysicalDeviceFeatures2);
-
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetPhysicalDeviceSurfaceSupportKHR);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetPhysicalDeviceSurfaceFormatsKHR);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetPhysicalDeviceSurfacePresentModesKHR);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkDestroySurfaceKHR);
 
-#if defined(VK_USE_PLATFORM_WIN32_KHR)
-    GET_DLL_ENTRYPOINT(m_hVulkanDll, vkCreateWin32SurfaceKHR);
-#endif
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkCreateXlibSurfaceKHR);
 #endif
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkCreateAndroidSurfaceKHR);
+    GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetAndroidHardwareBufferPropertiesANDROID);
 #endif
     return AMF_OK;
 }
@@ -431,6 +432,10 @@ AMF_RESULT VulkanImportTable::LoadDeviceFunctionsTableExt(VkDevice device)
     GET_DEVICE_ENTRYPOINT(device, vkGetSwapchainImagesKHR);
     GET_DEVICE_ENTRYPOINT(device, vkAcquireNextImageKHR);
     GET_DEVICE_ENTRYPOINT(device, vkQueuePresentKHR);
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+    GET_DLL_ENTRYPOINT(m_hVulkanDll, vkCreateWin32SurfaceKHR);
+#endif
+
 #if defined(__linux)
     GET_DEVICE_ENTRYPOINT(device, vkGetMemoryFdKHR);
     GET_DEVICE_ENTRYPOINT(device, vkImportSemaphoreFdKHR);
@@ -442,6 +447,5 @@ AMF_RESULT VulkanImportTable::LoadDeviceFunctionsTableExt(VkDevice device)
 }
 
 #undef GET_DEVICE_ENTRYPOINT
-#undef GET_DEVICE_ENTRYPOINT_NORETURN
 #undef GET_INSTANCE_ENTRYPOINT
 #undef GET_INSTANCE_ENTRYPOINT_NORETURN

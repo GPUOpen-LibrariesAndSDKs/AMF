@@ -87,7 +87,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)../../;$(OCL_ROOT)\include;$(VK_SDK_PATH)\include;</AdditionalIncludeDirectories>
-      <TreatWarningAsError>false</TreatWarningAsError>
+      <TreatWarningAsError>true</TreatWarningAsError>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -95,6 +95,7 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <SupportJustMyCode>false</SupportJustMyCode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -124,6 +125,7 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -149,6 +151,7 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)..\..\lib\vs2019x$(PlatformArchitecture)$(Configuration)\;$(VK_SDK_PATH)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -168,11 +171,12 @@
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <OmitFramePointers>false</OmitFramePointers>
-      <TreatWarningAsError>false</TreatWarningAsError>
+      <TreatWarningAsError>true</TreatWarningAsError>
       <ExceptionHandling>Async</ExceptionHandling>
       <SDLCheck>true</SDLCheck>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)..\..\lib\vs2019x$(PlatformArchitecture)$(Configuration)\;$(VK_SDK_PATH)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>

@@ -328,7 +328,7 @@ HWND CreateClientWindow(HWND hWndParent)
 {
     WNDCLASSEX wcex;
 
-    static wchar_t *ChildClassName = L"Client";
+    static const wchar_t *ChildClassName = L"Client";
     wcex.cbSize = sizeof(WNDCLASSEX);
 
     wcex.style            = CS_HREDRAW | CS_VREDRAW;
@@ -351,7 +351,7 @@ HWND CreateClientWindow(HWND hWndParent)
     }
 
     HWND hClientWnd = CreateWindowEx( 0, ChildClassName, NULL, WS_CHILD | WS_VISIBLE,
-        0, 0, 100, 100, 
+        0, 0, 100, 100,
         hWndParent, (HMENU) (int) (1) , hInst, NULL);
     return hClientWnd;
 }
@@ -386,7 +386,7 @@ void UpdateMenuItems(HMENU hMenu)
     CheckMenuItem(hMenu,ID_OPTIONS_LOW_LATENCY,    MF_BYCOMMAND| ( bLowLatency ? MF_CHECKED: MF_UNCHECKED));
     CheckMenuItem(hMenu, ID_FILE_ZCAMLIVE, MF_BYCOMMAND | (iZCamMode == CAMLIVE_MODE_ZCAM_1080P30 ? MF_CHECKED : MF_UNCHECKED));
     CheckMenuItem(hMenu, ID_FILE_ZCAMLIVE_2K7, MF_BYCOMMAND | (iZCamMode == CAMLIVE_MODE_ZCAM_2K7P30 ? MF_CHECKED : MF_UNCHECKED));
-    
+
     CheckMenuItem(hMenu, ID_FILE_RICOH_THETA_S, MF_BYCOMMAND | (iZCamMode == CAMLIVE_MODE_THETAS ? MF_CHECKED : MF_UNCHECKED));
     CheckMenuItem(hMenu, ID_FILE_RICOH_THETA_V, MF_BYCOMMAND | (iZCamMode == CAMLIVE_MODE_THETAV ? MF_CHECKED : MF_UNCHECKED));
 
@@ -573,18 +573,18 @@ LRESULT CALLBACK ClientWndProc(HWND hWindow, UINT message, WPARAM wParam, LPARAM
     switch (message)
     {
     case WM_LBUTTONDOWN:
-        s_MousePos.x = GET_X_LPARAM(lParam); 
-        s_MousePos.y = GET_Y_LPARAM(lParam);    
+        s_MousePos.x = GET_X_LPARAM(lParam);
+        s_MousePos.y = GET_Y_LPARAM(lParam);
         s_MouseDown = true;
         break;
     case WM_MOUSEMOVE:
         if(wParam & MK_LBUTTON)
         {
             if(s_MouseDown)
-            { 
+            {
                 POINT newPos = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
                 g_pPipeline->m_Pipeline.MouseShift(s_MousePos.x, s_MousePos.y, newPos.x, newPos.y);
-                s_MousePos = newPos; 
+                s_MousePos = newPos;
             }
         }
         else
@@ -605,11 +605,11 @@ LRESULT CALLBACK ClientWndProc(HWND hWindow, UINT message, WPARAM wParam, LPARAM
     return 0;
 }
 
-void FileOpen() 
+void FileOpen()
 {
     OPENFILENAME ofn;       // common dialog box structure
     WCHAR szFile[260];       // buffer for file name
-     
+
     // Initialize OPENFILENAME
     ZeroMemory(&ofn, sizeof(ofn));
     ofn.lStructSize = sizeof(ofn);
@@ -673,7 +673,7 @@ void                FileOpenPTGuiProject()
 {
     OPENFILENAME ofn;       // common dialog box structure
     WCHAR szFile[260];       // buffer for file name
-     
+
     // Initialize OPENFILENAME
     ZeroMemory(&ofn, sizeof(ofn));
     ofn.lStructSize = sizeof(ofn);
@@ -761,7 +761,7 @@ void                SingleWindowPlayback::Play()
         m_Pipeline.SetParam(StitchPipeline::PARAM_NAME_INPUT, filename.c_str());
         m_Pipeline.SetParam(StitchPipeline::PARAM_NAME_LOWLATENCY, bLowLatency);
         m_Pipeline.SetParam(StitchPipeline::PARAM_NAME_ZCAMLIVE_MODE, iZCamMode);
-        
+
 
         m_Pipeline.Stop();
         m_Pipeline.Init(m_hClientWindow, InputFileList, PTGuiProject, outputMode);
@@ -793,7 +793,7 @@ bool                SingleWindowPlayback::IsPlaying()
     {
         bRet = false;
     }
-    return bRet; 
+    return bRet;
 }
 void                SingleWindowPlayback::ReorderClientWindows()
 {

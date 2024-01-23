@@ -31,8 +31,9 @@
 //
 #pragma once
 
-#include "BackBufferPresenter.h"
+#include "VideoPresenter.h"
 #include "SwapChainVulkan.h"
+
 #include <unordered_map>
 
 struct DescriptorVulkan
@@ -46,17 +47,17 @@ class DescriptorHeapVulkan : public VulkanContext
 public:
 
     DescriptorHeapVulkan();
-    virtual                                         ~DescriptorHeapVulkan();
-    AMF_RESULT                                      Terminate();
-    AMF_RESULT                                      RegisterDescriptorSet(DescriptorVulkan** ppDescriptors, amf_uint32 count);
-    AMF_RESULT                                      CreateDescriptors();
+    virtual                                     ~DescriptorHeapVulkan();
+    AMF_RESULT                                  Terminate();
+    AMF_RESULT                                  RegisterDescriptorSet(DescriptorVulkan** ppDescriptors, amf_uint32 count);
+    AMF_RESULT                                  CreateDescriptors();
 
-    amf_uint32                                      GetDescriptorCount() const;
+    amf_uint32                                  GetDescriptorCount() const;
 
-    VkDescriptorSet                                 GetDescriptorSet(amf_uint32 setIndex) const;
-    VkDescriptorSetLayout                           GetDescriptorSetLayout(amf_uint32 setIndex) const;
+    VkDescriptorSet                             GetDescriptorSet(amf_uint32 setIndex) const;
+    VkDescriptorSetLayout                       GetDescriptorSetLayout(amf_uint32 setIndex) const;
 
-    const amf::amf_vector<VkDescriptorSet>& GetDescriptorSets() const;
+    const amf::amf_vector<VkDescriptorSet>&       GetDescriptorSets() const;
     const amf::amf_vector<VkDescriptorSetLayout>& GetDescriptorSetLayouts() const;
 
     AMF_RESULT UpdateDescriptorSet(const DescriptorVulkan* pDescriptor, amf_uint32 arrayIndex, amf_uint32 count, VkWriteDescriptorSet& writeInfo, bool immediate);
@@ -87,7 +88,7 @@ private:
     UpdateInfoHeap<VkDescriptorImageInfo>   m_descriptorImageInfoHeap;
 
     template<typename UpdateInfo_T>
-    AMF_RESULT ProcessUpdateInfo(amf_uint32 count, const UpdateInfo_T* pUpdateInfos, bool immediate, UpdateInfoHeap<UpdateInfo_T>& infoHeap, const UpdateInfo_T** ppOutUpdateInfos)
+    AMF_RESULT ProcessUpdateInfo(amf_uint32 count, const UpdateInfo_T* pUpdateInfos, amf_bool immediate, UpdateInfoHeap<UpdateInfo_T>& infoHeap, const UpdateInfo_T** ppOutUpdateInfos)
     {
         if (immediate == true)
         {
@@ -111,6 +112,7 @@ public:
 
     virtual AMF_RESULT              Init(amf::AMFVulkanDevice* pDevice, const VulkanImportTable* pImportTable, DescriptorHeapVulkan* pDescriptorHeap);
     AMF_RESULT                      Terminate();
+    amf_bool                        Initialized() { return m_hPipeline != NULL; }
 
     AMF_RESULT                      RegisterDescriptorSet(amf_uint32 setIndex, amf_uint32 setNum, const amf_uint32* pGroups, amf_uint32 groupCount);
 
@@ -134,87 +136,58 @@ public:
     AMF_RESULT                      CreatePipeline(PipelineCreateInfo& createInfo, VkRenderPass hRenderPass, amf_uint32 subpass);
     AMF_RESULT                      SetStates(VkCommandBuffer hCommandBuffer, amf_uint32 groupNum);
 
+
 private:
-    struct DescriptorSetGroup
+    struct DescriptorSetGroupVulkan
     {
         amf::amf_vector<amf_uint32>         descriptorSetIndices;
         amf::amf_vector<VkDescriptorSet>    descriptorSetHandles;
     };
 
-    DescriptorHeapVulkan* m_pDescriptorHeap;
-    VkRenderPass                            m_hRenderPass;
 
-    VkPipeline                              m_hPipeline;
-    VkPipelineLayout                        m_hPipelineLayout;
+    DescriptorHeapVulkan*               m_pDescriptorHeap;
+    VkRenderPass                        m_hRenderPass;
 
-    typedef std::unordered_map<amf_uint32, DescriptorSetGroup> DescriptorSetGroupMap;
-    DescriptorSetGroupMap                   m_descriptorSetGroupMap;
+    VkPipeline                          m_hPipeline;
+    VkPipelineLayout                    m_hPipelineLayout;
+
+    typedef amf::amf_map<amf_uint32, DescriptorSetGroupVulkan> DescriptorSetGroupMap;
+    DescriptorSetGroupMap               m_descriptorSetGroupMap;
 
     amf::amf_vector<VkDescriptorSetLayout>  m_hDescriptorSetLayouts;
 };
 
-
-class VideoPresenterVulkan : public BackBufferPresenter, public VulkanContext
+class VideoPresenterVulkan : public VideoPresenter, public VulkanContext
 
 {
 public:
-#if defined(METRO_APP)
-    VideoPresenterVulkan(ISwapChainBackgroundPanelNative* pSwapChainPanel, AMFSize swapChainPanelSize, amf::AMFContext* pContext);
-#else
     VideoPresenterVulkan(amf_handle hwnd, amf::AMFContext* pContext, amf_handle display);
-#endif
     virtual                             ~VideoPresenterVulkan();
 
-    virtual AMF_RESULT                  Present(amf::AMFSurface* pSurface);
-
     virtual bool                        SupportAllocator() const { return false; }
-
     virtual amf::AMF_MEMORY_TYPE        GetMemoryType() const { return amf::AMF_MEMORY_VULKAN; }
-    virtual amf::AMF_SURFACE_FORMAT     GetInputFormat() const { return m_eInputFormat; }
-    virtual AMF_RESULT                  SetInputFormat(amf::AMF_SURFACE_FORMAT format);
-    virtual AMF_RESULT                  Flush();
 
-    virtual AMF_RESULT                  Init(amf_int32 width, amf_int32 height, amf::AMFSurface* pSurface);
-    virtual AMF_RESULT                  Terminate();
+    virtual AMF_RESULT                  Init(amf_int32 width, amf_int32 height, amf::AMFSurface* pSurface) override;
+    virtual AMF_RESULT                  Terminate() override;
 
-    // amf::AMFDataAllocatorCB interface
-    virtual AMF_RESULT AMF_STD_CALL     AllocSurface(amf::AMF_MEMORY_TYPE type, amf::AMF_SURFACE_FORMAT format, amf_int32 width,
-                                                     amf_int32 height, amf_int32 hPitch, amf_int32 vPitch, amf::AMFSurface** ppSurface);
-    // amf::AMFSurfaceObserver interface
-    virtual void AMF_STD_CALL           OnSurfaceDataRelease(amf::AMFSurface* pSurface);
-
-    virtual AMFSize                     GetSwapchainSize();
-    virtual void AMF_STD_CALL           ResizeIfNeeded(); // call from UI thread (for VulkanPresenter on Linux)
 
 protected:
     typedef SwapChainVulkan::BackBuffer RenderTarget;
 
-    struct Vertex
-    {
-        amf_float pos[3];
-        amf_float tex[2];
-    };
-
-    struct ViewProjection
-    {
-        amf_float vertexTransformMatrix[4][4];
-        amf_float texTransformMatrix[4][4];
-    };
-
     struct PipelineGroupBindingInfo
     {
-        RenderingPipelineVulkan*      pPipeline;
-        amf_uint32              setNum;
-        const amf_uint32*       pGroups;
-        amf_uint32              groupCount;
+        RenderingPipelineVulkan*        pPipeline;
+        amf_uint32                      setNum;
+        const amf_uint32*               pGroups;
+        amf_uint32                      groupCount;
     };
+
 
     AMF_RESULT                          RegisterDescriptorSet(DescriptorVulkan** ppDescriptors, amf_uint32 count, const PipelineGroupBindingInfo* pPipelineBindings, amf_uint32 piplineBindingCount);
     AMF_RESULT                          RegisterDescriptorSet(DescriptorVulkan** ppDescriptors, amf_uint32 count, RenderingPipelineVulkan* pPipeline, amf_uint32 setNum, const amf_uint32* pGroups, amf_uint32 groupCount);
-    virtual AMF_RESULT                  RegisterDescriptorSets(DescriptorVulkan& viewProjectionDescriptor, DescriptorVulkan& samplerDescriptor, RenderingPipelineVulkan& pipeline);
+    virtual AMF_RESULT                  RegisterDescriptorSets();
     
-    AMF_RESULT                          CreateShaderFromFile(const wchar_t* pFileName, VkShaderModule* pShaderModule);
-    AMF_RESULT                          GetShaderStageInfoFromFile(const wchar_t* pFileName, VkShaderStageFlagBits stage, const char* pEntryPoint, VkPipelineShaderStageCreateInfo& createInfo);
+    AMF_RESULT                          GetShaderStageInfo(const amf_uint8* pByteData, amf_size size, VkShaderStageFlagBits stage, const char* pEntryPoint, VkPipelineShaderStageCreateInfo& stageCreateInfo);
     virtual AMF_RESULT                  GetShaderStages(amf::amf_vector<VkPipelineShaderStageCreateInfo>& shaderStages);
     virtual AMF_RESULT                  DestroyShaderStages(amf::amf_vector<VkPipelineShaderStageCreateInfo>& shaderStages);
 
@@ -226,54 +199,43 @@ protected:
     AMF_RESULT                          DestroyRenderTarget(RenderTarget& renderTarget);
 
     virtual AMF_RESULT                  UpdateTextureDescriptorSet(DescriptorVulkan* pDescriptor, amf::AMFSurface * pSurface, VkSampler hSampler);
-    virtual AMF_RESULT                  UpdateTextureDescriptorSet(amf::AMFSurface* pSurface);
 
     virtual AMF_RESULT                  OnRenderViewResize(const RenderViewSizeInfo& newRenderView) override;
 
-    AMF_RESULT                          RenderSurface(amf::AMFSurface* pSurface, const RenderTarget* pRenderTarget);
-    virtual AMF_RESULT                  DrawBackground();
+    virtual AMF_RESULT                  RenderSurface(amf::AMFSurface* pSurface, const RenderTargetBase* pRenderTarget, RenderViewSizeInfo& renderView) override;
+    virtual AMF_RESULT                  UpdateStates(amf::AMFSurface* pSurface, const RenderTarget* pRenderTarget, RenderViewSizeInfo& renderView);
+    virtual AMF_RESULT                  DrawBackground(const RenderTarget* pRenderTarget);
     virtual AMF_RESULT                  SetStates(amf_uint32 descriptorGroupNum);
     AMF_RESULT                          DrawFrame(amf::AMFVulkanSurface* pSurface);
-    virtual AMF_RESULT                  DrawOverlay(amf::AMFSurface* pSurface);
-
-    VkFormat                            GetVkFormat();
+    virtual AMF_RESULT                  DrawOverlay(amf::AMFSurface* /*pSurface*/, const RenderTarget* /*pRenderTarget*/) { return AMF_OK; }
 
     virtual AMFRect                     GetVertexViewRect() const override  { return AMFConstructRect(-1, -1, 1, 1); }
     virtual AMFRect                     GetTextureViewRect() const override { return AMFConstructRect(0, 1, 1, 0); }
 
-    static const amf_uint32 DSG_PRESENT_SURFACE = 0;
+    static constexpr amf_uint32         PRESENT_SET = 0;
+
+    static constexpr amf_uint32         GROUP_QUAD_SURFACE = 0;
+    static constexpr amf_uint32         GROUP_QUAD_PIP     = 1;
 
     amf::AMFContext1Ptr                 m_pContext1;
-    SwapChainVulkan                     m_swapChain;
-    CommandBufferVulkan                 m_cmdBuffer;
     DescriptorHeapVulkan                m_descriptorHeap;
+    CommandBufferVulkan                 m_cmdBuffer;
+    RenderingPipelineVulkan             m_quadPipeline;
     amf::AMFVulkanBuffer                m_viewProjectionBuffer;
+    SamplerMap<VkSampler>               m_hSamplerMap;
 
 private:
-    AMF_RESULT                          InitDescriptors();
     AMF_RESULT                          CreatePipeline();
     AMF_RESULT                          PrepareStates();
 
-    AMF_RESULT                          CheckForResize(amf_bool force);
-    AMF_RESULT                          ResizeSwapChain();
-
-    AMF_RESULT                          BitBltRender(amf::AMFSurface* pSrcSurface, const RenderTarget* pDstSurface, RenderViewSizeInfo& renderView);
-    AMF_RESULT                          BitBltCopy(amf::AMFSurface* pSrcSurface, const RenderTarget* pDstSurface, RenderViewSizeInfo& renderView);
-    AMF_RESULT                          StartRendering(const RenderTarget* pRenderTarget);
+    AMF_RESULT                          StartRendering(const RenderTarget* pRenderTarget, amf::AMFVulkanSurface* pSurface);
     AMF_RESULT                          StopRendering();
-
-    amf::AMF_SURFACE_FORMAT             m_eInputFormat;
-
-    RenderingPipelineVulkan             m_pipeline;
 
     amf::AMFVulkanBuffer                m_VertexBuffer;
     DescriptorVulkan                    m_viewProjectionDescriptor;
-
     DescriptorVulkan                    m_samplerDescriptor;
-    VkSampler                           m_hSampler;
 
-    amf::AMFCriticalSection                 m_sect;
-    amf::amf_vector<amf::AMFSurface*>       m_TrackSurfaces; // raw pointer  doent want keep references to ensure object is destroying
-
-    bool                                    m_bResizeSwapChain;
+    amf::AMFVulkanBuffer                m_pipViewProjectionBuffer;
+    DescriptorVulkan                    m_pipViewProjectionDescriptor;
+    DescriptorVulkan                    m_pipSamplerDescriptor;
 };

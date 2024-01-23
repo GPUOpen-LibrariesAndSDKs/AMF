@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -36,6 +36,16 @@
 #include "public/include/core/Compute.h"
 #include <iostream>
 #include <fstream>
+#if defined(__ANDROID__)
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
+extern AAssetManager* gAssetManager;
+#endif
+
+// Auto generated to build_dir from QuadVulkan_vs.vert and QuadVulkan_fs.frag
+// and added to the include directory during compile
+#include "QuadVulkan_vs.vert.spv.h"
+#include "QuadVulkan_fs.frag.spv.h"
 
 using namespace amf;
 
@@ -48,15 +58,21 @@ using namespace amf;
 #define AMF_FACILITY L"VideoPresenterVulkan"
 
 VideoPresenterVulkan::VideoPresenterVulkan(amf_handle hwnd, AMFContext* pContext, amf_handle display) :
-    BackBufferPresenter(hwnd, pContext, display),
+    VideoPresenter(hwnd, pContext, display),
     m_pContext1(pContext),
-    m_swapChain(pContext),
-    m_eInputFormat(AMF_SURFACE_BGRA),
     m_viewProjectionBuffer{},
-    m_VertexBuffer{},
-    m_hSampler(NULL),
-    m_bResizeSwapChain(false)
+    m_pipViewProjectionBuffer{},
+    m_VertexBuffer{}
 {
+    m_pSwapChain = std::unique_ptr<SwapChainVulkan>(new SwapChainVulkan(pContext));
+
+#if defined(_WIN32)
+    SetInputFormat(AMF_SURFACE_BGRA);
+#elif defined(__ANDROID__)
+    SetInputFormat(AMF_SURFACE_RGBA);
+#elif defined(__linux)
+    SetInputFormat(AMF_SURFACE_BGRA);
+#endif
 }
 
 VideoPresenterVulkan::~VideoPresenterVulkan()
@@ -67,25 +83,23 @@ VideoPresenterVulkan::~VideoPresenterVulkan()
 AMF_RESULT VideoPresenterVulkan::Init(amf_int32 width, amf_int32 height, AMFSurface* /*pSurface*/)
 {
     AMF_RETURN_IF_FALSE(width > 0 && height > 0, AMF_INVALID_ARG, L"Init() - Invalid width/height: width=%d height=%d", width, height);
+    AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_UNEXPECTED, L"Init() - m_pSwapChain is NULL");
 
     AMF_RESULT res = VideoPresenter::Init(width, height);
     AMF_RETURN_IF_FAILED(res, L"Init() - VideoPresenter::Init() failed");
 
-    res = m_swapChain.Init(m_hwnd, m_hDisplay, nullptr, width, height, GetInputFormat());
-    AMF_RETURN_IF_FAILED(res, L"Init() - m_swapChain Init() failed");
+    res = m_pSwapChain->Init(m_hwnd, m_hDisplay, nullptr, width, height, GetInputFormat(), m_fullscreenContext.fullscreenState);
+    AMF_RETURN_IF_FAILED(res, L"Init() - VideoPresenterVulkan::Init() failed");
 
-    res = VulkanContext::Init((VulkanContext*)&m_swapChain);
-    AMF_RETURN_IF_FAILED(res, L"Init() - VulkanContext Init() failed");
+    SwapChainVulkan* pSwapChain = (SwapChainVulkan*)m_pSwapChain.get();
+    res = VulkanContext::Init((VulkanContext*)pSwapChain);
 
-    res = m_descriptorHeap.Init(m_pVulkanDevice,  GetVulkan());
+    res = m_descriptorHeap.Init(this);
     AMF_RETURN_IF_FAILED(res, L"Init() - m_descriptorHeap.Init() failed");
 
-    res = m_pipeline.Init(m_pVulkanDevice, GetVulkan(), &m_descriptorHeap);
+    res = m_quadPipeline.Init(m_pVulkanDevice, GetVulkan(), &m_descriptorHeap);
 
-    res = InitDescriptors();
-    AMF_RETURN_IF_FAILED(res, L"Init() - InitDescriptors() failed");
-
-    res = RegisterDescriptorSets(m_viewProjectionDescriptor, m_samplerDescriptor, m_pipeline);
+    res = RegisterDescriptorSets();
     AMF_RETURN_IF_FAILED(res, L"Init() - RegisterDescriptorSet() failed");
 
     res = m_descriptorHeap.CreateDescriptors();
@@ -94,7 +108,7 @@ AMF_RESULT VideoPresenterVulkan::Init(amf_int32 width, amf_int32 height, AMFSurf
     res = CreatePipeline();
     AMF_RETURN_IF_FAILED(res, L"Init() - CreatePipeline() failed");
 
-    res = m_cmdBuffer.Init(m_pVulkanDevice, GetVulkan(), m_swapChain.GetCmdPool());
+    res = m_cmdBuffer.Init(m_pVulkanDevice, GetVulkan(), pSwapChain->GetCmdPool());
     AMF_RETURN_IF_FAILED(res, L"Init() - Command Buffer Init() failed");
 
     res = PrepareStates();
@@ -110,27 +124,34 @@ AMF_RESULT VideoPresenterVulkan::Terminate()
         return AMF_OK;
     }
 
+    AMFContext1::AMFVulkanLocker vkLock(m_pContext1);
     GetVulkan()->vkDeviceWaitIdle(m_pVulkanDevice->hDevice);
 
     m_descriptorHeap.Terminate();
-    m_pipeline.Terminate();
+    m_quadPipeline.Terminate();
 
     m_samplerDescriptor = {};
-    if (m_hSampler != NULL)
+    m_pipSamplerDescriptor = {};
+
+    for (auto& item : m_hSamplerMap)
     {
-		GetVulkan()->vkDestroySampler(m_pVulkanDevice->hDevice, m_hSampler, nullptr);
-        m_hSampler = NULL;
+        VkSampler hSampler = item.second;
+        if (hSampler != NULL)
+        {
+            GetVulkan()->vkDestroySampler(m_pVulkanDevice->hDevice, hSampler, nullptr);
+        }
     }
+    m_hSamplerMap.clear();
 
     DestroyBuffer(m_viewProjectionBuffer);
     m_viewProjectionDescriptor = {};
 
+    DestroyBuffer(m_pipViewProjectionBuffer);
+    m_pipViewProjectionDescriptor = {};
+
     DestroyBuffer(m_VertexBuffer);
 
-    m_bResizeSwapChain = false;
-
     m_cmdBuffer.Terminate();
-    m_swapChain.Terminate();
     VulkanContext::Terminate();
     return VideoPresenter::Terminate();
 }
@@ -158,7 +179,7 @@ AMF_RESULT VideoPresenterVulkan::RegisterDescriptorSet(DescriptorVulkan** ppDesc
             AMF_RETURN_IF_FALSE(bindingInfo.pPipeline != nullptr, AMF_INVALID_ARG, L"RegisterDescriptorSet() - pPipelineBindings[%u].pPipeline is NULL", i);
 
             res = bindingInfo.pPipeline->RegisterDescriptorSet(ppDescriptors[0]->setIndex, bindingInfo.setNum, bindingInfo.pGroups, bindingInfo.groupCount);
-            AMF_RETURN_IF_FAILED(res, L"RegisterDescriptorSet() - m_pipeline.RegisterDescriptorSet() failed");
+            AMF_RETURN_IF_FAILED(res, L"RegisterDescriptorSet() - m_quadPipeline.RegisterDescriptorSet() failed");
         }
     }
 
@@ -176,40 +197,70 @@ AMF_RESULT VideoPresenterVulkan::RegisterDescriptorSet(DescriptorVulkan** ppDesc
     return RegisterDescriptorSet(ppDescriptors, count, &info, 1);
 }
 
-AMF_RESULT VideoPresenterVulkan::InitDescriptors()
+AMF_RESULT VideoPresenterVulkan::RegisterDescriptorSets()
 {
-    m_viewProjectionDescriptor = {};
-    VkDescriptorSetLayoutBinding& viewProjectionBinding = m_viewProjectionDescriptor.layoutBinding;
-        viewProjectionBinding.binding = 0;
-        viewProjectionBinding.descriptorCount = 1;
-        viewProjectionBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        viewProjectionBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-    m_samplerDescriptor = {};
-    VkDescriptorSetLayoutBinding& samplerLayoutBinding = m_samplerDescriptor.layoutBinding;
-        samplerLayoutBinding.binding = 1;
-        samplerLayoutBinding.descriptorCount = 1;
-        samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; //VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
-        samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    VkDescriptorSetLayoutBinding viewProjectionBinding = {};
+    viewProjectionBinding.binding = 0;
+    viewProjectionBinding.descriptorCount = 1;
+    viewProjectionBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    viewProjectionBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
+    samplerLayoutBinding.binding = 1;
+    samplerLayoutBinding.descriptorCount = 1;
+    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; //VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
+    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    {
+        m_viewProjectionDescriptor = { viewProjectionBinding };
+        m_samplerDescriptor = { samplerLayoutBinding };
+
+        DescriptorVulkan* pDescriptors[] = { &m_viewProjectionDescriptor, &m_samplerDescriptor };
+        constexpr amf_uint32 groups[] = { GROUP_QUAD_SURFACE };
+
+        AMF_RESULT res = RegisterDescriptorSet(pDescriptors, amf_countof(pDescriptors), &m_quadPipeline, 0, groups, amf_countof(groups));
+        AMF_RETURN_IF_FAILED(res, L"RegisterDescriptorSet() - RegisterDescriptorSet() failed to register quad descriptors");
+    }
+
+    {
+        m_pipViewProjectionDescriptor = { viewProjectionBinding };
+        m_pipSamplerDescriptor = { samplerLayoutBinding };
+
+        DescriptorVulkan* pDescriptors[] = { &m_pipViewProjectionDescriptor, &m_pipSamplerDescriptor };
+        constexpr amf_uint32 groups[] = { GROUP_QUAD_PIP };
+
+        AMF_RESULT res = RegisterDescriptorSet(pDescriptors, amf_countof(pDescriptors), &m_quadPipeline, 0, groups, amf_countof(groups));
+        AMF_RETURN_IF_FAILED(res, L"RegisterDescriptorSet() - RegisterDescriptorSet() failed to register PIP descriptors");
+    }
+
 
     return AMF_OK;
 }
 
-AMF_RESULT VideoPresenterVulkan::RegisterDescriptorSets(DescriptorVulkan& viewProjectionDescriptor, DescriptorVulkan& samplerDescriptor, RenderingPipelineVulkan& pipeline)
-{
-    DescriptorVulkan* pDescriptors[] = { &viewProjectionDescriptor, &samplerDescriptor };
-    constexpr amf_uint32 groups[] = { DSG_PRESENT_SURFACE };
-
-    AMF_RESULT res = RegisterDescriptorSet(pDescriptors, amf_countof(pDescriptors), &pipeline, 0, groups, amf_countof(groups));
-    AMF_RETURN_IF_FAILED(res, L"RegisterDescriptorSet() - RegisterDescriptorSet() failed");
-
-    return AMF_OK;
-}
-
-static AMF_RESULT LoadShaderFile(const wchar_t* pFileName, AMFByteArray &data)
+/*static AMF_RESULT LoadShaderFile(const wchar_t* pFileName, AMFByteArray& data)
 {
     AMF_RETURN_IF_FALSE(pFileName != nullptr, AMF_INVALID_ARG, L"LoadShaderFile() - pFileName is NULL");
     AMF_RETURN_IF_FALSE(pFileName[0] != L'\0', AMF_INVALID_ARG, L"LoadShaderFile() - pFileName is empty");
+#if defined(__ANDROID__)
+    if (gAssetManager)
+    {
+        std::vector<char> narrowStrBuf(wcslen(pFileName) + 1);
+        std::wcstombs(&narrowStrBuf[0], pFileName, narrowStrBuf.size());
+        const char* filename = &narrowStrBuf[0];
+
+        AAsset* asset = AAssetManager_open(gAssetManager, filename, AASSET_MODE_BUFFER);
+        if (asset == nullptr)
+        {
+            return AMF_FAIL;
+        }
+
+        size_t fileSize = AAsset_getLength(asset);
+        data.SetSize(fileSize);
+        AAsset_read(asset, data.GetData(), fileSize);
+        AAsset_close(asset);
+    }
+#else
 
 #if defined(_WIN32)
 
@@ -244,41 +295,32 @@ static AMF_RESULT LoadShaderFile(const wchar_t* pFileName, AMFByteArray &data)
     fs.seekg(0);
     fs.read((char*)data.GetData(), fileSize);
     fs.close();
+#endif
     return AMF_OK;
-}
+}*/
 
-AMF_RESULT VideoPresenterVulkan::CreateShaderFromFile(const wchar_t* pFileName, VkShaderModule* pShaderModule)
+AMF_RESULT VideoPresenterVulkan::GetShaderStageInfo(const amf_uint8* pByteData, amf_size size, VkShaderStageFlagBits stage, const char* pEntryPoint, VkPipelineShaderStageCreateInfo& stageCreateInfo)
 {
-    AMF_RETURN_IF_FALSE(pShaderModule != nullptr, AMF_INVALID_ARG, L"LoadShaderFile() - pShaderModule is NULL");
-    AMF_RETURN_IF_FALSE(*pShaderModule == NULL, AMF_ALREADY_INITIALIZED, L"LoadShaderFile() - pShaderModule is already initialized");
+    AMF_RETURN_IF_FALSE(pByteData != nullptr, AMF_INVALID_ARG, L"LoadShaderFile() - pByteData is NULL");
+    AMF_RETURN_IF_FALSE(size > 0, AMF_INVALID_ARG, L"LoadShaderFile() - shader byte size should be > 0");
+    AMF_RETURN_IF_FALSE(pEntryPoint != nullptr, AMF_INVALID_ARG, L"LoadShaderFile() - pEntryPoint is NULL");
     AMF_RETURN_IF_FALSE(m_pVulkanDevice != nullptr, AMF_NOT_INITIALIZED, L"LoadShaderFile() - m_pVulkanDevice is not initialized");
     AMF_RETURN_IF_FALSE(m_pVulkanDevice->hDevice != nullptr, AMF_NOT_INITIALIZED, L"LoadShaderFile() - m_pVulkanDevice->hDevice is not initialized");
 
-    AMFByteArray shaderByteArray;
-    AMF_RESULT res = LoadShaderFile(pFileName, shaderByteArray);
-    AMF_RETURN_IF_FAILED(res, L"CreateShaderFromFile() - LoadShaderFile(%S) failed", pFileName);
-
     VkShaderModuleCreateInfo vertModuleCreateInfo = {};
     vertModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    vertModuleCreateInfo.codeSize = shaderByteArray.GetSize();
-    vertModuleCreateInfo.pCode = (amf_uint32*)shaderByteArray.GetData();
+    vertModuleCreateInfo.codeSize = size;
+    vertModuleCreateInfo.pCode = (amf_uint32*)pByteData;
     vertModuleCreateInfo.flags = 0; // Reserved for future use
 
-    VkResult vkres = GetVulkan()->vkCreateShaderModule(m_pVulkanDevice->hDevice, &vertModuleCreateInfo, nullptr, pShaderModule);
-    ASSERT_RETURN_IF_VK_FAILED(vkres, AMF_VULKAN_FAILED, L"CreateShaderFromFile() - vkCreateShaderModule(%s)", pFileName);
-    return AMF_OK;
-}
-
-AMF_RESULT VideoPresenterVulkan::GetShaderStageInfoFromFile(const wchar_t* pFileName, VkShaderStageFlagBits stage, const char* pEntryPoint, VkPipelineShaderStageCreateInfo& stageCreateInfo)
-{
-    VkShaderModule shaderModule = NULL;
-    AMF_RESULT res = CreateShaderFromFile(pFileName, &shaderModule);
-    AMF_RETURN_IF_FAILED(res, L"GetShaderInfoFromFile() - CreateShaderFromFile() failed to create shader module");
+    VkShaderModule hShaderModule = NULL;
+    VkResult vkres = GetVulkan()->vkCreateShaderModule(m_pVulkanDevice->hDevice, &vertModuleCreateInfo, nullptr, &hShaderModule);
+    ASSERT_RETURN_IF_VK_FAILED(vkres, AMF_VULKAN_FAILED, L"CreateShaderFromFile() - vkCreateShaderModule()");
 
     stageCreateInfo = {};
     stageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     stageCreateInfo.stage = stage;
-    stageCreateInfo.module = shaderModule;
+    stageCreateInfo.module = hShaderModule;
     stageCreateInfo.pName = pEntryPoint;
     stageCreateInfo.flags = 0;
     stageCreateInfo.pSpecializationInfo = nullptr;
@@ -288,14 +330,11 @@ AMF_RESULT VideoPresenterVulkan::GetShaderStageInfoFromFile(const wchar_t* pFile
 
 AMF_RESULT VideoPresenterVulkan::GetShaderStages(amf_vector<VkPipelineShaderStageCreateInfo>& shaderStages)
 {
-    const wchar_t* pCubeShaderFileNameVert = L"quad.vert.spv";
-    const wchar_t* pCubeShaderFileNameFraq = L"quad.frag.spv";
-
     shaderStages.resize(2);
-    AMF_RESULT res = GetShaderStageInfoFromFile(pCubeShaderFileNameVert, VK_SHADER_STAGE_VERTEX_BIT, "main", shaderStages[0]);
+    AMF_RESULT res = GetShaderStageInfo(QuadVulkan_vs, QuadVulkan_vsCount, VK_SHADER_STAGE_VERTEX_BIT, "main", shaderStages[0]);
     AMF_RETURN_IF_FAILED(res, L"GetShaderStages() - GetShaderStageInfoFromFile() failed to get vertex shader stage create info");
 
-    res = GetShaderStageInfoFromFile(pCubeShaderFileNameFraq, VK_SHADER_STAGE_FRAGMENT_BIT, "main", shaderStages[1]);
+    res = GetShaderStageInfo(QuadVulkan_fs, QuadVulkan_fsCount, VK_SHADER_STAGE_FRAGMENT_BIT, "main", shaderStages[1]);
     AMF_RETURN_IF_FAILED(res, L"GetShaderStages() - GetShaderStageInfoFromFile() failed to get fragment shader stage create info");
 
     return AMF_OK;
@@ -330,12 +369,12 @@ AMF_RESULT VideoPresenterVulkan::CreateBufferForDescriptor(const DescriptorVulka
 {
     AMF_RETURN_IF_FALSE(pDescriptor != nullptr, AMF_INVALID_ARG, L"CreateBufferForDescriptor() - pDescriptor is NULL");
     AMF_RETURN_IF_FALSE(pDescriptor->layoutBinding.descriptorCount > 0, AMF_INVALID_ARG, L"CreateBufferForDescriptor() - descriptor set descriptor count cannot be 0");
-    AMF_RETURN_IF_FALSE(pDescriptor->layoutBinding.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || 
-                        pDescriptor->layoutBinding.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 
+    AMF_RETURN_IF_FALSE(pDescriptor->layoutBinding.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
+                        pDescriptor->layoutBinding.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
                         AMF_INVALID_ARG, L"CreateBufferForDescriptor() - descriptor is not a uniform buffer descriptor");
 
     AMF_RETURN_IF_FALSE(bindingSize > 0, AMF_INVALID_ARG, L"CreateBufferForDescriptor() - bindingSize must be greater than 0");
-    AMF_RETURN_IF_FALSE(bindingSize + bindingOffset <= bufferSize, AMF_OUT_OF_RANGE, 
+    AMF_RETURN_IF_FALSE(bindingSize + bindingOffset <= bufferSize, AMF_OUT_OF_RANGE,
         L"CreateBufferForDescriptor() - bindingSize (%zu) + bindingOffset (%zu) must be <= bufferSize (%zu)", bindingSize, bindingOffset, bufferSize);
 
     AMF_RESULT res = MakeBuffer(pData, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, buffer);
@@ -365,7 +404,10 @@ AMF_RESULT VideoPresenterVulkan::CreatePipeline()
 {
     AMF_RETURN_IF_FALSE(m_pVulkanDevice != nullptr, AMF_NOT_INITIALIZED, L"CreatePipeline() - m_pVulkanDevice is not initialized");
     AMF_RETURN_IF_FALSE(m_pVulkanDevice->hDevice != nullptr, AMF_NOT_INITIALIZED, L"CreatePipeline() - m_pVulkanDevice->hDevice is not initialized");
-    AMF_RETURN_IF_FALSE(m_swapChain.GetRenderPass() != NULL, AMF_NOT_INITIALIZED, L"CreatePipeline() - Render Pass is not initialized");
+    AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_NOT_INITIALIZED, L"CreatePipeline() - m_pSwapChain is NULL");
+
+    SwapChainVulkan* pSwapChain = (SwapChainVulkan*)m_pSwapChain.get();
+    AMF_RETURN_IF_FALSE(pSwapChain->GetRenderPass() != NULL, AMF_NOT_INITIALIZED, L"CreatePipeline() - Render pass is not initialized");
 
     RenderingPipelineVulkan::PipelineCreateInfo createInfo;
     RenderingPipelineVulkan::SetDefaultInfo(createInfo);
@@ -378,6 +420,23 @@ AMF_RESULT VideoPresenterVulkan::CreatePipeline()
     AMF_RESULT res = GetShaderStages(createInfo.shaderStages);
     AMF_RETURN_IF_FAILED(res, L"CreatePipeline() - GetShaderStages() failed");
 
+    // Set viewport
+    AMFSize swapChainSize = m_pSwapChain->GetSize();
+    VkViewport viewport = {};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = (float)swapChainSize.width;
+    viewport.height = (float)swapChainSize.height;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    VkRect2D scissorRect = {};
+    scissorRect.extent.width = swapChainSize.width;
+    scissorRect.extent.height = swapChainSize.height;
+
+    createInfo.scissors.push_back(scissorRect);
+    createInfo.viewports.push_back(viewport);
+
     // Vertex bindings
     createInfo.vertexBindingDescs.resize(1);
     createInfo.vertexBindingDescs[0].binding = 0;
@@ -387,11 +446,11 @@ AMF_RESULT VideoPresenterVulkan::CreatePipeline()
     // Vertex attributes
     createInfo.vertexAttributeDescs.resize(2);
 
-        //Position
-        createInfo.vertexAttributeDescs[0].binding = 0;
-        createInfo.vertexAttributeDescs[0].location = 0;
-        createInfo.vertexAttributeDescs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-        createInfo.vertexAttributeDescs[0].offset = offsetof(Vertex, pos);
+    //Position
+    createInfo.vertexAttributeDescs[0].binding = 0;
+    createInfo.vertexAttributeDescs[0].location = 0;
+    createInfo.vertexAttributeDescs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    createInfo.vertexAttributeDescs[0].offset = offsetof(Vertex, pos);
 
         //Texture
         createInfo.vertexAttributeDescs[1].binding = 0;
@@ -399,13 +458,13 @@ AMF_RESULT VideoPresenterVulkan::CreatePipeline()
         createInfo.vertexAttributeDescs[1].format = VK_FORMAT_R32G32_SFLOAT;
         createInfo.vertexAttributeDescs[1].offset = offsetof(Vertex, tex);
 
-    AMF_RESULT createRes = m_pipeline.CreatePipeline(createInfo, m_swapChain.GetRenderPass(), 0);
+    AMF_RESULT createRes = m_quadPipeline.CreatePipeline(createInfo, pSwapChain->GetRenderPass(), 0);
 
     // Destroy shader stages regardless of pipeline creation result
     res = DestroyShaderStages(createInfo.shaderStages);
     AMF_RETURN_IF_FAILED(res, L"CreatePipeline() - DestroyShaderStages() failed");
 
-    AMF_RETURN_IF_FAILED(createRes, L"CreatePipeline() - m_pipeline.CreatePipeline() failed");
+    AMF_RETURN_IF_FAILED(createRes, L"CreatePipeline() - m_quadPipeline.CreatePipeline() failed");
     return AMF_OK;
 }
 
@@ -413,7 +472,8 @@ AMF_RESULT VideoPresenterVulkan::PrepareStates()
 {
     AMF_RETURN_IF_FALSE(m_pVulkanDevice != nullptr, AMF_NOT_INITIALIZED, L"PrepareStates() - m_pVulkanDevice is not initialized");
     AMF_RETURN_IF_FALSE(m_pVulkanDevice->hDevice != nullptr, AMF_NOT_INITIALIZED, L"PrepareStates() - m_pVulkanDevice->hDevice is not initialized");
-    AMF_RETURN_IF_FALSE(m_hSampler == NULL, AMF_ALREADY_INITIALIZED, L"PrepareStates() - m_hSampler is already initialized");
+    AMF_RETURN_IF_FALSE(m_hSamplerMap[InterpolationLinear] == NULL, AMF_ALREADY_INITIALIZED, L"PrepareStates() - Linear sampler is already initialized");
+    AMF_RETURN_IF_FALSE(m_hSamplerMap[InterpolationPoint] == NULL, AMF_ALREADY_INITIALIZED, L"PrepareStates() - Point sampler is already initialized");
 
     // Vertices
     constexpr Vertex vertices[4] =
@@ -428,16 +488,15 @@ AMF_RESULT VideoPresenterVulkan::PrepareStates()
     AMF_RETURN_IF_FAILED(res, L"PrepareStates() - CreateVertexBuffer() failed to create vertex buffer");
 
     // View projection buffer
-    constexpr ViewProjection mvp = {};
-    res = CreateBufferForDescriptor(&m_viewProjectionDescriptor, &mvp, sizeof(ViewProjection), 0, m_viewProjectionBuffer);
+    res = CreateBufferForDescriptor(&m_viewProjectionDescriptor, &m_viewProjectionBuffer, sizeof(ViewProjection), 0, m_viewProjectionBuffer);
     AMF_RETURN_IF_FAILED(res, L"PrepareStates() - CreateBufferForDescriptor() failed to create view projection buffer");
+
+    res = CreateBufferForDescriptor(&m_pipViewProjectionDescriptor, &m_pipViewProjection, sizeof(ViewProjection), 0, m_pipViewProjectionBuffer);
+    AMF_RETURN_IF_FAILED(res, L"PrepareStates() - CreateBufferForDescriptor() failed to create PIP view projection buffer");
 
     // Sampler
     VkSamplerCreateInfo sampler = {};
         sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        sampler.magFilter = VK_FILTER_LINEAR;
-        sampler.minFilter = VK_FILTER_LINEAR;
-        sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
         sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
         sampler.addressModeV = sampler.addressModeU;
         sampler.addressModeW = sampler.addressModeU;
@@ -450,29 +509,41 @@ AMF_RESULT VideoPresenterVulkan::PrepareStates()
         sampler.unnormalizedCoordinates = VK_FALSE;
         sampler.compareEnable = VK_FALSE;
 
-    VkResult vkres = GetVulkan()->vkCreateSampler(m_pVulkanDevice->hDevice, &sampler, nullptr, &m_hSampler);
-    ASSERT_RETURN_IF_VK_FAILED(vkres, AMF_VULKAN_FAILED, L"PrepareStates() - vkCreateSampler() failed");
+    sampler.magFilter = VK_FILTER_LINEAR;
+    sampler.minFilter = VK_FILTER_LINEAR;
+    sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    VkResult vkres = GetVulkan()->vkCreateSampler(m_pVulkanDevice->hDevice, &sampler, nullptr, &m_hSamplerMap[InterpolationLinear]);
+    ASSERT_RETURN_IF_VK_FAILED(vkres, AMF_VULKAN_FAILED, L"PrepareStates() - vkCreateSampler() failed to create liner sampler");
+
+    sampler.magFilter = VK_FILTER_NEAREST;
+    sampler.minFilter = VK_FILTER_NEAREST;
+    sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+    vkres = GetVulkan()->vkCreateSampler(m_pVulkanDevice->hDevice, &sampler, nullptr, &m_hSamplerMap[InterpolationPoint]);
+    ASSERT_RETURN_IF_VK_FAILED(vkres, AMF_VULKAN_FAILED, L"PrepareStates() - vkCreateSampler() failed to create point sampelr");
 
     return AMF_OK;
 }
 
 AMF_RESULT VideoPresenterVulkan::CreateRenderTarget(RenderTarget& renderTarget)
 {
+    AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_NOT_INITIALIZED, L"CreateRenderTarget() - m_pSwapChain is NULL");
+
     const AMFSize size = GetSwapchainSize();
-    const VkFormat format = GetVkFormat();
+    SwapChainVulkan* pSwapChain = (SwapChainVulkan*)m_pSwapChain.get();
+    const VkFormat format = pSwapChain->GetVkFormat();
 
     constexpr VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
     constexpr VkMemoryPropertyFlags memoryProperties = 0;// VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-    AMF_RESULT res = CreateSurface(m_swapChain.GetQueueIndex(), size.width, size.height, format, usage, memoryProperties, renderTarget.m_surface);
+    AMF_RESULT res = CreateSurface(pSwapChain->GetQueueIndex(), size.width, size.height, format, usage, memoryProperties, renderTarget.m_surface);
     AMF_RETURN_IF_FAILED(res, L"CreateRenderTarget() - CreateSurface() failed");
 
-    res = m_swapChain.CreateImageView(renderTarget.m_surface.hImage, format, renderTarget.m_hImageView);
+    res = pSwapChain->CreateImageView(renderTarget.m_surface.hImage, format, renderTarget.m_hImageView);
     AMF_RETURN_IF_FAILED(res, L"CreateRenderTarget() - CreateImageView() failed");
 
     VkFramebufferCreateInfo frameBufferInfo = {};
     frameBufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    frameBufferInfo.renderPass = m_swapChain.GetRenderPass();
+    frameBufferInfo.renderPass = pSwapChain->GetRenderPass();
     frameBufferInfo.attachmentCount = 1;
     frameBufferInfo.pAttachments = &renderTarget.m_hImageView;
     frameBufferInfo.width = size.width;
@@ -529,177 +600,82 @@ AMF_RESULT VideoPresenterVulkan::UpdateTextureDescriptorSet(DescriptorVulkan* pD
     return AMF_OK;
 }
 
-AMF_RESULT VideoPresenterVulkan::UpdateTextureDescriptorSet(AMFSurface* pSurface)
-{
-    // This function will be used later in PresentEngine for demo frame and interpolation mode
-    return UpdateTextureDescriptorSet(&m_samplerDescriptor, pSurface, m_hSampler);
-}
-
-AMF_RESULT VideoPresenterVulkan::Present(AMFSurface* pSurface)
-{
-    AMF_RETURN_IF_FALSE(m_pVulkanDevice != nullptr, AMF_NOT_INITIALIZED, L"Present() - m_pVulkanDevice is not initialized");
-    AMF_RETURN_IF_FALSE(pSurface != nullptr, AMF_INVALID_ARG, L"Present() - pSurface is NULL");
-    AMF_RETURN_IF_FALSE(pSurface->GetFormat() == GetInputFormat(), AMF_INVALID_FORMAT, L"Present() - Surface format (%s)"
-        "does not match input format (%s)", AMFSurfaceGetFormatName(pSurface->GetFormat()),
-        AMFSurfaceGetFormatName(GetInputFormat()));
-
-    AMF_RESULT res = pSurface->Convert(GetMemoryType());
-    AMF_RETURN_IF_FAILED(res, L"Present() - Surface Convert() failed");
-
-    AMFLock lock(&m_sect);
-    amf_uint32 imageIndex = 0;
-
-#if defined(_WIN32)
-    res = CheckForResize(false);
-    AMF_RETURN_IF_FAILED(res, L"Present() - CheckForResize() failed");
-#endif
-
-
-    // Get index corresponding to the back buffer of incoming frame
-    if (m_bRenderToBackBuffer)
-    {
-        res = m_swapChain.GetBackBufferIndex(pSurface, imageIndex);
-        AMF_RETURN_IF_FALSE(res == AMF_OK || res == AMF_NOT_FOUND, res, L"Present() - CheckBackBufferIndex() failed");
-    }
-
-    if(m_bRenderToBackBuffer == false || res == AMF_NOT_FOUND)
-    {
-#if defined(_WIN32)
-        if(m_bResizeSwapChain)
-        {
-            res = ResizeSwapChain();
-            AMF_RETURN_IF_FAILED(res, L"Present() - ResizeSwapChain() failed");
-        }
-#endif
-
-        const BackBufferBase* pBuffer = nullptr;
-        res = m_swapChain.AcquireNextBackBuffer(&pBuffer);
-        AMF_RETURN_IF_FAILED(res, L"Present() - AcquireBackBuffer() failed");
-
-        const RenderTarget* pRenderTarget = (RenderTarget*)pBuffer;
-        res = RenderSurface(pSurface, pRenderTarget);
-        if (res != AMF_OK)
-        {
-            AMF_RETURN_IF_FAILED(m_swapChain.DropBackBuffer(pBuffer), L"Present() - DropBackBuffer() failed");
-        }
-
-        AMF_RETURN_IF_FAILED(res, L"Present() - RenderSurface() failed");
-    }
-
-    WaitForPTS(pSurface->GetPts());
-
-    res = m_swapChain.Present(m_bWaitForVSync);
-    AMF_RETURN_IF_FAILED(res, L"Present() - SwapChainVulkan::Present() failed");
-    
-#if defined(__linux)
-    XFlush((Display*)m_hDisplay);
-#endif
-
-    if (m_bResizeSwapChain)
-    {
-        return AMF_RESOLUTION_UPDATED;
-    }
-
-    return AMF_OK;
-}
-
-AMF_RESULT VideoPresenterVulkan::RenderSurface(AMFSurface* pSurface, const RenderTarget* pRenderTarget)
-{
-    AMF_RETURN_IF_FALSE(pSurface != nullptr, AMF_INVALID_ARG, L"RenderSurface() - pSurface is NULL");
-    AMF_RETURN_IF_FALSE(pSurface->GetFormat() == GetInputFormat(), AMF_INVALID_FORMAT, L"Present() - Surface format (%s)"
-        "does not match input format (%s)", AMFSurfaceGetFormatName(pSurface->GetFormat()),
-        AMFSurfaceGetFormatName(GetInputFormat()));
-
-    AMFContext1::AMFVulkanLocker vklock(m_pContext1);
-    AMFLock lock(&m_sect);
-
-    const AMFRect srcSurfaceRect = GetPlaneRect(pSurface->GetPlane(AMF_PLANE_PACKED));
-    const AMFRect dstSurfaceRect = GetClientRect();
-    const AMFSize dstSurfaceSize = AMFConstructSize(pRenderTarget->m_surface.iWidth, pRenderTarget->m_surface.iHeight);
-
-    RenderViewSizeInfo renderView;
-    AMF_RESULT res = GetRenderViewSizeInfo(srcSurfaceRect, dstSurfaceSize, dstSurfaceRect, renderView);
-    AMF_RETURN_IF_FAILED(res, L"RenderSurface() - GetRenderViewSizeInfo() failed")
-
-    res = BitBltRender(pSurface, pRenderTarget, renderView);
-    AMF_RETURN_IF_FAILED(res, L"RenderSurface() - BitBlt() failed");
-
-    return AMF_OK;
-}
-
-AMF_RESULT VideoPresenterVulkan::BitBltCopy(AMFSurface* pSrcSurface, const RenderTarget* pRenderTarget, RenderViewSizeInfo& renderView)
-{
-    AMFSurfacePtr pSwapChainSurface;
-    AMF_RESULT res = m_pContext1->CreateSurfaceFromVulkanNative((void*)&(pRenderTarget->m_surface), &pSwapChainSurface, NULL);
-    AMF_RETURN_IF_FAILED(res, L"BitBltCopy() - CreateSurfaceFromVulkanNative() failed");
-
-    AMFComputePtr pCompute;
-    m_pContext1->GetCompute(AMF_MEMORY_VULKAN, &pCompute);
-    
-    const amf_size originSrc[3] = { (amf_size)renderView.srcRect.left,      (amf_size)renderView.srcRect.top, 0};
-    const amf_size originDst[3] = { (amf_size)renderView.dstRect.left,      (amf_size)renderView.dstRect.top, 0};
-    const amf_size region[3] =    { (amf_size)renderView.dstRect.Width(),   (amf_size)renderView.dstRect.Height(), 1};
-
-    res = pCompute->CopyPlane(pSrcSurface->GetPlaneAt(0), originSrc, region, pSwapChainSurface->GetPlaneAt(0), originDst);
-    AMF_RETURN_IF_FAILED(res, L"BitBltCopy() - CopyPlane() failed");
-    return AMF_OK;
-}
-
-AMF_RESULT VideoPresenterVulkan::BitBltRender(AMFSurface* pSrcSurface, const RenderTarget* pRenderTarget, RenderViewSizeInfo& renderView)
+AMF_RESULT VideoPresenterVulkan::RenderSurface(AMFSurface* pSurface, const RenderTargetBase* pRenderTarget, RenderViewSizeInfo& renderView)
 {   
-    AMF_RETURN_IF_FALSE(pSrcSurface != nullptr, AMF_INVALID_ARG, L"BitBltRender() - pSrcSurface is NULL");
-    AMF_RETURN_IF_FALSE(pRenderTarget != nullptr, AMF_INVALID_ARG, L"BitBltRender() - pRenderTarget is NULL");
+    AMF_RETURN_IF_FALSE(pSurface != nullptr, AMF_INVALID_ARG, L"RenderSurface() - pSurface is NULL");
 
-    AMFPlane * pSrcPlane = pSrcSurface->GetPlane(AMF_PLANE_PACKED);
-    AMF_RETURN_IF_FALSE(pSrcSurface != nullptr, AMF_INVALID_ARG, L"BitBltRender() - Packed plane doesn't exist in SrcSurface");
+    RenderTarget* pTarget = (RenderTarget*)pRenderTarget;
+    AMF_RETURN_IF_FALSE(pTarget != nullptr, AMF_INVALID_ARG, L"RenderSurface() - pRenderTarget is NULL");
 
-    const AMFVulkanView* pSrcView = (AMFVulkanView*)pSrcPlane->GetNative();
-    AMF_RETURN_IF_FALSE(pSrcView != nullptr, AMF_INVALID_ARG, L"BitBltRender() - SrcPlane GetNative() returned NULL");
+    const AMFVulkanView* pSrcView = GetPackedSurfaceVulkan(pSurface);
+    AMF_RETURN_IF_FALSE(pSrcView != nullptr, AMF_INVALID_ARG, L"RenderSurface() - SrcPlane GetNative() returned NULL");
 
-    AMF_RESULT res = ResizeRenderView(renderView);
-    AMF_RETURN_IF_FAILED(res, L"BitBltRender() - ResizeRenderView() failed");
+    AMF_RESULT res = UpdateStates(pSurface, pTarget, renderView);
+    AMF_RETURN_IF_FAILED(res, L"RenderSurface() - UpdateStates() failed");
 
-    res = UpdateTextureDescriptorSet(pSrcSurface);
-    AMF_RETURN_IF_FAILED(res, L"BitBltRender() - UpdateTextureDescriptorSet() failed");
-
-    res = m_descriptorHeap.UpdatePendingDescriptorSets();
-    AMF_RETURN_IF_FAILED(res, L"BitBltRender() - UpdatePendingDescriptorSets() failed");
-
-    res = StartRendering(pRenderTarget);
-    AMF_RETURN_IF_FAILED(res, L"BitBltRender() - StartRendering() failed");
+    res = StartRendering(pTarget, pSrcView->pSurface);
+    AMF_RETURN_IF_FAILED(res, L"RenderSurface() - StartRendering() failed");
 
     // If the dstSurface was acquired from the swapchain, then this will do two things
     // 1. Wait for the semaphore to signal that the frame is ready for use before the pipeline renders onto it
     // 2. Signals the semaphore when queue is executed which the present command can wait for, to ensure rendering
     //    is finished before presenting
-    res = m_cmdBuffer.SyncResource((AMFVulkanSync*)&pRenderTarget->m_surface.Sync, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+    res = m_cmdBuffer.SyncResource((AMFVulkanSync*)&pTarget->m_surface.Sync, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
     AMF_RETURN_IF_FAILED(res, L"RenderSurface() - SyncResource() failed to sync render target");
 
-    res = DrawBackground();
-    AMF_RETURN_IF_FAILED(res, L"BitBltRender() - DrawBackground() failed");
+    res = DrawBackground(pTarget);
+    AMF_RETURN_IF_FAILED(res, L"RenderSurface() - DrawBackground() failed");
 
-    res = SetStates(DSG_PRESENT_SURFACE);
-    AMF_RETURN_IF_FAILED(res, L"BitBltRender() - SetStates() failed");
+    res = SetStates(GROUP_QUAD_SURFACE);
+    AMF_RETURN_IF_FAILED(res, L"RenderSurface() - SetStates() failed");
 
     res = DrawFrame(pSrcView->pSurface);
-    AMF_RETURN_IF_FAILED(res, L"BitBltRender() - DrawFrame() failed");
+    AMF_RETURN_IF_FAILED(res, L"RenderSurface() - DrawFrame() failed");
 
-    res = DrawOverlay(pSrcSurface);
-    AMF_RETURN_IF_FAILED(res, L"BitBltRender() - DrawOverlay() failed");
+    res = DrawOverlay(pSurface, pTarget);
+    AMF_RETURN_IF_FAILED(res, L"RenderSurface() - DrawOverlay() failed");
+
+    if (m_enablePIP == true)
+    {
+        res = SetStates(GROUP_QUAD_PIP);
+        AMF_RETURN_IF_FAILED(res, L"RenderSurface() - SetStates() PIP failed");
+
+        res = DrawFrame(pSrcView->pSurface);
+        AMF_RETURN_IF_FAILED(res, L"RenderSurface() - DrawFrame() PIP failed");
+    }
 
     res = StopRendering();
-    AMF_RETURN_IF_FAILED(res, L"BitBltRender() - StopRendering() failed");
+    AMF_RETURN_IF_FAILED(res, L"RenderSurface() - StopRendering() failed");
 
     return AMF_OK;
 }
 
-AMF_RESULT VideoPresenterVulkan::StartRendering(const RenderTarget* pRenderTarget)
+AMF_RESULT VideoPresenterVulkan::UpdateStates(AMFSurface* pSurface, const RenderTarget* /*pRenderTarget*/, RenderViewSizeInfo& renderView)
+{
+    AMF_RESULT res = ResizeRenderView(renderView);
+    AMF_RETURN_IF_FAILED(res, L"UpdateStates() - ResizeRenderView() failed");
+
+    res = UpdateTextureDescriptorSet(&m_samplerDescriptor, pSurface, m_hSamplerMap[m_interpolation]);
+    AMF_RETURN_IF_FAILED(res, L"UpdateStates() - UpdateTextureDescriptorSet() failed");
+
+    res = UpdateTextureDescriptorSet(&m_pipSamplerDescriptor, pSurface, m_hSamplerMap[PIP_INTERPOLATION]);
+    AMF_RETURN_IF_FAILED(res, L"UpdateStates() - UpdateTextureDescriptorSet() failed");
+
+    res = m_descriptorHeap.UpdatePendingDescriptorSets();
+    AMF_RETURN_IF_FAILED(res, L"UpdateStates() - UpdatePendingDescriptorSets() failed");
+
+    return AMF_OK;
+}
+
+AMF_RESULT VideoPresenterVulkan::StartRendering(const RenderTarget* pRenderTarget, amf::AMFVulkanSurface* pSurface)
 {
     AMF_RETURN_IF_FALSE(pRenderTarget != nullptr, AMF_INVALID_ARG, L"StartRendering() - pRenderTarget is NULL");
     AMF_RETURN_IF_FALSE(pRenderTarget->m_hFrameBuffer != NULL, AMF_INVALID_ARG, L"StartRendering() - pRenderTarget->m_hFrameBuffer NULL");
-    AMF_RETURN_IF_FALSE(m_cmdBuffer.GetBuffer() != nullptr, AMF_NOT_INITIALIZED, L"StartRendering() - Command buffer is not initialized");
-    AMF_RETURN_IF_FALSE(m_swapChain.GetRenderPass() != NULL, AMF_NOT_INITIALIZED, L"StartRendering() - Render pass is not initialized");
+    AMF_RETURN_IF_FALSE(m_cmdBuffer.GetBuffer() != nullptr, AMF_NOT_INITIALIZED, L"StartRendering() - Command Buffer is not initialized");
+    AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_NOT_INITIALIZED, L"StartRendering() - m_pSwapChain is NULL");
 
+    SwapChainVulkan* pSwapChain = (SwapChainVulkan*)m_pSwapChain.get();
+    AMF_RETURN_IF_FALSE(pSwapChain->GetRenderPass() != NULL, AMF_NOT_INITIALIZED, L"StartRendering() - m_pSwapChain->GetRenderPass() is not initialized");
 
     const amf_int32 width = pRenderTarget->m_surface.iWidth;
     const amf_int32 height = pRenderTarget->m_surface.iHeight;
@@ -708,12 +684,15 @@ AMF_RESULT VideoPresenterVulkan::StartRendering(const RenderTarget* pRenderTarge
     AMF_RESULT res = m_cmdBuffer.StartRecording();
     AMF_RETURN_IF_FAILED(res, L"StartRendering() - Command Buffer StartRecording() failed");
 
+    res = TransitionSurface(&m_cmdBuffer, pSurface, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    AMF_RETURN_IF_FAILED(res, L"StartRendering() - TransitionSurface() failed");
+
     // Set viewport
     VkViewport viewport = {};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = (float)width;
-    viewport.height = (float)height;
+    viewport.width = (amf_float)width;
+    viewport.height = (amf_float)height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
     GetVulkan()->vkCmdSetViewport(m_cmdBuffer.GetBuffer(), 0, 1, &viewport);
@@ -727,7 +706,7 @@ AMF_RESULT VideoPresenterVulkan::StartRendering(const RenderTarget* pRenderTarge
     VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
     VkRenderPassBeginInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = m_swapChain.GetRenderPass();
+    renderPassInfo.renderPass = pSwapChain->GetRenderPass();
     renderPassInfo.framebuffer = pRenderTarget->m_hFrameBuffer;
     renderPassInfo.renderArea.offset = { 0, 0 };
     renderPassInfo.renderArea.extent.width = width;
@@ -739,18 +718,18 @@ AMF_RESULT VideoPresenterVulkan::StartRendering(const RenderTarget* pRenderTarge
     return AMF_OK;
 }
 
-AMF_RESULT VideoPresenterVulkan::DrawBackground()
+AMF_RESULT VideoPresenterVulkan::DrawBackground(const RenderTarget* /*pRenderTarget*/)
 {
     return AMF_OK;
 }
 
 AMF_RESULT VideoPresenterVulkan::SetStates(amf_uint32 descriptorGroupNum)
 {
-    AMF_RETURN_IF_FALSE(m_cmdBuffer.GetBuffer() != nullptr, AMF_NOT_INITIALIZED, L"SetStates() - Command buffer is not initialized");
+    AMF_RETURN_IF_FALSE(m_cmdBuffer.GetBuffer() != nullptr, AMF_NOT_INITIALIZED, L"SetStates() - Command Buffer is not initialized");
     AMF_RETURN_IF_FALSE(m_VertexBuffer.hBuffer != NULL, AMF_NOT_INITIALIZED, L"SetStates() - m_VertexBuffer.hBuffer is not initialized");
 
-    AMF_RESULT res = m_pipeline.SetStates(m_cmdBuffer.GetBuffer(), descriptorGroupNum);
-    AMF_RETURN_IF_FAILED(res, L"SetStates() - m_pipeline.SetStates() failed");
+    AMF_RESULT res = m_quadPipeline.SetStates(m_cmdBuffer.GetBuffer(), descriptorGroupNum);
+    AMF_RETURN_IF_FAILED(res, L"SetStates() - m_quadPipeline.SetStates() failed");
 
     // Vertex/Index buffers
     const VkBuffer vertexBuffers[] = { m_VertexBuffer.hBuffer };
@@ -763,10 +742,7 @@ AMF_RESULT VideoPresenterVulkan::SetStates(amf_uint32 descriptorGroupNum)
 AMF_RESULT VideoPresenterVulkan::DrawFrame(AMFVulkanSurface* pSurface)
 {
     AMF_RETURN_IF_FALSE(pSurface != nullptr, AMF_INVALID_ARG, L"DrawFrame() - pSurface is NULL");
-
-    AMF_RESULT res = TransitionSurface(&m_cmdBuffer, pSurface, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    AMF_RETURN_IF_FAILED(res, L"DrawFrame() - TransitionSurface() failed");
-
+    AMF_RESULT res = AMF_OK;
     // Sync surface
     res = m_cmdBuffer.SyncResource(&pSurface->Sync, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
     AMF_RETURN_IF_FAILED(res, L"DrawFrame() - SyncResource() failed");
@@ -776,18 +752,17 @@ AMF_RESULT VideoPresenterVulkan::DrawFrame(AMFVulkanSurface* pSurface)
     return AMF_OK;
 }
 
-AMF_RESULT VideoPresenterVulkan::DrawOverlay(AMFSurface* /* pSurface */)
-{
-    return AMF_OK;
-}
-
 AMF_RESULT VideoPresenterVulkan::StopRendering()
 {
+    AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_NOT_INITIALIZED, L"StopRendering() - m_pSwapChain is NULL");
+
     AMF_RETURN_IF_FALSE(m_cmdBuffer.GetBuffer() != nullptr, AMF_NOT_INITIALIZED, L"StopRendering() - Command Buffer is not initialized");
-    AMF_RETURN_IF_FALSE(m_swapChain.GetQueue() != nullptr, AMF_NOT_INITIALIZED, L"StopRendering() - Graphcis Queue is not initialized");
+
+    SwapChainVulkan* pSwapChain = (SwapChainVulkan*)m_pSwapChain.get();
+    AMF_RETURN_IF_FALSE(pSwapChain->GetQueue() != nullptr, AMF_NOT_INITIALIZED, L"StopRendering() - Graphcis Queue is not initialized");
 
     GetVulkan()->vkCmdEndRenderPass(m_cmdBuffer.GetBuffer());
-    AMF_RESULT res = m_cmdBuffer.Execute(m_swapChain.GetQueue());
+    AMF_RESULT res = m_cmdBuffer.Execute(pSwapChain->GetQueue());
     AMF_RETURN_IF_FAILED(res, L"StopRendering() - Command Buffer Execute() failed");
 
     return AMF_OK;
@@ -798,174 +773,14 @@ AMF_RESULT VideoPresenterVulkan::OnRenderViewResize(const RenderViewSizeInfo& ne
     AMF_RESULT res = VideoPresenter::OnRenderViewResize(newRenderView);
     AMF_RETURN_IF_FAILED(res, L"OnRenderViewResize() - VideoPresenter::OnRenderViewResize() failed");
 
-    const void* pBuffers[2] = { m_fNormalToViewMatrix, m_fTextureMatrix };
-    const amf_size sizes[2] = { sizeof(m_fNormalToViewMatrix), sizeof(m_fTextureMatrix) };
-    const amf_size offsets[2] = { offsetof(ViewProjection, vertexTransformMatrix), offsetof(ViewProjection, texTransformMatrix) };
-
-    res = UpdateBuffer(m_viewProjectionBuffer, pBuffers, amf_countof(pBuffers), sizes, offsets);
+    res = UpdateBuffer(m_viewProjectionBuffer, &m_viewProjection, sizeof(ViewProjection), 0);
     AMF_RETURN_IF_FAILED(res, L"OnRenderViewResize() - UpdateBuffer() failed to update view projection buffer");
+
+    res = UpdateBuffer(m_pipViewProjectionBuffer, &m_pipViewProjection, sizeof(ViewProjection), 0);
+    AMF_RETURN_IF_FAILED(res, L"OnRenderViewResize() - UpdateBuffer() failed to update PIP view projection buffer");
     
     return AMF_OK;
 }
-
-AMF_RESULT AMF_STD_CALL VideoPresenterVulkan::AllocSurface(AMF_MEMORY_TYPE type, AMF_SURFACE_FORMAT format, amf_int32 /*width*/, amf_int32 /*height*/,
-                                                           amf_int32 /* hPitch */, amf_int32 /* vPitch */, AMFSurface** ppSurface)
-{
-    if(m_bRenderToBackBuffer == false)
-    {
-        return AMF_NOT_IMPLEMENTED;
-    }
-
-    AMF_RETURN_IF_FALSE(format == m_eInputFormat, AMF_INVALID_ARG, L"AllocSurface() - Format (%s)"
-        "does not match swapchain format (%s)", AMFSurfaceGetFormatName(format),
-        AMFSurfaceGetFormatName(GetInputFormat()));
-
-    //const AMFSize swapChainSize = GetSwapchainSize();
-    //AMF_RETURN_IF_FALSE(width == 0 || width == swapChainSize.width, AMF_INVALID_ARG, L"AllocSurface() - width(%d) must be either 0 or equal swapchain width(%d)", width, swapChainSize.width);
-    //AMF_RETURN_IF_FALSE(height == 0 || height == swapChainSize.height, AMF_INVALID_ARG, L"AllocSurface() - height(%d) must be either 0 or equal swapchain height(%d)", height, swapChainSize.height);
-
-    // wait till buffers are released
-    while(m_swapChain.GetBackBuffersAvailable() == 0)
-    {
-        if(m_bFrozen)
-        {
-            return AMF_INPUT_FULL;
-        }
-        amf_sleep(1);
-    }
-
-    if (m_bResizeSwapChain)
-    {
-        // wait till all buffers are released
-        while (m_swapChain.GetBackBuffersAcquired() > 0 || m_TrackSurfaces.empty() == false)
-        {
-            amf_sleep(1);
-        }
-
-        AMF_RESULT res = ResizeSwapChain();
-        AMF_RETURN_IF_FAILED(res, L"AllocSurface() - ResizeSwapChain() failed");
-    }
-
-    AMFLock lock(&m_sect);
-
-    AMF_RESULT res = m_swapChain.AcquireNextBackBuffer(ppSurface);
-    AMF_RETURN_IF_FAILED(res, L"AllocSurface() - AcquireNextBackBuffer() failed");
-    
-    (*ppSurface)->AddObserver(this);
-    m_TrackSurfaces.push_back(*ppSurface);
-
-    res = (*ppSurface)->Convert(type);
-    AMF_RETURN_IF_FAILED(res, L"AllocSurface() - Convert(%s) failed", AMFGetMemoryTypeName(type));
-
-    return res;
-}
-
-void AMF_STD_CALL VideoPresenterVulkan::OnSurfaceDataRelease(AMFSurface* pSurface)
-{
-    if (pSurface == nullptr)
-    {
-        return;
-    }
-
-    AMFLock lock(&m_sect);
-    for(amf_vector<AMFSurface*>::iterator it = m_TrackSurfaces.begin(); it != m_TrackSurfaces.end(); it++)
-    {
-        if( *it == pSurface)
-        {
-            pSurface->RemoveObserver(this);
-            m_TrackSurfaces.erase(it);
-
-            // Drop backbuffer if acquired
-            m_swapChain.DropBackBuffer(pSurface);
-            break;
-        }
-    }
-}
-
-AMF_RESULT VideoPresenterVulkan::SetInputFormat(AMF_SURFACE_FORMAT format)
-{
-    if(format != AMF_SURFACE_BGRA && format != AMF_SURFACE_RGBA)
-    {
-        return AMF_FAIL;
-    }
-    m_eInputFormat = format;
-    return AMF_OK;
-}
-
-VkFormat VideoPresenterVulkan::GetVkFormat()
-{
-    VkFormat format = VK_FORMAT_UNDEFINED;
-    switch (GetInputFormat())
-    {
-        case AMF_SURFACE_BGRA: format = VK_FORMAT_B8G8R8A8_UNORM; break;
-        case AMF_SURFACE_RGBA: format = VK_FORMAT_R8G8B8A8_UNORM; break;
-    }
-
-    return format;
-}
-
-AMF_RESULT VideoPresenterVulkan::Flush()
-{
-    return BackBufferPresenter::Flush();
-}
-
-AMF_RESULT VideoPresenterVulkan::CheckForResize(amf_bool force)
-{
-    if (force == true || m_bFullScreen != m_swapChain.FullscreenEnabled())
-    {
-        m_bResizeSwapChain = true;
-        return AMF_OK;
-    }
-
-    AMFRect client = GetClientRect();
-    amf_int width = client.Width();
-    amf_int height = client.Height();
-
-    AMFSize size = GetSwapchainSize();
-    if ((width == size.width && height == size.height) || width == 0 || height == 0)
-    {
-        return AMF_OK;
-    }
-
-    m_bResizeSwapChain = true;
-    return AMF_OK;
-}
-
-AMF_RESULT VideoPresenterVulkan::ResizeSwapChain()
-{
-    AMFLock lock(&m_sect);
-
-    m_rectClient = GetClientRect();
-
-    AMF_RESULT res = m_swapChain.Resize(m_rectClient.Width(), m_rectClient.Height(), m_bFullScreen);
-    AMF_RETURN_IF_FAILED(res, L"ResizeSwapChain() - SwapChainVulkan::ResizeSwapChain() failed");
-
-    UpdateProcessor();
-    m_bResizeSwapChain = false;
-
-    return AMF_OK;
-}
-
-void AMF_STD_CALL VideoPresenterVulkan::ResizeIfNeeded() // call from UI thread (for VulkanPresenter on Linux)
-{
-    AMFLock lock(&m_sect);
-
-    CheckForResize(false);
-
-    if (m_bRenderToBackBuffer == false)
-    {
-        if (m_bResizeSwapChain)
-        {
-            ResizeSwapChain();
-        }
-    }
-}
-
-AMFSize VideoPresenterVulkan::GetSwapchainSize()
-{
-    return m_swapChain.GetSize();
-}
-
 
 //-------------------------------------------------------------------------------------------------
 //---------------------------------------- Descriptor Heap ----------------------------------------
@@ -1047,10 +862,19 @@ AMF_RESULT DescriptorHeapVulkan::RegisterDescriptorSet(DescriptorVulkan** ppDesc
     }
 
     // Create descriptor set layout
-    VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {};
-    layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
     layoutCreateInfo.bindingCount = (amf_uint32)bindings.size();
     layoutCreateInfo.pBindings = bindings.data();
+    layoutCreateInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
+
+    VkDescriptorSetLayoutBindingFlagsCreateInfo flagsCreateInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO};
+    std::vector<VkDescriptorBindingFlags> bindingFlags;
+    bindingFlags.resize(layoutCreateInfo.bindingCount, VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT /*| VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT*/);
+
+    flagsCreateInfo.bindingCount = (uint32_t)bindingFlags.size();
+    flagsCreateInfo.pBindingFlags = bindingFlags.data();
+
+    layoutCreateInfo.pNext = &flagsCreateInfo;
 
     m_hDescriptorSetLayouts.push_back(NULL);
     VkResult vkres = GetVulkan()->vkCreateDescriptorSetLayout(m_pVulkanDevice->hDevice, &layoutCreateInfo, nullptr, &m_hDescriptorSetLayouts.back());
@@ -1080,7 +904,7 @@ AMF_RESULT DescriptorHeapVulkan::CreateDescriptors()
     poolCreateInfo.poolSizeCount = (amf_uint32)m_descriptorPoolSizes.size();
     poolCreateInfo.pPoolSizes = m_descriptorPoolSizes.data();
     poolCreateInfo.maxSets = (amf_uint32)m_hDescriptorSetLayouts.size();
-    poolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    poolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT | VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
 
     VkResult vkres = GetVulkan()->vkCreateDescriptorPool(m_pVulkanDevice->hDevice, &poolCreateInfo, nullptr, &m_hDescriptorPool);
     ASSERT_RETURN_IF_VK_FAILED(vkres, AMF_VULKAN_FAILED, L"CreateDescriptors() - vkCreateDescriptorPool() failed");
@@ -1136,7 +960,7 @@ const amf_vector<VkDescriptorSetLayout>& DescriptorHeapVulkan::GetDescriptorSetL
     return m_hDescriptorSetLayouts;
 }
 
-AMF_RESULT DescriptorHeapVulkan::UpdateDescriptorSet(const DescriptorVulkan* pDescriptor, amf_uint32 arrayIndex, amf_uint32 count, VkWriteDescriptorSet& writeInfo, bool immediate)
+AMF_RESULT DescriptorHeapVulkan::UpdateDescriptorSet(const DescriptorVulkan* pDescriptor, amf_uint32 arrayIndex, amf_uint32 count, VkWriteDescriptorSet& writeInfo, amf_bool immediate)
 {
     AMF_RETURN_IF_FALSE(pDescriptor != nullptr, AMF_INVALID_ARG, L"UpdateDescriptorSetBuffer() - pDescriptor is NULL");
     AMF_RETURN_IF_FALSE(m_pVulkanDevice != nullptr, AMF_NOT_INITIALIZED, L"UpdateDescriptorSetBuffer() - m_pVulkanDevice is not initialized");
@@ -1164,7 +988,7 @@ AMF_RESULT DescriptorHeapVulkan::UpdateDescriptorSet(const DescriptorVulkan* pDe
     return AMF_OK;
 }
 
-AMF_RESULT DescriptorHeapVulkan::UpdateDescriptorSet(const DescriptorVulkan* pDescriptor, amf_uint32 arrayIndex, amf_uint32 count, const VkDescriptorBufferInfo* pBufferInfos, bool immediate)
+AMF_RESULT DescriptorHeapVulkan::UpdateDescriptorSet(const DescriptorVulkan* pDescriptor, amf_uint32 arrayIndex, amf_uint32 count, const VkDescriptorBufferInfo* pBufferInfos, amf_bool immediate)
 {
     AMF_RETURN_IF_FALSE(pDescriptor != nullptr, AMF_INVALID_ARG, L"UpdateDescriptorSetBuffer() - pDescriptor is NULL");
     AMF_RETURN_IF_FALSE(count > 0, AMF_INVALID_ARG, L"UpdateDescriptorSetBuffer() - count must be greater than 0");
@@ -1175,7 +999,7 @@ AMF_RESULT DescriptorHeapVulkan::UpdateDescriptorSet(const DescriptorVulkan* pDe
     return UpdateDescriptorSet(pDescriptor, arrayIndex, count, writeInfo, immediate);
 }
 
-AMF_RESULT DescriptorHeapVulkan::UpdateDescriptorSet(const DescriptorVulkan* pDescriptor, amf_uint32 arrayIndex, amf_uint32 count, const VkDescriptorImageInfo* pImageInfos, bool immediate)
+AMF_RESULT DescriptorHeapVulkan::UpdateDescriptorSet(const DescriptorVulkan* pDescriptor, amf_uint32 arrayIndex, amf_uint32 count, const VkDescriptorImageInfo* pImageInfos, amf_bool immediate)
 {
     AMF_RETURN_IF_FALSE(pDescriptor != nullptr, AMF_INVALID_ARG, L"UpdateDescriptorSetBuffer() - pDescriptor is NULL");
     AMF_RETURN_IF_FALSE(count > 0, AMF_INVALID_ARG, L"UpdateDescriptorSetBuffer() - count must be greater than 0");
@@ -1225,7 +1049,7 @@ AMF_RESULT RenderingPipelineVulkan::Init(AMFVulkanDevice* pDevice, const VulkanI
     AMF_RETURN_IF_FALSE(pDescriptorHeap != nullptr, AMF_INVALID_ARG, L"Init() - pDescriptorHeap is NULL");
 
     AMF_RESULT res = VulkanContext::Init(pDevice, pImportTable);
-    AMF_RETURN_IF_FAILED(res, L"Init() - VulkanObject::Init() failed");
+    AMF_RETURN_IF_FAILED(res, L"Init() - VulkanContext::Init() failed");
 
     m_pDescriptorHeap = pDescriptorHeap;
 
@@ -1261,27 +1085,50 @@ AMF_RESULT RenderingPipelineVulkan::Terminate()
 
 AMF_RESULT RenderingPipelineVulkan::RegisterDescriptorSet(amf_uint32 setIndex, amf_uint32 setNum, const amf_uint32* pGroups, amf_uint32 groupCount)
 {
-    AMF_RETURN_IF_FALSE(m_hPipeline == NULL, AMF_FAIL, L"RegisterDescriptorSet() - pipeline is already initialized, call terminate first");
-    AMF_RETURN_IF_FALSE(pGroups != nullptr, AMF_INVALID_ARG, L"RegisterDescriptorSet() - pGroups is NULL");
-    AMF_RETURN_IF_FALSE(groupCount > 0, AMF_INVALID_ARG, L"RegisterDescriptorSet() - group count cannot be 0");
-
     const VkDescriptorSetLayout hLayout = m_pDescriptorHeap->GetDescriptorSetLayout(setIndex);
     AMF_RETURN_IF_FALSE(hLayout != NULL, AMF_UNEXPECTED, L"RegisterDescriptorSet() - GetDescriptorSetLayout() returned NULL");
-    m_hDescriptorSetLayouts.push_back(hLayout);
+
+    if (m_hPipeline == NULL)
+    {
+        m_hDescriptorSetLayouts.push_back(hLayout);
+
+        if (pGroups == nullptr || groupCount == 0)
+        {
+            return AMF_OK;
+        }
+    }
+    else
+    {
+        AMF_RETURN_IF_FALSE(pGroups != nullptr, AMF_INVALID_ARG, L"RegisterDescriptorSet() - pGroups is NULL");
+        AMF_RETURN_IF_FALSE(groupCount > 0, AMF_INVALID_ARG, L"RegisterDescriptorSet() - group count cannot be 0");
+        AMF_RETURN_IF_FALSE(std::find(m_hDescriptorSetLayouts.begin(), m_hDescriptorSetLayouts.end(), hLayout) != m_hDescriptorSetLayouts.end(), 
+            AMF_INVALID_ARG, L"RegisterDescriptorSet() - Descriptor set layout was not registered with the pipeline");
+    }
 
     for (amf_uint i = 0; i < groupCount; ++i)
     {
         const amf_uint32 groupNum = pGroups[i];
-        DescriptorSetGroup& setGroup = m_descriptorSetGroupMap[groupNum];
+        DescriptorSetGroupVulkan& setGroup = m_descriptorSetGroupMap[groupNum];
 
         if (setNum >= setGroup.descriptorSetIndices.size())
         {
             setGroup.descriptorSetIndices.resize(setNum + 1, UINT32_MAX);
+
+            if (m_hPipeline != NULL)
+            {
+                setGroup.descriptorSetHandles.resize(setNum + 1, NULL);
+            }
         }
 
-        AMF_RETURN_IF_FALSE(setGroup.descriptorSetIndices[setNum] == UINT32_MAX, AMF_INVALID_ARG, L"RegisterDescriptorSet() - descriptor already binded to group %u set number %u", groupNum, setNum);
-
         setGroup.descriptorSetIndices[setNum] = setIndex;
+
+        if (m_hPipeline != NULL)
+        {
+            const VkDescriptorSet hDescriptorSet = m_pDescriptorHeap->GetDescriptorSet(setIndex);
+            AMF_RETURN_IF_FALSE(hDescriptorSet != NULL, AMF_UNEXPECTED, L"CreatePipeline() - GetDescriptorSet() returned NULL");
+            setGroup.descriptorSetHandles[setNum] = hDescriptorSet;
+
+        }
     }
 
     return AMF_OK;
@@ -1335,7 +1182,8 @@ AMF_RESULT RenderingPipelineVulkan::SetDefaultInfo(PipelineCreateInfo& createInf
     createInfo.depthStencilState.stencilTestEnable = VK_FALSE;
     createInfo.depthStencilState.front = createInfo.depthStencilState.back;
 
-    createInfo.dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+    createInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
+    createInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
 
     return AMF_OK;
 }
@@ -1414,17 +1262,23 @@ AMF_RESULT RenderingPipelineVulkan::CreatePipeline(PipelineCreateInfo& createInf
     // Setup descriptor groups
     const amf_uint32 descriptorCount = m_pDescriptorHeap->GetDescriptorCount();
 
-    for (std::pair<const amf_uint32, DescriptorSetGroup>& it : m_descriptorSetGroupMap)
+    for (auto& it : m_descriptorSetGroupMap)
     {
         const amf_uint32 groupNum = it.first;
-        DescriptorSetGroup& group = it.second;
+        DescriptorSetGroupVulkan& group = it.second;
         group.descriptorSetHandles.clear();
         group.descriptorSetHandles.reserve(group.descriptorSetIndices.size());
 
         for (const amf_uint32 setIndex : group.descriptorSetIndices)
         {
+            if (setIndex == UINT32_MAX)
+            {
+                group.descriptorSetHandles.push_back(NULL);
+                continue;
+            }
+
             const amf_uint32 setNum = (amf_uint32)group.descriptorSetHandles.size();
-            AMF_RETURN_IF_FALSE(setIndex < descriptorCount, AMF_OUT_OF_RANGE, L"CreatePipeline() - group descriptor set index (%u) out of bounds, must be in [0, %zu] at group %u, set %zu", 
+            AMF_RETURN_IF_FALSE(setIndex < descriptorCount, AMF_OUT_OF_RANGE, L"CreatePipeline() - group descriptor set index (%u) out of bounds, must be in [0, %zu] at group %u, set %zu",
                                 setIndex, descriptorCount, groupNum, setNum);
 
             const VkDescriptorSet hDescriptorSet = m_pDescriptorHeap->GetDescriptorSet(setIndex);

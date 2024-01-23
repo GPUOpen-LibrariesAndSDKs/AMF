@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -31,7 +31,7 @@
 // THE SOFTWARE.
 //
 
-// this sample encodes NV12 frames using AMF Encoder and writes them to H.264 elmentary stream 
+// this sample encodes NV12 frames using AMF Encoder and writes them to H.264 elmentary stream
 
 #include <stdio.h>
 #include <tchar.h>
@@ -104,11 +104,15 @@ amf_bool PollingThread_Stop(PollingThread *pThread);
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+#ifdef _WIN32
+    UNREFERENCED_PARAMETER(argc);
+    UNREFERENCED_PARAMETER(argv);
+#endif
+
     AMF_RESULT res = AMF_OK; // error checking can be added later
     AMFContext* context = NULL;
     AMFComponent* encoder = NULL;
     AMFSurface* surfaceIn = NULL;
-    AMFVariantStruct var;
 
     res = AMFFactoryHelper_Init();
     if(res != AMF_OK)
@@ -118,7 +122,7 @@ int _tmain(int argc, _TCHAR* argv[])
     }
 
     amf_increase_timer_precision();
-    
+
     AMFTraceEnableWriter(AMF_TRACE_WRITER_CONSOLE, true);
     AMFTraceEnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, true);
 
@@ -147,7 +151,7 @@ int _tmain(int argc, _TCHAR* argv[])
     AMFRate framerate = AMFConstructRate(frameRateIn, 1);
 
     if(wcscmp(pCodec[codecIndex], AMFVideoEncoderVCE_AVC) == 0)
-    { 
+    {
         AMF_ASSIGN_PROPERTY_INT64(res, encoder, AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_TRANSCODING);
         AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_TRANSCODING) failed");
 
@@ -240,7 +244,7 @@ int _tmain(int argc, _TCHAR* argv[])
             surfaceIn = NULL;
             res = context->pVtbl->AllocSurface(context, memoryTypeIn, formatIn, widthIn, heightIn, &surfaceIn);
             AMF_RETURN_IF_FAILED(res, L"AllocSurface() failed");
-            
+
 			if (memoryTypeIn == AMF_MEMORY_DX9)
 			{
 				FillSurfaceDX9(context, surfaceIn);
@@ -252,6 +256,7 @@ int _tmain(int argc, _TCHAR* argv[])
         }
         // encode
         amf_pts start_time = amf_high_precision_clock();
+        AMFVariantStruct var;
         AMFVariantAssignInt64(&var, start_time);
         surfaceIn->pVtbl->SetProperty(surfaceIn, START_TIME_PROPERTY, var);
 
@@ -291,7 +296,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     // cleanup in this order
     if(surfaceIn != NULL)
-    { 
+    {
         surfaceIn->pVtbl->Release(surfaceIn);
         surfaceIn = NULL;
     }
@@ -383,13 +388,12 @@ static void PrepareFillDX11(AMFContext *context)
 
 static void FillSurfaceDX11(AMFContext *context, AMFSurface *surface)
 {
-	HRESULT hr = S_OK;
 	// fill surface with something something useful. We fill with color and color rect
 	// get native DX objects
 	ID3D11Device* deviceDX11 = (ID3D11Device *)context->pVtbl->GetDX11Device(context, AMF_DX11_0); // no reference counting - do not Release()
 	AMFPlane *plane = surface->pVtbl->GetPlaneAt(surface, 0);
 	ID3D11Texture2D* surfaceDX11 = (ID3D11Texture2D*)plane->pVtbl->GetNative(plane); // no reference counting - do not Release()
-	
+
 	ID3D11DeviceContext *deviceContextDX11 = NULL;
 	deviceDX11->lpVtbl->GetImmediateContext(deviceDX11, &deviceContextDX11);
 
@@ -488,7 +492,7 @@ void AMF_CDECL_CALL AMFThreadProc(void* pThis)
             AMFGuid guid = IID_AMFBuffer();
             data->pVtbl->QueryInterface(data, &guid, (void**)&buffer); // query for buffer interface
             fwrite(buffer->pVtbl->GetNative(buffer), 1, buffer->pVtbl->GetSize(buffer), pT->m_pFile);
-            
+
             write_duration += amf_high_precision_clock() - poll_time;
             buffer->pVtbl->Release(buffer);
             data->pVtbl->Release(data);
@@ -498,9 +502,9 @@ void AMF_CDECL_CALL AMFThreadProc(void* pThis)
             amf_sleep(1);
         }
     }
-    printf("latency           = %.4fms\nencode  per frame = %.4fms\nwrite per frame   = %.4fms\n", 
+    printf("latency           = %.4fms\nencode  per frame = %.4fms\nwrite per frame   = %.4fms\n",
         (double)latency_time/MILLISEC_TIME,
-        (double)encode_duration/MILLISEC_TIME/frameCount, 
+        (double)encode_duration/MILLISEC_TIME/frameCount,
         (double)write_duration/MILLISEC_TIME/frameCount);
 
     pT->m_pEncoder = NULL;

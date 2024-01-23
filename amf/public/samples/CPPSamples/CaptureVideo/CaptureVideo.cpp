@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -65,7 +65,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     g_AMFFactory.GetTrace()->SetGlobalLevel(AMF_TRACE_WARNING);
     g_AMFFactory.GetTrace()->EnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, true);
     g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_DEBUG_OUTPUT, AMF_TRACE_WARNING);
-    
+
     g_AMFFactory.GetTrace()->EnableWriter(AMF_TRACE_WRITER_FILE, true);
 //    g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_FILE, AMF_TRACE_INFO);
     g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_FILE, AMF_TRACE_WARNING);
@@ -214,7 +214,7 @@ BOOL CaptureVideo::InitInstance(int /* nCmdShow */)
 HWND CaptureVideo::CreateClientWindow(HWND hWndParent)
 {
     WNDCLASSEX wcex;
-    static wchar_t *ChildClassName = L"Client";
+    static const wchar_t *ChildClassName = L"Client";
     wcex.cbSize        = sizeof(WNDCLASSEX);
     wcex.style         = CS_HREDRAW | CS_VREDRAW;
     wcex.lpfnWndProc   = ::ClientWndProc;
@@ -486,17 +486,17 @@ LRESULT CaptureVideo::ClientWndProc(HWND hWnd, UINT message, WPARAM wParam, LPAR
     switch (message)
     {
     case WM_LBUTTONDOWN:
-        m_mousePos.x = GET_X_LPARAM(lParam); 
-        m_mousePos.y = GET_Y_LPARAM(lParam);    
+        m_mousePos.x = GET_X_LPARAM(lParam);
+        m_mousePos.y = GET_Y_LPARAM(lParam);
         m_mouseDown = true;
         break;
     case WM_MOUSEMOVE:
         if(wParam & MK_LBUTTON)
         {
             if(m_mouseDown)
-            { 
+            {
                 POINT newPos = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
-                m_mousePos = newPos; 
+                m_mousePos = newPos;
             }
         }
         else
@@ -721,7 +721,7 @@ bool SingleWindowPlayback::IsPlaying()
     {
         bRet = false;
     }
-    return bRet; 
+    return bRet;
 }
 
 //------------------------------------------------------------------------------------------------------------

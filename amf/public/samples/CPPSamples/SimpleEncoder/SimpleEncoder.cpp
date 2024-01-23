@@ -71,7 +71,9 @@ static const wchar_t* pCodecNames[] = { AMFVideoEncoderVCE_AVC, AMFVideoEncoder_
 static const wchar_t* fileNames[] = { L"./output.h264", L"./output.h265", L"./output.av1" };
 
 #ifdef _WIN32
-static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX11;
+//static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX11;
+//static amf::AMF_MEMORY_TYPE memoryTypeIn = amf::AMF_MEMORY_DX12;
+static amf::AMF_MEMORY_TYPE memoryTypeIn = amf::AMF_MEMORY_VULKAN;
 #else
 static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_VULKAN;
 #endif
@@ -161,6 +163,12 @@ AMF_RESULT simpleEncode(const wchar_t* pCodec, const wchar_t* pFileNameOut) {
         AMF_RETURN_IF_FAILED(res, L"InitDX11(NULL) failed");
         PrepareFillFromHost(context, memoryTypeIn, formatIn, widthIn, heightIn, false);
     }
+    else if (memoryTypeIn == amf::AMF_MEMORY_DX12)
+    {
+        res = amf::AMFContext2Ptr(context)->InitDX12(NULL); // can be DX12 device
+        AMF_RETURN_IF_FAILED(res, L"InitDX12(NULL) failed");
+        PrepareFillFromHost(context, memoryTypeIn, formatIn, widthIn, heightIn, false);
+    }
 #endif
 
     // component: encoder
@@ -196,7 +204,6 @@ AMF_RESULT simpleEncode(const wchar_t* pCodec, const wchar_t* pFileNameOut) {
     res = encoder->Init(formatIn, widthIn, heightIn);
     AMF_RETURN_IF_FAILED(res, L"encoder->Init() failed");
 
-
     EncPollingThread thread(context, encoder, pFileNameOut);
     thread.Start();
 
@@ -219,9 +226,13 @@ AMF_RESULT simpleEncode(const wchar_t* pCodec, const wchar_t* pFileNameOut) {
             {
                 FillSurfaceDX9(context, surfaceIn, false);
             }
-            else
+            else if (memoryTypeIn == amf::AMF_MEMORY_DX11)
             {
                 FillSurfaceDX11(context, surfaceIn, false);
+            }
+            else if (memoryTypeIn == amf::AMF_MEMORY_DX12)
+            {
+                FillSurfaceDX12(context, surfaceIn, false);
             }
 #endif
         }

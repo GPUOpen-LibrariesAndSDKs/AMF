@@ -103,13 +103,21 @@ endif
 
 
 define shader_compile_rule_fn
-  $1.spv: $1
+
+  ifdef vulkan_shader_output_dir
+    OUTPUT_FILE_PATH := $(vulkan_shader_output_dir)/$$(notdir $1)
+  else
+    OUTPUT_FILE_PATH := $1
+  endif
+  
+  $$(OUTPUT_FILE_PATH).spv: $1
 		$(VULKAN_COMP) -V "$$<" -o "$$@"
 
-  $1.spv.h: $1.spv
+  $$(OUTPUT_FILE_PATH).spv.h: $$(OUTPUT_FILE_PATH).spv
 		$(FILE_TO_HEADER) "$$<" "$$(basename $$(basename $$(^F)))"
 
-  vulkan_shader_headers += $1.spv.h
+# do not use +=, variable expansion order is delayed and we end end up with the same shader header repeated
+  vulkan_shader_headers := $$(vulkan_shader_headers) $$(OUTPUT_FILE_PATH).spv.h
 endef
 
 $(foreach shader_file,$(vulkan_shader_sources),\

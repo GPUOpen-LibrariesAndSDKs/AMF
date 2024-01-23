@@ -55,7 +55,7 @@
 #include "EncoderParamsHEVC.h"
 #include "EncoderParamsAV1.h"
 #include "PreProcessingParams.h"
-#include "BackBufferPresenter.h"
+#include "VideoPresenter.h"
 #include "RawStreamReader.h"
 
 
@@ -126,7 +126,7 @@ protected:
     SplitterPtr                 m_pSplitter;
     amf::AMFComponentPtr        m_pConverter2;
     amf::AMFComponentPtr        m_pPreProcFilter;
-    BackBufferPresenterPtr      m_pPresenter;
+    VideoPresenterPtr           m_pPresenter;
     amf::AMF_SURFACE_FORMAT     m_eDecoderFormat; //< output of Decoder, and input to VideoConverter
     amf::AMF_SURFACE_FORMAT     m_eEncoderFormat; //< output of VideoConverter and input into Encoder
 };

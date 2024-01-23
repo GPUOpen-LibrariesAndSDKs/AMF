@@ -113,6 +113,8 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <SupportJustMyCode>false</SupportJustMyCode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -136,6 +138,8 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <SupportJustMyCode>false</SupportJustMyCode>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -159,6 +163,8 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -184,6 +190,8 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -206,7 +214,6 @@
     <ClCompile Include="..\..\..\..\public\common\TraceAdapter.cpp" />
     <ClCompile Include="..\..\..\..\public\common\VulkanImportTable.cpp" />
     <ClCompile Include="..\..\..\..\public\common\Windows\ThreadWindows.cpp" />
-    <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\BackBufferPresenter.cpp" />
     <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\BitStreamParser.cpp" />
     <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\BitStreamParserH264.cpp" />
     <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\BitStreamParserH265.cpp" />
@@ -221,6 +228,7 @@
     <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\VideoPresenterDX9.cpp" />
     <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\VideoPresenterOpenGL.cpp" />
     <ClCompile Include="..\..\..\..\public\samples\CPPSamples\common\VideoPresenterVulkan.cpp" />
+    <ClCompile Include="..\..\..\common\OpenGLImportTable.cpp" />
     <ClCompile Include="..\..\..\common\Windows\UtilsWindows.cpp" />
     <ClCompile Include="..\..\..\src\components\Capture\CaptureManagerImpl.cpp" />
     <ClCompile Include="..\..\..\src\components\Capture\DeckLinkMedia\DeckLinkAPI_i.c" />
@@ -237,6 +245,7 @@
     <ClCompile Include="..\common\SwapChainDX9.cpp" />
     <ClCompile Include="..\common\SwapChainDXGI.cpp" />
     <ClCompile Include="..\common\SwapChainDXGIDecode.cpp" />
+    <ClCompile Include="..\common\SwapChainOpenGL.cpp" />
     <ClCompile Include="..\common\VideoPresenterDX12.cpp" />
     <ClCompile Include="CaptureVideo.cpp" />
     <ClCompile Include="CaptureVideoPipeline.cpp" />
@@ -253,7 +262,6 @@
     <ClInclude Include="..\..\..\..\public\common\Thread.h" />
     <ClInclude Include="..\..\..\..\public\common\TraceAdapter.h" />
     <ClInclude Include="..\..\..\..\public\common\VulkanImportTable.h" />
-    <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\BackBufferPresenter.h" />
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\BitStreamParser.h" />
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\BitStreamParserH264.h" />
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\BitStreamParserH265.h" />
@@ -269,6 +277,7 @@
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\VideoPresenterDX9.h" />
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\VideoPresenterOpenGL.h" />
     <ClInclude Include="..\..\..\..\public\samples\CPPSamples\common\VideoPresenterVulkan.h" />
+    <ClInclude Include="..\..\..\common\OpenGLImportTable.h" />
     <ClInclude Include="..\..\..\common\Windows\UtilsWindows.h" />
     <ClInclude Include="..\..\..\include\components\Capture.h" />
     <ClInclude Include="..\..\..\include\components\ChromaKey.h" />
@@ -281,12 +290,15 @@
     <ClInclude Include="..\..\..\src\components\ChromaKey\ChromaKeyImpl.h" />
     <ClInclude Include="..\common\BitStreamParserIVF.h" />
     <ClInclude Include="..\common\CaptureVideoPipelineBase.h" />
+    <ClInclude Include="..\common\QuadOpenGL.frag.h" />
+    <ClInclude Include="..\common\QuadOpenGL.vert.h" />
     <ClInclude Include="..\common\SwapChain.h" />
     <ClInclude Include="..\common\SwapChainDX11.h" />
     <ClInclude Include="..\common\SwapChainDX12.h" />
     <ClInclude Include="..\common\SwapChainDX9.h" />
     <ClInclude Include="..\common\SwapChainDXGI.h" />
     <ClInclude Include="..\common\SwapChainDXGIDecode.h" />
+    <ClInclude Include="..\common\SwapChainOpenGL.h" />
     <ClInclude Include="..\common\VideoPresenterDX12.h" />
     <ClInclude Include="CaptureVideo.h" />
     <ClInclude Include="CaptureVideoPipeline.h" />
@@ -824,139 +836,9 @@
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
     </FxCompile>
-    <FxCompile Include="..\common\QuadDX11_ps.hlsl">
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename)</VariableName>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</VariableName>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename)</VariableName>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</VariableName>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
-    </FxCompile>
-    <FxCompile Include="..\common\QuadDX11_vs.hlsl">
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename)</VariableName>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</VariableName>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename)</VariableName>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</VariableName>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-    </FxCompile>
-    <FxCompile Include="..\common\QuadDX12_ps.hlsl">
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename)</VariableName>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</VariableName>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename)</VariableName>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</VariableName>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">5.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
-    </FxCompile>
-    <FxCompile Include="..\common\QuadDX12_vs.hlsl">
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename)</VariableName>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</VariableName>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename)</VariableName>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</VariableName>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">5.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-    </FxCompile>
-    <FxCompile Include="..\common\QuadDX9_ps.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">3.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">3.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">3.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">3.0</ShaderModel>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename)</VariableName>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</VariableName>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename)</VariableName>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</VariableName>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-    </FxCompile>
-    <FxCompile Include="..\common\QuadDX9_vs.hlsl">
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename)</VariableName>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</VariableName>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename)</VariableName>
-      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</VariableName>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">3.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">3.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">3.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">3.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-    </FxCompile>
   </ItemGroup>
+  <Import Project="..\..\..\..\public\props\AMF_Presenter_Vulkan_Shader.props" />
+  <Import Project="..\..\..\..\public\props\AMF_Presenter_DX_Shader.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

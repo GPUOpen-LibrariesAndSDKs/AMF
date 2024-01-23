@@ -33,6 +33,7 @@
 
 #ifndef AMF_AMFSTL_h
 #define AMF_AMFSTL_h
+
 #pragma once
 
 #if defined(__GNUC__)
@@ -41,6 +42,7 @@
     #pragma GCC diagnostic ignored "-Weffc++"
     #include <memory>  //default stl allocator
 #else
+
     #include <xmemory>  //default stl allocator
 #endif
 
@@ -70,6 +72,9 @@ extern "C"
 
 namespace amf
 {
+#pragma warning(push)
+
+#pragma warning(disable: 4996)    // was declared deprecated
     //-------------------------------------------------------------------------------------------------
     // STL allocator redefined - will allocate all memory in "C" runtime of Common.DLL
     //-------------------------------------------------------------------------------------------------
@@ -87,13 +92,14 @@ namespace amf
         {
             typedef amf_allocator<_Other> other;
         };
-        void deallocate(typename std::allocator<_Ty>::pointer _Ptr, typename std::allocator<_Ty>::size_type)
+        void deallocate(_Ty* const _Ptr, const size_t _Count)
         {
+            _Count;
             amf_free((void*)_Ptr);
         }
-        typename std::allocator<_Ty>::pointer allocate(typename std::allocator<_Ty>::size_type _Count)
+        _Ty* allocate(const size_t _Count, const void* = static_cast<const void*>(0))
         { // allocate array of _Count el ements
-            return static_cast<typename std::allocator<_Ty>::pointer>((amf_alloc(_Count * sizeof(_Ty))));
+            return static_cast<_Ty*>(amf_alloc(_Count * sizeof(_Ty)));
         }
     };
 
@@ -200,7 +206,7 @@ namespace amf
     protected:
         size_t _size_limit;
     };
-
+#pragma warning(pop)
     //---------------------------------------------------------------
 #if defined(__GNUC__)
     //disable gcc warinings on STL code

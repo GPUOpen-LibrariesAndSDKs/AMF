@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -64,15 +64,16 @@ static amf::AMF_SURFACE_FORMAT formatOut    = amf::AMF_SURFACE_NV12;
 static amf_int32 frameCount                 = 500; // -1 means entire file
 static amf_int32 submitted = 0;
 
-// The memory transfer from DX9 to HOST and writing a raw file is longer than decode time. To measure decode time correctly disable convert and write here: 
-static bool bWriteToFile = false;
+// The memory transfer from DX9 to HOST and writing a raw file is longer than decode time. To measure decode time correctly disable convert and write here:
+//static bool bWriteToFile = false;
+static bool bWriteToFile = true;
 
 class DecPollingThread : public PollingThread
 {
 public:
     DecPollingThread(amf::AMFContext* pContext, amf::AMFComponent* pDecoder, const wchar_t* pFileName);
 protected:
-    virtual bool Init() override;
+    virtual bool  Init() override;
     void ProcessData(amf::AMFData* pData) override;
     void PrintResults() override;
 
@@ -109,7 +110,7 @@ int main(int argc, char* argv[])
         wprintf(L"AMF Failed to initialize");
         return 1;
     }
-    g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_DEBUG_OUTPUT, AMF_TRACE_TRACE); 
+    g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_DEBUG_OUTPUT, AMF_TRACE_TRACE);
     ::amf_increase_timer_precision();
 
     amf::AMFContextPtr      context;
@@ -137,10 +138,10 @@ int main(int argc, char* argv[])
         break;
     case amf::AMF_MEMORY_DX12:
         {
-    
+
         amf::AMFContext2Ptr context2(context);
         if(context2 == nullptr)
-        { 
+        {
             wprintf(L"amf::AMFContext2 is missing");
             return 1;
         }
@@ -155,7 +156,7 @@ int main(int argc, char* argv[])
     }
 
 	BitStreamType bsType = GetStreamType(fileNameIn);
-	// H264/H265 elemntary stream parser from samples common 
+	// H264/H265 elemntary stream parser from samples common
 	parser = BitStreamParser::Create(datastream, bsType, context);
 
     // open output file with frame size in file name
@@ -170,7 +171,7 @@ int main(int argc, char* argv[])
 
     res = decoder->SetProperty(AMF_TIMESTAMP_MODE, amf_int64(AMF_TS_DECODE)); // our sample H264 parser provides decode order timestamps - change this depend on demuxer
 
-    if (parser->GetExtraDataSize()) 
+    if (parser->GetExtraDataSize())
     { // set SPS/PPS extracted from stream or container; Alternatively can use parser->SetUseStartCodes(true)
         amf::AMFBufferPtr buffer;
         context->AllocBuffer(amf::AMF_MEMORY_HOST, parser->GetExtraDataSize(), &buffer);
@@ -209,7 +210,7 @@ int main(int argc, char* argv[])
         else if(res == AMF_INPUT_FULL || res == AMF_DECODER_NO_FREE_SURFACES)
         { // queue is full; sleep, try to get ready surfaces  in polling thread and repeat submission
             bNeedNewInput = false;
-            amf_sleep(1); 
+            amf_sleep(1);
         }
         else
         { // submission succeeded. read new buffer from parser
@@ -217,19 +218,10 @@ int main(int argc, char* argv[])
 			bNeedNewInput = true;
         }
     }
-    // drain decoder queue 
+    // drain decoder queue
     res = decoder->Drain();
-
-    // Need to request stop before waiting for stop
-    if (thread.RequestStop() == false)
-    {
-        AMFTraceError(AMF_FACILITY, L"thread.RequestStop() Failed");
-    }
-
-    if (thread.WaitForStop() == false)
-    {
-        AMFTraceError(AMF_FACILITY, L"thread.WaitForStop() Failed");
-    }
+    thread.RequestStop();
+    thread.WaitForStop();
 
     switch (memoryTypeOut)
     {
@@ -263,10 +255,9 @@ DecPollingThread::DecPollingThread(amf::AMFContext* pContext, amf::AMFComponent*
 
 bool DecPollingThread::Init()
 {
-    bool ret = PollingThread::Init();
-
+    PollingThread::Init();
     m_ConvertDuration = 0;
-    return ret;
+    return true;
 }
 
 void DecPollingThread::ProcessData(amf::AMFData* pData)

@@ -31,8 +31,9 @@ target_name = PlaybackHW
 target_type = exe
 
 pp_include_dirs = \
- $(amf_root) \
- $(VK_SDK_PATH)/x86_64/include
+    $(amf_root) \
+    $(VK_SDK_PATH)/x86_64/include \
+    $(build_dir) \
 
  linker_libs += asound
 
@@ -48,11 +49,11 @@ src_files = \
     $(public_common_dir)/IOCapsImpl.cpp \
     $(public_common_dir)/PropertyStorageExImpl.cpp \
     $(public_common_dir)/VulkanImportTable.cpp \
+    $(public_common_dir)/OpenGLImportTable.cpp \
     $(public_common_dir)/Linux/ThreadLinux.cpp \
     $(samples_common_dir)/AudioPresenter.cpp \
     $(samples_common_dir)/AudioPresenterWin.cpp \
     $(samples_common_dir)/AudioPresenterLinux.cpp \
-    $(samples_common_dir)/BackBufferPresenter.cpp \
     $(samples_common_dir)/BitStreamParser.cpp \
     $(samples_common_dir)/BitStreamParserH264.cpp \
     $(samples_common_dir)/BitStreamParserH265.cpp \
@@ -65,31 +66,15 @@ src_files = \
     $(samples_common_dir)/PlaybackPipelineBase.cpp \
     $(samples_common_dir)/SwapChain.cpp \
     $(samples_common_dir)/SwapChainVulkan.cpp \
+    $(samples_common_dir)/SwapChainOpenGL.cpp \
     $(samples_common_dir)/VideoPresenter.cpp \
     $(samples_common_dir)/VideoPresenterOpenGL.cpp \
     $(samples_common_dir)/VideoPresenterVulkan.cpp \
 
-
-shader_sources = \
-    quad.frag \
-    quad.vert
+vulkan_shader_sources = \
+    $(amf_root)/$(samples_common_dir)/QuadVulkan_fs.frag \
+    $(amf_root)/$(samples_common_dir)/QuadVulkan_vs.vert
 
 include $(amf_root)/public/make/common_rules.mak
 
-# compile Vulkan shaders
-
-define shader_compile_rule_fn
-all: $$(bin_dir)/$1.spv
-
-$$(bin_dir)/$1.spv: $$(amf_root)/$$(samples_common_dir)/$1
-	$$(VK_SDK_PATH)/x86_64/bin/glslangValidator -V "$$<" -o "$$@"
-endef
-
-$(foreach shader_file,$(shader_sources),\
-    $(eval $(call shader_compile_rule_fn,$(shader_file)))\
-)
-
-clean: 
-	$(foreach clean_file,$(shader_sources),\
-		$(RM) $(bin_dir)/$(clean_file).spv\
-	)
+$(build_dir)/public/samples/CPPSamples/common/VideoPresenterVulkan.o : $(vulkan_shader_headers)

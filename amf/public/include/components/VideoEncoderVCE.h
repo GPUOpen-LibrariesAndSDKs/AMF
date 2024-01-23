@@ -276,6 +276,9 @@ enum AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_PICTURE_TRANSFER_MODE                 L"PicTransferMode"               // amf_int64(AMF_VIDEO_ENCODER_PICTURE_TRANSFER_MODE_ENUM); default = AMF_VIDEO_ENCODER_PICTURE_TRANSFER_MODE_OFF - whether to exchange reference/reconstructed pic between encoder and application
     // misc
 #define AMF_VIDEO_ENCODER_QUERY_TIMEOUT                         L"QueryTimeout"             // amf_int64; default = 0 (no wait); timeout for QueryOutput call in ms.
+#define AMF_VIDEO_ENCODER_MEMORY_TYPE                           L"EncoderMemoryType"        // amf_int64(AMF_MEMORY_TYPE) , default is AMF_MEMORY_UNKNOWN, Values : AMF_MEMORY_DX11, AMF_MEMORY_DX9, AMF_MEMORY_VULKAN or AMF_MEMORY_UNKNOWN (auto)
+#define AMF_VIDEO_ENCODER_ENABLE_SMART_ACCESS_VIDEO             L"EnableEncoderSmartAccessVideo"         // amf_bool; default = false; true = enables smart access video feature
+#define  AMF_VIDEO_ENCODER_INPUT_QUEUE_SIZE                     L"InputQueueSize"           // amf_int64; default 16; Set amf input queue size
 
 // Per-submission properties - can be set on input surface interface
 #define AMF_VIDEO_ENCODER_END_OF_SEQUENCE                       L"EndOfSequence"            // bool; default = false; generate end of sequence
@@ -366,11 +369,6 @@ enum AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_CAP_QUERY_TIMEOUT_SUPPORT             L"QueryTimeoutSupport"      // amf_bool - Timeout supported for QueryOutout call
 
 #define AMF_VIDEO_ENCODER_CAP_SUPPORT_SLICE_OUTPUT              L"SupportSliceOutput"       // amf_bool - if slice output is supported
-
-// properties set on AMFComponent to control component creation
-#define AMF_VIDEO_ENCODER_MEMORY_TYPE                           L"EncoderMemoryType"        // amf_int64(AMF_MEMORY_TYPE) , default is AMF_MEMORY_UNKNOWN, Values : AMF_MEMORY_DX11, AMF_MEMORY_DX9, AMF_MEMORY_VULKAN or AMF_MEMORY_UNKNOWN (auto)
-
-#define AMF_VIDEO_ENCODER_ENABLE_SMART_ACCESS_VIDEO             L"EnableEncoderSmartAccessVideo"         // amf_bool; default = false; true = enables smart access video feature
 
 #define AMF_VIDEO_ENCODER_CAP_SUPPORT_SMART_ACCESS_VIDEO        L"EncoderSupportSmartAccessVideo"        // amf_bool; returns true if system supports SmartAccess Video
 

@@ -74,6 +74,8 @@ protected:
     AMF_RESULT                          TerminateSwapChain();
     
     virtual AMF_RESULT                  GetDXGIInterface(amf_bool reinit = false) override;
+    AMF_RESULT                          GetDXGIDeviceAdapter(IDXGIAdapter** ppDXGIAdapter) override;
+
     virtual AMF_RESULT                  SetFormat(amf::AMF_SURFACE_FORMAT format) override;
 
     amf::AMF_MEMORY_TYPE                m_memoryType;
@@ -90,6 +92,8 @@ protected:
     CComPtr<IDCompositionTarget>        m_pDCompTarget;
     CComPtr<IDCompositionVisual2>       m_pVisualSurfaceRoot;
     CComPtr<IDXGIResource>              m_pDecodeTexture;
+    CComPtr<IDCompositionScaleTransform> m_pScaleTransform;
+    CComPtr<IDCompositionTransform>      m_pTransformGroup;
 
     amf::AMFSurfacePtr                  m_pSurface;
 };

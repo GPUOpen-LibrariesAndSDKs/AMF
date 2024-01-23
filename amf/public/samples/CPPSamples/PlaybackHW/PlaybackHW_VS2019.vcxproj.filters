@@ -101,9 +101,6 @@
     <ClInclude Include="..\common\PlaybackPipelineBase.h">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="..\common\BackBufferPresenter.h">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\common\VulkanImportTable.h">
       <Filter>public\common</Filter>
     </ClInclude>
@@ -142,6 +139,18 @@
     </ClInclude>
     <ClInclude Include="..\common\SwapChainDX9.h">
       <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\QuadOpenGL.vert.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\QuadOpenGL.frag.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\SwapChainOpenGL.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\OpenGLImportTable.h">
+      <Filter>public\common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -217,9 +226,6 @@
     <ClCompile Include="..\common\PlaybackPipelineBase.cpp">
       <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="..\common\BackBufferPresenter.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\common\VulkanImportTable.cpp">
       <Filter>public\common</Filter>
     </ClCompile>
@@ -256,19 +262,17 @@
     <ClCompile Include="..\common\SwapChainDX9.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="..\common\SwapChainOpenGL.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\OpenGLImportTable.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PlaybackHW.rc">
       <Filter>windows</Filter>
     </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="..\common\quad.frag">
-      <Filter>common</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\common\quad.vert">
-      <Filter>common</Filter>
-    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\common\QuadDX12_vs.hlsl">
@@ -289,5 +293,13 @@
     <FxCompile Include="..\common\QuadDX9_ps.hlsl">
       <Filter>common</Filter>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\common\QuadVulkan_vs.vert">
+      <Filter>common</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\common\QuadVulkan_fs.frag">
+      <Filter>common</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>
