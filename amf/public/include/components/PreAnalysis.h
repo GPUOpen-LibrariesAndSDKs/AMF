@@ -92,7 +92,7 @@ enum AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_ENUM
 
 
 // PA object properties
-#define AMF_PA_ENGINE_TYPE                          L"PAEngineType"                         // AMF_MEMORY_TYPE (Host, DX11, OpenCL, Vulkan, Auto default : UNKNOWN (Auto))" - determines how the object is initialized and what kernels to use
+#define AMF_PA_ENGINE_TYPE                          L"PAEngineType"                         // AMF_MEMORY_TYPE (Host, DX11, OpenCL, Vulkan, DX12, Auto default : UNKNOWN (Auto))" - determines how the object is initialized and what kernels to use
                                                                                             //                                                                        by default it is Auto (DX11, OpenCL and Vulkan are currently available)
 
 #define AMF_PA_SCENE_CHANGE_DETECTION_ENABLE        L"PASceneChangeDetectionEnable"         // bool       (default : True)                                          - Enable Scene Change Detection GPU algorithm
