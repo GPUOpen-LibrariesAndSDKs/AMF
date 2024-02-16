@@ -124,13 +124,10 @@ typedef signed int HRESULT;
 #endif
 
     #define AMFPRId64   "I64d"
-    #define LPRId64    L"I64d"
 
     #define AMFPRIud64   "Iu64d"
-    #define LPRIud64    L"Iu64d"
 
     #define AMFPRIx64   "I64x"
-    #define LPRIx64    L"I64x"
 
 #else // !WIN32 - Linux and Mac
 
@@ -156,16 +153,17 @@ typedef signed int HRESULT;
         #define LPRIx64     L"lx"
     #else
         #define AMFPRId64    "lld"
-        #define LPRId64     L"lld"
 
         #define AMFPRIud64    "ulld"
-        #define LPRIud64     L"ulld"
 
         #define AMFPRIx64    "llx"
-        #define LPRIx64     L"llx"
     #endif
 
 #endif // WIN32
+
+#define LPRId64   AMF_UNICODE(AMFPRId64)
+#define LPRIud64  AMF_UNICODE(AMFPRIud64)
+#define LPRIx64   AMF_UNICODE(AMFPRIx64)
 
 
 #if defined(_WIN32)
