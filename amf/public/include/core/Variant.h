@@ -872,14 +872,14 @@ namespace amf
     {
         res = AMF_OK;
         char buff[0xFF];
-        sprintf(buff, "%" AMFPRId64, (long long)value);
+        sprintf(buff, "%" AMFPRId64, value);
         return buff;
     }
     static AMF_INLINE AMFVariant::WString AMFConvertInt64ToWString(amf_int64 value, AMF_RESULT& res)
     {
         res = AMF_OK;
         wchar_t buff[0xFF];
-        swprintf(buff, 0xFF, L"%" LPRId64, (long long)value);
+        swprintf(buff, 0xFF, L"%" LPRId64, value);
         return buff;
     }
 
