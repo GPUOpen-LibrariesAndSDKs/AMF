@@ -123,12 +123,6 @@ typedef signed int HRESULT;
     #define AMF_FORCEINLINE         __forceinline
 #endif
 
-    #define AMFPRId64   "I64d"
-
-    #define AMFPRIud64   "Iu64d"
-
-    #define AMFPRIx64   "I64x"
-
 #else // !WIN32 - Linux and Mac
 
     #define AMF_STD_CALL
@@ -142,24 +136,32 @@ typedef signed int HRESULT;
     #define AMF_FORCEINLINE         __inline__
 #endif
 
-    #if defined(__x86_64__) || defined(__aarch64__)
-        #define AMFPRId64    "ld"
-        #define LPRId64     L"ld"
+#endif // WIN32
 
-        #define AMFPRIud64    "uld"
-        #define LPRIud64     L"uld"
+#if defined(__cplusplus) && (__cplusplus >= 201103L)
+    #include <cinttypes>
+    #define AMFPRId64   PRId64
 
-        #define AMFPRIx64    "lx"
-        #define LPRIx64     L"lx"
-    #else
+    #define AMFPRIud64  PRIu64
+
+    #define AMFPRIx64   PRIx64
+#else
+#if defined(_MSC_VER)
+    #define AMFPRId64   "I64d"
+
+    #define AMFPRIud64  "Iu64d"
+
+    #define AMFPRIx64   "I64x"
+#else
+    #if !defined(AMFPRId64)
         #define AMFPRId64    "lld"
 
-        #define AMFPRIud64    "ulld"
+        #define AMFPRIud64   "ulld"
 
         #define AMFPRIx64    "llx"
     #endif
-
-#endif // WIN32
+#endif
+#endif
 
 #define LPRId64   AMF_UNICODE(AMFPRId64)
 #define LPRIud64  AMF_UNICODE(AMFPRIud64)
