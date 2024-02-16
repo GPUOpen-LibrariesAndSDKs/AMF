@@ -66,6 +66,20 @@
 
 #define AMF_TODO(_todo) (__FILE__ "(" AMF_MACRO_STRING(__LINE__) "): TODO: "_todo)
 
+/**
+*******************************************************************************
+*   AMF_UNICODE
+*
+*   @brief
+*       Macro to convert string constant into wide char string constant
+*
+*   Auxilary AMF_UNICODE_ macro is needed as otherwise it is not possible to use AMF_UNICODE(__FILE__)
+*   Microsoft macro _T also uses 2 passes to accomplish that
+*******************************************************************************
+*/
+#define AMF_UNICODE(s) AMF_UNICODE_(s)
+#define AMF_UNICODE_(s) L ## s
+
 
  #if defined(__GNUC__) || defined(__clang__)
      #define AMF_ALIGN(n) __attribute__((aligned(n)))
