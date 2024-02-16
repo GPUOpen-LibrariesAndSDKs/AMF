@@ -365,7 +365,7 @@ namespace amf
             operator=(p_other);
         }
 
-#if (__cplusplus == 201103L) || defined(__GXX_EXPERIMENTAL_CXX0X) || (_MSC_VER >= 1600)
+#if (__cplusplus == 201103L) || defined(__GXX_EXPERIMENTAL_CXX0X) || (defined(_MSC_VER) && _MSC_VER >= 1600)
 #pragma warning (push)
 #pragma warning (disable : 26439) //This kind of function may not throw. Declare it 'noexcept'.
         String(String&& p_other) : m_Str(nullptr)
@@ -393,7 +393,7 @@ namespace amf
             m_Str = AMFVariantDuplicateString(p_other.m_Str);
             return *this;
         }
-#if (__cplusplus == 201103L) || defined(__GXX_EXPERIMENTAL_CXX0X) || (_MSC_VER >= 1600)
+#if (__cplusplus == 201103L) || defined(__GXX_EXPERIMENTAL_CXX0X) || (defined(_MSC_VER) && _MSC_VER >= 1600)
         String& operator=(String&& p_other)
         {
             Free();
@@ -475,7 +475,7 @@ namespace amf
         {
             operator=(p_other);
         }
-#if (__cplusplus == 201103L) || defined(__GXX_EXPERIMENTAL_CXX0X) || (_MSC_VER >= 1600)
+#if (__cplusplus == 201103L) || defined(__GXX_EXPERIMENTAL_CXX0X) || (defined(_MSC_VER) && _MSC_VER >= 1600)
         WString(WString&& p_other) : m_Str(nullptr)
         {
             operator=(p_other);
@@ -492,7 +492,7 @@ namespace amf
             m_Str = AMFVariantDuplicateWString(p_other.m_Str);
             return *this;
         }
-#if (__cplusplus == 201103L) || defined(__GXX_EXPERIMENTAL_CXX0X) || (_MSC_VER >= 1600)
+#if (__cplusplus == 201103L) || defined(__GXX_EXPERIMENTAL_CXX0X) || (defined(_MSC_VER) && _MSC_VER >= 1600)
         WString& operator=(WString&& p_other)
         {
             Free();
