@@ -127,7 +127,16 @@ typedef signed int HRESULT;
 #endif
     #define AMF_NO_VTABLE
 
-    #if !defined(AMFPRId64)
+    #if defined(__x86_64__) || defined(__aarch64__)
+        #define AMFPRId64    "ld"
+        #define LPRId64     L"ld"
+
+        #define AMFPRIud64    "uld"
+        #define LPRIud64     L"uld"
+
+        #define AMFPRIx64    "lx"
+        #define LPRIx64     L"lx"
+    #else
         #define AMFPRId64    "lld"
         #define LPRId64     L"lld"
 
