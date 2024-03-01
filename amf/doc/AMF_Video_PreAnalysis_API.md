@@ -98,7 +98,7 @@ The AMF PA component is instantiated within the AMF Encoder component as part of
 
 `AMF_PA_PAQ_MODE` and `AMF_PA_TAQ_MODE` cannot work with VBAQ (`AMF_VIDEO_ENCODER_ENABLE_VBAQ`) features. When `AMF_PA_PAQ_MODE` or `AMF_PA_TAQ_MODE` is enabled, VBAQ settings are ignored. 
 
-`AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE` and `AMF_PA_TAQ_MODE` both requires multiple frames lookahead. These two features take effect only when `AMF_PA_LOOKAHEAD_BUFFER_DEPTH` is set to 11,21 or 41.
+`AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE` and `AMF_PA_TAQ_MODE` both requires multiple frames lookahead. These two features take effect only when `AMF_PA_LOOKAHEAD_BUFFER_DEPTH` is enabled.
 
 ### 2.1 Input / Output Format
 
@@ -303,7 +303,7 @@ Enables automatic long term reference frame management. Last frame of a scene wi
    - HQLL: `0`
 
 **Description:**
-Sets the PA lookahead buffer size. The longer the buffer depth, the better the quality and the longer the latency.
+Sets the PA lookahead buffer size. The longer the buffer depth, the better the quality and the longer the latency. Suggested lookahead buffer sizes are 11(short), 21(medium) or 41(long).
 
 ---
 
