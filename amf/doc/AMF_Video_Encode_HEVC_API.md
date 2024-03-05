@@ -1637,9 +1637,9 @@ Rate-control parameters supported:
    - HevcVBVBufferSize
    - HevcFrameRate
    - HevcMinQP_I
+   - HevcMaxQP_I
    - HevcMinQP_P
-   - HevcMinQP_I
-   - HevcMinQP_P
+   - HevcMaxQP_P
    - HevcQP_I
    - HevcQP_P
    - HevcFillerDataEnable
