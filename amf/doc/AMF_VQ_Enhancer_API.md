@@ -18,13 +18,13 @@ Windows™, Visual Studio and DirectX are trademark of Microsoft Corp.
 
 ### Copyright Notice
 
-© 2022-2023 Advanced Micro Devices, Inc. All rights reserved
+© 2022-2024 Advanced Micro Devices, Inc. All rights reserved
 
 Notice Regarding Standards. AMD does not provide a license or sublicense to any Intellectual Property Rights relating to any standards, including but not limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4; AVC/H.264; HEVC/H.265; AAC decode/FFMPEG; AAC encode/FFMPEG; VC-1; and MP3 (collectively, the "Media Technologies"). For clarity, you will pay any royalties due for such third party technologies, which may include the Media Technologies that are owed as a result of AMD providing the Software to you.
 
 ### MIT license
 
-Copyright (c) 2023 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -81,21 +81,25 @@ VQ enhancer supports the following input and output formats:
 
 The output format must be same as the input and the format conversion is not supported. The parameters of the output stream are set using the following properties:
 
-| Name (prefix "AMF_VQ_ENHANCER_") | Type          |
-| :---------------------------------- | :----         |
-|ENGINE_TYPE                          |AMF_MEMORY_TYPE|
-|OUTPUT_SIZE                          |AMFSize        |
-|ATTENUATION                          |Float          |
+| Name (prefix "AMF_VIDEO_ENHANCER" / "AMF_VE_FCR_") | Type            |
+| :------------------------------- | :-------------- |
+| ENGINE_TYPE                      | AMF_MEMORY_TYPE |
+| OUTPUT_SIZE                      | AMFSize         |
+| ATTENUATION                      | Float           |
+| RADIUS [^1]                      | amf_int64       |
+| SPLIT_VIEW                       | amf_int64       |
 
 <p align="center">
 Table 1. AMF VQ Enhancer properties of the output stream
 </p>
 
+[^1]: Deprecated.
+
 ---
 
 **Name:**
 
-`AMF_VQ_ENHANCER_ENGINE_TYPE`
+`AMF_VIDEO_ENHANCER_ENGINE_TYPE`
 
 **Values:**
 `AMF_MEMORY_DX11`, `AMF_MEMORY_DX12`, `AMF_MEMORY_VULKAN`,`AMF_MEMORY_OPENCL`
@@ -109,7 +113,7 @@ Specifies the memory type of output surfaces (surfaces are allocated internally 
 ---
 
 **Name:**
-`AMF_VQ_ENHANCER_OUTPUT_SIZE`
+`AMF_VIDEO_ENHANCER_OUTPUT_SIZE`
 
 **Values:**
 A valid size
@@ -123,7 +127,7 @@ Output image resolution.  VQ enhancer will be performed when this property is se
 ---
 
 **Name:**
-`AMF_VQ_ENHANCER_ATTENUATION`
+`AMF_VE_FCR_ATTENUATION`
 
 **Values:**
 Float in the range of `[0.02, 0.4]`
@@ -133,6 +137,34 @@ Float in the range of `[0.02, 0.4]`
 
 **Description:**
 Control VQEnhancer strength.
+
+---
+
+**Name:**
+`AMF_VE_FCR_RADIUS`
+
+**Values:**
+Int in the range of `[1, 4]`
+
+**Default Value:**
+`4`
+
+**Description:**
+Deprecated. Setting this property has no effect.
+
+---
+
+**Name:**
+`AMF_VE_FCR_SPLIT_VIEW`
+
+**Values:**
+`0` / `1` (OFF / ON)
+
+**Default Value:**
+`0`
+
+**Description:**
+Experimental. When set, enables a side by side view with processing enabled on one side and disabled on the other side.
 
 ---
 
