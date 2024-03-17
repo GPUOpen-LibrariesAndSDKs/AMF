@@ -1,0 +1,20 @@
+name: Publish Header
+
+on:
+  push: 
+    tags: v*
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: bundle header
+      run: |
+        mv amf/public/include AMF
+        tar czf AMF-headers.tar.gz AMF/
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: AMF-headers.tar.gz
