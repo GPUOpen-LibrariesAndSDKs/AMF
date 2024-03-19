@@ -183,20 +183,6 @@ void AMF_CDECL_CALL AMFTraceW(const wchar_t* src_path, amf_int32 line, amf_int32
 
 /**
 *******************************************************************************
-*   AMF_UNICODE
-*
-*   @brief
-*       Macro to convert string constant into wide char string constant
-*
-*   Auxilary AMF_UNICODE_ macro is needed as otherwise it is not possible to use AMF_UNICODE(__FILE__)
-*   Microsoft macro _T also uses 2 passes to accomplish that
-*******************************************************************************
-*/
-#define AMF_UNICODE(s) AMF_UNICODE_(s)
-#define AMF_UNICODE_(s) L ## s
-
-/**
-*******************************************************************************
 *   AMFTrace
 *
 *   @brief
