@@ -468,13 +468,15 @@ protected:
 
         void AddSPS(amf_uint8 *sps, size_t size);
         void AddPPS(amf_uint8 *pps, size_t size);
-        bool GetExtradata(AMFByteArray   &extradata);
+        bool GetExtradata(AMFByteArray   &extradata, bool bAnnexB);
 
     private:
         AMFByteArray   m_SPSs;
         AMFByteArray   m_PPSs;
         amf_int32       m_SPSCount;
         amf_int32       m_PPSCount;
+        std::vector<size_t>     m_SPSSizes;
+        std::vector<size_t>     m_PPSSizes;
     };
 
     friend struct AccessUnitSigns;
@@ -1007,7 +1009,7 @@ void    HevcParser::FindSPSandPPS()
     m_pStream->Seek(amf::AMF_SEEK_BEGIN, 0, NULL);
     m_ReadData.SetSize(0);
     // It will fail if SPS or PPS are absent
-    extraDataBuilder.GetExtradata(m_Extradata);
+    extraDataBuilder.GetExtradata(m_Extradata, m_bUseStartCodes);
 }
 //-------------------------------------------------------------------------------------------------
 bool HevcParser::SpsData::Parse(amf_uint8 *nalu, size_t size)
@@ -1632,6 +1634,7 @@ bool HevcParser::AccessUnitSigns::IsNewPicture()
 void HevcParser::ExtraDataBuilder::AddSPS(amf_uint8 *sps, size_t size)
 {
     m_SPSCount++;
+    m_SPSSizes.push_back(size);
     size_t pos = m_SPSs.GetSize();
     amf_uint16 spsSize = size & maxSpsSize;
     m_SPSs.SetSize(pos + spsSize +2);
@@ -1644,6 +1647,7 @@ void HevcParser::ExtraDataBuilder::AddSPS(amf_uint8 *sps, size_t size)
 void HevcParser::ExtraDataBuilder::AddPPS(amf_uint8 *pps, size_t size)
 {
     m_PPSCount++;
+    m_PPSSizes.push_back(size);
     size_t pos = m_PPSs.GetSize();
     amf_uint16 ppsSize = size & maxPpsSize;
     m_PPSs.SetSize(pos + ppsSize +2);
@@ -1655,7 +1659,7 @@ void HevcParser::ExtraDataBuilder::AddPPS(amf_uint8 *pps, size_t size)
 //-------------------------------------------------------------------------------------------------
 // ISO-IEC 14496-15-2004.pdf, #5.2.4.1.1
 //-------------------------------------------------------------------------------------------------
-bool HevcParser::ExtraDataBuilder::GetExtradata(AMFByteArray   &extradata)
+bool HevcParser::ExtraDataBuilder::GetExtradata(AMFByteArray   &extradata, bool bAnnexB)
 {
     if( m_SPSs.GetSize() == 0  || m_PPSs .GetSize() ==0 )
     {
@@ -1673,40 +1677,84 @@ bool HevcParser::ExtraDataBuilder::GetExtradata(AMFByteArray   &extradata)
         return false;
     }
 
-    extradata.SetSize(
-        21 +                // reserved
-        1 +                 // length size
-        1 +                 // array size
-        3 +                 // SPS type + SPS count (2)
-        m_SPSs.GetSize() +
-        3 +                 // PPS type + PPS count (2)
-        m_PPSs .GetSize()
+    if (bAnnexB)
+    {
+        amf_size size = 0;
+        for (int i = 0; i < (int)m_SPSSizes.size(); i++)
+        {
+            size += 4; //00 00 00 01
+            size += m_SPSSizes[i];
+        }
+        for (int i = 0; i < (int)m_PPSSizes.size(); i++)
+        {
+            size += 4; //00 00 00 01
+            size += m_PPSSizes[i];
+        }
+        extradata.SetSize(size);
+        amf_uint8 *out = extradata.GetData();
+        amf_uint8* src = m_SPSs.GetData();
+        for (int i = 0; i < (int)m_SPSSizes.size(); i++)
+        {
+            //00 00 00 01
+            *out++ = 0;
+            *out++ = 0;
+            *out++ = 0;
+            *out++ = 1;
+            src += 2; // skip size
+            memcpy(out, src, m_SPSSizes[i]);
+            out += m_SPSSizes[i];
+        }
+        src = m_PPSs.GetData();
+        for (int i = 0; i < (int)m_PPSSizes.size(); i++)
+        {
+            //00 00 00 01
+            *out++ = 0;
+            *out++ = 0;
+            *out++ = 0;
+            *out++ = 1;
+            src += 2; // skip size
+            memcpy(out, src, m_PPSSizes[i]);
+            out += m_PPSSizes[i];
+        }
+
+    }
+    else
+    {
+        extradata.SetSize(
+            21 +                // reserved
+            1 +                 // length size
+            1 +                 // array size
+            3 +                 // SPS type + SPS count (2)
+            m_SPSs.GetSize() +
+            3 +                 // PPS type + PPS count (2)
+            m_PPSs.GetSize()
         );
 
-    amf_uint8 *data = extradata.GetData();
+        amf_uint8* data = extradata.GetData();
 
-    memset(data, 0, extradata.GetSize());
+        memset(data, 0, extradata.GetSize());
 
-    *data = 0x01; // configurationVersion
-    data+=21;
-    *data++ = (0xFC | (NalUnitLengthSize - 1));   // reserved(11111100) + lengthSizeMinusOne
+        *data = 0x01; // configurationVersion
+        data += 21;
+        *data++ = (0xFC | (NalUnitLengthSize - 1));   // reserved(11111100) + lengthSizeMinusOne
 
-    *data++ = static_cast<amf_uint8>(2); // reserved(11100000) + numOfSequenceParameterSets
-
-
-    *data++ = NAL_UNIT_SPS;
-    *data++ = Parser::getLowByte(static_cast<amf_int16>(m_SPSCount));
-    *data++ = Parser::getHiByte(static_cast<amf_int16>(m_SPSCount));
-
-    memcpy(data, m_SPSs.GetData(), m_SPSs.GetSize());
-    data += m_SPSs.GetSize();
+        *data++ = static_cast<amf_uint8>(2); // reserved(11100000) + numOfSequenceParameterSets
 
 
-    *data++ = NAL_UNIT_PPS;
-    *data++ = Parser::getLowByte(static_cast<amf_int16>(m_PPSCount));
-    *data++ = Parser::getHiByte(static_cast<amf_int16>(m_PPSCount));
-    memcpy(data, m_PPSs.GetData(), m_PPSs.GetSize());
-    data += m_PPSs.GetSize();
+        *data++ = NAL_UNIT_SPS;
+        *data++ = Parser::getLowByte(static_cast<amf_int16>(m_SPSCount));
+        *data++ = Parser::getHiByte(static_cast<amf_int16>(m_SPSCount));
+
+        memcpy(data, m_SPSs.GetData(), m_SPSs.GetSize());
+        data += m_SPSs.GetSize();
+
+
+        *data++ = NAL_UNIT_PPS;
+        *data++ = Parser::getLowByte(static_cast<amf_int16>(m_PPSCount));
+        *data++ = Parser::getHiByte(static_cast<amf_int16>(m_PPSCount));
+        memcpy(data, m_PPSs.GetData(), m_PPSs.GetSize());
+        data += m_PPSs.GetSize();
+    }
     return true;
 }
 //-------------------------------------------------------------------------------------------------

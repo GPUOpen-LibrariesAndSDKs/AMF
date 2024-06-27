@@ -64,8 +64,13 @@ struct PulseAudioImportTable{
     decltype(&pa_context_new)                m_pPA_Context_New = nullptr;
     decltype(&pa_context_get_state)          m_pPA_Context_Get_State = nullptr;
     decltype(&pa_context_set_state_callback) m_pPA_Context_Set_State_Callback = nullptr;
+    decltype(&pa_context_get_server_info)    m_pPA_Context_Get_Server_Info = nullptr;
     decltype(&pa_context_connect)            m_pPA_Context_Connect = nullptr;
     decltype(&pa_context_disconnect)         m_pPA_Context_Disconnect = nullptr;
+
+    decltype(&pa_context_get_sink_info_by_name) m_pPA_Context_Get_Sink_Info_By_Name = nullptr;
+    decltype(&pa_context_get_sink_info_list)    m_pPA_Context_Get_Sink_Info_List = nullptr;
+    decltype(&pa_context_get_source_info_list)  m_pPA_Context_Get_Source_Info_List = nullptr;
 
     // Others
     decltype(&pa_operation_unref)            m_pPA_Operation_Unref = nullptr;
@@ -75,11 +80,12 @@ struct PulseAudioImportTable{
     decltype(&pa_simple_new)                 m_pPA_Simple_New = nullptr;
     decltype(&pa_simple_free)                m_pPA_Simple_Free = nullptr;
     decltype(&pa_simple_write)               m_pPA_Simple_Write = nullptr;
+    decltype(&pa_simple_read)                m_pPA_Simple_Read = nullptr;
     decltype(&pa_simple_flush)               m_pPA_Simple_Flush = nullptr;
+    decltype(&pa_simple_get_latency)         m_pPA_Simple_Get_Latency = nullptr;
 
     amf_handle                               m_hLibPulseSO = nullptr;
     amf_handle                               m_hLibPulseSimpleSO = nullptr;
-
 };
 
 typedef std::shared_ptr<PulseAudioImportTable> PulseAudioImportTablePtr;

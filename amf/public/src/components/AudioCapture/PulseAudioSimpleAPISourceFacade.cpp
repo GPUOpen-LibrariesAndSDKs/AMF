@@ -290,7 +290,7 @@ AMF_RESULT AMFPulseAudioSimpleAPISourceFacade::ReceiveStringList(int socket, PAS
 
         if (size != 0)
         {
-            res = Receive(socket, string.data(), size * sizeof(char));
+            res = Receive(socket, const_cast<char*>(string.data()), size * sizeof(char));
             AMF_RETURN_IF_FAILED(res);
         }
 

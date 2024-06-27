@@ -1,5 +1,5 @@
 #
-# MIT license 
+# MIT license
 #
 #
 # Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
@@ -31,10 +31,7 @@ target_name = CapabilityManager
 
 pp_include_dirs = \
  $(amf_root) \
- $(VK_SDK_PATH)/x86_64/include
-
-linker_dirs += \
- $(VK_SDK_PATH)/x86_64/lib
+ $(VULKAN_SDK)/include
 
 src_files = \
     public/samples/CPPSamples/CapabilityManager/CapabilityManager.cpp \

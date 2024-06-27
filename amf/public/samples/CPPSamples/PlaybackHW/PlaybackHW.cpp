@@ -201,6 +201,8 @@ int main(int argc, char* argv[])
                 s_pPipeline->Play();
                 UpdateMenuItems();
             }
+            ret = RunMessageLoop();
+            s_pPipeline->Stop();
         }
         else
         {
@@ -208,8 +210,6 @@ int main(int argc, char* argv[])
         }
         //------------------------------------------------------------------------------------------------------------
 
-        ret = RunMessageLoop();
-        s_pPipeline->Stop();
 
         CloseInstance();
     }
@@ -396,10 +396,15 @@ void UpdateMenuItems()
 
     CheckMenuItem(hMenu, ID_OPTIONS_FULLSCREEN, MF_BYCOMMAND | (bFullScreen ? MF_CHECKED : MF_UNCHECKED));
 
-    
+
     bool bExclusiveFullscreen = false;
     s_pPipeline->GetParam(PlaybackPipeline::PARAM_NAME_EXCLUSIVE_FULLSCREEN, bExclusiveFullscreen);
     CheckMenuItem(hMenu, ID_OPTIONS_EXCLUSIVEFULLSCREEN, MF_BYCOMMAND | (bExclusiveFullscreen ? MF_CHECKED : MF_UNCHECKED));
+
+    amf_int64 frcModeType = FRC_OFF;
+    s_pPipeline->GetParam(PlaybackPipeline::PARAM_NAME_FRC_MODE, frcModeType);
+    CheckMenuItem(hMenu, ID_OPTIONS_FRC, MF_BYCOMMAND | (frcModeType != FRC_OFF ? MF_CHECKED : MF_UNCHECKED));
+    EnableMenuItem(hMenu, ID_OPTIONS_FRC, MF_BYCOMMAND | (currState == PipelineStateRunning ? MF_DISABLED : MF_ENABLED));
 }
 
 //
@@ -527,6 +532,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case ID_TOOLBAR:
             ToggleToolbar(hWnd);
             break;
+        case ID_OPTIONS_FRC:
+        {
+            amf_int64 frcModeType = FRC_OFF;
+            s_pPipeline->GetParam(PlaybackPipeline::PARAM_NAME_FRC_MODE, frcModeType);
+            s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_FRC_MODE, frcModeType != FRC_OFF ? FRC_OFF : FRC_x2_PRESENT);
+            UpdateMenuItems();
+            break;
+        }
         default:
             return DefWindowProc(hWnd, message, wParam, lParam);
         }
@@ -586,7 +599,7 @@ void FileOpen(HWND hwnd)
     ofn.lpstrFile = szFile;
     ofn.lpstrFile[0] = '\0';
     ofn.nMaxFile = _countof(szFile);
-    ofn.lpstrFilter = L"Videos\0*.WMV;*.WMA;*.AVI;*.ASF;*.FLV;*.BFI;*.CAF;*.GXF;*.IFF;*.RL2;*.MP4;*.3GP;*.QTFF;*.MKV;*.MK3D;*.MKA;*.MKS;*.MPG;*.MPEG;*.PS;*.TS;*.MXF;*.OGV;*.OGA;*.OGX;*.OGG;*.SPX;*.FLV;*.F4V;*.F4P;*.F4A;*.F4B;*.JSV;*.h264;*.264;*.vc1;*.mov;*.mvc;*.m1v;*.m2v;*.m2ts;*.vpk;*.yuv;*.rgb;*.nv12;*.h265;*.265;*.ivf\0All\0*.*\0";
+    ofn.lpstrFilter = L"Videos\0*.WMV;*.WMA;*.AVI;*.ASF;*.FLV;*.BFI;*.CAF;*.GXF;*.IFF;*.RL2;*.MP4;*.3GP;*.QTFF;*.MKV;*.MK3D;*.MKA;*.MKS;*.WEBM;*.MPG;*.MPEG;*.PS;*.TS;*.MXF;*.OGV;*.OGA;*.OGX;*.OGG;*.SPX;*.FLV;*.F4V;*.F4P;*.F4A;*.F4B;*.JSV;*.h264;*.264;*.vc1;*.mov;*.mvc;*.m1v;*.m2v;*.m2ts;*.vpk;*.yuv;*.rgb;*.nv12;*.h265;*.265;*.ivf\0All\0*.*\0";
 //    ofn.lpstrFilter = L"Video streams\0*.h264;*.264;*.h265;*.265;*.hevc;\0All\0*.*\0";
     ofn.nFilterIndex = 1;
     ofn.lpstrFileTitle = NULL;

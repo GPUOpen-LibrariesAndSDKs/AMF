@@ -365,8 +365,8 @@ enum AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_CAP_ROI                               L"ROIMap"                   // amf_bool - ROI map support is available for H264 UVE encoder, n/a for the other encoders
 #define AMF_VIDEO_ENCODER_CAP_MAX_THROUGHPUT                    L"MaxThroughput"            // amf_int64 - MAX throughput for H264 encoder in MB (16 x 16 pixel)
 #define AMF_VIDEO_ENCODER_CAP_REQUESTED_THROUGHPUT              L"RequestedThroughput"      // amf_int64 - Currently total requested throughput for H264 encoder in MB (16 x 16 pixel)
-#define AMF_VIDEO_ENCODER_CAPS_QUERY_TIMEOUT_SUPPORT            L"QueryTimeoutSupport"      // amf_bool - Timeout supported for QueryOutout call (Deprecated, please use AMF_VIDEO_ENCODER_CAP_QUERY_TIMEOUT_SUPPORT )
-#define AMF_VIDEO_ENCODER_CAP_QUERY_TIMEOUT_SUPPORT             L"QueryTimeoutSupport"      // amf_bool - Timeout supported for QueryOutout call
+#define AMF_VIDEO_ENCODER_CAPS_QUERY_TIMEOUT_SUPPORT            L"QueryTimeoutSupport"      // amf_bool - Timeout supported for QueryOutput call (Deprecated, please use AMF_VIDEO_ENCODER_CAP_QUERY_TIMEOUT_SUPPORT )
+#define AMF_VIDEO_ENCODER_CAP_QUERY_TIMEOUT_SUPPORT             L"QueryTimeoutSupport"      // amf_bool - Timeout supported for QueryOutput call
 
 #define AMF_VIDEO_ENCODER_CAP_SUPPORT_SLICE_OUTPUT              L"SupportSliceOutput"       // amf_bool - if slice output is supported
 

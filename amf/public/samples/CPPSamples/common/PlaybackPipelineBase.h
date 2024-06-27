@@ -91,6 +91,7 @@ public:
     static const wchar_t* PARAM_NAME_EXCLUSIVE_FULLSCREEN;
     static const wchar_t* PARAM_NAME_FRC_PROFILE;
     static const wchar_t* PARAM_NAME_FRC_MV_SEARCH_MODE;
+    static const wchar_t* PARAM_NAME_FRC_RGB;
 
     virtual AMF_RESULT Play();
     virtual AMF_RESULT Pause();
@@ -132,7 +133,9 @@ protected:
 	virtual AMF_RESULT  InitVideoPipeline(amf_uint32 iVideoStreamIndex, PipelineElementPtr pVideoSourceStream);
 	virtual AMF_RESULT  InitAudioPipeline(amf_uint32 iAudioStreamIndex, PipelineElementPtr pAudioSourceStream);
     virtual AMF_RESULT  ReInit();
-    virtual AMF_RESULT  InitFRC();
+    virtual AMF_RESULT  InitFRC(amf::AMF_MEMORY_TYPE type);
+    virtual AMF_RESULT  InitColorConverter();
+    virtual AMF_RESULT  ConnectScaler();
 
     amf::AMFContextPtr      m_pContext;
 
@@ -143,7 +146,7 @@ protected:
     BitStreamParserPtr      m_pVideoStreamParser;
 
     amf::AMFComponentPtr    m_pVideoDecoder;
-    amf::AMFComponentPtr    m_pVideoProcessor;
+    amf::AMFComponentPtr    m_pVideoConverter;
     amf::AMFComponentPtr    m_pHQScaler2;
     amf::AMFComponentPtr    m_pScaler;
     amf::AMFComponentPtr    m_pFRC;

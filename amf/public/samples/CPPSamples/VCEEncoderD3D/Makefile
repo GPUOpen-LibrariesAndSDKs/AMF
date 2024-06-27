@@ -1,5 +1,5 @@
 #
-# MIT license 
+# MIT license
 #
 #
 # Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
@@ -32,8 +32,8 @@ target_type = exe
 
 pp_include_dirs = \
  $(amf_root) \
- $(VK_SDK_PATH)/x86_64/include
- 
+ $(VULKAN_SDK)/include
+
  sample_path = public/samples/CPPSamples/VCEEncoderD3D
 
 src_files = \
@@ -83,7 +83,7 @@ $(foreach shader_file,$(shader_sources),\
     $(eval $(call shader_compile_rule_fn,$(shader_file)))\
 )
 
-clean: 
+clean:
 	$(foreach clean_file,$(shader_sources),\
 		$(RM) $(bin_dir)/$(clean_file).spv\
 	)

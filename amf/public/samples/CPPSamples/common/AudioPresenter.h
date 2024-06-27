@@ -107,6 +107,6 @@ protected:
     int             m_SequentiallyDroppedAudioSamplesCnt;
     int             m_DropCyclesCnt;
     bool            m_ResetAVSync;
-    amf_pts         m_AverageAVDesync;
-    int             m_AudioFrameCntForAverageAVDesync;
+    amf_pts         m_DesyncToIgnore;
+    std::deque<amf_pts> m_AverageAVDesyncQueue;
 };

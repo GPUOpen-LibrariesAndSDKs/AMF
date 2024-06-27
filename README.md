@@ -28,6 +28,7 @@ AMF is a light-weight, portable multimedia framework that abstracts away most of
       | \**All supported distros* | 20.40                             |
 
 * AMF SDK is backward compatible with all previous driver versions.
+* Version 1.4.34: AMD Radeon Software Adrenalin Edition 24.6.1 (24.10.21.01) or newer. Added Linux support for DVR sample. New HEVC header insertion mode. Stable support for RADV drivers for AMF on Linux in VideoConverter/HQScaler/VideoEncoder and experimental for decoder. Added DX11 support for FRC component.
 * Version 1.4.33: AMD Radeon Software Adrenalin Edition 24.1.1 (23.40.02) or newer. Added native DX12 support for encoding and PreAnalysis. Switched to public Vulkan Khronos extensions for decoder. AMF on Linux can now be used with AMD Pro Vulkan, and experimentally with RADV drivers.
 * Version 1.4.32: AMD Radeon Software Adrenalin Edition 23.12.1 (23.30.13.01) or newer. Added new FRC component and API doc. Added new VQEnhancer doc. Improved presenters. Updated FFmpeg to 6.0.
 * Version 1.4.30: AMD Radeon Software Adrenalin Edition 23.5.2 (23.10.01.45) or newer. Added AMF wrappers for AVC / HEVC / AV1 FFmpeg software encoders, frame in -> slice / tile output support for AVC / HEVC / AV1 encoders, and multi-monitor support for DVR. Updated FFmpeg to 5.1.2.
@@ -51,7 +52,9 @@ The AMF framework is compatible with most recent Radeon GPUs starting with the S
 * Additional documentation can be found in the `amf\doc` directory.
 * To build samples on Linux use 'makefile' in `amf\public\samples`.
 * Follow this guide to build your own first encoder application
-  * [Practical Guide for Video CODEC Encoder App Developers](https://github.com/GPUOpen-LibrariesAndSDKs/AMF/wiki/Guide%20for%20Video%20CODEC%20Encoder%20App%20Developers).
+  * [Practical Guide for Video CODEC Encoder App Developers](https://github.com/GPUOpen-LibrariesAndSDKs/AMF/wiki/Guide%20for%20Video%20CODEC%20Encoder%20App%20Developers)
+* Find hardware features and support
+  * [GPU and APU HW Features and Support](https://github.com/GPUOpen-LibrariesAndSDKs/AMF/wiki/GPU%20and%20APU%20HW%20Features%20and%20Support)
 
 ### Third-Party Software
 * FFmpeg is distributed under the terms of the LGPLv2.1.

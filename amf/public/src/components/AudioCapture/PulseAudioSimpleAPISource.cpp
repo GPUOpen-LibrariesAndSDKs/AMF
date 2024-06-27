@@ -51,6 +51,7 @@ public:
     AMFPulseAudioSimpleAPISourceImpl*   m_APIPtr = nullptr;
     pa_mainloop*                        m_pPaMainLoop = nullptr;
     AMF_RESULT                          m_Result = AMF_OK;
+    PulseAudioImportTable*              m_pa = nullptr;
 
     void QuitIfAllDone()
     {
@@ -58,7 +59,7 @@ public:
         if (true == m_GetSourceListDone && true == m_GetSinkListDone && true == m_GetDisplaySourceDone
             && nullptr != m_pPaMainLoop)
         {
-            pa_mainloop_quit(m_pPaMainLoop, 0);
+            m_pa->m_pPA_Mainloop_Quit(m_pPaMainLoop, 0);
         }
     }
 
@@ -68,7 +69,7 @@ public:
         m_Result = result;
         if (nullptr != m_pPaMainLoop)
         {
-            pa_mainloop_quit(m_pPaMainLoop, -1);
+            m_pa->m_pPA_Mainloop_Quit(m_pPaMainLoop, -1);
         }
     }
 
@@ -191,7 +192,7 @@ void GetPAServerInfoCallback(pa_context*c,const pa_server_info *i, void* userdat
     cbData->m_APIPtr->SetDefaultSource(defaultSrc);
 
     // Get default sink info
-    PAOperationPtr op = PAOperationPtr(pa_context_get_sink_info_by_name(c, i->default_sink_name, GetDisplaySourceCallback,userdata), &pa_operation_unref);
+    PAOperationPtr op = PAOperationPtr(cbData->m_pa->m_pPA_Context_Get_Sink_Info_By_Name(c, i->default_sink_name, GetDisplaySourceCallback,userdata), cbData->m_pa->m_pPA_Operation_Unref);
     if (nullptr == op)
     {
         // Terminate the main loop, give it a negative return code.
@@ -201,7 +202,7 @@ void GetPAServerInfoCallback(pa_context*c,const pa_server_info *i, void* userdat
     }
 
     // Get all sink info.
-    op = PAOperationPtr(pa_context_get_sink_info_list(c, GetSinkListCallback, userdata), &pa_operation_unref);
+    op = PAOperationPtr(cbData->m_pa->m_pPA_Context_Get_Sink_Info_List(c, GetSinkListCallback, userdata), cbData->m_pa->m_pPA_Operation_Unref);
     // Only prints warning and do not terminate the main loop.
     if (nullptr == op)
     {
@@ -209,7 +210,7 @@ void GetPAServerInfoCallback(pa_context*c,const pa_server_info *i, void* userdat
     }
 
     // Get all source info.
-    op = PAOperationPtr(pa_context_get_source_info_list(c, GetSourceListCallback, userdata), &pa_operation_unref);
+    op = PAOperationPtr(cbData->m_pa->m_pPA_Context_Get_Source_Info_List(c, GetSourceListCallback, userdata), cbData->m_pa->m_pPA_Operation_Unref);
     if (nullptr == op)
     {
         AMFTraceWarning(AMF_FACILITY, L"AMFPulseAudioSimpleAPISourceImpl::GetPAServerInfoCallback(): pa_contgext_get_source_info_list() failed!");
@@ -221,12 +222,12 @@ void PAContextStateCallback(pa_context *c, void *userdata)
 {
 
     PACallbackData* cbData = (PACallbackData*)userdata;
-    pa_context_state_t state = pa_context_get_state(c);
+    pa_context_state_t state = cbData->m_pa->m_pPA_Context_Get_State(c);
     switch(state)
     {
         case PA_CONTEXT_READY:
         {
-            PAOperationPtr op = PAOperationPtr(pa_context_get_server_info(c,GetPAServerInfoCallback,userdata), &pa_operation_unref);
+            PAOperationPtr op = PAOperationPtr(cbData->m_pa->m_pPA_Context_Get_Server_Info(c,GetPAServerInfoCallback,userdata), cbData->m_pa->m_pPA_Operation_Unref);
             // Try to get server info. The callback function will get the data.
             if (nullptr == op)
             {
@@ -258,9 +259,14 @@ AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::InitDeviceNames()
 {
     AMF_RESULT res = AMF_FAIL;
     // Init the pulse audio main loop.
-    PAMainLoopPtr       paMainLoop = PAMainLoopPtr(pa_mainloop_new(),&pa_mainloop_free);
-    pa_mainloop_api*    paMainLoopAPI = pa_mainloop_get_api(paMainLoop.get());
-    PAContextPtr        paContext = PAContextPtr(pa_context_new(paMainLoopAPI, "AMFPulseAudioSimpleAPISourceImpl:InitDeviceNames()"),&pa_context_unref);
+    PAMainLoopPtr       paMainLoop = PAMainLoopPtr(m_pa.m_pPA_Mainloop_New(),m_pa.m_pPA_Mainloop_Free);
+    AMF_RETURN_IF_INVALID_POINTER(paMainLoop, L"paMainLoop is null!");
+
+    pa_mainloop_api*    paMainLoopAPI = m_pa.m_pPA_Mainloop_Get_API(paMainLoop.get());
+    AMF_RETURN_IF_INVALID_POINTER(paMainLoopAPI, L"paMainLoopAPI is null!");
+
+    PAContextPtr        paContext = PAContextPtr(m_pa.m_pPA_Context_New(paMainLoopAPI, "AMFPulseAudioSimpleAPISourceImpl:InitDeviceNames()"),m_pa.m_pPA_Context_Unref);
+    AMF_RETURN_IF_INVALID_POINTER(paContext, L"paContext is null!");
 
     int mlErrCode = 0, mlReturnCode = 0;
 
@@ -269,6 +275,7 @@ AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::InitDeviceNames()
     // Set the API pointer field to this.
     callbackData.m_APIPtr = this;
     callbackData.m_pPaMainLoop = paMainLoop.get();
+    callbackData.m_pa = &m_pa;
 
 
     // Set state callback, when context is ready, the callback sets the
@@ -276,7 +283,7 @@ AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::InitDeviceNames()
     // retreives default sink(we expect it to be monitor or headphone)
     // then uses the sink to get corresponding loopback output (the source, what we want to capture).
     // When connection failed, callbackData.m_Result will be AMF_FAIL.
-    pa_context_set_state_callback(paContext.get(), PAContextStateCallback,(void*)(&callbackData));
+    m_pa.m_pPA_Context_Set_State_Callback(paContext.get(), PAContextStateCallback,(void*)(&callbackData));
 
     // Check if context state has failures.
     res = callbackData.m_Result;
@@ -286,14 +293,14 @@ AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::InitDeviceNames()
     }
 
     // Connect to pulse audio server. NOAUTOSPAWN prevents puslse audio to auto spawn an unwatned server.
-    mlErrCode = pa_context_connect(paContext.get(),NULL,PA_CONTEXT_NOAUTOSPAWN, NULL);
+    mlErrCode = m_pa.m_pPA_Context_Connect(paContext.get(),NULL,PA_CONTEXT_NOAUTOSPAWN, NULL);
     if (0 != mlErrCode)
     {
-        AMF_RETURN_IF_FAILED(res,L"AMFPulseAudioSimpleAPISourceImpl::pa_context_connect() failed with: %S",pa_strerror(mlErrCode));
+        AMF_RETURN_IF_FAILED(res,L"AMFPulseAudioSimpleAPISourceImpl::pa_context_connect() failed with: %S",m_pa.m_pPA_Strerror(mlErrCode));
     }
 
     // Run the main loop.
-    if ((mlReturnCode = pa_mainloop_run(paMainLoop.get(), &mlErrCode)) < 0)
+    if ((mlReturnCode = m_pa.m_pPA_Mainloop_Run(paMainLoop.get(), &mlErrCode)) < 0)
     {
         res = AMF_FAIL;
     } else
@@ -302,7 +309,7 @@ AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::InitDeviceNames()
     }
 
     // Disconnect the context after everything's done.
-    pa_context_disconnect(paContext.get());
+    m_pa.m_pPA_Context_Disconnect(paContext.get());
 
     // Need to add a trace error here.
     AMF_RETURN_IF_FAILED(res,L"AMFPulseAudioSimpleAPISourceImpl::InitDeviceNames() failed, main loop returned with %d", mlReturnCode);
@@ -319,7 +326,7 @@ AMFPulseAudioSimpleAPISourceImpl::~AMFPulseAudioSimpleAPISourceImpl()
     // Just in case, check if pa_simple is freed.
     if (m_pPaSimple)
     {
-        pa_simple_free(m_pPaSimple);
+        m_pa.m_pPA_Simple_Free(m_pPaSimple);
         m_pPaSimple = nullptr;
     }
 }
@@ -327,6 +334,7 @@ AMFPulseAudioSimpleAPISourceImpl::~AMFPulseAudioSimpleAPISourceImpl()
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::Init(bool captureMic)
 {
+    AMF_RETURN_IF_FAILED(m_pa.LoadFunctionsTable());
 
     AMF_RESULT res = AMF_OK;
 
@@ -349,7 +357,7 @@ AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::Init(bool captureMic)
 
     // Create the new pa_simple
     amf_string srcDevice = (true == captureMic)? m_DefaultSource:m_DefaultSinkMonitor;
-    m_pPaSimple = pa_simple_new(NULL, "AudioCaptureImplLinux", PA_STREAM_RECORD, srcDevice.c_str(),
+    m_pPaSimple = m_pa.m_pPA_Simple_New(NULL, "AudioCaptureImplLinux", PA_STREAM_RECORD, srcDevice.c_str(),
         "AudioCaptureImplLinux",& paSampleSS, NULL, &bufferAttr, NULL);
 
     if (m_pPaSimple == NULL)
@@ -366,7 +374,7 @@ AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::Terminate()
     AMF_RESULT res = AMF_OK;
     if (m_pPaSimple)
     {
-        pa_simple_free(m_pPaSimple);
+        m_pa.m_pPA_Simple_Free(m_pPaSimple);
         m_pPaSimple = nullptr;
     }
     return res;
@@ -397,13 +405,13 @@ AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::CaptureAudioRaw(short* dest, amf_ui
     amf_int32 paReadReturn = 0;
 
     // Capture 1/90 second.
-    paReadReturn = pa_simple_read(m_pPaSimple, dest, sizeof(short)*sampleCount*m_ChannelCount, &paReadErr);
-    AMF_RETURN_IF_FALSE(paReadReturn == 0, AMF_FAIL, L"pa_simple_read returned error: (%S)", pa_strerror(paReadErr));
+    paReadReturn = m_pa.m_pPA_Simple_Read(m_pPaSimple, dest, sizeof(short)*sampleCount*m_ChannelCount, &paReadErr);
+    AMF_RETURN_IF_FALSE(paReadReturn == 0, AMF_FAIL, L"pa_simple_read returned error: (%S)", m_pa.m_pPA_Strerror(paReadErr));
     capturedSampleCount = sampleCount;
 
     // Get Latency.
-    pa_usec_t latency = pa_simple_get_latency(m_pPaSimple,&paReadErr);
-    AMF_RETURN_IF_FALSE(latency != pa_usec_t(-1), AMF_FAIL, L"pa_simple_get_latency() failed: (%S)", pa_strerror(paReadErr));
+    pa_usec_t latency = m_pa.m_pPA_Simple_Get_Latency(m_pPaSimple,&paReadErr);
+    AMF_RETURN_IF_FALSE(latency != pa_usec_t(-1), AMF_FAIL, L"pa_simple_get_latency() failed: (%S)", m_pa.m_pPA_Strerror(paReadErr));
 
     latencyPts = latency * AMF_MICROSECOND;
     return AMF_OK;

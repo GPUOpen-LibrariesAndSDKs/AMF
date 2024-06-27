@@ -97,7 +97,7 @@ uname_p := $(shell uname -p)
     VULKAN_COMP = $(amf_root)/../Thirdparty/VulkanSDK/1.2.131.2/arm64/bin/glslangValidator
     FILE_TO_HEADER = $(amf_root)/../Thirdparty/file_to_header/arm64/file_to_header
   else
-    VULKAN_COMP = $(amf_root)/../Thirdparty/VulkanSDK/1.2.189.2/x86_64/bin/glslangValidator
+    VULKAN_COMP = $(amf_root)/../Thirdparty/VulkanSDK/1.3.243.0/x86_64/bin/glslangValidator
     FILE_TO_HEADER = $(amf_root)/../Thirdparty/file_to_header/Linux64/file_to_header
 endif
 
@@ -109,7 +109,7 @@ define shader_compile_rule_fn
   else
     OUTPUT_FILE_PATH := $1
   endif
-  
+
   $$(OUTPUT_FILE_PATH).spv: $1
 		$(VULKAN_COMP) -V "$$<" -o "$$@"
 

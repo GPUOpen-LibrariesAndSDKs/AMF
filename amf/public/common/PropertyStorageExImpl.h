@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -94,7 +94,8 @@ namespace amf
         public AMFObservableImpl<AMFPropertyStorageObserver>
     {
     protected:
-        PropertyInfoMap   m_PropertiesInfo;
+        PropertyInfoMap         m_PropertiesInfo;
+        AMFCriticalSection      m_Sync; //thread-safety lock.
 
     public:
         AMFPropertyStorageExImpl()
@@ -130,6 +131,7 @@ namespace amf
 
             if (pDest != this)
             {
+                AMFLock lock(const_cast<AMFCriticalSection*>(&m_Sync));
                 for (PropertyInfoMap::const_iterator it = m_PropertiesInfo.begin(); it != m_PropertiesInfo.end(); it++)
                 {
                     if (!overwrite && pDest->HasProperty(it->first.c_str()))
@@ -226,6 +228,7 @@ namespace amf
             size_t copySize = AMF_MIN(nameSize-1, found->first.length());
             memcpy(name, found->first.c_str(), copySize * sizeof(wchar_t));
             name[copySize] = 0;
+            AMFLock lock(const_cast<AMFCriticalSection*>(&m_Sync));
             AMFVariantCopy(pValue, &found->second->value);
             return AMF_OK;
         }
@@ -369,9 +372,17 @@ namespace amf
         //-------------------------------------------------------------------------------------------------
         virtual void        AMF_STD_CALL OnPropertyChanged(const wchar_t* /*name*/){ }
         //-------------------------------------------------------------------------------------------------
-        virtual void        AMF_STD_CALL AddObserver(AMFPropertyStorageObserver* pObserver) { AMFObservableImpl<AMFPropertyStorageObserver>::AddObserver(pObserver); }
+        virtual void        AMF_STD_CALL AddObserver(AMFPropertyStorageObserver* pObserver)
+        {
+            AMFLock lock(&m_Sync);
+            AMFObservableImpl<AMFPropertyStorageObserver>::AddObserver(pObserver);
+        }
         //-------------------------------------------------------------------------------------------------
-        virtual void        AMF_STD_CALL RemoveObserver(AMFPropertyStorageObserver* pObserver) { AMFObservableImpl<AMFPropertyStorageObserver>::RemoveObserver(pObserver); }
+        virtual void        AMF_STD_CALL RemoveObserver(AMFPropertyStorageObserver* pObserver)
+        {
+            AMFLock lock(&m_Sync);
+            AMFObservableImpl<AMFPropertyStorageObserver>::RemoveObserver(pObserver);
+        }
         //-------------------------------------------------------------------------------------------------
     protected:
         //-------------------------------------------------------------------------------------------------
@@ -409,17 +420,18 @@ namespace amf
             {
                 return AMF_NOT_FOUND;
             }
-
-            if (found->second->value == validatedValue)
             {
-                return AMF_OK;
-            }
+                AMFLock lock(&m_Sync);
 
-            found->second->value = validatedValue;
+                if (found->second->value == validatedValue)
+                {
+                    return AMF_OK;
+                }
+                found->second->value = validatedValue;
+            }
             found->second->OnPropertyChanged();
             OnPropertyChanged(name);
             NotifyObservers<const wchar_t*>(&AMFPropertyStorageObserver::OnPropertyChanged, name);
-
             return AMF_OK;
         }
         //-------------------------------------------------------------------------------------------------
@@ -428,9 +440,11 @@ namespace amf
             AMF_RETURN_IF_INVALID_POINTER(name);
             AMF_RETURN_IF_INVALID_POINTER(pValue);
 
+
             PropertyInfoMap::const_iterator found = m_PropertiesInfo.find(name);
             if (found != m_PropertiesInfo.end())
             {
+                AMFLock lock(const_cast<AMFCriticalSection*>(&m_Sync));
                 AMFVariantCopy(pValue, &found->second->value);
                 return AMF_OK;
             }
@@ -440,6 +454,7 @@ namespace amf
             const AMFPropertyInfo* pParamInfo;
             if (GetPropertyInfo(name, &pParamInfo) == AMF_OK)
             {
+                AMFLock lock(const_cast<AMFCriticalSection*>(&m_Sync));
                 AMFVariantCopy(pValue, &pParamInfo->defaultValue);
                 return AMF_OK;
             }
@@ -479,6 +494,7 @@ namespace amf
         //-------------------------------------------------------------------------------------------------
         void  ResetDefaultValues()
         {
+            AMFLock lock(&m_Sync);
             // copy defaults to property storage
             for (PropertyInfoMap::iterator it = m_PropertiesInfo.begin(); it != m_PropertiesInfo.end(); ++it)
             {
@@ -501,7 +517,7 @@ namespace amf
 #define AMFPrimitivePropertyInfoMapBegin \
         { \
             amf::AMFPropertyInfoImpl* s_PropertiesInfo[] = \
-            { 
+            {
 
 #define AMFPrimitivePropertyInfoMapEnd \
             }; \
@@ -510,7 +526,7 @@ namespace amf
                 amf::AMFPropertyInfoImpl* pPropInfo = s_PropertiesInfo[i]; \
                 m_PropertiesInfo[pPropInfo->name].reset(pPropInfo); \
             } \
-    } 
+    }
 
 
     #define AMFPropertyInfoBool(_name, _desc, _defaultValue, _AccessType) \

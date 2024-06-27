@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -200,7 +200,7 @@ AMF_RESULT VideoPresenter::Init(amf_int32 width, amf_int32 height, AMFSurface* /
     AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_NOT_INITIALIZED, L"Init() - m_pSwapChain not initialized");
 
     AMFLock lock(&m_cs);
-    
+
     Reset();
 
     m_inputFrameSize.width = width;
@@ -221,7 +221,7 @@ AMF_RESULT VideoPresenter::Terminate()
     AMFLock lock(&m_cs);
 
     Reset();
-    SetProcessor(NULL, NULL);
+    SetProcessor(NULL, NULL, true);
     if (m_pSwapChain != nullptr)
     {
         m_pSwapChain->Terminate();
@@ -281,7 +281,7 @@ AMF_RESULT VideoPresenter::SubmitInput(AMFData* pData)
         }
 
         m_frameCount++;
-        
+
         AMFSurfacePtr pSurface(pData);
         lock.Unlock();
         const bool keep = WaitForPTS(pSurface->GetPts());
@@ -509,12 +509,12 @@ AMF_RESULT VideoPresenter::CheckForResize(amf_bool force)
     AMFRect  rectClient = GetClientRect(m_hwnd, m_hDisplay);
     const amf_int clientWidth = rectClient.Width();
     const amf_int clientHeight = rectClient.Height();
-    
+
     if (clientWidth == 0 || clientHeight == 0)
     {
         return AMF_OK;
     }
-    
+
     const AMFSize swapChainSize = GetSwapchainSize();
 
     if (clientWidth == swapChainSize.width && clientHeight == swapChainSize.height)
@@ -530,55 +530,55 @@ AMF_RESULT VideoPresenter::ResizeSwapChain()
 {
     AMF_RETURN_IF_FALSE(m_pSwapChain != nullptr, AMF_NOT_INITIALIZED, L"ResizeSwapChain() - SwapChain is not initialized");
 
-    AMFLock lock(&m_cs);
-
-    if (m_resizeSwapChain == false || m_resizing == true)
     {
-        return AMF_OK;
-    }
-    m_resizeSwapChain = false;
+        AMFLock lock(&m_cs);
 
-    m_resizing = true;
+        if (m_resizeSwapChain == false || m_resizing == true)
+        {
+            return AMF_OK;
+        }
+        m_resizeSwapChain = false;
 
-    if (m_pTrackSurfaces.find(m_pLastFrame.GetPtr()) != m_pTrackSurfaces.end())
-    {
-        m_pLastFrame = nullptr;
-    }
+        m_resizing = true;
 
-    while (CanResize() == false)
-    {
-        lock.Unlock();
-        amf_sleep(1);
-        lock.Lock();
-    }
+        if (m_pTrackSurfaces.find(m_pLastFrame.GetPtr()) != m_pTrackSurfaces.end())
+        {
+            m_pLastFrame = nullptr;
+        }
 
-    SetFullscreenState(m_fullscreen);
+        while (CanResize() == false)
+        {
+            lock.Unlock();
+            lock.Lock(1);
+        }
 
-    const AMFRect rect = GetClientRect(m_hwnd, m_hDisplay);
+        SetFullscreenState(m_fullscreen);
 
-    RenderViewSizeInfo newRenderView = {};
-    AMFSize dstSize = { rect.Width(), rect.Height() };
-    AMFRect srcRect = { 0, 0, m_inputFrameSize.width, m_inputFrameSize.height };
-    if (m_inputFrameSize.width == 0 && m_inputFrameSize.height == 0)
-    {
-        srcRect = { 0, 0, rect.Width(), rect.Height() };
-    }
-    AMF_RESULT res = GetRenderViewSizeInfo(srcRect, dstSize, rect, newRenderView);
-    if (res != AMF_OK)
-    {
-        AMFTraceWarning(AMF_FACILITY, L"ResizeSwapChain() - GetRenderViewSizeInfo() failed %s", AMFGetResultText(res));
-    }
+        const AMFRect rect = GetClientRect(m_hwnd, m_hDisplay);
 
-    res = ResizeRenderView(newRenderView);
-    if (res != AMF_OK)
-    {
-        AMFTraceWarning(AMF_FACILITY, L"ResizeSwapChain() - ResizeRenderView() failed %s", AMFGetResultText(res));
-    }
+        RenderViewSizeInfo newRenderView = {};
+        AMFSize dstSize = { rect.Width(), rect.Height() };
+        AMFRect srcRect = { 0, 0, m_inputFrameSize.width, m_inputFrameSize.height };
+        if (m_inputFrameSize.width == 0 && m_inputFrameSize.height == 0)
+        {
+            srcRect = { 0, 0, rect.Width(), rect.Height() };
+        }
+        AMF_RESULT res = GetRenderViewSizeInfo(srcRect, dstSize, rect, newRenderView);
+        if (res != AMF_OK)
+        {
+            AMFTraceWarning(AMF_FACILITY, L"ResizeSwapChain() - GetRenderViewSizeInfo() failed %s", AMFGetResultText(res));
+        }
 
-    res = m_pSwapChain->Resize(rect.Width(), rect.Height(), m_fullscreen);
-    m_resizing = false;
-    AMF_RETURN_IF_FAILED(res, L"ResizeSwapChain() - SwapChain Resize() failed");
+        res = ResizeRenderView(newRenderView);
+        if (res != AMF_OK)
+        {
+            AMFTraceWarning(AMF_FACILITY, L"ResizeSwapChain() - ResizeRenderView() failed %s", AMFGetResultText(res));
+        }
 
+        res = m_pSwapChain->Resize(rect.Width(), rect.Height(), m_fullscreen);
+        m_resizing = false;
+        AMF_RETURN_IF_FAILED(res, L"ResizeSwapChain() - SwapChain Resize() failed");
+    }//UpdateProcessor in not under lock
     UpdateProcessor();
 
     return AMF_OK;
@@ -680,7 +680,7 @@ AMF_RESULT VideoPresenter::GetRenderViewSizeInfo(const AMFRect& srcSurfaceRect, 
     renderView.srcSize = AMFConstructSize(srcSurfaceRect.Width(), srcSurfaceRect.Height());
     renderView.dstSize = dstSurfaceSize;
     renderView.rotation = GetOrientationRadians();
-    
+
     AMF_RESULT res = ScaleAndCenterRect(renderView.srcRect, dstSurfaceRect, renderView.rotation, renderView.dstRect);
     AMF_RETURN_IF_FAILED(res, L"GetRenderViewRects() - ScaleAndCenterRect() failed");
     AMF_RETURN_IF_FALSE(renderView.dstRect.Width() >= 0 && renderView.dstRect.Height() >= 0, AMF_UNEXPECTED,
@@ -689,11 +689,11 @@ AMF_RESULT VideoPresenter::GetRenderViewSizeInfo(const AMFRect& srcSurfaceRect, 
     res = TransformRect(renderView.dstRect, m_viewOffsetX, m_viewOffsetY, m_viewScale);
     AMF_RETURN_IF_FAILED(res, L"GetRenderViewRects() - TransformRect() failed");
 
-    renderView.pipDstRect = AMFConstructRect(0, 
+    renderView.pipDstRect = AMFConstructRect(0,
                                             (amf_int32)(renderView.dstSize.height - renderView.srcSize.height * PIP_SIZE_FACTOR),
                                             (amf_int32)(renderView.srcSize.width * PIP_SIZE_FACTOR),
                                             (amf_int32)renderView.dstSize.height);
-    
+
     renderView.pipSrcRect.left = (amf_int32)m_pipFocusPos.x + renderView.dstRect.left;
     renderView.pipSrcRect.top = (amf_int32)m_pipFocusPos.y + renderView.dstRect.top;
     renderView.pipSrcRect.right = renderView.pipSrcRect.left + renderView.pipDstRect.Width() / m_pipZoomFactor;
@@ -771,7 +771,7 @@ AMF_RESULT VideoPresenter::ResizeRenderView(const RenderViewSizeInfo& newRenderV
     return AMF_OK;
 }
 
-AMF_RESULT VideoPresenter::SetProcessor(AMFComponent *processor, AMFComponent* pHQScaler)
+AMF_RESULT VideoPresenter::SetProcessor(AMFComponent *processor, AMFComponent* pHQScaler, bool bAllocator)
 {
     AMFLock lock(&m_cs);
     if(m_pProcessor != nullptr)
@@ -787,7 +787,7 @@ AMF_RESULT VideoPresenter::SetProcessor(AMFComponent *processor, AMFComponent* p
     m_pProcessor = processor;
     m_pHQScaler = pHQScaler;
 
-    if (SupportAllocator())
+    if (SupportAllocator() && bAllocator)
     {
         AMFComponent* pAllocatorUser = (m_pHQScaler != nullptr) ? m_pHQScaler : m_pProcessor;
         if (pAllocatorUser != nullptr)
@@ -796,7 +796,7 @@ AMF_RESULT VideoPresenter::SetProcessor(AMFComponent *processor, AMFComponent* p
         }
     }
 
-    SetRenderToBackBuffer((m_pProcessor != NULL) && SupportAllocator());
+    SetRenderToBackBuffer((m_pProcessor != NULL) && SupportAllocator() && bAllocator);
 
     UpdateProcessor();
     return AMF_OK;
@@ -804,16 +804,53 @@ AMF_RESULT VideoPresenter::SetProcessor(AMFComponent *processor, AMFComponent* p
 
 void VideoPresenter::UpdateProcessor()
 {
-    AMFLock lock(&m_cs);
+    SwapChain::ColorSpace colorSpace = {};
+    AMFHDRMetadata hdrMetaData = {};
+    amf::AMFComponentPtr     pProcessor;
+    amf::AMFComponentPtr     pHQScaler;
+    bool                    bSwapChain = m_pSwapChain != nullptr;
+    AMFBufferPtr             pHDRMetaDataBuffer;
+    AMFSize outputSize = {};
+    AMFRect outputRect = {};
+    AMFRect rectClient = {};
 
-    if (m_pProcessor != nullptr && m_pHQScaler == nullptr)
     {
-        AMFSize outputSize = {};
-        AMFRect outputRect = {};
+        AMFLock lock(&m_cs);
 
+        if (m_pSwapChain != nullptr)
+        {
+            // check and set color space and HDR support
+            AMF_RESULT res = m_pSwapChain->GetColorSpace(colorSpace);
+            if (res != AMF_OK)
+            {
+                AMFTraceError(AMF_FACILITY, L"UpdateProcessor() - GetColorSpace() failed");
+                return;
+            }
+            res = m_pSwapChain->GetOutputHDRMetaData(hdrMetaData);
+            if (res != AMF_OK)
+            {
+                AMFTraceError(AMF_FACILITY, L"UpdateProcessor() - GetOutputHDRMetaData() failed");
+                return;
+            }
+            if (hdrMetaData.maxMasteringLuminance != 0)
+            {
+                res = m_pContext->AllocBuffer(AMF_MEMORY_HOST, sizeof(AMFHDRMetadata), &pHDRMetaDataBuffer);
+                if (res != AMF_OK)
+                {
+                    AMFTraceError(AMF_FACILITY, L"UpdateProcessor() - AllocBuffer() failed to allocate HDR metadata buffer");
+                    return;
+                }
+
+                AMFHDRMetadata* pData = (AMFHDRMetadata*)pHDRMetaDataBuffer->GetNative();
+                memcpy(pData, &hdrMetaData, sizeof(AMFHDRMetadata));
+            }
+        }
+        pProcessor = m_pProcessor;
+        pHQScaler = m_pHQScaler;
+
+        rectClient = GetClientRect(m_hwnd, m_hDisplay);
         if (m_renderToBackBuffer == true)
         {
-            AMFRect rectClient = GetClientRect(m_hwnd, m_hDisplay);
             ScaleAndCenterRect(SizeToRect(m_inputFrameSize), rectClient, 0, outputRect);
             outputSize = RectToSize(rectClient);
         }
@@ -823,68 +860,39 @@ void VideoPresenter::UpdateProcessor()
             outputRect = SizeToRect(outputSize);
         }
 
+    }
+    if (pProcessor != nullptr && pHQScaler == nullptr)
+    {
+
         // what we want to do here is check for the properties if they exist
         // as the HQ scaler has different property names than CSC
         const AMFPropertyInfo* pParamInfo = nullptr;
-        if ((m_pProcessor->GetPropertyInfo(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, &pParamInfo) == AMF_OK) && pParamInfo)
+        if ((pProcessor->GetPropertyInfo(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, &pParamInfo) == AMF_OK) && pParamInfo)
         {
-            m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, outputSize);
-            m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_RECT, outputRect);
+            pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, outputSize);
+            pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_RECT, outputRect);
         }
     }
 
-    if (m_pHQScaler != NULL)
+    if (pHQScaler != NULL)
     {
         const AMFPropertyInfo* pParamInfo = nullptr;
-        if ((m_pHQScaler->GetPropertyInfo(AMF_HQ_SCALER_OUTPUT_SIZE, &pParamInfo) == AMF_OK) && pParamInfo)
+        if ((pHQScaler->GetPropertyInfo(AMF_HQ_SCALER_OUTPUT_SIZE, &pParamInfo) == AMF_OK) && pParamInfo)
         {
-            AMFRect rectClient = GetClientRect(m_hwnd, m_hDisplay);
-            m_pHQScaler->SetProperty(AMF_HQ_SCALER_OUTPUT_SIZE, ::AMFConstructSize(rectClient.Width(), rectClient.Height()));
+
+            pHQScaler->SetProperty(AMF_HQ_SCALER_OUTPUT_SIZE, ::AMFConstructSize(rectClient.Width(), rectClient.Height()));
         }
     }
 
-    if (m_pProcessor == nullptr || m_pSwapChain == nullptr)
+    if (pProcessor == nullptr || bSwapChain == false)
     {
-        return;
-    }
-
-    // check and set color space and HDR support
-    SwapChain::ColorSpace colorSpace;
-    AMF_RESULT res = m_pSwapChain->GetColorSpace(colorSpace);
-    if (res != AMF_OK)
-    {
-        AMFTraceError(AMF_FACILITY, L"UpdateProcessor() - GetColorSpace() failed");
         return;
     }
 
     m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_TRANSFER_CHARACTERISTIC, colorSpace.transfer);
     m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_COLOR_PRIMARIES, colorSpace.primaries);
     m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_COLOR_RANGE, colorSpace.range);
-
-
-    AMFHDRMetadata hdrMetaData = {};
-    res = m_pSwapChain->GetOutputHDRMetaData(hdrMetaData);
-    if (res != AMF_OK)
-    {
-        AMFTraceError(AMF_FACILITY, L"UpdateProcessor() - GetOutputHDRMetaData() failed");
-        return;
-    }
-
-    if (hdrMetaData.maxMasteringLuminance != 0)
-    {
-        AMFBufferPtr pHDRMetaDataBuffer;
-        res = m_pContext->AllocBuffer(AMF_MEMORY_HOST, sizeof(AMFHDRMetadata), &pHDRMetaDataBuffer);
-        if (res != AMF_OK)
-        {
-            AMFTraceError(AMF_FACILITY, L"UpdateProcessor() - AllocBuffer() failed to allocate HDR metadata buffer");
-            return;
-        }
-
-        AMFHDRMetadata* pData = (AMFHDRMetadata*)pHDRMetaDataBuffer->GetNative();
-        memcpy(pData, &hdrMetaData, sizeof(AMFHDRMetadata));
-
-        m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_HDR_METADATA, pHDRMetaDataBuffer);
-    }
+    m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_HDR_METADATA, pHDRMetaDataBuffer);
 }
 
 AMF_RESULT AMF_STD_CALL VideoPresenter::AllocSurface(AMF_MEMORY_TYPE /*type*/, AMF_SURFACE_FORMAT /*format*/, amf_int32 /*width*/,
@@ -937,8 +945,7 @@ AMF_RESULT AMF_STD_CALL VideoPresenter::AllocSurface(AMF_MEMORY_TYPE /*type*/, A
     while (m_resizing)
     {
         lock.Unlock();
-        amf_sleep(1);
-        lock.Lock();
+        lock.Lock(1);
     }
 
     AMF_RESULT res = m_pSwapChain->AcquireNextBackBuffer(ppSurface);
@@ -1167,8 +1174,8 @@ AMF_RESULT TransformRect(AMFRect& rect, amf_int offsetX, amf_int offsetY, amf_fl
 
 AMFRect GetPlaneRect(AMFPlane* pPlane)
 {
-    return pPlane == nullptr ? 
-        AMFConstructRect(0, 0, 0, 0) : 
+    return pPlane == nullptr ?
+        AMFConstructRect(0, 0, 0, 0) :
         AMFConstructRect(pPlane->GetOffsetX(),                          // Left
                         pPlane->GetOffsetY(),                           // Top
                         pPlane->GetOffsetX() + pPlane->GetWidth(),      // Right
@@ -1246,10 +1253,10 @@ void Rotate(Transformation2D& transformation, amf_float radians)
     Transformation2D result;
     result.scaleLinear.x = transformation.scaleLinear.x * cosVal + transformation.scaleOrtho.x * sinVal;
     result.scaleOrtho.x = transformation.scaleOrtho.x * cosVal - transformation.scaleLinear.x * sinVal;
-    
+
     result.scaleLinear.y = transformation.scaleLinear.y * cosVal - transformation.scaleOrtho.y * sinVal;
     result.scaleOrtho.y = transformation.scaleOrtho.y * cosVal + transformation.scaleLinear.y * sinVal;
-    
+
     result.translation.x = transformation.translation.x * cosVal + transformation.translation.y * sinVal;
     result.translation.y = transformation.translation.y * cosVal - transformation.translation.x * sinVal;
     transformation = result;
@@ -1261,10 +1268,10 @@ Transformation2D Combine(const Transformation2D& left, const Transformation2D& r
     // Applies left to right
     result.scaleLinear.x = left.scaleLinear.x * right.scaleLinear.x + left.scaleOrtho.y  * right.scaleOrtho.x;
     result.scaleOrtho.x =  left.scaleOrtho.x  * right.scaleLinear.x + left.scaleLinear.y * right.scaleOrtho.x;
-    
+
     result.scaleLinear.y = left.scaleOrtho.x * right.scaleOrtho.y + left.scaleLinear.y * right.scaleLinear.y;
     result.scaleOrtho.y = left.scaleLinear.x * right.scaleOrtho.y + left.scaleOrtho.y * right.scaleLinear.y;
-    
+
     result.translation.x = left.scaleLinear.x * right.translation.x + left.scaleOrtho.y * right.translation.y + left.translation.x;
     result.translation.y = left.scaleOrtho.x * right.translation.x + left.scaleLinear.y * right.translation.y + left.translation.y;
 
@@ -1282,7 +1289,7 @@ Transformation2D Inverse(const Transformation2D& transformation)
     //
     // Using the inverse determinant formula for 2x2 matrix on the left
 
-    const amf_float determinant = transformation.scaleLinear.x * transformation.scaleLinear.y - 
+    const amf_float determinant = transformation.scaleLinear.x * transformation.scaleLinear.y -
                               transformation.scaleOrtho.x * transformation.scaleOrtho.y;
 
     // Adjugate divided by determinant

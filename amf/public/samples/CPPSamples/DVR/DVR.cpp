@@ -58,6 +58,7 @@
 #include "public/samples/CPPSamples/common/ParametersStorage.h"
 #include "public/samples/CPPSamples/common/DisplayDvrPipeline.h"
 #include "public/samples/CPPSamples/common/CmdLineParser.h"
+#include "public/samples/CPPSamples/common/CAmfInit.h"
 
 
 
@@ -138,34 +139,6 @@ public:
     ~CComInit() {  CoUninitialize();  };
 };
 //-------------------------------------------------------------------------------------------------
-class CAmfInit
-{
-public:
-    CAmfInit()  {};
-    ~CAmfInit() {  g_AMFFactory.Terminate();  };
-
-    AMF_RESULT Init()
-    {
-        AMF_RESULT res = g_AMFFactory.Init();
-        if (res != AMF_OK)
-            return res;
-
-#ifdef _DEBUG
-        g_AMFFactory.GetDebug()->AssertsEnable(true);
-#else
-        g_AMFFactory.GetDebug()->AssertsEnable(false);
-//        g_AMFFactory.GetTrace()->SetGlobalLevel(AMF_TRACE_WARNING);
-#endif
-
-        g_AMFFactory.GetTrace()->SetGlobalLevel(AMF_TRACE_INFO);
-        g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_DEBUG_OUTPUT, AMF_TRACE_INFO);
-        g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_CONSOLE, AMF_TRACE_INFO);
-
-        return AMF_OK;
-    }
-};
-//-------------------------------------------------------------------------------------------------
-
 
 
 
@@ -200,10 +173,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     DisplayDvrPipeline pipeline;
     s_pPipeline = &pipeline;
 
-    std::wstring codec = L"AMFVideoEncoderVCE_AVC";
     s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_CODEC, AMFVideoEncoderVCE_AVC);
     RegisterEncoderParamsAVC(s_pPipeline);
 
+    s_pPipeline->SetParamDescription(DisplayDvrPipeline::PARAM_NAME_ENABLE_PRE_ANALYSIS, ParamEncoderStatic, L"Enable PA (true, false default =  false)", ParamConverterBoolean);
 
     s_pPipeline->SetParam(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED);
     s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_ADAPTERID, kDefaultGPUIdx);
@@ -651,6 +624,18 @@ INT_PTR CALLBACK DialogProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM /*lPa
             {
                 s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_CAPTURE_COMPONENT, L"DD");
             }
+            UpdateMenuItems();
+        }
+        else if (wmId == ID_PRE_ANALYSIS)
+        {
+            bool enablePA = false;
+            s_pPipeline->GetParam(DisplayDvrPipeline::PARAM_NAME_ENABLE_PRE_ANALYSIS, enablePA);
+            enablePA = !enablePA;
+            s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_ENABLE_PRE_ANALYSIS, enablePA);
+
+            HMENU  hMenu = GetMenu(g_hDlg);
+            CheckMenuItem(hMenu, ID_PRE_ANALYSIS, MF_BYCOMMAND | (enablePA ? MF_CHECKED : MF_UNCHECKED));
+
             UpdateMenuItems();
         }
         break;

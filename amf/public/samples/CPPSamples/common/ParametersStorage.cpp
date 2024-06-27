@@ -780,9 +780,9 @@ AMF_RESULT ParamConverterPAQMode(const std::wstring& value, amf::AMFVariant& val
     return AMF_OK;
 }
 
-AMF_RESULT ParamConverterFRCAlgorithm(const std::wstring& value, amf::AMFVariant& valueOut)
+AMF_RESULT ParamConverterFRCEngine(const std::wstring& value, amf::AMFVariant& valueOut)
 {
-    amf_int64    paramValue = -1;
+    AMF_FRC_ENGINE    paramValue;
     std::wstring uppValue = toUpper(value);
     if ((uppValue == L"OFF") || (uppValue == L"0"))
     {
@@ -796,9 +796,95 @@ AMF_RESULT ParamConverterFRCAlgorithm(const std::wstring& value, amf::AMFVariant
     {
         paramValue = FRC_ENGINE_OPENCL;
     }
+    else if ((uppValue == L"DX11") || (uppValue == L"3"))
+    {
+        paramValue = FRC_ENGINE_DX11;
+    }
+    else {
+        LOG_ERROR(L"AMF_FRC_ENGINE hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
     valueOut = amf_int64(paramValue);
     return AMF_OK;
 }
+
+AMF_RESULT ParamConverterFRCMode(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_FRC_MODE_TYPE    paramValue;
+    std::wstring uppValue = toUpper(value);
+    if ((uppValue == L"OFF") || (uppValue == L"0"))
+    {
+        paramValue = FRC_OFF;
+    }
+    else if ((uppValue == L"ON") || (uppValue == L"1"))
+    {
+        paramValue = FRC_ON;
+    }
+    else if ((uppValue == L"INTERPOLATED") || (uppValue == L"2"))
+    {
+        paramValue = FRC_ONLY_INTERPOLATED;
+    }
+    else if ((uppValue == L"PRESENT") || (uppValue == L"3"))
+    {
+        paramValue = FRC_x2_PRESENT;
+    }
+    else {
+        LOG_ERROR(L"AMF_FRC_MODE_TYPE hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+
+AMF_RESULT ParamConverterFRCPerformance(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_FRC_MV_SEARCH_MODE_TYPE    paramValue;
+    std::wstring uppValue = toUpper(value);
+    if ((uppValue == L"NATIVE") || (uppValue == L"0"))
+    {
+        paramValue = FRC_MV_SEARCH_NATIVE;
+    }
+    else if ((uppValue == L"PERFORMANCE") || (uppValue == L"1"))
+    {
+        paramValue = FRC_MV_SEARCH_PERFORMANCE;
+    }
+    else {
+        LOG_ERROR(L"AMF_FRC_MV_SEARCH_MODE_TYPE hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+AMF_RESULT ParamConverterFRCProfile(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_FRC_PROFILE_TYPE    paramValue;
+    std::wstring uppValue = toUpper(value);
+    if ((uppValue == L"LOW") || (uppValue == L"0"))
+    {
+        paramValue = FRC_PROFILE_LOW;
+    }
+    else if ((uppValue == L"HIGH") || (uppValue == L"1"))
+    {
+        paramValue = FRC_PROFILE_HIGH;
+    }
+    else if ((uppValue == L"SUPER") || (uppValue == L"2"))
+    {
+        paramValue = FRC_PROFILE_SUPER;
+    }
+    else {
+        LOG_ERROR(L"AMF_FRC_PROFILE_TYPE hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+
+
+
+
 
 AMF_RESULT ParamConverterFRCSnapshotMode(const std::wstring& value, amf::AMFVariant& valueOut)
 {

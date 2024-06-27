@@ -598,8 +598,9 @@ This command encodes `400` frames through D3D renderer and creates an output fil
 | LTR_MODE                               | amf_int64 |
 | MAX_NUM_REFRAMES                       | amf_int64 |
 | ENCODING_LATENCY_MODE                  | amf_int64 |
+| FRAMESIZE                              | AMFSize   |
 | ALIGNMENT_MODE                         | amf_int64 |
-| PRE_ANALYSIS                           | amf_bool  |
+| PRE_ANALYSIS_ENABLE                    | amf_bool  |
 | MAX_NUM_TEMPORAL_LAYERS                | amf_int64 |
 | ENABLE_SMART_ACCESS_VIDEO              | amf_bool  |
 
@@ -746,6 +747,21 @@ Choose different mode to balance encoder latency with power consumption.
 ---
 
 **Name:**
+`AMF_VIDEO_ENCODER_AV1_FRAMESIZE`
+
+**Values:**
+Width: `256` – `8192`
+Height: `128` – `4352`
+
+**Default Value:**
+`0,0`
+
+**Description:**
+Frame width/Height in pixels, maximum value is hardware-specific, should be queried through `AMFCaps`.
+
+---
+
+**Name:**
 `AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE`
 
 **Values:**
@@ -760,7 +776,7 @@ AV1 alignment Mode.
 ---
 
 **Name:**
-`AMF_VIDEO_ENCODER_AV1_PRE_ANALYSIS`
+`AMF_VIDEO_ENCODER_AV1_PRE_ANALYSIS_ENABLE`
 
 **Values:**
 `true`, `false`
@@ -806,31 +822,6 @@ When set to `true`, enables the SmartAccess Video feature, which optimally alloc
 
 ---
 
-| Name (Prefix “AMF_VIDEO_ENCODER_AV1_”) | Type    |
-| :------------------------------------- | :------ |
-| FRAMESIZE                              | AMFSize |
-
-<p align="center">
-Table 5. Encoder resolution parameters
-</p>
-
----
-
-**Name:**
-`AMF_VIDEO_ENCODER_AV1_FRAMESIZE`
-
-**Values:**
-Width: `256` – `8192`
-Height: `128` – `4352`
-
-**Default Value:**
-`0,0`
-
-**Description:**
-Frame width/Height in pixels, maximum value is hardware-specific, should be queried through `AMFCaps`.
-
----
-
 | Name (Prefix “AMF_VIDEO_ENCODER_AV1_”) | Type      |
 | :------------------------------------- | :-------- |
 | TARGET_BITRATE                         | amf_int64 |
@@ -854,7 +845,7 @@ Frame width/Height in pixels, maximum value is hardware-specific, should be quer
 | HIGH_MOTION_QUALITY_BOOST              | amf_bool  |
 
 <p align="center">
-Table 6. Encoder rate-control parameters
+Table 5. Encoder rate-control parameters
 </p>
 
 ---
@@ -1198,7 +1189,7 @@ Enable high motion quality boost mode to pre-analyze the motion of the video and
 | INTRAREFRESH_STRIPES                   | amf_int64 |
 
 <p align="center">
-Table 7. Encoder picture-control parameters
+Table 6. Encoder picture-control parameters
 </p>
 
 ---
@@ -1329,7 +1320,7 @@ Valid only when intra refresh is enabled.
 | OUTPUT_MODE                            | amf_int64 |
 
 <p align="center">
-Table 8. Encoder miscellaneous parameters
+Table 7. Encoder miscellaneous parameters
 </p>
 
 ---
@@ -1428,7 +1419,7 @@ Defines encoder output mode.
 | CDF_FRAME_END_UPDATE_MODE              | amd_int64 |
 
 <p align="center">
-Table 9. Encoder configuration
+Table 8. Encoder configuration
 </p>
 
 ---
@@ -1584,7 +1575,7 @@ CDF frame end update mode.
 | INPUT_HDR_METADATA                     | AMFBufferPtr |
 
 <p align="center">
-Table 10. Encoder color conversion parameters
+Table 9. Encoder color conversion parameters
 </p>
 
 ---
@@ -1703,7 +1694,7 @@ Buffer to retrieve coded sequence header.
 | NUM_TEMPORAL_LAYERS                    | amf_int64 |
 
 <p align="center">
-Table 11. Encoder SVC parameters
+Table 10. Encoder SVC parameters
 </p>
 
 **Name:**
@@ -1729,7 +1720,7 @@ Remarks:
 | TL<TL_Num>.QL0.<Parameter_name>        |      |
 
 <p align="center">
-Table 12. Encoder SVC per-layer parameters
+Table 11. Encoder SVC per-layer parameters
 </p>
 
 ---
@@ -1782,7 +1773,7 @@ Rate-control parameters supported:
 | BLOCK_Q_INDEX_FEEDBACK                 | amf_bool           |
 
 <p align="center">
-Table 13. Frame per-submission parameters
+Table 12. Frame per-submission parameters
 </p>
 
 ---
@@ -1930,7 +1921,7 @@ Signal encoder to collect and feedback block level QIndex values.
 | RECONSTRUCTED_PICTURE                  | AMFSurface |
 
 <p align="center">
-Table 14. Encoded data parameters
+Table 13. Encoded data parameters
 </p>
 
 ---
@@ -2022,7 +2013,7 @@ Returns reconstructed picture as an `AMFSurface` attached to the output buffer a
 | SUPPORT_TILE_OUTPUT                            | amf_bool |
 
 <p align="center">
-Table 15. Encoder capabilities exposed in AMFCaps interface
+Table 14. Encoder capabilities exposed in AMFCaps interface
 </p>
 
 ---
@@ -2184,7 +2175,7 @@ If tile output is supported.
 | STATISTIC_VARIANCE                              | amf_int64 |
 
 <p align="center">
-Table 16. Encoder statistics feedback
+Table 15. Encoder statistics feedback
 </p>
 
 ---
@@ -2370,7 +2361,7 @@ Frame level variance for full encoding.
 | BLOCK_Q_INDEX_MAP | AMFSurface |
 
 <p align="center">
-Table 17. Encoder block level feedback
+Table 16. Encoder block level feedback
 </p>
 
 ---
@@ -2397,7 +2388,7 @@ Table 17. Encoder block level feedback
 | STATISTIC_SSIM_ALL                              | amf_double |
 
 <p align="center">
-Table 18. Encoder statistics feedback
+Table 17. Encoder statistics feedback
 </p>
 
 ---

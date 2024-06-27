@@ -44,7 +44,7 @@ public:
 
     virtual                             ~VideoPresenterDX9();
 
-    virtual amf_bool                    SupportAllocator() const { return false; }
+    virtual amf_bool                    SupportAllocator() const { return true; }
     virtual amf::AMF_MEMORY_TYPE        GetMemoryType() const { return amf::AMF_MEMORY_DX9; }
 
     virtual AMF_RESULT                  Init(amf_int32 width, amf_int32 height, amf::AMFSurface* pSurface) override;

@@ -43,6 +43,7 @@
 #include "public/include/components/VideoEncoderAV1.h"
 #include "public/include/components/VideoConverter.h"
 #include "public/include/core/Context.h"
+#include "public/include/core/Surface.h"
 #include "public/include/core/Debug.h"
 #include "../common/ParametersStorage.h"
 #include "../common/CmdLineParser.h"
@@ -397,8 +398,26 @@ bool QueryEncoderForCodecAV1(const wchar_t* componentID, amf::AMFContext* pConte
                 std::wcout << L"\t\tInstance:" << i << std::endl;
             }
 
-            amf::AMF_ACCELERATION_TYPE accelType = encoderCaps->GetAccelerationType();
-            std::wcout << L"\t\tAcceleration Type:" << AccelTypeToString(accelType) << std::endl;
+            amf_int32 minWidth = 0, maxWidth = 0;
+            amf_int32 minHeight = 0, maxHeight = 0;
+            amf::AMFIOCapsPtr inputCaps = nullptr;
+            encoderCaps->GetInputCaps(&inputCaps);
+            if (inputCaps)
+            {
+                inputCaps->GetWidthRange(&minWidth, &maxWidth);
+                inputCaps->GetHeightRange(&minHeight, &maxHeight);
+            }
+            if (pEncoder->Init(amf::AMF_SURFACE_NV12, minWidth, minHeight) == AMF_OK) {
+                amf::AMF_ACCELERATION_TYPE accelType = encoderCaps->GetAccelerationType();
+                std::wcout << L"\t\tAcceleration Type:" << AccelTypeToString(accelType) << std::endl;
+            }
+            else
+            {
+                std::wcout << L"\t\t" << AccelTypeToString(amf::AMF_ACCEL_NOT_SUPPORTED) << std::endl;
+                pEncoder->Terminate();
+                continue;
+            }
+            pEncoder->Terminate();
 
             amf_uint32 maxProfile = 0;
             encoderCaps->GetProperty(AMF_VIDEO_ENCODER_AV1_CAP_MAX_PROFILE, &maxProfile);
@@ -409,7 +428,6 @@ bool QueryEncoderForCodecAV1(const wchar_t* componentID, amf::AMFContext* pConte
             std::wcout << L"\t\tmaximum level:" << maxLevel << std::endl;
 
             std::wcout << L"\t\tEncoder input:\n";
-            amf::AMFIOCapsPtr inputCaps;
             if (encoderCaps->GetInputCaps(&inputCaps) == AMF_OK)
             {
                 result = QueryIOCaps(inputCaps);

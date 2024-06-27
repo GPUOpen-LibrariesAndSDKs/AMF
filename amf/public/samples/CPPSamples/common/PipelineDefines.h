@@ -76,6 +76,7 @@
 #define PARAM_NAME_SWENCODE                L"ENABLE_SWENCODE"
 
 #define PARAM_NAME_TRACE_LEVEL             L"TRACE_LEVEL"
+#define PARAM_NAME_TRACE_TO_FILE           L"TRACE_TO_FILE"
 #define PARAM_NAME_DECODER_INSTANCE        L"DECODER_INSTANCE"
 
 #endif // AMF_PipelineDefines_h

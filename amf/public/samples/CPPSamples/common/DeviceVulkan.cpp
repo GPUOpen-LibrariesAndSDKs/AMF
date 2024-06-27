@@ -247,24 +247,34 @@ AMF_RESULT DeviceVulkan::CreateInstance()
     return AMF_OK;
 }
 
-AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::vector<const char*> &deviceExtensions)
+AMF_RESULT DeviceVulkan::GetPhysicalDevices(std::vector<VkPhysicalDevice>& devices)
 {
     VkResult vkres = VK_SUCCESS;
     uint32_t physicalDeviceCount = 0;
-
     vkres = GetVulkan()->vkEnumeratePhysicalDevices(m_VulkanDev.hInstance, &physicalDeviceCount, nullptr);
-    AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS, AMF_FAIL, L"CreateDeviceAndQueues() failed to vkEnumeratePhysicalDevices, Error=%d", (int)vkres);
+    AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS, AMF_FAIL, L"GetPhysicalDevices() failed to vkEnumeratePhysicalDevices, Error=%d", (int)vkres);
 
-    std::vector<VkPhysicalDevice> physicalDevices{ physicalDeviceCount };
+    devices.clear();
+    devices.resize(physicalDeviceCount);
 
-    vkres = GetVulkan()->vkEnumeratePhysicalDevices(m_VulkanDev.hInstance, &physicalDeviceCount,physicalDevices.data());
-    AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS, AMF_FAIL, L"CreateDeviceAndQueues() failed to vkEnumeratePhysicalDevices, Error=%d", (int)vkres);
+    vkres = GetVulkan()->vkEnumeratePhysicalDevices(m_VulkanDev.hInstance, &physicalDeviceCount, devices.data());
+    AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS, AMF_FAIL, L"GetPhysicalDevices() failed to vkEnumeratePhysicalDevices, Error=%d", (int)vkres);
+
+    return AMF_OK;
+}
+
+AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::vector<const char*> &deviceExtensions)
+{
+    VkResult vkres = VK_SUCCESS;
+
+    std::vector<VkPhysicalDevice> physicalDevices;
+    AMF_RETURN_IF_FAILED(GetPhysicalDevices(physicalDevices));
 
     if(adapterID < 0)
     {
         adapterID = 0;
     }
-    if(adapterID >= physicalDeviceCount)
+    if(adapterID >= physicalDevices.size())
     {
         AMFTraceInfo(AMF_FACILITY, L"Invalid Adapter ID=%d", adapterID);
         return AMF_NO_DEVICE;
@@ -280,7 +290,9 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
 
     AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS, AMF_FAIL, L"CreateDeviceAndQueues() queueFamilyPropertyCount = 0");
 
-    std::vector<VkQueueFamilyProperties2> queueFamilyProperties{ queueFamilyPropertyCount };
+    std::vector<VkQueueFamilyProperties2> queueFamilyProperties;
+    
+    queueFamilyProperties.resize(queueFamilyPropertyCount, {VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2});
 
     GetVulkan()->vkGetPhysicalDeviceQueueFamilyProperties2(m_VulkanDev.hPhysicalDevice, &queueFamilyPropertyCount, queueFamilyProperties.data());
 
@@ -369,37 +381,33 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
 
     deviceExtensions.insert(deviceExtensions.begin(), "VK_KHR_swapchain");
 
+    std::vector<const char*>  SupportDeviceExtensions;
+    uint32_t extensionCount = 0;
 
-    deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
-    deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t> (deviceExtensions.size());
+    vkres = GetVulkan()->vkEnumerateDeviceExtensionProperties(m_VulkanDev.hPhysicalDevice, nullptr, &extensionCount, NULL);
+    AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS, AMF_FAIL, L"vkEnumerateDeviceExtensionProperties() failed, err = %d", vkres);
+    std::vector<VkExtensionProperties> deviceExtensionProperties(extensionCount);
+    vkres = GetVulkan()->vkEnumerateDeviceExtensionProperties(m_VulkanDev.hPhysicalDevice, nullptr, &extensionCount, deviceExtensionProperties.data());
+    AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS, AMF_FAIL, L"vkEnumerateDeviceExtensionProperties() failed, err = %d", vkres);
+
+    // convert to hash, could use string_view if available
+    std::unordered_set<std::string> deviceExtensionLookup;
+    for (std::vector<VkExtensionProperties>::iterator it = deviceExtensionProperties.begin(); it != deviceExtensionProperties.end(); it++)
+    {
+        deviceExtensionLookup.insert(it->extensionName);
+    }
+    for (std::vector<const char*>::iterator it = deviceExtensions.begin(); it != deviceExtensions.end(); it++)
+    {
+        if (deviceExtensionLookup.find(*it) != deviceExtensionLookup.end())
+        {
+            SupportDeviceExtensions.push_back(*it);
+        }
+    }
+
+    deviceCreateInfo.ppEnabledExtensionNames = SupportDeviceExtensions.data();
+    deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t> (SupportDeviceExtensions.size());
 
     vkres = GetVulkan()->vkCreateDevice(m_VulkanDev.hPhysicalDevice, &deviceCreateInfo, nullptr, &m_VulkanDev.hDevice);
-    if (vkres == VK_ERROR_EXTENSION_NOT_PRESENT)
-    {
-        // if we fail because the extension is not supported, it could be that
-        // we are on a Navi24, which doesn't support encoder, so try to remove
-        // all encoders from the list and try to create the device again...
-        std::vector<const char*>  cleanDeviceExtensions;
-        for (unsigned int i = 0; i < deviceExtensions.size(); i++)
-        {
-            const char* pDevExtension = deviceExtensions[i];
-            if (pDevExtension != nullptr &&
-                (std::string(pDevExtension) !="VK_AMD_video_encode" && std::string(pDevExtension) != VK_AMD_DEVICE_COHERENT_MEMORY_EXTENSION_NAME))
-            {
-                cleanDeviceExtensions.push_back(pDevExtension);
-            }
-        }
-
-        // swap the information with the cleaned up extensions
-        deviceExtensions.swap(cleanDeviceExtensions);
-
-        // update creation information
-        deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
-        deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t> (deviceExtensions.size());
-
-        // try create the device again.
-        vkres = GetVulkan()->vkCreateDevice(m_VulkanDev.hPhysicalDevice, &deviceCreateInfo, nullptr, &m_VulkanDev.hDevice);
-    }
 
     AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS, AMF_FAIL, L"CreateDeviceAndQueues() vkCreateDevice() failed, Error=%d", (int)vkres);
     AMF_RETURN_IF_FALSE(m_VulkanDev.hDevice != nullptr, AMF_FAIL, L"CreateDeviceAndQueues() vkCreateDevice() returned nullptr");
@@ -413,4 +421,47 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
 VulkanImportTable * DeviceVulkan::GetVulkan()
 {
 	return &m_ImportTable;
+}
+
+AMF_RESULT DeviceVulkan::GetAdapterList(amf::AMFContext *pContext, std::vector<VulkanPhysicalDeviceInfo>& adapters)
+{
+    AMF_RESULT res = AMF_OK;
+    DeviceVulkan device;
+    device.GetVulkan()->LoadFunctionsTable();
+
+    amf::AMFContext1Ptr pContext1(pContext);
+    amf_size nCount = 0;
+    pContext1->GetVulkanDeviceExtensions(&nCount, NULL);
+    std::vector<const char*> deviceExtensions;
+    if(nCount > 0)
+    {
+        deviceExtensions.resize(nCount);
+        pContext1->GetVulkanDeviceExtensions(&nCount, deviceExtensions.data());
+    }
+
+    res = device.CreateInstance();
+    AMF_RETURN_IF_FAILED(res, L"CreateInstance() failed");
+
+    res = device.GetVulkan()->LoadInstanceFunctionsTableExt(device.m_VulkanDev.hInstance, false);
+    AMF_RETURN_IF_FAILED(res, L"LoadInstanceFunctionsTableExt() failed - check if the proper Vulkan SDK is installed");
+
+    std::vector<VkPhysicalDevice> physicalDevices;
+    AMF_RETURN_IF_FAILED(device.GetPhysicalDevices(physicalDevices));
+
+    for (const VkPhysicalDevice& physDevice : physicalDevices)
+    {
+        VulkanPhysicalDeviceInfo info = {};
+
+        info.props.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+
+#if defined(__linux__)
+        info.pciBusInfo.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT;
+        info.props.pNext = &info.pciBusInfo;
+#endif
+
+        device.GetVulkan()->vkGetPhysicalDeviceProperties2KHR(physDevice, &info.props);
+        adapters.push_back(info);
+    }
+
+    return res;
 }

@@ -113,7 +113,8 @@ enum AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE_ENUM
 {
     AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE_NONE = 0,
     AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE_GOP_ALIGNED,
-    AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE_IDR_ALIGNED
+    AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE_IDR_ALIGNED,
+    AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE_SUPPRESSED
 };
 
 enum AMF_VIDEO_ENCODER_HEVC_PICTURE_TRANSFER_MODE_ENUM
@@ -183,7 +184,7 @@ enum AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_HEVC_HIGH_MOTION_QUALITY_BOOST_ENABLE     L"HevcHighMotionQualityBoostEnable"// bool; default = depends on USAGE; Enable High motion quality boost mode
 
 #define AMF_VIDEO_ENCODER_HEVC_PREENCODE_ENABLE                     L"HevcRateControlPreAnalysisEnable"  // bool; default =  depends on USAGE; enables pre-encode assisted rate control
-#define AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_PREANALYSIS_ENABLE      L"HevcRateControlPreAnalysisEnable"  // bool; default =  depends on USAGE; enables pre-encode assisted rate control. Deprecated, please use AMF_VIDEO_ENCODER_PREENCODE_ENABLE instead.
+#define AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_PREANALYSIS_ENABLE      L"HevcRateControlPreAnalysisEnable"  // bool; default =  depends on USAGE; enables pre-encode assisted rate control. Deprecated, please use AMF_VIDEO_ENCODER_HEVC_PREENCODE_ENABLE instead.
 #ifdef _MSC_VER
     #ifndef __clang__
         #pragma deprecated("AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_PREANALYSIS_ENABLE")
@@ -318,8 +319,8 @@ enum AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_HEVC_CAP_ROI                              L"HevcROIMap"                   // amf_bool - ROI map support is available for HEVC UVE encoder, n/a for the other encoders
 #define AMF_VIDEO_ENCODER_HEVC_CAP_MAX_THROUGHPUT                   L"HevcMaxThroughput"            // amf_int64 - MAX throughput for HEVC encoder in MB (16 x 16 pixel)
 #define AMF_VIDEO_ENCODER_HEVC_CAP_REQUESTED_THROUGHPUT             L"HevcRequestedThroughput"      // amf_int64 - Currently total requested throughput for HEVC encode in MB (16 x 16 pixel)
-#define AMF_VIDEO_ENCODER_HEVC_CAP_QUERY_TIMEOUT_SUPPORT            L"HevcQueryTimeoutSupport"      // amf_bool - Timeout supported for QueryOutout call
-#define AMF_VIDEO_ENCODER_CAPS_HEVC_QUERY_TIMEOUT_SUPPORT           L"HevcQueryTimeoutSupport"      // amf_bool - Timeout supported for QueryOutout call (Deprecated, please use AMF_VIDEO_ENCODER_HEVC_CAP_QUERY_TIMEOUT_SUPPORT instead)
+#define AMF_VIDEO_ENCODER_HEVC_CAP_QUERY_TIMEOUT_SUPPORT            L"HevcQueryTimeoutSupport"      // amf_bool - Timeout supported for QueryOutput call
+#define AMF_VIDEO_ENCODER_CAPS_HEVC_QUERY_TIMEOUT_SUPPORT           L"HevcQueryTimeoutSupport"      // amf_bool - Timeout supported for QueryOutput call (Deprecated, please use AMF_VIDEO_ENCODER_HEVC_CAP_QUERY_TIMEOUT_SUPPORT instead)
 #define AMF_VIDEO_ENCODER_HEVC_CAP_SUPPORT_SLICE_OUTPUT             L"HevcSupportSliceOutput"       // amf_bool - if slice output is supported
 
 #define AMF_VIDEO_ENCODER_HEVC_CAP_SUPPORT_SMART_ACCESS_VIDEO       L"HevcEncoderSupportSmartAccessVideo"        // amf_bool; returns true if system supports SmartAccess Video

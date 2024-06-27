@@ -232,6 +232,25 @@ static AMF_RESULT ParamConverterProfileLevelAV1(const std::wstring& value, amf::
     return AMF_OK;
 }
 
+static AMF_RESULT ParamConverterLTRMode(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_VIDEO_ENCODER_AV1_LTR_MODE_ENUM paramValue;
+    std::wstring uppValue = toUpper(value);
+    if (uppValue == L"RESET_UNUSED" || uppValue == L"0")
+    {
+        paramValue = AMF_VIDEO_ENCODER_AV1_LTR_MODE_RESET_UNUSED;
+    }
+    else if (uppValue == L"KEEP_UNUSED" || uppValue == L"1") {
+        paramValue = AMF_VIDEO_ENCODER_AV1_LTR_MODE_KEEP_UNUSED;
+    }
+    else {
+        LOG_ERROR(L"AMF_VIDEO_ENCODER_AV1_LTR_MODE_ENUM hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+
 static AMF_RESULT ParamConverterCDEFMode(const std::wstring& value, amf::AMFVariant& valueOut)
 {
     AMF_VIDEO_ENCODER_AV1_CDEF_MODE_ENUM paramValue;
@@ -490,6 +509,7 @@ AMF_RESULT RegisterEncoderParamsAV1(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_TILE_GROUP_OBU, ParamEncoderStatic, L"Code FrameHeaderObu + TileGroupObu and each TileGroupObu contains one tile (true, false default =  depends on USAGE)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_CDEF_MODE, ParamEncoderStatic, L"Cdef mode (ENABLE, DISABLE default = depends on USAGE)", ParamConverterCDEFMode);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_ERROR_RESILIENT_MODE, ParamEncoderStatic, L"Enable error resilient mode (true, false default =  depends on USAGE)", ParamConverterBoolean);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_LTR_MODE, ParamEncoderStatic, L"LTR Mode (RESET_UNUSED = 0, KEEP_UNUSED = 1, default = RESET_UNUSED)", ParamConverterLTRMode);
     // Rate Control and Quality Enhancement
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD, ParamEncoderStatic, L"Rate Control Method (CQP, CBR, VBR, VBR_LAT default = depends on USAGE)", ParamConverterRateControlAV1);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_INITIAL_VBV_BUFFER_FULLNESS, ParamEncoderStatic, L"Initial VBV Buffer Fullness (integer, 0=0% 64=100% ,default = depends on USAGE)", ParamConverterInt64);

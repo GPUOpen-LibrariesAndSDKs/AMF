@@ -70,6 +70,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     - [Table A-3. Encoder capabilities exposed in AMFCaps interface](#table-a-3-encoder-capabilities-exposed-in-amfcaps-interface)
     - [Table A-4. Encoder statistics feedback](#table-a-4-encoder-statistics-feedback)
     - [Table A-5. Encoder PSNR/SSIM feedback](#table-a-5-encoder-psnrssim-feedback)
+    - [Table A-6. Deprecated](#table-a-6-deprecated)
 
 
 ## 1 Introduction
@@ -616,6 +617,8 @@ This command encodes `400` frames through D3D renderer and creates an output fil
 | LTR_MODE                                | amf_int64 |
 | MAX_NUM_REFRAMES                        | amf_int64 |
 | LOWLATENCY_MODE                         | amf_bool  |
+| FRAMESIZE                               | AMFSize   |
+| ASPECT_RATIO                            | AMFRatio  |
 | PRE_ANALYSIS_ENABLE                     | amf_bool  |
 | MAX_NUM_TEMPORAL_LAYERS                 | amf_int64 |
 | NOMINAL_RANGE                           | amf_bool  |
@@ -765,6 +768,36 @@ Enables low latency mode in the encoder.
 ---
 
 **Name:**
+`AMF_VIDEO_ENCODER_HEVC_FRAMESIZE`
+
+**Values:**
+Width: `192` – `4096`
+Height: `128` – `2176`
+
+**Default Value:**
+Width: `0`
+Height: `0`
+
+**Description:**
+Frame width/Height in pixels, maximum value is hardware-specific, should be queried through `AMFCaps`.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_ASPECT_RATIO`
+
+**Values:**
+`(1,1)`...`(INT_MAX,INT_MAX)`
+
+**Default Value:**
+`(1,1)`
+
+**Description:**
+Pixel aspect ratio.
+
+---
+
+**Name:**
 `AMF_VIDEO_ENCODER_HEVC_PRE_ANALYSIS_ENABLE`
 
 **Values:**
@@ -825,46 +858,6 @@ When set to `true`, enables the SmartAccess Video feature, which optimally alloc
 
 ---
 
-| Name (Prefix “AMF_VIDEO_ENCODER_HEVC_”) | Type     |
-| :-                                      | :------- |
-| FRAMESIZE                               | AMFSize  |
-| ASPECT_RATIO                            | AMFRatio |
-
-<p align="center">
-Table 5. Encoder resolution parameters
-</p>
-
----
-
-**Name:**
-`AMF_VIDEO_ENCODER_HEVC_FRAMESIZE`
-
-**Values:**
-Width: `192` – `4096`
-Height: `128` – `2176`
-
-**Default Value:**
-Width: `0`
-Height: `0`
-
-**Description:**
-Frame width/Height in pixels, maximum value is hardware-specific, should be queried through `AMFCaps`.
-
----
-
-**Name:**
-`AMF_VIDEO_ENCODER_HEVC_ASPECT_RATIO`
-
-**Values:**
-`(1,1)`...`(INT_MAX,INT_MAX)`
-
-**Default Value:**
-`(1,1)`
-
-**Description:**
-Pixel aspect ratio.
-
----
 
 | Name (Prefix “AMF_VIDEO_ENCODER_HEVC_”) | Type      |
 | :-                                      | :-------- |
@@ -889,7 +882,7 @@ Pixel aspect ratio.
 | HIGH_MOTION_QUALITY_BOOST_ENABLE        | amf_bool  |
 
 <p align="center">
-Table 6. Encoder rate-control parameters
+Table 5. Encoder rate-control parameters
 </p>
 
 ---
@@ -1227,7 +1220,7 @@ Enable high motion quality boost mode to pre-analyze the motion of the video and
 | INTRA_REFRESH_NUM_CTBS_PER_SLOT         | amf_int64 |
 
 <p align="center">
-Table 7. Encoder picture-control parameters
+Table 6. Encoder picture-control parameters
 </p>
 
 ---
@@ -1336,15 +1329,16 @@ Sets the number of intra-refresh 64x64 coding-tree-blocks per slot.
 ---
 
 | Name (Prefix “AMF_VIDEO_ENCODER_HEVC_”) | Type      |
-| :-------------------------------------- | :-------- |
-| QUALITY_PRESET                          | amf_int64 |
-| PICTURE_TRANSFER_MODE                   | amf_int64 |
-| QUERY_TIMEOUT                           | amf_int64 |
-| INPUT_QUEUE_SIZE                        | amf_int64 |
-| OUTPUT_MODE                             | amf_int64 |
+| :-------------------------------------- | :----------- |
+| QUALITY_PRESET                          | amf_int64    |
+| EXTRADATA                               | AMFBufferPtr |
+| PICTURE_TRANSFER_MODE                   | amf_int64    |
+| QUERY_TIMEOUT                           | amf_int64    |
+| INPUT_QUEUE_SIZE                        | amf_int64    |
+| OUTPUT_MODE                             | amf_int64    |
 
 <p align="center">
-Table 8. Encoder miscellaneous parameters
+Table 7. Encoder miscellaneous parameters
 </p>
 
 ---
@@ -1369,6 +1363,20 @@ Selects the quality preset in HW to balance between encoding speed and video qua
 ---
 
 **Name:**
+`AMF_VIDEO_ENCODER_HEVC_EXTRADATA`
+
+**Values:**
+`AMFBufferPtr`
+
+**Default Value:**
+`NULL`
+
+**Description:**
+SPS/PPS buffer - read-only.
+
+---
+
+**Name:**
 `AMF_VIDEO_ENCODER_HEVC_PICTURE_TRANSFER_MODE`
 
 **Values:**
@@ -1386,7 +1394,7 @@ The application can turn on this flag for a specific input picture to allow dump
 `AMF_VIDEO_ENCODER_HEVC_QUERY_TIMEOUT`
 
 **Values:**
-Timeout for QueryOutput call in ms
+Timeout for `QueryOutput` call in ms
 
 **Default Value associated with usages:**
    - Transcoding: `0` (no wait)
@@ -1397,7 +1405,7 @@ Timeout for QueryOutput call in ms
    - HQLL: `50`
 
 **Description:**
-Timeout for QueryOutput call in ms.
+Timeout for `QueryOutput` call in ms.
 
 ---
 
@@ -1435,7 +1443,7 @@ Defines encoder output mode.
 | MOTION_QUARTERPIXEL                     | amf_bool |
 
 <p align="center">
-Table 9. Encoder motion estimation parameters
+Table 8. Encoder motion estimation parameters
 </p>
 
 ---
@@ -1479,7 +1487,7 @@ Turns on/off quarter-pixel motion estimation.
 | OUTPUT_COLOR_PRIMARIES                  | amf_int64 |
 
 <p align="center">
-Table 10. Encoder color conversion parameters
+Table 9. Encoder color conversion parameters
 </p>
 
 ---
@@ -1587,7 +1595,7 @@ Color space primaries for the compressed output surface which are the maximum re
 | NUM_TEMPORAL_LAYERS                     | amf_int64 |
 
 <p align="center">
-Table 11. Encoder SVC parameters
+Table 10. Encoder SVC parameters
 </p>
 
 ---
@@ -1612,7 +1620,7 @@ Remarks: Actual modification of the number of temporal layers will be delayed un
 | TL<TL_Num>.QL<QL_Num>.<Parameter_name>  |      |
 
 <p align="center">
-Table 12. Encoder SVC per-layer parameters
+Table 11. Encoder SVC per-layer parameters
 </p>
 
 ---
@@ -1669,7 +1677,7 @@ Remarks: Quality layers are not supported. “QL0” must be used for quality la
 | REFERENCE_PICTURE                       | AMFInterfacePtr    |
 
 <p align="center">
-Table 13. Frame per-submission parameters
+Table 12. Frame per-submission parameters
 </p>
 
 ---
@@ -1858,7 +1866,7 @@ Injected reference picture. Valid with PICTURE_TRANSFER_MODE turned on.
 | RECONSTRUCTED_PICTURE                   | AMFSurface |
 
 <p align="center">
-Table 14. Encoded data parameters
+Table 13. Encoded data parameters
 </p>
 
 ---
@@ -1964,12 +1972,12 @@ Reconstructed picture. Valid with `PICTURE_TRANSFER_MODE` turned on.
 |ROI                              |amf_bool|
 |MAX_THROUGHPUT                   |amf_int64|
 |REQUESTED_THROUGHPUT             |amf_int64|
-|QUERY_TIMEOUT_SUPPORT           |amf_bool|
+|QUERY_TIMEOUT_SUPPORT            |amf_bool|
 |SUPPORT_SLICE_OUTPUT             |amf_bool|
 
 
 <p align="center">
-Table 15. Encoder capabilities exposed in AMFCaps interface
+Table 14. Encoder capabilities exposed in AMFCaps interface
 </p>
 
 ---
@@ -2132,14 +2140,14 @@ Currently total requested throughput for encode in MB (16 x 16 pixels).
 ---
 
 **Name:**
-`AMF_VIDEO_ENCODER_CAPS_HEVC_QUERY_TIMEOUT_SUPPORT`
+`AMF_VIDEO_ENCODER_HEVC_CAP_QUERY_TIMEOUT_SUPPORT`
 
 **Values:**
 `true`, `false`
 
 
 **Description:**
-Timeout supported for QueryOutout call.
+Timeout supported for `QueryOutput` call.
 
 ---
 
@@ -2182,7 +2190,7 @@ If tile output is supported.
 | STATISTIC_VARIANCE                                | amf_int64 |
 
 <p align="center">
-Table 16. Encoder statistics feedback
+Table 15. Encoder statistics feedback
 </p>
 
 ---
@@ -2369,7 +2377,7 @@ Frame level variance for full encoding.
 | STATISTIC_SSIM_ALL                               | amf_double |
 
 <p align="center">
-Table 17. Encoder statistics feedback
+Table 16. Encoder statistics feedback
 </p>
 
 **Name:**
@@ -2433,5 +2441,47 @@ SSIM V.
 
 **Description:**
 SSIM YUV.
+
+---
+
+### Table A-6. Deprecated
+
+| Name (prefix "AMF_VIDEO_ENCODER_")      | Type       | Deprecated Starting |
+| :-------------------------------------- | :--------- | :-----------------: |
+| HEVC_RATE_CONTROL_PREANALYSIS_ENABLE    | bool       | v1.4.16             |
+| CAPS_HEVC_QUERY_TIMEOUT_SUPPORT         | amf_bool   | v1.4.30             |
+
+
+<p align="center">
+Table 17. Deprecated
+</p>
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_PREANALYSIS_ENABLE`
+
+**Values:**
+`true`, `false`
+
+**Default Value:**
+`false`
+
+**Description:**
+Enables pre-encode assisted rate control. Deprecated, please use `AMF_VIDEO_ENCODER_HEVC_PREENCODE_ENABLE` instead.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_CAPS_HEVC_QUERY_TIMEOUT_SUPPORT`
+
+**Values:**
+`true`, `false`
+
+**Default Value:**
+`N/A`
+
+**Description:**
+Timeout supported for `QueryOutput` call. Deprecated, please use `AMF_VIDEO_ENCODER_HEVC_CAP_QUERY_TIMEOUT_SUPPORT` instead.
 
 ---

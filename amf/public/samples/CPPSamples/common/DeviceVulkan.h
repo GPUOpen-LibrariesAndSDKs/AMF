@@ -39,6 +39,14 @@
 #include "public/include/core/Context.h"
 #include "public/common/VulkanImportTable.h"
 
+struct VulkanPhysicalDeviceInfo
+{
+    VkPhysicalDeviceProperties2             props;
+#if defined(__linux__)
+    VkPhysicalDevicePCIBusInfoPropertiesEXT pciBusInfo;
+#endif
+};
+
 class DeviceVulkan
 {
 public:
@@ -58,8 +66,12 @@ public:
      amf_uint32 GetQueueComputeFamilyIndex() {return m_uQueueComputeFamilyIndex;}
      VkQueue    GetQueueComputeQueue() {return m_hQueueCompute;}
 
+    // return list of adapters and their information
+    static AMF_RESULT GetAdapterList(amf::AMFContext *pContext, std::vector<VulkanPhysicalDeviceInfo>& adapters);
+
 private:
     AMF_RESULT CreateInstance();
+    AMF_RESULT GetPhysicalDevices(std::vector<VkPhysicalDevice>& devices);
     AMF_RESULT CreateDeviceAndFindQueues(amf_uint32 adapterID, std::vector<const char*> &deviceExtensions);
 
     std::vector<const char*> GetDebugInstanceExtensionNames();

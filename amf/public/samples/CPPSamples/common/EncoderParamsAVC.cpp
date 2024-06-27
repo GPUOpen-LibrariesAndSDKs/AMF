@@ -192,6 +192,26 @@ static AMF_RESULT ParamConverterScanTypeAVC(const std::wstring& value, amf::AMFV
     return AMF_OK;
 }
 
+static AMF_RESULT ParamConverterLTRMode(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_VIDEO_ENCODER_LTR_MODE_ENUM paramValue;
+    std::wstring uppValue = toUpper(value);
+    if (uppValue == L"RESET_UNUSED" || uppValue == L"0")
+    {
+        paramValue = AMF_VIDEO_ENCODER_LTR_MODE_RESET_UNUSED;
+    }
+    else if (uppValue == L"KEEP_UNUSED" || uppValue == L"1") {
+        paramValue = AMF_VIDEO_ENCODER_LTR_MODE_KEEP_UNUSED;
+    }
+    else {
+        LOG_ERROR(L"AMF_VIDEO_ENCODER_LTR_MODE_ENUM hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+
+
 static AMF_RESULT ParamConverterRateControlAVC(const std::wstring& value, amf::AMFVariant& valueOut)
 {
     AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_ENUM paramValue;
@@ -319,6 +339,7 @@ AMF_RESULT RegisterEncoderParamsAVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_PROFILE_LEVEL, ParamEncoderStatic, L"H264 profile level (float or integer, default = 4.2 (or 42)", ParamConverterProfileLevelAVC);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_QUALITY_PRESET, ParamEncoderStatic, L"Quality Preset (BALANCED, SPEED, QUALITY default = depends on USAGE)", ParamConverterQualityAVC);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_SCANTYPE, ParamEncoderStatic, L"Scan Type (PROGRESSIVE, INTERLACED, default = PROGRESSIVE)", ParamConverterScanTypeAVC);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_LTR_MODE, ParamEncoderStatic, L"LTR Mode (RESET_UNUSED = 0, KEEP_UNUSED = 1, default = RESET_UNUSED)", ParamConverterLTRMode);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_MAX_LTR_FRAMES, ParamEncoderStatic, L"Max Of LTR frames (integer, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_MAX_NUM_REFRAMES, ParamEncoderStatic, L"Max Of Reference frames (integer, default = 4)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_MAX_CONSECUTIVE_BPICTURES, ParamEncoderStatic, L"Max Number Of Consecutive B frames/pictures (integer, default = 0)", ParamConverterInt64);

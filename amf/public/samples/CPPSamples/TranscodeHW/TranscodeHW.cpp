@@ -272,7 +272,7 @@ AMF_RESULT RegisterParams(ParametersStorage* pParams)
     pParams->SetParamDescription(PARAM_NAME_THREADCOUNT,   ParamCommon, L"Number of session run ip parallel (number, default = 1)", ParamConverterInt64);
     pParams->SetParamDescription(PARAM_NAME_PREVIEW_MODE,  ParamCommon, L"Preview Mode (bool, default = false)", ParamConverterBoolean);
     pParams->SetParamDescription(PARAM_NAME_COMPUTE_QUEUE, ParamCommon, L"Vulkan Compute Queue Index (integer, default = 0, range [0,queueCount-1])", ParamConverterInt64);
-    pParams->SetParamDescription(PARAM_NAME_TRACE_LEVEL,   ParamCommon, L"Set the trace level (integer, default = 2 - means AMF_TRACE_INFO)", ParamConverterInt64);
+    pParams->SetParamDescription(PARAM_NAME_TRACE_LEVEL, ParamCommon, L"Set the trace level (integer, default = 1 - means AMF_TRACE_WARNING)", ParamConverterInt64);
 
     // to demo frame-specific properties - will be applied to each N-th frame (force IDR)
     pParams->SetParam(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, amf_int64(AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR));
@@ -283,6 +283,9 @@ AMF_RESULT RegisterParams(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_DECODER_LOW_LATENCY, ParamCommon, L"Enable low latency decode, false = regular decode (bool, default = false)", ParamConverterBoolean);
     // SW encoder enable - require full build version of ffmpeg dlls with shared libs
     pParams->SetParamDescription(PARAM_NAME_SWENCODE, ParamCommon, L"Enable SW encoder (true, false default =  false)", ParamConverterBoolean);
+
+    // Enable tracing to log files.
+    pParams->SetParamDescription(PARAM_NAME_TRACE_TO_FILE, ParamCommon, L"Enable Tracing to File (true, false default = false)", ParamConverterBoolean);
 
     return AMF_OK;
 }
@@ -356,6 +359,14 @@ int main(int argc, char* argv[])
     g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_CONSOLE, traceLevel);
     g_AMFFactory.GetTrace()->EnableWriter  (AMF_TRACE_WRITER_DEBUG_OUTPUT, true);
     g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_DEBUG_OUTPUT, traceLevel);
+
+    amf_bool traceToFile = false;
+    params.GetParam(PARAM_NAME_TRACE_TO_FILE, traceToFile);
+    if (true == traceToFile)
+    {
+        g_AMFFactory.GetTrace()->EnableWriter(AMF_TRACE_WRITER_FILE, true);
+        g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_FILE, traceLevel);
+    }
 
 #else
     g_AMFFactory.GetDebug()->AssertsEnable(false);

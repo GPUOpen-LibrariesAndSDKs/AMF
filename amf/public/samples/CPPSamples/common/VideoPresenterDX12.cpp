@@ -505,7 +505,7 @@ AMF_RESULT VideoPresenterDX12::CreateBuffer(ID3D12Resource** ppBuffer, ID3D12Res
 
     // Main (default) buffer
     {
-        D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COPY_DEST;
+        D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
 
         CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
         HRESULT hr = m_pDX12Device->CreateCommittedResource(

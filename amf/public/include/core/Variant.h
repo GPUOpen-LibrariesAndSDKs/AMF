@@ -132,16 +132,16 @@ namespace amf
     static AMF_INLINE const AMFRatio&      AMF_STD_CALL AMFVariantGetRatio(const AMFVariantStruct* _variant) { return (_variant)->ratioValue; }
     static AMF_INLINE const AMFColor&      AMF_STD_CALL AMFVariantGetColor(const AMFVariantStruct* _variant) { return (_variant)->colorValue; }
 #else // #if defined(__cplusplus)
-    static AMF_INLINE AMFRect        AMF_STD_CALL AMFVariantGetRect (const AMFVariantStruct* _variant) { return (_variant)->rectValue; }
-    static AMF_INLINE AMFSize        AMF_STD_CALL AMFVariantGetSize (const AMFVariantStruct* _variant) { return (_variant)->sizeValue; }
-    static AMF_INLINE AMFPoint       AMF_STD_CALL AMFVariantGetPoint(const AMFVariantStruct* _variant) { return (_variant)->pointValue; }
-    static AMF_INLINE AMFFloatSize  AMF_STD_CALL AMFVariantGetFloatSize(const AMFVariantStruct* _variant) { return (_variant)->floatSizeValue; }
-    static AMF_INLINE AMFFloatPoint2D  AMF_STD_CALL AMFVariantGetFloatPoint2D(const AMFVariantStruct* _variant) { return (_variant)->floatPoint2DValue; }
-    static AMF_INLINE AMFFloatPoint3D  AMF_STD_CALL AMFVariantGetFloatPoint3D(const AMFVariantStruct* _variant) { return (_variant)->floatPoint3DValue; }
-    static AMF_INLINE AMFFloatVector4D  AMF_STD_CALL AMFVariantGetFloatVector4D(const AMFVariantStruct* _variant) { return (_variant)->floatVector4DValue; }
-    static AMF_INLINE AMFRate        AMF_STD_CALL AMFVariantGetRate (const AMFVariantStruct* _variant) { return (_variant)->rateValue; }
-    static AMF_INLINE AMFRatio       AMF_STD_CALL AMFVariantGetRatio(const AMFVariantStruct* _variant) { return (_variant)->ratioValue; }
-    static AMF_INLINE AMFColor       AMF_STD_CALL AMFVariantGetColor(const AMFVariantStruct* _variant) { return (_variant)->colorValue; }
+    static AMF_INLINE AMFRect              AMF_STD_CALL AMFVariantGetRect (const AMFVariantStruct* _variant) { return (_variant)->rectValue; }
+    static AMF_INLINE AMFSize              AMF_STD_CALL AMFVariantGetSize (const AMFVariantStruct* _variant) { return (_variant)->sizeValue; }
+    static AMF_INLINE AMFPoint             AMF_STD_CALL AMFVariantGetPoint(const AMFVariantStruct* _variant) { return (_variant)->pointValue; }
+    static AMF_INLINE AMFFloatSize         AMF_STD_CALL AMFVariantGetFloatSize(const AMFVariantStruct* _variant) { return (_variant)->floatSizeValue; }
+    static AMF_INLINE AMFFloatPoint2D      AMF_STD_CALL AMFVariantGetFloatPoint2D(const AMFVariantStruct* _variant) { return (_variant)->floatPoint2DValue; }
+    static AMF_INLINE AMFFloatPoint3D      AMF_STD_CALL AMFVariantGetFloatPoint3D(const AMFVariantStruct* _variant) { return (_variant)->floatPoint3DValue; }
+    static AMF_INLINE AMFFloatVector4D     AMF_STD_CALL AMFVariantGetFloatVector4D(const AMFVariantStruct* _variant) { return (_variant)->floatVector4DValue; }
+    static AMF_INLINE AMFRate              AMF_STD_CALL AMFVariantGetRate (const AMFVariantStruct* _variant) { return (_variant)->rateValue; }
+    static AMF_INLINE AMFRatio             AMF_STD_CALL AMFVariantGetRatio(const AMFVariantStruct* _variant) { return (_variant)->ratioValue; }
+    static AMF_INLINE AMFColor             AMF_STD_CALL AMFVariantGetColor(const AMFVariantStruct* _variant) { return (_variant)->colorValue; }
 #endif // #if defined(__cplusplus)
 
 
@@ -938,7 +938,7 @@ namespace amf
     static AMF_INLINE amf_int64 AMFConvertStringToInt64(const AMFVariant::String& value, AMF_RESULT& res)
     {
         res = AMF_OK;
-        long long tmp = 0;
+        amf_int64 tmp = 0;
         int readElements = 0;
 
         if (value.size() > 2 && ( value.c_str()[0] == '0') && ( value.c_str()[1] == 'x') )

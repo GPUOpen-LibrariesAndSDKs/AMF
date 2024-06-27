@@ -126,7 +126,7 @@ public:
     virtual void                        SetAVSyncObject(AVSyncObject *pAVSync)              { amf::AMFLock lock(&m_cs); m_pAVSync = pAVSync;}
     virtual void                        DoActualWait(amf_bool doWait)                       { amf::AMFLock lock(&m_cs); m_doWait = doWait; }
     virtual void AMF_STD_CALL           SetDropThreshold(amf_pts ptsDropThreshold)          { amf::AMFLock lock(&m_cs); m_ptsDropThreshold = ptsDropThreshold; }
-    
+
     // Stats
     virtual amf_pts                     GetCurrentTime()                                    { return m_currentTime; }
     virtual amf_double                  GetFPS() const                                      { return m_lastFPS; }
@@ -146,7 +146,7 @@ public:
 
     // Backbuffers/Processor
     virtual amf_bool                    SupportAllocator() const                            { return false; }
-    virtual AMF_RESULT                  SetProcessor(amf::AMFComponent* pProcessor, amf::AMFComponent* pHQScaler = nullptr);
+    virtual AMF_RESULT                  SetProcessor(amf::AMFComponent* pProcessor, amf::AMFComponent* pHQScaler, bool bAllocator);
     virtual void                        SetRenderToBackBuffer(amf_bool renderToBackBuffer)  { amf::AMFLock lock(&m_cs); m_renderToBackBuffer = renderToBackBuffer; }
 
     // amf::AMFDataAllocatorCB interface
@@ -212,10 +212,10 @@ protected:
 
     virtual AMF_RESULT                  CheckForResize(amf_bool force);
     virtual AMF_RESULT                  ResizeSwapChain();
-    virtual amf_bool                    CanResize() 
-    { 
+    virtual amf_bool                    CanResize()
+    {
         amf::AMFLock lock(&m_cs);
-        return m_pSwapChain == nullptr ? false : m_pTrackSurfaces.empty() && m_pSwapChain->GetBackBuffersAcquired() == 0; 
+        return m_pSwapChain == nullptr ? false : m_pTrackSurfaces.empty() && m_pSwapChain->GetBackBuffersAcquired() == 0;
     }
 
     virtual AMF_RESULT                  ApplyCSC(amf::AMFSurface* pSurface);
@@ -254,7 +254,7 @@ protected:
     virtual AMF_RESULT RenderSurface(amf::AMFSurface* /*pSurface*/, const RenderTargetBase* /*pRenderTarget*/, RenderViewSizeInfo& /*renderView*/) { return AMF_OK; };
 
     // The viewport rect for vertex and texture coordinates used by the graphics API
-    // Override in inherited presenters to set new value. 
+    // Override in inherited presenters to set new value.
     // Default is set to viewport clipping used in DirectX (All versions)
     virtual AMFRect                     GetVertexViewRect()     const                       { return AMFConstructRect(-1, 1, 1, -1);  }
     virtual AMFRect                     GetTextureViewRect()    const                       { return AMFConstructRect(0, 1, 1, 0);    }

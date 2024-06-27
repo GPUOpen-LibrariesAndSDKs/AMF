@@ -40,49 +40,50 @@
 // Select rendering API for FRC
 enum AMF_FRC_ENGINE
 {
-    FRC_ENGINE_OFF = 0,
-    FRC_ENGINE_DX12 = 1,
-    FRC_ENGINE_OPENCL = 2,
+    FRC_ENGINE_OFF              = 0,
+    FRC_ENGINE_DX12             = 1,
+    FRC_ENGINE_OPENCL           = 2,
+    FRC_ENGINE_DX11             = 3,
 };
 
 // Select present mode for FRC
 enum AMF_FRC_MODE_TYPE
 {
-    FRC_OFF = 0,
-    FRC_ON,
-    FRC_ONLY_INTERPOLATED,
-    FRC_x2_PRESENT,
+    FRC_OFF                     = 0,
+    FRC_ON                      = 1,
+    FRC_ONLY_INTERPOLATED       = 2,
+    FRC_x2_PRESENT              = 3,
     TOTAL_FRC_MODES
 };
 
 enum AMF_FRC_SNAPSHOT_MODE_TYPE {
-    FRC_SNAPSHOT_OFF = 0,
-    FRC_SNAPSHOT_LOAD,
-    FRC_SNAPSHOT_STORE,
-    FRC_SNAPSHOT_REGRESSION_TEST,
-    FRC_SNAPSHOT_STORE_NO_PADDING,
+    FRC_SNAPSHOT_OFF            = 0,
+    FRC_SNAPSHOT_LOAD           = 1,
+    FRC_SNAPSHOT_STORE          = 2,
+    FRC_SNAPSHOT_REGRESSION_TEST= 3,
+    FRC_SNAPSHOT_STORE_NO_PADDING= 4,
     TOTAL_FRC_SNAPSHOT_MODES
 };
 
-enum AMF_FRC_PROFILE {
-    FRC_PROFILE_LOW = 0,
-    FRC_PROFILE_HIGH = 1,
-    FRC_PROFILE_SUPER = 2,
+enum AMF_FRC_PROFILE_TYPE {
+    FRC_PROFILE_LOW             = 0,
+    FRC_PROFILE_HIGH            = 1,
+    FRC_PROFILE_SUPER           = 2,
     TOTAL_FRC_PROFILES
 };
 
-enum AMF_FRC_MV_SEARCH_MODE {
-    FRC_MV_SEARCH_NATIVE = 0,
-    FRC_MV_SEARCH_PERFORMANCE = 1,
+enum AMF_FRC_MV_SEARCH_MODE_TYPE {
+    FRC_MV_SEARCH_NATIVE        = 0,
+    FRC_MV_SEARCH_PERFORMANCE   = 1,
     TOTAL_FRC_MV_SEARCH_MODES
 };
 
-#define AMF_FRC_ENGINE_TYPE        L"FRCEngineType"           // AMF_MEMORY_TYPE (DX12, OPENCL, default : DX12)" - determines how the object is initialized and what kernels to use
-#define AMF_FRC_OUTPUT_SIZE        L"FRCSOutputSize"          // AMFSize - output scaling width/hieight
-#define AMF_FRC_MODE               L"FRCMode"                 // FRC mode (0-off, 1-on (call at x2 source FPS), 2-only interpolated, 3-x2 Present)
-#define AMF_FRC_ENABLE_FALLBACK	   L"FRCEnableFallback"		  // FRC enable fallback mode
-#define AMF_FRC_INDICATOR          L"FRCIndicator"            // bool (default : false)
-#define AMF_FRC_PROFILE		       L"FRCProfile"		      // FRC profile
-#define AMF_FRC_MV_SEARCH_MODE     L"FRCMVSEARCHMODE"         // FRC MV search mode
+#define AMF_FRC_ENGINE_TYPE        L"FRCEngineType"           // amf_int64(AMF_FRC_ENGINE); default = DX12; determines how the object is initialized and what kernels to use
+#define AMF_FRC_OUTPUT_SIZE        L"FRCSOutputSize"          // AMFSize - output scaling width/height
+#define AMF_FRC_MODE               L"FRCMode"                 // amf_int64(AMF_FRC_MODE_TYPE); default = FRC_ONLY_INTERPOLATED; FRC mode
+#define AMF_FRC_ENABLE_FALLBACK	   L"FRCEnableFallback"		  // bool; default = true; FRC enable fallback mode
+#define AMF_FRC_INDICATOR          L"FRCIndicator"            // bool; default : false; draw indicator in the corner
+#define AMF_FRC_PROFILE		       L"FRCProfile"		      // amf_int64(AMF_FRC_PROFILE_TYPE); default=FRC_PROFILE_HIGH; FRC profile
+#define AMF_FRC_MV_SEARCH_MODE     L"FRCMVSEARCHMODE"         // amf_int64(AMF_FRC_MV_SEARCH_MODE_TYPE); defaut = FRC_MV_SEARCH_NATIVE; FRC MV search mode
 
 #endif //#ifndef AMFFRC_h

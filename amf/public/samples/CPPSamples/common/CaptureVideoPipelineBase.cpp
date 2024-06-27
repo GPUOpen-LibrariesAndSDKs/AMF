@@ -494,12 +494,12 @@ AMF_RESULT CaptureVideoPipelineBase::InitInternal()
         {
             if (!m_bUseBackBufferPresenter)
             {
-                m_pVideoPresenter->SetProcessor(m_pChromaKeyer);
+                m_pVideoPresenter->SetProcessor(m_pChromaKeyer, nullptr, true);
             }
         }
         else if (m_pContext->GetOpenCLContext() == NULL)
         {
-            m_pVideoPresenter->SetProcessor(m_pConverter);
+            m_pVideoPresenter->SetProcessor(m_pConverter, nullptr, true);
         }
     }
 

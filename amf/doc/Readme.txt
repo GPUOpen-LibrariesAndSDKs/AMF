@@ -28,6 +28,13 @@
 //
 
 
+1.4.34.0 (13.5.2024) version
+--------------------------
+   - Added Linux support for DVR sample
+   - New HEVC header insertion mode
+   - Stable support for RADV drivers for AMF on Linux
+   - Added DX11 support for FRC component
+
 1.4.33.0 (23.1.2024) version
 --------------------------
    - Added native DX12 support for encoding and PreAnalysis

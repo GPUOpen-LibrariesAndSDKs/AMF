@@ -74,17 +74,21 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>${SolutionDir}..\..\..\Thirdparty\microsoft\packages\Microsoft.ML.OnnxRuntime.DirectML.1.13.1\build\native\include;${SolutionDir}..\..\..\Thirdparty\Intel\intel64_win\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\..\bin\vs2019x$(PlatformArchitecture)$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\..\bin\obj\vs2019x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
+    <IncludePath>${SolutionDir}..\..\..\Thirdparty\microsoft\packages\Microsoft.ML.OnnxRuntime.DirectML.1.13.1\build\native\include;${SolutionDir}..\..\..\Thirdparty\Intel\intel64_win\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>${SolutionDir}..\..\..\Thirdparty\microsoft\packages\Microsoft.ML.OnnxRuntime.DirectML.1.13.1\build\native\include;${SolutionDir}..\..\..\Thirdparty\Intel\intel64_win\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>${SolutionDir}..\..\..\Thirdparty\microsoft\packages\Microsoft.ML.OnnxRuntime.DirectML.1.13.1\build\native\include;${SolutionDir}..\..\..\Thirdparty\Intel\intel64_win\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

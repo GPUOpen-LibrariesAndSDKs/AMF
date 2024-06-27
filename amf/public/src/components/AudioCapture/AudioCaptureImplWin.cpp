@@ -478,10 +478,10 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
 
 				amf_pts duration = (capturedSamples + silenceSamples) * AMF_SECOND / sampleRate;
 
-				m_prevPts = m_CurrentPts;
-				m_CurrentPts += duration;
 				pAudioBuffer->SetPts(m_CurrentPts);
 				pAudioBuffer->SetDuration(duration);
+				m_prevPts = m_CurrentPts;
+				m_CurrentPts += duration;
 			}
 		}
         err = m_pAMFDataStreamAudio->CaptureOnePacketDone();

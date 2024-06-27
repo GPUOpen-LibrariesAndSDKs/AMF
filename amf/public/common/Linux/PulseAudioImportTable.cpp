@@ -82,8 +82,13 @@ AMF_RESULT PulseAudioImportTable::LoadFunctionsTable()
     GET_SO_ENTRYPOINT(m_pPA_Context_New, m_hLibPulseSO, pa_context_new);
     GET_SO_ENTRYPOINT(m_pPA_Context_Get_State, m_hLibPulseSO, pa_context_get_state);
     GET_SO_ENTRYPOINT(m_pPA_Context_Set_State_Callback, m_hLibPulseSO, pa_context_set_state_callback);
+    GET_SO_ENTRYPOINT(m_pPA_Context_Get_Server_Info, m_hLibPulseSO, pa_context_get_server_info);
     GET_SO_ENTRYPOINT(m_pPA_Context_Connect, m_hLibPulseSO, pa_context_connect);
     GET_SO_ENTRYPOINT(m_pPA_Context_Disconnect, m_hLibPulseSO, pa_context_disconnect);
+
+    GET_SO_ENTRYPOINT(m_pPA_Context_Get_Sink_Info_By_Name, m_hLibPulseSO, pa_context_get_sink_info_by_name);
+    GET_SO_ENTRYPOINT(m_pPA_Context_Get_Sink_Info_List, m_hLibPulseSO, pa_context_get_sink_info_list);
+    GET_SO_ENTRYPOINT(m_pPA_Context_Get_Source_Info_List, m_hLibPulseSO, pa_context_get_source_info_list);
 
     // Load other pulse audio functions.
     GET_SO_ENTRYPOINT(m_pPA_Operation_Unref, m_hLibPulseSO, pa_operation_unref);
@@ -93,7 +98,9 @@ AMF_RESULT PulseAudioImportTable::LoadFunctionsTable()
     GET_SO_ENTRYPOINT(m_pPA_Simple_New, m_hLibPulseSimpleSO, pa_simple_new);
     GET_SO_ENTRYPOINT(m_pPA_Simple_Free, m_hLibPulseSimpleSO, pa_simple_free);
     GET_SO_ENTRYPOINT(m_pPA_Simple_Write, m_hLibPulseSimpleSO, pa_simple_write);
+    GET_SO_ENTRYPOINT(m_pPA_Simple_Read, m_hLibPulseSimpleSO, pa_simple_read);
     GET_SO_ENTRYPOINT(m_pPA_Simple_Flush, m_hLibPulseSimpleSO, pa_simple_flush);
+    GET_SO_ENTRYPOINT(m_pPA_Simple_Get_Latency, m_hLibPulseSimpleSO, pa_simple_get_latency);
 
 
     return AMF_OK;
@@ -126,8 +133,13 @@ void PulseAudioImportTable::UnloadFunctionsTable()
     m_pPA_Context_New = nullptr;
     m_pPA_Context_Get_State = nullptr;
     m_pPA_Context_Set_State_Callback = nullptr;
+    m_pPA_Context_Get_Server_Info = nullptr;
     m_pPA_Context_Connect = nullptr;
     m_pPA_Context_Disconnect = nullptr;
+
+    m_pPA_Context_Get_Sink_Info_By_Name = nullptr;
+    m_pPA_Context_Get_Sink_Info_List = nullptr;
+    m_pPA_Context_Get_Source_Info_List = nullptr;
 
     // Others
     m_pPA_Operation_Unref = nullptr;
@@ -137,5 +149,7 @@ void PulseAudioImportTable::UnloadFunctionsTable()
     m_pPA_Simple_New = nullptr;
     m_pPA_Simple_Free = nullptr;
     m_pPA_Simple_Write = nullptr;
+    m_pPA_Simple_Read = nullptr;
     m_pPA_Simple_Flush = nullptr;
+    m_pPA_Simple_Get_Latency = nullptr;
 }

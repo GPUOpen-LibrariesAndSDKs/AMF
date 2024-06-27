@@ -968,11 +968,11 @@ AMF_RESULT StitchPipelineBase::InitInternal()
         if (m_pVideoPresenter->SupportAllocator() && m_pContext->GetOpenCLContext() == NULL && isStitchedSource)
         {
             amf::AMFComponentPtr pConverter = m_Converters[0];
-            m_pVideoPresenter->SetProcessor(pConverter);
+            m_pVideoPresenter->SetProcessor(pConverter, nullptr, true);
         }
         else if (m_pVideoPresenter->SupportAllocator() && m_pContext->GetOpenCLContext() == NULL && !isStitchedSource)
         {
-            m_pVideoPresenter->SetProcessor(m_pStitch);
+            m_pVideoPresenter->SetProcessor(m_pStitch, nullptr, true);
         }
 
         if (m_bVideoPresenterDirectConnect)

@@ -20,7 +20,7 @@ using namespace DirectX;
 static double   dForceFPS = 60.;
 #if defined( _M_AMD64)
 static int      iDefaultStreamCount = 6;
-#else 
+#else
 static int      iDefaultStreamCount = 6;
 #endif
 
@@ -117,16 +117,16 @@ void StitchPipeline::ToggleOutputMode()
     {
         if(value == AMF_VIDEO_STITCH_OUTPUT_MODE_CUBEMAP)
         {
-            m_pVideoPresenter ->SetProcessor(NULL);
+            m_pVideoPresenter ->SetProcessor(nullptr, nullptr, true);
         }
         else
         {
-            m_pVideoPresenter ->SetProcessor(m_pStitch);
+            m_pVideoPresenter ->SetProcessor(m_pStitch, nullptr, true);
         }
 
         m_pVideoPresenter->SetRenderToBackBuffer(value != AMF_VIDEO_STITCH_OUTPUT_MODE_CUBEMAP);
     }
-    
+
     if(m_pVideoPresenter->GetMode() ==  VideoPresenter::ModePaused)
     {
         m_pStitchElement->Resubmit();
@@ -159,7 +159,7 @@ AMF_RESULT StitchPipeline::InitStitcher(amf::AMF_SURFACE_FORMAT &stitchInputFmt)
     m_pStitch = amf::AMFComponentExPtr(pStitch);
 
     m_pStitch->SetProperty(AMF_VIDEO_STITCH_COMPUTE_DEVICE, computeEngine);
-    
+
     m_pStitch->SetProperty(AMF_VIDEO_STITCH_MEMORY_TYPE, m_pVideoPresenter->GetMemoryType());
     m_pStitch->SetProperty(AMF_VIDEO_STITCH_INPUTCOUNT, amf_int64(streamCount));
     m_pStitch->SetProperty(AMF_VIDEO_STITCH_OUTPUT_SIZE, AMFConstructSize(compositedWidth, compositedHeight));

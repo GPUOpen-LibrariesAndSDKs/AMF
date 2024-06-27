@@ -73,13 +73,11 @@ The AMF Video HQ Scaler component should be initialized using the following sequ
 The HQ scaler supports the following input and output formats:
 
 1. BRGA
-1. NV12 [^1]
+1. NV12
 1. RGBA
 1. R10G10B10A2
 1. RGBA_F16
-1. P010 [^1]
-
-[^1]: These formats are not supported when `AMF_HQ_SCALER_ALGORITHM` is set to `AMF_HQ_SCALER_ALGORITHM_VIDEOSR1_1`.
+1. P010
 
 The output format must be same as the input and the format conversion is not supported. The parameters of the output stream are set using the following properties:
 
@@ -104,13 +102,13 @@ Table 1. AMF HQ Scaler properties of the output stream
 `AMF_HQ_SCALER_ENGINE_TYPE`
 
 **Values:**
-`DX11`, `DX12`, `Vulkan`, `OpenCL`
+`AMF_MEMORY_DX11`, `AMF_MEMORY_DX12`, `AMF_MEMORY_VULKAN`, `AMF_MEMORY_OPENCL`
 
 **Default Value:**
-`DX11`
+`AMF_MEMORY_DX11`
 
 **Description:**
-Specifies the memory type of output surfaces (surfaces are allocated internally by the HQ Scaler component).
+Specifies the memory type of output surfaces. Surfaces are allocated internally by the HQ Scaler component.
 
 ---
 
@@ -118,7 +116,7 @@ Specifies the memory type of output surfaces (surfaces are allocated internally 
 `AMF_HQ_SCALER_OUTPUT_SIZE`
 
 **Values:**
-A valid size
+A valid size.
 
 **Default Value:**
 `N\A`
@@ -161,7 +159,7 @@ Specifies whether the output image outside the region of interest, which does no
 `AMF_HQ_SCALER_FILL_COLOR`
 
 **Values:**
-`(0,0,0)`...`(255,255,255)`
+`(0,0,0,0)` ... `(255,255,255,255)`
 
 **Default Value:**
 `(0,0,0,255)`
@@ -176,18 +174,13 @@ Fill color specified as `AMFColor` to fill the area outside the output rectangle
 `AMF_HQ_SCALER_ALGORITHM`
 
 **Values:**
-
-`AMF_HQ_SCALER_ALGORITHM_ENUM`,
-
-`AMF_HQ_SCALER_ALGORITHM_BILINEAR`,
-
-`AMF_HQ_SCALER_ALGORITHM_BICUBIC`,
-
-`AMF_HQ_SCALER_ALGORITHM_POINT`,
-
-`AMF_HQ_SCALER_ALGORITHM_VIDEOSR1_0` (based on FSR 1.0),
-
-`AMF_HQ_SCALER_ALGORITHM_VIDEOSR1_1`
+|Name|Description|
+| - | - |
+| `AMF_HQ_SCALER_ALGORITHM_BILINEAR` | Bilinear scaling algorithm. |
+| `AMF_HQ_SCALER_ALGORITHM_BICUBIC` | Bicubic scaling algorithm. |
+| `AMF_HQ_SCALER_ALGORITHM_POINT` | Point (nearest-neighbor) scaling algorithm. |
+| `AMF_HQ_SCALER_ALGORITHM_VIDEOSR1_0` | VideoSR1.0 scaling algorithm. This algorithm is based on FSR 1.0. |
+| `AMF_HQ_SCALER_ALGORITHM_VIDEOSR1_1` | VideoSR1.1 scaling algorithm. This algorithm is intended for specific internal integrations and is exposed purely for experimental use. VideoSR1.1 is only supported when `AMF_HQ_SCALER_ENGINE_TYPE` is set to `AMF_MEMORY_DX11` or `AMF_MEMORY_DX12` and the input and output formats are not NV12 or P010. |
 
 **Default Value:**
 `AMF_HQ_SCALER_ALGORITHM_VIDEOSR1_0`
@@ -223,7 +216,7 @@ Float in the range of `[0.0, 2.0]`
 `0.5`
 
 **Description:**
-Control VideoSR scaler sharpening.
+Control VideoSR scaler sharpening. Applicable only when the `AMF_HQ_SCALER_ALGORITHM` property is set to `AMF_HQ_SCALER_ALGORITHM_VIDEOSR1_0` or `AMF_HQ_SCALER_ALGORITHM_VIDEOSR1_1`.
 
 ---
 

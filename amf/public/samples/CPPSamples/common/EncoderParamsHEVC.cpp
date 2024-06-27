@@ -194,6 +194,25 @@ static AMF_RESULT ParamConverterRateControlHEVC(const std::wstring& value, amf::
     return AMF_OK;
 }
 
+static AMF_RESULT ParamConverterLTRMode(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_VIDEO_ENCODER_HEVC_LTR_MODE_ENUM paramValue;
+    std::wstring uppValue = toUpper(value);
+    if (uppValue == L"RESET_UNUSED" || uppValue == L"0")
+    {
+        paramValue = AMF_VIDEO_ENCODER_HEVC_LTR_MODE_RESET_UNUSED;
+    }
+    else if (uppValue == L"KEEP_UNUSED" || uppValue == L"1") {
+        paramValue = AMF_VIDEO_ENCODER_HEVC_LTR_MODE_KEEP_UNUSED;
+    }
+    else {
+        LOG_ERROR(L"AMF_VIDEO_ENCODER_HEVC_LTR_MODE_ENUM hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+
 static AMF_RESULT ParamConverterPictureTypeHEVC(const std::wstring& value, amf::AMFVariant& valueOut)
 {
     AMF_VIDEO_ENCODER_HEVC_PICTURE_TYPE_ENUM paramValue;
@@ -281,6 +300,7 @@ AMF_RESULT RegisterEncoderParamsHEVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_ENABLE_VBAQ, ParamEncoderStatic, L"Enable VBAQ(true, false default =  false)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_HIGH_MOTION_QUALITY_BOOST_ENABLE, ParamEncoderStatic, L"High motion quality boost mode enabled(integer, default = 0)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE, ParamEncoderStatic, L"Enables low latency mode (true, false default =  false)", ParamConverterBoolean);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_LTR_MODE, ParamEncoderStatic, L"LTR Mode (RESET_UNUSED = 0, KEEP_UNUSED = 1, default = RESET_UNUSED)", ParamConverterLTRMode);
 
     // Picture control properties
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_DE_BLOCKING_FILTER_DISABLE, ParamEncoderStatic, L"De-blocking Filter(true, false default =  false)", ParamConverterBoolean);

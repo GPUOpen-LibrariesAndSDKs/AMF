@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/com/amd/amf/samples/dvr">
+    <file preprocess="xml-stripblanks" compressed="true">DVR.glade</file>
+  </gresource>
+</gresources>

@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -187,8 +187,8 @@ AMF_RESULT SwapChainDXGI::CreateSwapChain(IUnknown* pDevice, amf_int32 width, am
         height = outputRect.Height();
     }
 
-    // The IDXGIFactory2 interface includes methods to create a newer version 
-    // swap chain with more features than IDXGISwapChain and to monitor 
+    // The IDXGIFactory2 interface includes methods to create a newer version
+    // swap chain with more features than IDXGISwapChain and to monitor
     // stereoscopic 3D capabilities.
     // If available, we want to create the swap chain using the newer methods
     // provided by the DXGIFactory2 interface. This includes creating a swap chain
@@ -246,7 +246,7 @@ AMF_RESULT SwapChainDXGI::Present(amf_bool waitForVSync)
     // Present the frame.
     for (amf_int i = 0; i < 100; i++)
     {
-        // If the GPU is busy at the moment present was called and if 
+        // If the GPU is busy at the moment present was called and if
         // it did not execute or schedule the operation, we get the
         // DXGI_ERROR_WAS_STILL_DRAWING error. Therefore we should try
         // presenting again after a delay
@@ -254,6 +254,14 @@ AMF_RESULT SwapChainDXGI::Present(amf_bool waitForVSync)
         if (hr != DXGI_ERROR_WAS_STILL_DRAWING)
         {
             ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"Present() - swapchain Present() failed");
+            break;
+        }
+        if (waitForVSync == false)
+        {
+            // When input framerate exceeds presenter framerate, waiting for frames will
+            // stall the pipeline.
+            //
+            // If presenter is set to not wait for vsync, and presenter busy, drop frame instead of waiting.
             break;
         }
         amf_sleep(1);
@@ -408,7 +416,7 @@ AMF_RESULT SwapChainDXGI::SetHDRMetaData(const AMFHDRMetadata* pHDRMetaData)
     {
         return AMF_NOT_SUPPORTED;
     }
-    
+
     DXGI_HDR_METADATA_HDR10 metadata = {}; // These are already normalized to 500000 for primaries and 100000 for luminance
     metadata.WhitePoint[0]              = pHDRMetaData->whitePoint[0];
     metadata.WhitePoint[1]              = pHDRMetaData->whitePoint[1];
@@ -494,7 +502,7 @@ AMF_RESULT SwapChainDXGI::UpdateCurrentOutput()
         GetDXGIInterface(true);
         m_pOutputs.clear();
     }
-    
+
     if (m_pOutputs.empty())
     {
         AMF_RESULT res = UpdateOutputs();
@@ -540,14 +548,14 @@ AMF_RESULT SwapChainDXGI::UpdateCurrentOutput()
     }
 
     AMF_RETURN_IF_FALSE(m_pCurrentOutput != nullptr, AMF_NOT_FOUND, L"UpdateCurrentOutput() - Failed to find output");
-    
+
     m_pCurrentOutput6 = nullptr;
     m_pCurrentOutput->QueryInterface(&m_pCurrentOutput6);
 
     if (changed || m_currentHDREnableState != HDREnabled())
     {
         AMF_RESULT res = UpdateColorSpace();
-        AMF_RETURN_IF_FAILED(res, L"UpdateCurrentOutput() - UpdateColorSpace() failed");        
+        AMF_RETURN_IF_FAILED(res, L"UpdateCurrentOutput() - UpdateColorSpace() failed");
         m_currentHDREnableState = HDREnabled();
     }
 
@@ -614,7 +622,7 @@ AMF_RESULT SwapChainDXGI::UpdateColorSpace()
             hdrMode = true;
         }
     }
-    
+
     if (dxgiColorSpace == DXGI_COLOR_SPACE_CUSTOM)
     {
         // G24 transfer isn't supported by AMF converter, need testing
@@ -668,13 +676,13 @@ AMF_RESULT SwapChainDXGI::UpdateColorSpace()
     // Display HDR metadata is normalized to 0-1.0. Need normalization to 50000 for primaries and 10000 for luminance
     m_outputHDRMetaData.redPrimary[0]               = amf_uint16(desc.RedPrimary[0]     * 50000.f);
     m_outputHDRMetaData.redPrimary[1]               = amf_uint16(desc.RedPrimary[1]     * 50000.f);
-    
+
     m_outputHDRMetaData.greenPrimary[0]             = amf_uint16(desc.GreenPrimary[0]   * 50000.f);
     m_outputHDRMetaData.greenPrimary[1]             = amf_uint16(desc.GreenPrimary[1]   * 50000.f);
-    
+
     m_outputHDRMetaData.bluePrimary[0]              = amf_uint16(desc.BluePrimary[0]    * 50000.f);
     m_outputHDRMetaData.bluePrimary[1]              = amf_uint16(desc.BluePrimary[1]    * 50000.f);
- 
+
     m_outputHDRMetaData.whitePoint[0]               = amf_uint16(desc.WhitePoint[0]     * 50000.f);
     m_outputHDRMetaData.whitePoint[1]               = amf_uint16(desc.WhitePoint[1]     * 50000.f);
 

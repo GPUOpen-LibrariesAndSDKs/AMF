@@ -181,7 +181,7 @@ ifeq (dbg,$(build_type))
 else
     pp_defines += NDEBUG
     cxx_flags += \
-	-fno-math-errno -fno-threadsafe-statics -fmerge-all-constants\
+	-fno-math-errno -fmerge-all-constants\
 	-O3 -fno-strict-aliasing -fno-delete-null-pointer-checks \
 	-fno-strict-overflow -flto
     ifndef NDK_PATH

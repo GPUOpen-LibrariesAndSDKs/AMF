@@ -89,8 +89,9 @@ namespace amf
         AMF_SURFACE_USAGE_TRANSFER_DST      = 0x00000010,   //								D3D12_RESOURCE_FLAG_NONE		            VK_IMAGE_USAGE_TRANSFER_DST_BIT
         AMF_SURFACE_USAGE_LINEAR            = 0x00000020,   //
         AMF_SURFACE_USAGE_NOSYNC            = 0x00000040,   //							    no fence (AMFFenceGUID) created	            no semaphore (AMFVulkanSync::hSemaphore) created
-        AMF_SURFACE_USAGE_DECODER_DST       = 0x00000080,   //							    	                                        VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR
+        AMF_SURFACE_USAGE_DECODER_DST       = 0x00000080,   //							    AMFResourceDecodeGUID is set to 1           VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR
         AMF_SURFACE_USAGE_DECODER_DPB       = 0x00000100,   //							    	                                        VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR
+        AMF_SURFACE_USAGE_NO_TRANSITION     = 0x00000200,   //							    	                                        no layout transition
     } AMF_SURFACE_USAGE_BITS;
     typedef amf_flags AMF_SURFACE_USAGE;
     //----------------------------------------------------------------------------------------------

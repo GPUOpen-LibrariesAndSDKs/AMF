@@ -428,7 +428,7 @@ AMF_RESULT VideoPresenterDX9::DrawFrame(IDirect3DSurface9* pSrcSurface, const Re
 
     // Create texture to pass in
     IDirect3DTexture9Ptr pSrcTexture;
-    HRESULT hr = m_pDevice->CreateTexture(desc.Width, desc.Height, 1, desc.Usage, desc.Format, desc.Pool, &pSrcTexture, nullptr);
+    HRESULT hr = m_pDevice->CreateTexture(desc.Width, desc.Height, 1, D3DUSAGE_RENDERTARGET, desc.Format, desc.Pool, &pSrcTexture, nullptr);
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"DrawFrame() - CreateTexture() failed");
 
     // Get top most surface of created texture

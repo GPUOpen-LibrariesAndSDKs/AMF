@@ -80,6 +80,11 @@ BEGIN
     BEGIN
         MENUITEM SEPARATOR
     END
+    POPUP "Processing"
+    BEGIN
+        MENUITEM SEPARATOR
+        MENUITEM "Pre-Analysis",               ID_PRE_ANALYSIS
+    END
     POPUP "&Help"
     BEGIN
         MENUITEM "&About ...",                  IDM_ABOUT

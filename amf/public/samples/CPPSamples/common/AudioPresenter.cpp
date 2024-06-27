@@ -47,9 +47,8 @@ AudioPresenter::AudioPresenter() :
     m_ResetAVSync(true),
     m_SequentiallyDroppedAudioSamplesCnt(0),
     m_SequentiallyLateAudioSamplesCnt(0),
-    m_AudioFrameCntForAverageAVDesync(0),
     m_DropCyclesCnt(0),
-    m_AverageAVDesync(0LL)
+    m_DesyncToIgnore(0LL)
 {}
 
 //-------------------------------------------------------------------------------------------------
@@ -136,58 +135,44 @@ bool AudioPresenter::ShouldPresentAudioOrNot(amf_pts videoPts, amf_pts audioPts)
     {
         m_FirstAudioSamplePts = audioPts;
         m_FirstAudioSampleTime = now;
-        m_AverageAVDesync = 0LL;
-        m_AudioFrameCntForAverageAVDesync = 0;
         m_SequentiallyLateAudioSamplesCnt = 0;
         m_SequentiallyDroppedAudioSamplesCnt = 0;
         m_ResetAVSync = false;
+        m_DesyncToIgnore = 0;
     }
 
-    amf_pts ptsSinceFirstFrame = audioPts - m_FirstAudioSamplePts;
-    amf_pts timeSinceFirstFrame = now - m_FirstAudioSampleTime;
-    if ((timeSinceFirstFrame - ptsSinceFirstFrame) > maxLateBy)
-    {
-        if (m_SequentiallyLateAudioSamplesCnt > 10 && m_SequentiallyDroppedAudioSamplesCnt < 10)
-        {
-            ++m_SequentiallyDroppedAudioSamplesCnt;
-            present = false;
-            AMFTraceInfo(AMF_FACILITY, L"Dropping late audio, late by %5.2fms", float(timeSinceFirstFrame - ptsSinceFirstFrame) / 10000.);
-        }
-        else
-        {
-            ++m_SequentiallyLateAudioSamplesCnt;
-            if (m_SequentiallyDroppedAudioSamplesCnt == 10)
-            {
-                if (++m_DropCyclesCnt == 100)
-                {
-                    m_FirstAudioSampleTime += maxLateBy;
-                    AMFTraceInfo(AMF_FACILITY, L"Cannot re-sync audio, advancing by %5.2fms", maxLateBy / 10000.);
-                }
-            }
-            m_SequentiallyDroppedAudioSamplesCnt = 0;
-        }
-    }
-    else
-    {
-        m_SequentiallyLateAudioSamplesCnt = 0;
-        m_SequentiallyDroppedAudioSamplesCnt = 0;
-        m_DropCyclesCnt = 0;
-    }
-     
     if (videoPts != -1LL)
     {
         //  Here we compensate for audio lagging behind video by more than a certain threshold
-        m_AverageAVDesync += videoPts - audioPts;
-        m_AverageAVDesync /= ++m_AudioFrameCntForAverageAVDesync;
-        if (m_AudioFrameCntForAverageAVDesync > 100)
+        m_AverageAVDesyncQueue.push_back(videoPts - audioPts);
+        if (m_AverageAVDesyncQueue.size() > 100)
         {
-            if (m_AverageAVDesync > maxLateBy)
+            amf_pts averageAVDesync = 0;
+            m_AverageAVDesyncQueue.pop_front();
+            for (auto ptsDiff : m_AverageAVDesyncQueue)
             {
-                present = false;
-                AMFTraceInfo(AMF_FACILITY, L"Dropping unsynced audio, desync=%5.2fms", float(m_AverageAVDesync) / 10000.);
+                averageAVDesync += ptsDiff;
             }
-            m_AverageAVDesync = 0LL;
-            m_AudioFrameCntForAverageAVDesync = 0;
+            averageAVDesync /= m_AverageAVDesyncQueue.size();
+            if (averageAVDesync > maxLateBy + m_DesyncToIgnore)
+            {
+                if (++m_SequentiallyDroppedAudioSamplesCnt < 50)
+                {
+                    present = false;
+                    AMFTraceWarning(AMF_FACILITY, L"Dropping unsynced audio, desync=%5.2fms", float(averageAVDesync) / AMF_MILLISECOND);
+                }
+                else
+                {
+                    AMFTraceWarning(AMF_FACILITY, L"Failed to resync audio and video, accepting desync of %5.2fms", float(averageAVDesync) / AMF_MILLISECOND);
+                    m_DesyncToIgnore += averageAVDesync;
+                    m_SequentiallyDroppedAudioSamplesCnt = 0;
+                }
+            }
+            else if (averageAVDesync < maxLateBy)
+            {
+                m_SequentiallyDroppedAudioSamplesCnt = 0;
+                m_DesyncToIgnore = 0;
+            }
         }
     }
     return present;

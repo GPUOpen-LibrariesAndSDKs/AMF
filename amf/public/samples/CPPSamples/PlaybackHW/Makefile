@@ -1,5 +1,5 @@
 #
-# MIT license 
+# MIT license
 #
 #
 # Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
@@ -32,7 +32,7 @@ target_type = exe
 
 pp_include_dirs = \
     $(amf_root) \
-    $(VK_SDK_PATH)/x86_64/include \
+    $(VULKAN_SDK)/include \
     $(build_dir) \
 
  linker_libs += asound

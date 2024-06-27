@@ -45,20 +45,22 @@
 #pragma warning(disable:4355)
 
 
-const wchar_t* DisplayDvrPipeline::PARAM_NAME_CODEC             = L"CODEC";
-const wchar_t* DisplayDvrPipeline::PARAM_NAME_OUTPUT            = L"OUTPUT";
-const wchar_t* DisplayDvrPipeline::PARAM_NAME_URL               = L"URL";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_CODEC               = L"CODEC";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_OUTPUT              = L"OUTPUT";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_URL                 = L"URL";
 
-const wchar_t* DisplayDvrPipeline::PARAM_NAME_ADAPTERID         = L"ADAPTERID";
-const wchar_t* DisplayDvrPipeline::PARAM_NAME_MONITORID         = L"MONITORID";
-const wchar_t* DisplayDvrPipeline::PARAM_NAME_MULTI_MONITOR     = L"MULTIMONITOR";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_ADAPTERID           = L"ADAPTERID";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_MONITORID           = L"MONITORID";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_MULTI_MONITOR       = L"MULTIMONITOR";
 
-const wchar_t* DisplayDvrPipeline::PARAM_NAME_VIDEO_HEIGHT      = L"VIDEOHEIGHT";
-const wchar_t* DisplayDvrPipeline::PARAM_NAME_VIDEO_WIDTH       = L"VIDEOWIDTH";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_VIDEO_HEIGHT        = L"VIDEOHEIGHT";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_VIDEO_WIDTH         = L"VIDEOWIDTH";
 
-const wchar_t* DisplayDvrPipeline::PARAM_NAME_OPENCL_CONVERTER  = L"OPENCLCONVERTER";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_OPENCL_CONVERTER    = L"OPENCLCONVERTER";
 
-const wchar_t* DisplayDvrPipeline::PARAM_NAME_CAPTURE_COMPONENT = L"CAPTURECOMPONENT";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_CAPTURE_COMPONENT   = L"CAPTURECOMPONENT";
+
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_ENABLE_PRE_ANALYSIS = L"PREANALYSIS";
 
 const unsigned kFFMPEG_AAC_CODEC_ID = 0x15002;
 
@@ -332,6 +334,7 @@ AMF_RESULT DisplayDvrPipeline::InitContext(const std::wstring& /*engineStr*/, am
 
     switch (engineMemoryType)
     {
+#if defined(_WIN32)
 #if !defined(METRO_APP)
     case amf::AMF_MEMORY_DX9:
         res = m_deviceDX9.Init(true, adapterID, false, 1, 1);
@@ -348,8 +351,17 @@ AMF_RESULT DisplayDvrPipeline::InitContext(const std::wstring& /*engineStr*/, am
         res = m_pContext->InitDX11(m_deviceDX11.GetDevice());
         CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX11() failed");
         break;
+#else
+    case amf::AMF_MEMORY_VULKAN:
+        res = m_deviceVulkan.Init(adapterID, m_pContext);
+        CHECK_AMF_ERROR_RETURN(res, L"m_deviceVulkan.Init() failed");
+        res = amf::AMFContext1Ptr(m_pContext)->InitVulkan(m_deviceVulkan.GetDevice());
+        CHECK_AMF_ERROR_RETURN(res, L"InitVulkan() failed");
+        break;
+#endif
     }
 
+#if defined(_WIN32)
     if (m_useOpenCLConverter)
     {
         res = m_deviceOpenCL.Init(m_deviceDX9.GetDevice(), m_deviceDX11.GetDevice(), NULL, NULL);
@@ -358,6 +370,8 @@ AMF_RESULT DisplayDvrPipeline::InitContext(const std::wstring& /*engineStr*/, am
         res = m_pContext->InitOpenCL(m_deviceOpenCL.GetCommandQueue());
         CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitOpenCL() failed");
     }
+#endif
+
 
     return res;
 }
@@ -380,11 +394,17 @@ AMF_RESULT DisplayDvrPipeline::InitVideo(amf_uint32 monitorID, amf::AMF_MEMORY_T
         res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFDisplayCapture, &pDisplayCapture);
         CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << L"CreateComponent()" << L") failed");
     }
-    else
+#if defined(_WIN32)
+    else if (captureComp == L"DD")
     {
         // Create DD capture component
         res = AMFCreateComponentDisplayCapture(m_pContext, nullptr, &pDisplayCapture);
         CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << L"AMFCreateComponentDisplayCapture()" << L") failed");
+    }
+#endif
+    else {
+        LOG_AMF_ERROR(AMF_FAIL, L"Unrecognized capture component: " << captureComp);
+        return AMF_FAIL;
     }
     m_pDisplayCapture.push_back(pDisplayCapture);
 
@@ -476,6 +496,96 @@ AMF_RESULT DisplayDvrPipeline::InitVideo(amf_uint32 monitorID, amf::AMF_MEMORY_T
     else
     {
         pEncoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE, true);
+    }
+
+    // Setup PA before call to initialize encoder
+    const wchar_t *maxThroughputPropName        = AMF_VIDEO_ENCODER_CAP_MAX_THROUGHPUT;
+    const wchar_t *requestedThroughputPropName  = AMF_VIDEO_ENCODER_CAP_REQUESTED_THROUGHPUT;
+    bool enablePA = false;
+    GetParam(PARAM_NAME_ENABLE_PRE_ANALYSIS, enablePA);
+
+    if (m_szEncoderID == AMFVideoEncoderVCE_AVC)
+    {
+        pEncoder->SetProperty(AMF_VIDEO_ENCODER_PRE_ANALYSIS_ENABLE, enablePA);
+        maxThroughputPropName = AMF_VIDEO_ENCODER_CAP_MAX_THROUGHPUT;
+        requestedThroughputPropName = AMF_VIDEO_ENCODER_CAP_REQUESTED_THROUGHPUT;
+    }
+    else if (m_szEncoderID == AMFVideoEncoder_HEVC)
+    {
+        pEncoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_PRE_ANALYSIS_ENABLE, enablePA);
+        maxThroughputPropName = AMF_VIDEO_ENCODER_HEVC_CAP_MAX_THROUGHPUT;
+        requestedThroughputPropName = AMF_VIDEO_ENCODER_HEVC_CAP_REQUESTED_THROUGHPUT;
+    }
+    else if (m_szEncoderID == AMFVideoEncoder_AV1)
+    {
+        pEncoder->SetProperty(AMF_VIDEO_ENCODER_AV1_PRE_ANALYSIS_ENABLE, enablePA);
+        maxThroughputPropName = AMF_VIDEO_ENCODER_AV1_CAP_MAX_THROUGHPUT;
+        requestedThroughputPropName = AMF_VIDEO_ENCODER_AV1_CAP_REQUESTED_THROUGHPUT;
+    }
+
+    amf_int64 bFrames = 3;
+    if (enablePA)
+    {
+        pEncoder->SetProperty(AMF_PA_ENGINE_TYPE, amf::AMF_MEMORY_OPENCL);
+        pEncoder->SetProperty(AMF_PA_LOOKAHEAD_BUFFER_DEPTH, 10);
+
+        if (m_szEncoderID == AMFVideoEncoderVCE_AVC)
+        {
+            pEncoder->SetProperty(AMF_VIDEO_ENCODER_MAX_CONSECUTIVE_BPICTURES, bFrames);
+            pEncoder->SetProperty(AMF_VIDEO_ENCODER_ADAPTIVE_MINIGOP, true);
+            pEncoder->SetProperty(AMF_PA_TAQ_MODE, AMF_PA_TAQ_MODE_2);
+        }
+    }
+
+    uint32_t mbSize = 16; // AVC
+    if (m_szEncoderID == AMFVideoEncoder_HEVC || m_szEncoderID == AMFVideoEncoder_AV1)
+    {
+        mbSize = 64;
+    }
+
+    amf_int64 mb_cx = (videoWidth + (mbSize - 1)) / mbSize;
+    amf_int64 mb_cy = (videoHeight + (mbSize - 1)) / mbSize;
+    amf_int64 throughput = (mb_cx * mb_cy * frameRate.num) / frameRate.den;
+    amf_int64 maxThroughput = 0;
+    amf_int64 requestedThroughput = 0;
+
+    amf::AMFCapsPtr pCaps;
+    res = pEncoder->GetCaps(&pCaps);
+    if (res == AMF_OK)
+    {
+        pCaps->GetProperty(maxThroughputPropName, &maxThroughput);
+        pCaps->GetProperty(requestedThroughputPropName, &requestedThroughput);
+    }
+
+    if (maxThroughput - requestedThroughput < throughput)
+    {
+        pEncoder->SetProperty(AMF_PA_TAQ_MODE, AMF_PA_TAQ_MODE_NONE);
+        res = pEncoder->GetCaps(&pCaps);
+        if (res == AMF_OK)
+        {
+            pCaps->GetProperty(maxThroughputPropName, &maxThroughput);
+            pCaps->GetProperty(requestedThroughputPropName, &requestedThroughput);
+        }
+    }
+
+    while (maxThroughput - requestedThroughput < throughput &&
+            bFrames > 0)
+    {
+        --bFrames;
+        pEncoder->SetProperty(AMF_VIDEO_ENCODER_MAX_CONSECUTIVE_BPICTURES, bFrames);
+        res = pEncoder->GetCaps(&pCaps);
+        if (res == AMF_OK)
+        {
+            pCaps->GetProperty(maxThroughputPropName, &maxThroughput);
+            pCaps->GetProperty(requestedThroughputPropName, &requestedThroughput);
+        }
+    }
+
+    // AMF_VIDEO_ENCODER_MAX_CONSECUTIVE_BPICTURES handles turning on / off AMF_VIDEO_ENCODER_ADAPTIVE_MINIGOP
+    // but still a good idea to disable it explicitly
+    if (bFrames < 1)
+    {
+        pEncoder->SetProperty(AMF_VIDEO_ENCODER_ADAPTIVE_MINIGOP, false);
     }
 
     res = pEncoder->Init(amf::AMF_SURFACE_NV12, videoWidth, videoHeight);
@@ -746,8 +856,13 @@ AMF_RESULT DisplayDvrPipeline::Init()
 
     // The duplicate display functionality used by the DisplayDvr
     // component requires DX11
+#if defined(_WIN32)
     std::wstring engineStr = L"DX11";
     amf::AMF_MEMORY_TYPE engineMemoryType = amf::AMF_MEMORY_DX11;
+#else
+    std::wstring engineStr = L"Vulkan";
+    amf::AMF_MEMORY_TYPE engineMemoryType = amf::AMF_MEMORY_VULKAN;
+#endif
 
     //---------------------------------------------------------------------------------------------
     // Init context and devices
@@ -906,15 +1021,21 @@ AMF_RESULT DisplayDvrPipeline::Stop()
         m_pContext->Terminate();
         m_pContext.Release();
     }
+#if defined(_WIN32)
 #if !defined(METRO_APP)
     m_deviceDX9.Terminate();
 #endif // !defined(METRO_APP)
     m_deviceDX11.Terminate();
+#else
+    m_deviceVulkan.Terminate();
+#endif
 
+#if defined(_WIN32)
     if (m_useOpenCLConverter)
     {
         m_deviceOpenCL.Terminate();
     }
+#endif
 
     return AMF_OK;
 }
@@ -969,7 +1090,7 @@ AMF_RESULT DisplayDvrPipeline::GetMonitorIDs(std::vector<amf_uint32>& monitorIDs
         pos = sIDs.find(L',', pos);
         std::wstring::size_type end = pos == std::wstring::npos ? sIDs.length() : pos;
         std::wstring tmp = sIDs.substr(old_pos, end - old_pos);
-        amf_uint32 id = _wtoi(tmp.c_str());
+        amf_uint32 id = wcstol(tmp.c_str(), 0, 10);
         monitorIDs.push_back(id);
         if (pos != std::wstring::npos)
         {

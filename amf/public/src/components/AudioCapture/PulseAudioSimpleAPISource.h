@@ -36,6 +36,7 @@
 #include <pulse/pulseaudio.h>
 #include "../../../common/AMFSTL.h"
 #include "../../../common/InterfaceImpl.h"
+#include "../../../common/Linux/PulseAudioImportTable.h"
 #include "../../../include/core/Context.h"
 #include "../../../include/components/AudioCapture.h"
 
@@ -75,6 +76,8 @@ namespace amf
         // Setup and teardown.
         virtual AMF_RESULT Init(bool captureMic);
         virtual AMF_RESULT Terminate();
+
+        PulseAudioImportTable m_pa;
 
         // PulseAudio simple API does not support async calls. Read will block until specified
         // amount of data has been read into the buffer.
