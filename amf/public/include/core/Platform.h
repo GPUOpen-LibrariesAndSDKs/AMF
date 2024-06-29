@@ -66,6 +66,20 @@
 
 #define AMF_TODO(_todo) (__FILE__ "(" AMF_MACRO_STRING(__LINE__) "): TODO: "_todo)
 
+/**
+*******************************************************************************
+*   AMF_UNICODE
+*
+*   @brief
+*       Macro to convert string constant into wide char string constant
+*
+*   Auxilary AMF_UNICODE_ macro is needed as otherwise it is not possible to use AMF_UNICODE(__FILE__)
+*   Microsoft macro _T also uses 2 passes to accomplish that
+*******************************************************************************
+*/
+#define AMF_UNICODE(s) AMF_UNICODE_(s)
+#define AMF_UNICODE_(s) L ## s
+
 
  #if defined(__GNUC__) || defined(__clang__)
      #define AMF_ALIGN(n) __attribute__((aligned(n)))
@@ -109,15 +123,6 @@ typedef signed int HRESULT;
     #define AMF_FORCEINLINE         __forceinline
 #endif
 
-    #define AMFPRId64   "I64d"
-    #define LPRId64    L"I64d"
-
-    #define AMFPRIud64   "Iu64d"
-    #define LPRIud64    L"Iu64d"
-
-    #define AMFPRIx64   "I64x"
-    #define LPRIx64    L"I64x"
-
 #else // !WIN32 - Linux and Mac
 
     #define AMF_STD_CALL
@@ -131,27 +136,36 @@ typedef signed int HRESULT;
     #define AMF_FORCEINLINE         __inline__
 #endif
 
-    #if defined(__x86_64__) || defined(__aarch64__)
-        #define AMFPRId64    "ld"
-        #define LPRId64     L"ld"
+#endif // WIN32
 
-        #define AMFPRIud64    "uld"
-        #define LPRIud64     L"uld"
+#if defined(__cplusplus) && (__cplusplus >= 201103L)
+    #include <cinttypes>
+    #define AMFPRId64   PRId64
 
-        #define AMFPRIx64    "lx"
-        #define LPRIx64     L"lx"
-    #else
+    #define AMFPRIud64  PRIu64
+
+    #define AMFPRIx64   PRIx64
+#else
+#if defined(_MSC_VER)
+    #define AMFPRId64   "I64d"
+
+    #define AMFPRIud64  "Iu64d"
+
+    #define AMFPRIx64   "I64x"
+#else
+    #if !defined(AMFPRId64)
         #define AMFPRId64    "lld"
-        #define LPRId64     L"lld"
 
-        #define AMFPRIud64    "ulld"
-        #define LPRIud64     L"ulld"
+        #define AMFPRIud64   "ulld"
 
         #define AMFPRIx64    "llx"
-        #define LPRIx64     L"llx"
     #endif
+#endif
+#endif
 
-#endif // WIN32
+#define LPRId64   AMF_UNICODE(AMFPRId64)
+#define LPRIud64  AMF_UNICODE(AMFPRIud64)
+#define LPRIx64   AMF_UNICODE(AMFPRIx64)
 
 
 #if defined(_WIN32)
