@@ -336,7 +336,7 @@ Sets the perceptual adaptive quantization mode.
    - HQLL: `AMF_PA_TAQ_MODE_NONE`
 
 **Description:**
-Sets the temporal adaptive quantization mode. MODE_1 is suitable for non-gaming applications whereas MODE_2 is suitable for gaming applications.
+Sets the temporal adaptive quantization mode. MODE_1 is suitable for non-gaming applications whereas MODE_2 is suitable for gaming applications. MODE_2 is supported on encoder memory type DX11.
 
 ---
 

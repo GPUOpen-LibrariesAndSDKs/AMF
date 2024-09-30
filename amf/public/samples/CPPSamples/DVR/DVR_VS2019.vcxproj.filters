@@ -93,6 +93,9 @@
     <ClCompile Include="..\common\CmdLineParser.cpp">
       <Filter>public\samples\CPPSamples\common</Filter>
     </ClCompile>
+    <ClCompile Include="..\common\DeviceDX12.cpp">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DVR.h">
@@ -184,6 +187,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\include\core\CurrentTime.h">
       <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\DeviceDX12.h">
+      <Filter>public\samples\CPPSamples\common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

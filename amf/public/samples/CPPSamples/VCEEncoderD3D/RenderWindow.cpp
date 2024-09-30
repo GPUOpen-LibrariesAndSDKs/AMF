@@ -78,7 +78,7 @@ BOOL    RenderWindow::MyEnumProc(HMONITOR hMonitor)
     return TRUE;
 }
 
-bool RenderWindow::CreateD3Window(amf_int32  width, amf_int32  height, amf_int32  adapterID, bool /* bFullScreen */)
+bool RenderWindow::CreateD3Window(amf_int32  width, amf_int32  height, amf_int32  adapterID, bool visible ,bool /* bFullScreen */)
 {
     if(m_hWnd != NULL)
     {
@@ -116,6 +116,7 @@ bool RenderWindow::CreateD3Window(amf_int32  width, amf_int32  height, amf_int32
         {
             break;
         }
+
         if(displayDevice.StateFlags & DISPLAY_DEVICE_ACTIVE)
         {
             if(adapterIDLocal == adapterID  || (adapterID == -1 && (displayDevice.StateFlags & DISPLAY_DEVICE_PRIMARY_DEVICE)) )
@@ -132,18 +133,65 @@ bool RenderWindow::CreateD3Window(amf_int32  width, amf_int32  height, amf_int32
     posX = (m_MonitorWorkArea.left + m_MonitorWorkArea.right) / 2 - width  / 2;
     posY = (m_MonitorWorkArea.top + m_MonitorWorkArea.bottom) / 2 - height / 2;
 
-//    GetWindowPosition(posX, posY);
-    m_hWnd = CreateWindow( L"videorender", L"VIDEORENDER", 
-//        bFullScreen ?  (WS_EX_TOPMOST | WS_POPUP) : WS_OVERLAPPEDWINDOW,
-        WS_POPUP,
-      posX, posY, width, height, NULL, NULL, hInstance, NULL);
 
-    ::ShowWindow(m_hWnd, SW_NORMAL);
-    
+    //    GetWindowPosition(posX, posY);
+    m_hWnd = CreateWindow(L"videorender", L"VIDEORENDER",
+        //        bFullScreen ?  (WS_EX_TOPMOST | WS_POPUP) : WS_OVERLAPPEDWINDOW,
+        WS_POPUP,
+        posX, posY, width, height, NULL, NULL, hInstance, NULL);
+
+    if (visible)
+    {
+        ::ShowWindow(m_hWnd, SW_NORMAL);
+    }
     ::UpdateWindow(m_hWnd);
     return true;
 }
 
+bool RenderWindow::CheckIntegratedMonitor()
+{
+
+    // find monitor actual size
+    UINT32 numPathArrayElements = 0;
+    UINT32 numModeInfoArrayElements = 0;
+
+    GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, &numPathArrayElements, &numModeInfoArrayElements);
+
+    std::vector<DISPLAYCONFIG_PATH_INFO> pathInfo;
+    pathInfo.resize(numPathArrayElements);
+    std::vector < DISPLAYCONFIG_MODE_INFO> modeInfo;
+    modeInfo.resize(numModeInfoArrayElements);
+
+    LONG retVal = QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, &numPathArrayElements, pathInfo.data(), &numModeInfoArrayElements, modeInfo.data(), nullptr);
+    if (retVal != ERROR_SUCCESS) 
+    {
+        LOG_ERROR(L"Failed to query DisplayConfigGetDeviceInfo");
+    }
+
+    // For each active path
+    for (UINT32 i = 0; i < numPathArrayElements; i++)
+    {
+        // Find the target (monitor) friendly name
+        DISPLAYCONFIG_TARGET_DEVICE_NAME targetName = {};
+        targetName.header.adapterId = pathInfo[i].targetInfo.adapterId;
+        targetName.header.id = pathInfo[i].targetInfo.id;
+        targetName.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME;
+        targetName.header.size = sizeof(targetName);
+        retVal = DisplayConfigGetDeviceInfo(&targetName.header);
+        if (retVal != ERROR_SUCCESS)
+        {
+            continue;
+        }
+        if (targetName.outputTechnology == DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INTERNAL 
+            || targetName.outputTechnology == DISPLAYCONFIG_OUTPUT_TECHNOLOGY_DISPLAYPORT_EMBEDDED
+            || targetName.outputTechnology == DISPLAYCONFIG_OUTPUT_TECHNOLOGY_UDI_EMBEDDED)
+        {
+            LOG_INFO(L"Integrated Monitor detected");
+            return true;
+        }
+    }
+    return false;
+}
 
 void RenderWindow::ProcessWindowMessages()
 {

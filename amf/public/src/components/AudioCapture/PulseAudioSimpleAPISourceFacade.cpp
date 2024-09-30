@@ -163,12 +163,12 @@ AMF_RESULT AMFPulseAudioSimpleAPISourceFacade::Terminate()
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMFPulseAudioSimpleAPISourceFacade::CaptureAudio(AMFAudioBufferPtr& pAudioBuffer, AMFContextPtr& pContext, amf_uint32& capturedSampleCount, amf_pts& latencyPts)
+AMF_RESULT AMFPulseAudioSimpleAPISourceFacade::CaptureAudio(AMFAudioBufferPtr& pAudioBuffer, AMFContextPtr& pContext, amf_uint32& capturedSampleCount)
 {
     AMFLock lock(&m_sync);
     if (m_isRoot == false)
     {
-        return AMFPulseAudioSimpleAPISourceImpl::CaptureAudio(pAudioBuffer, pContext, capturedSampleCount, latencyPts);
+        return AMFPulseAudioSimpleAPISourceImpl::CaptureAudio(pAudioBuffer, pContext, capturedSampleCount);
     }
 
     AMF_RETURN_IF_FALSE(m_iChildPid != 0, AMF_FAIL, L"Failed CaptureAudio(), no pulseaudio process.");
@@ -189,8 +189,6 @@ AMF_RESULT AMFPulseAudioSimpleAPISourceFacade::CaptureAudio(AMFAudioBufferPtr& p
     AMF_RETURN_IF_FAILED(res, L"Couldn't receive audio data from pulseaudio process");
     res = Receive(m_iSockets[PARENT_SOCKET], &capturedSampleCount, sizeof(capturedSampleCount));
     AMF_RETURN_IF_FAILED(res, L"Couldn't receive capturedSampleCount to from pulseaudio process");
-    res = Receive(m_iSockets[PARENT_SOCKET], &latencyPts, sizeof(latencyPts));
-    AMF_RETURN_IF_FAILED(res, L"Couldn't receive latency to from pulseaudio process");
 
     return res;
 }
@@ -225,15 +223,12 @@ AMF_RESULT AMFPulseAudioSimpleAPISourceFacade::Run(bool captureMic)
         {
             case PULSE_FACADE_CAPTUREAUDIO: {
                 amf_uint32 capturedSampleCount = 0;
-                amf_pts latencyPts = 0;
-                res = AMFPulseAudioSimpleAPISourceImpl::CaptureAudioRaw(data.get(), m_SampleCount, capturedSampleCount, latencyPts);
+                res = AMFPulseAudioSimpleAPISourceImpl::CaptureAudioRaw(data.get(), m_SampleCount, capturedSampleCount);
 
                 res = Send(m_iSockets[CHILD_SOCKET], data.get(), totalData);
                 AMF_RETURN_IF_FAILED(res, L"send audio data to parent process failed");
                 res = Send(m_iSockets[CHILD_SOCKET], &capturedSampleCount, sizeof(capturedSampleCount));
                 AMF_RETURN_IF_FAILED(res, L"send capturedSampleCount to parent process failed");
-                res = Send(m_iSockets[CHILD_SOCKET], &latencyPts, sizeof(latencyPts));
-                AMF_RETURN_IF_FAILED(res, L"send latency to parent process failed");
                 break;
             }
             case PULSE_FACADE_TERMINATE:

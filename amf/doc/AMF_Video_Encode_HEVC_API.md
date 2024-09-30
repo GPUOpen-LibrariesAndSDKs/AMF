@@ -151,7 +151,7 @@ Per submission properties are applied on a per frame basis. They can be set opti
 
 Region of importance (ROI) feature provides a way to specify the relative importance of the macroblocks in the video frame. Encoder will further adjust the bits allocation among code blocks based on the importance, on top of the base rate control decisions. More important blocks will be encoded with relatively better quality.
 
-The ROI map can be attached to the input frame on a per frame basis. Currently, the ROI map can only use system memory. The ROI map includes the importance values of each 64x64 CTB, ranging from 0 to 10, stored in 32bit unsinged format. Refer to SimpleROI sample application for further implementation details.
+The ROI map can be attached to the input frame on a per frame basis. Currently, the ROI map can only use system memory. The ROI map includes the importance values of each 64x64 CTB, ranging from `0` (least important) to `10` (most important), stored in 32bit unsigned format. Refer to SimpleROI sample application for further implementation details.
 
 #### 2.2.5 Encoder Statistics Feedback
 
@@ -1406,6 +1406,7 @@ Timeout for `QueryOutput` call in ms
 
 **Description:**
 Timeout for `QueryOutput` call in ms.
+Setting this to a nonzero value will reduce polling load when `QueryOutput` is called; it will be blocked until the frame is ready or until the timeout is reached.
 
 ---
 
@@ -1782,7 +1783,7 @@ Video surface in `AMF_SURFACE_GRAY32` format
 `N\A`
 
 **Description:**
-Important value for each 64x64 block ranges from `0` to `10`, stored in 32bit unsigned format.
+Importance value for each 64x64 block ranges from `0` (least important) to `10` (most important), stored in 32bit unsigned format.
 
 ---
 
@@ -2113,7 +2114,7 @@ Pre analysis module is available.
 
 
 **Description:**
-ROI map support is available for HEVC UVE encoder, n/a for the other encoders.
+ROI map support is available.
 
 ---
 

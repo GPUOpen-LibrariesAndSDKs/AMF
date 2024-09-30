@@ -139,7 +139,7 @@ Per submission properties are applied on a per frame basis. They can be set opti
 
 Region of importance (ROI) feature provides a way to specify the relative importance of the macroblocks in the video frame. Encoder will further adjust the bits allocation among code blocks based on the importance, on top of the base rate control decisions. More important blocks will be encoded with relatively better quality.
 
-The ROI map can be attached to the input frame on a per frame basis. Currently, the ROI map can only use system memory. The ROI map includes the importance values of each 64x64 SB, ranging from `0` to `10`, stored in 32bit unsinged format. Refer to SimpleROI sample application for further implementation details.
+The ROI map can be attached to the input frame on a per frame basis. Currently, the ROI map can only use system memory. The ROI map includes the importance values of each 64x64 SB, ranging from `0` (least important) to `10` (most important), stored in 32bit unsigned format. Refer to SimpleROI sample application for further implementation details.
 
 #### 2.2.5 Encoder Statistics Feedback
 
@@ -1360,6 +1360,7 @@ Selects the quality preset in HW to balance between encoding speed and video qua
 
 **Description:**
 Timeout for QueryOutput call in ms.
+Setting this to a nonzero value will reduce polling load when `QueryOutput` is called; it will be blocked until the frame is ready or until the timeout is reached.
 
 ---
 
@@ -1431,10 +1432,10 @@ Table 8. Encoder configuration
 `true`, `false`
 
 **Default Value:**
-`false`
+`true`
 
 **Description:**
-If true, allow enabling screen content tools by `AMF_VIDEO_ENCODER_AV1_PALETTE_MODE_ENABLE` and `AMF_VIDEO_ENCODER_AV1_FORCE_INTEGER_MV`; if false, all screen content tools are disabled.
+If `true`, allow enabling screen content tools by `AMF_VIDEO_ENCODER_AV1_PALETTE_MODE_ENABLE` and `AMF_VIDEO_ENCODER_AV1_FORCE_INTEGER_MV`; if `false`, all screen content tools are disabled.
 
 ---
 
@@ -1445,10 +1446,10 @@ If true, allow enabling screen content tools by `AMF_VIDEO_ENCODER_AV1_PALETTE_M
 `true`, `false`
 
 **Default Value:**
-depends on `USAGE`
+`true`
 
 **Description:**
-If true, enable palette mode; if false, disable palette mode. Valid only when `AMF_VIDEO_ENCODER_AV1_SCREEN_CONTENT_TOOLS` is true.
+If `true`, enable palette mode; if `false`, disable palette mode. Valid only when `AMF_VIDEO_ENCODER_AV1_SCREEN_CONTENT_TOOLS` is `true`.
 
 ---
 
@@ -1459,7 +1460,7 @@ If true, enable palette mode; if false, disable palette mode. Valid only when `A
 `true`, `false`
 
 **Default Value:**
-depends on `USAGE`
+`false`
 
 **Description:**
 If `true`, enable force integer MV; if `false`, disable force integer MV. Valid only when `AMF_VIDEO_ENCODER_AV1_SCREEN_CONTENT_TOOLS` is `true`.
@@ -1543,10 +1544,10 @@ Sets the number of bits in each pixel’s color component in the encoder’s com
 `true`, `false`
 
 **Default Value:**
-`false`
+`true`
 
 **Description:**
-If `false`, disable CDF update.
+If `false`, disable CDF update. If `true`, enable CDF update.
 
 ---
 
@@ -1852,7 +1853,7 @@ Video surface in `AMF_SURFACE_GRAY32` format
 `N/A`
 
 **Description:**
-Important value for each 64x64 block ranges from `0` to `10`, stored in 32bit unsigned format.
+Importance value for each 64x64 block ranges from `0` (least important) to `10` (most important), stored in 32bit unsigned format.
 
 ---
 
@@ -2010,7 +2011,9 @@ Returns reconstructed picture as an `AMFSurface` attached to the output buffer a
 | MAX_LEVEL                                     | amf_int64 |
 | MAX_NUM_TEMPORAL_LAYERS                       | amf_int64 |
 | MAX_NUM_LTR_FRAMES                            | amf_int64 |
-| SUPPORT_TILE_OUTPUT                            | amf_bool |
+| SUPPORT_TILE_OUTPUT                           | amf_bool  |
+| WIDTH_ALIGNMENT_FACTOR                        | amf_int64 |
+| HEIGHT_ALIGNMENT_FACTOR                       | amf_int64 |
 
 <p align="center">
 Table 14. Encoder capabilities exposed in AMFCaps interface
@@ -2144,6 +2147,30 @@ The cap of maximum number of LTR frames. This value is calculated based on curre
 
 **Description:**
 If tile output is supported.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_AV1_CAP_WIDTH_ALIGNMENT_FACTOR`
+
+**Values:**
+Integers, >=0
+
+
+**Description:**
+This is used for querying the av1 picture width alignment factor
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_AV1_CAP_HEIGHT_ALIGNMENT_FACTOR`
+
+**Values:**
+Integers, >=0
+
+
+**Description:**
+This is used for querying the av1 picture height alignment factor
 
 ---
 

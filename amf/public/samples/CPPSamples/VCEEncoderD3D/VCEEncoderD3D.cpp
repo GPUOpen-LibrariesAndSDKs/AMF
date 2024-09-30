@@ -79,7 +79,7 @@ static AMF_RESULT RegisterParams(ParametersStorage* pParams)
 {
     
     pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_OUTPUT, ParamCommon, L"Output file name", NULL);
-    pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_RENDER, ParamCommon,  L"Specifies render type (DX9, DX9Ex, DX11, OpenGL, OpenCL, Host, OpenCLDX9, OpenCLDX11, OpenGLDX9, OpenGLDX11, OpenCLOpenGLDX9, OpenCLOpenGLDX11, HostDX9, HostDX11, DX11DX9, Vulkan)", NULL);
+    pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_RENDER, ParamCommon,  L"Specifies render type (DX9, DX9Ex, DX11, DX12, OpenGL, OpenCL, Host, OpenCLDX9, OpenCLDX11, OpenGLDX9, OpenGLDX11, OpenCLOpenGLDX9, OpenCLOpenGLDX11, HostDX9, HostDX11, HostDX12, DX11DX9, Vulkan)", NULL);
 
     pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_WIDTH, ParamCommon, L"Frame width (integer, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_HEIGHT, ParamCommon, L"Frame height (integer, default = 0)", ParamConverterInt64);

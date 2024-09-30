@@ -499,10 +499,13 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::QueryOutput(AMFData** ppData)
                         {
                         case AV_CODEC_ID_H264:
                             pBufferOut->SetProperty(AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE, AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_IDR);
+                            break;
                         case AV_CODEC_ID_HEVC:
                             pBufferOut->SetProperty(AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE, AMF_VIDEO_ENCODER_HEVC_OUTPUT_DATA_TYPE_IDR);
+                            break;
                         case AV_CODEC_ID_AV1:
                             pBufferOut->SetProperty(AMF_VIDEO_ENCODER_AV1_OUTPUT_FRAME_TYPE, AMF_VIDEO_ENCODER_AV1_OUTPUT_FRAME_TYPE_KEY);
+                            break;
                         }
                     }
 

@@ -23,7 +23,6 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>VCEEncoderD3D</RootNamespace>
     <ProjectName>VCEEncoderD3D</ProjectName>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -200,7 +199,9 @@
     <ClInclude Include="..\..\..\common\Windows\UtilsWindows.h" />
     <ClInclude Include="..\common\CmdLineParser.h" />
     <ClInclude Include="..\common\CmdLogger.h" />
+    <ClInclude Include="..\common\d3dx12.h" />
     <ClInclude Include="..\common\DeviceDX11.h" />
+    <ClInclude Include="..\common\DeviceDX12.h" />
     <ClInclude Include="..\common\DeviceDX9.h" />
     <ClInclude Include="..\common\DeviceOpenCL.h" />
     <ClInclude Include="..\common\DeviceOpenGL.h" />
@@ -213,6 +214,8 @@
     <ClInclude Include="..\common\Pipeline.h" />
     <ClInclude Include="..\common\PipelineElement.h" />
     <ClInclude Include="..\common\SwapChain.h" />
+    <ClInclude Include="..\common\SwapChainDX12.h" />
+    <ClInclude Include="..\common\SwapChainDXGI.h" />
     <ClInclude Include="..\common\SwapChainVulkan.h" />
     <ClInclude Include="RenderEncodePipeline.h" />
     <ClInclude Include="RenderWindow.h" />
@@ -220,6 +223,7 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="VideoRender.h" />
     <ClInclude Include="VideoRenderDX11.h" />
+    <ClInclude Include="VideoRenderDX12.h" />
     <ClInclude Include="VideoRenderDX9.h" />
     <ClInclude Include="VideoRenderHost.h" />
     <ClInclude Include="VideoRenderOpenCL.h" />
@@ -255,6 +259,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\common\DeviceDX11.cpp" />
+    <ClCompile Include="..\common\DeviceDX12.cpp" />
     <ClCompile Include="..\common\DeviceDX9.cpp" />
     <ClCompile Include="..\common\DeviceOpenCL.cpp" />
     <ClCompile Include="..\common\DeviceOpenGL.cpp" />
@@ -271,6 +276,8 @@
     </ClCompile>
     <ClCompile Include="..\common\Pipeline.cpp" />
     <ClCompile Include="..\common\SwapChain.cpp" />
+    <ClCompile Include="..\common\SwapChainDX12.cpp" />
+    <ClCompile Include="..\common\SwapChainDXGI.cpp" />
     <ClCompile Include="..\common\SwapChainVulkan.cpp" />
     <ClCompile Include="RenderEncodePipeline.cpp" />
     <ClCompile Include="RenderWindow.cpp" />
@@ -283,6 +290,7 @@
     <ClCompile Include="VCEEncoderD3D.cpp" />
     <ClCompile Include="VideoRender.cpp" />
     <ClCompile Include="VideoRenderDX11.cpp" />
+    <ClCompile Include="VideoRenderDX12.cpp" />
     <ClCompile Include="VideoRenderDX9.cpp" />
     <ClCompile Include="VideoRenderHost.cpp" />
     <ClCompile Include="VideoRenderOpenCL.cpp" />

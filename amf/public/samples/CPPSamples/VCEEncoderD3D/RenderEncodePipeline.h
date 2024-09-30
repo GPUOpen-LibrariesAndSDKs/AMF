@@ -49,6 +49,7 @@
 #if defined(_WIN32)
 #include "../common/DeviceDX9.h"
 #include "../common/DeviceDX11.h"
+#include "../common/DeviceDX12.h"
 #include "../common/DeviceOpenGL.h"
 #include "../common/DeviceOpenCL.h"
 #endif
@@ -102,6 +103,7 @@ private:
 #if defined(_WIN32)
     DeviceDX9                   m_deviceDX9;
     DeviceDX11                  m_deviceDX11;
+    DeviceDX12                  m_deviceDX12;
     DeviceOpenGL                m_deviceOpenGL;
     DeviceOpenCL                m_deviceOpenCL;
 #endif

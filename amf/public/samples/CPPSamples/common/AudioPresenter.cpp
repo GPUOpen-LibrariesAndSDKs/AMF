@@ -153,7 +153,8 @@ bool AudioPresenter::ShouldPresentAudioOrNot(amf_pts videoPts, amf_pts audioPts)
             {
                 averageAVDesync += ptsDiff;
             }
-            averageAVDesync /= m_AverageAVDesyncQueue.size();
+            // we need to cast to signed, because otherwise the division gets computed unsigned
+            averageAVDesync /= static_cast<amf_pts>(m_AverageAVDesyncQueue.size());
             if (averageAVDesync > maxLateBy + m_DesyncToIgnore)
             {
                 if (++m_SequentiallyDroppedAudioSamplesCnt < 50)

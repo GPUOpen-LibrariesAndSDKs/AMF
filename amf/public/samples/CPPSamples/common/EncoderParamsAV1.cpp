@@ -251,6 +251,22 @@ static AMF_RESULT ParamConverterLTRMode(const std::wstring& value, amf::AMFVaria
     return AMF_OK;
 }
 
+static AMF_RESULT ParamConverterOutputModeAV1(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_VIDEO_ENCODER_AV1_OUTPUT_MODE_ENUM paramValue;
+    std::wstring uppValue = toUpper(value);
+    if(uppValue == L"FRAME" || uppValue == L"0")
+    {
+        paramValue =  AMF_VIDEO_ENCODER_AV1_OUTPUT_MODE_FRAME;
+    } else if(uppValue == L"TILE" || uppValue == L"1") {
+        paramValue =  AMF_VIDEO_ENCODER_AV1_OUTPUT_MODE_TILE;
+    } else {
+        LOG_ERROR(L"AMF_VIDEO_ENCODER_AV1_OUTPUT_MODE_ENUM hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
 static AMF_RESULT ParamConverterCDEFMode(const std::wstring& value, amf::AMFVariant& valueOut)
 {
     AMF_VIDEO_ENCODER_AV1_CDEF_MODE_ENUM paramValue;
@@ -510,6 +526,7 @@ AMF_RESULT RegisterEncoderParamsAV1(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_CDEF_MODE, ParamEncoderStatic, L"Cdef mode (ENABLE, DISABLE default = depends on USAGE)", ParamConverterCDEFMode);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_ERROR_RESILIENT_MODE, ParamEncoderStatic, L"Enable error resilient mode (true, false default =  depends on USAGE)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_LTR_MODE, ParamEncoderStatic, L"LTR Mode (RESET_UNUSED = 0, KEEP_UNUSED = 1, default = RESET_UNUSED)", ParamConverterLTRMode);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_OUTPUT_MODE, ParamEncoderStatic, L"Output Mode (FRAME, TILE, default = FRAME)", ParamConverterOutputModeAV1);
     // Rate Control and Quality Enhancement
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD, ParamEncoderStatic, L"Rate Control Method (CQP, CBR, VBR, VBR_LAT default = depends on USAGE)", ParamConverterRateControlAV1);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_INITIAL_VBV_BUFFER_FULLNESS, ParamEncoderStatic, L"Initial VBV Buffer Fullness (integer, 0=0% 64=100% ,default = depends on USAGE)", ParamConverterInt64);
@@ -529,6 +546,8 @@ AMF_RESULT RegisterEncoderParamsAV1(ParametersStorage* pParams)
     // AV1 Alignment mode
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE, ParamEncoderStatic, L"AV1 Alignment mode. (64X16ONLY=1, 64X16A1080P=2, NORESTRICTIONS=3, default = 1)", ParamConverterAlignmentModeAV1);
 
+    // Split frame encode flag
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_MULTI_HW_INSTANCE_ENCODE, ParamEncoderStatic, L"Enable AV1 encoder split frame encode feature (bool, default = true)", ParamConverterBoolean);
     // ------------- Encoder params dynamic ---------------
     // Codec Configuration
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_PALETTE_MODE, ParamEncoderDynamic, L"Enable palette mode (true, false default =  false)", ParamConverterBoolean);

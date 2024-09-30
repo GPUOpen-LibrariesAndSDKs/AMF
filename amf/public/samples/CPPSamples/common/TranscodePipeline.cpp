@@ -943,14 +943,24 @@ AMF_RESULT  TranscodePipeline::InitVideoDecoder(const wchar_t *pDecoderID, amf_i
     AMF_VIDEO_DECODER_MODE_ENUM   decoderMode = AMF_VIDEO_DECODER_MODE_COMPLIANT; //amf:::AMF_VIDEO_DECODER_MODE_REGULAR , AMF_VIDEO_DECODER_MODE_LOW_LATENCY;
     AMF_RESULT res = AMF_OK;
 
-    res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, pDecoderID, &m_pDecoder);
-    CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFVideoDecoderUVD_H264_AVC << L") failed");
+    bool bSWDecoder = false;
+    pParams->GetParam(PARAM_NAME_SWDECODE, bSWDecoder);
+
+    if (false == bSWDecoder)
+    {
+        res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, pDecoderID, &m_pDecoder);
+        CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFVideoDecoderUVD_H264_AVC << L") failed");
+    }
+    
 
     // check resolution
-
     amf::AMFCapsPtr pCaps;
-    m_pDecoder->GetCaps(&pCaps);
-    if (pCaps != nullptr)
+    if (nullptr != m_pDecoder)
+    {
+        m_pDecoder->GetCaps(&pCaps);
+    }
+    // if use swdecoder, m_pDecoder is nullptr and we don't go through this part.
+    if (pCaps != nullptr && m_pDecoder != nullptr) 
     {
         amf::AMFIOCapsPtr pInputCaps;
         pCaps->GetInputCaps(&pInputCaps);
@@ -1049,7 +1059,10 @@ AMF_RESULT  TranscodePipeline::InitVideoDecoder(const wchar_t *pDecoderID, amf_i
         m_pDecoder = nullptr;
     }
 
-
+    // use software decoder
+    //   - if specifically requested
+    //   - if resolution not supported
+    //   - if codec not supported
     if (m_pDecoder == nullptr)
     {
         res = g_AMFFactory.LoadExternalComponent(m_pContext, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_VIDEO_DECODER, &m_pDecoder);
@@ -1192,7 +1205,7 @@ AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamRe
         pOutput->GetProperty(AMF_STREAM_EXTRA_DATA, &pInterface);
         pExtraData = amf::AMFBufferPtr(pInterface);
 
-        AMFSize frameSize;
+        AMFSize frameSize = {};
         pOutput->GetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, &frameSize);
         videoWidth = frameSize.width;
         videoHeight = frameSize.height;

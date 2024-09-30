@@ -287,6 +287,12 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
         renderMemoryType = amf::AMF_MEMORY_DX11;
         encoderMemoryType = amf::AMF_MEMORY_DX11;
     }else
+    if (uppValue == L"DX12")
+    {
+        renderMemoryType = amf::AMF_MEMORY_DX12;
+        encoderMemoryType = amf::AMF_MEMORY_DX12;
+    }
+    else
     if(uppValue == L"OPENGL")
     {
         renderMemoryType = amf::AMF_MEMORY_OPENGL;
@@ -373,9 +379,19 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
     // Create window if needed
     amf_handle hWnd = NULL;
     amf_handle hDisplay = NULL;
-    if(bWnd)
+
+#if defined(_WIN32)
+    if (m_window.CheckIntegratedMonitor() && adapterID > 0 &&(secondaryMemoryType == amf::AMF_MEMORY_OPENGL
+        || renderMemoryType == amf::AMF_MEMORY_OPENGL))
     {
-        if(!m_window.CreateD3Window(width, height, adapterID, bFullScreen))
+        CHECK_RETURN(false, AMF_FAIL, L"OpenGL CAN NOT be created correct adapter with integrated display connected - Terminating");
+    }
+
+
+    if(bWnd || renderMemoryType == amf::AMF_MEMORY_DX12 || renderMemoryType == amf::AMF_MEMORY_VULKAN 
+        || secondaryMemoryType == amf::AMF_MEMORY_OPENGL || renderMemoryType == amf::AMF_MEMORY_OPENGL )
+    {
+        if(!m_window.CreateD3Window(width, height, adapterID, bWnd, bFullScreen))
         {
             CHECK_RETURN(false, AMF_FAIL, L"CreateD3Window() failed.");
         }
@@ -384,17 +400,16 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
     }
     else
     {
-#if defined(_WIN32)
         hWnd = ::GetDesktopWindow();
-#else        
-        if(!m_window.CreateD3Window(width, height, adapterID, bFullScreen))
-        {
-            CHECK_RETURN(false, AMF_FAIL, L"CreateD3Window() failed.");
-        }
-        hWnd = m_window.GetHwnd();
-        hDisplay = m_window.GetDisplay();
-#endif        
     }
+#else        
+    if (!m_window.CreateD3Window(width, height, adapterID, bFullScreen))
+    {
+        CHECK_RETURN(false, AMF_FAIL, L"CreateD3Window() failed.");
+    }
+    hWnd = m_window.GetHwnd();
+    hDisplay = m_window.GetDisplay();
+#endif
 
     //---------------------------------------------------------------------------------------------
     // Init context and devices
@@ -430,6 +445,15 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
 			res = m_pContext->InitDX9(m_deviceDX9.GetDevice());
 			CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX9() failed");
 		}
+    }
+    if (renderMemoryType == amf::AMF_MEMORY_DX12 || encoderMemoryType == amf::AMF_MEMORY_DX12)
+    {
+        //in case of opengl usage we need to select only adapter with output (display)
+        res = m_deviceDX12.Init(adapterID);
+        CHECK_AMF_ERROR_RETURN(res, L"m_deviceDX12.Init() failed");
+        displayDeviceName = m_deviceDX12.GetDisplayDeviceName();
+        res = amf::AMFContext2Ptr(m_pContext)->InitDX12(m_deviceDX12.GetDevice());
+        CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX12() failed");
     }
     if(renderMemoryType == amf::AMF_MEMORY_OPENGL || secondaryMemoryType == amf::AMF_MEMORY_OPENGL)
     {
@@ -516,7 +540,7 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
     PushParamsToPropertyStorage(pParams, ParamEncoderDynamic, m_pEncoder);
 
     // Query Number of VCE Independent Instances and selecting proper one.
-    amf_bool toQuery;
+    amf_bool toQuery = false;
 	amf_int32   numOfInstances = 0;
 	amf_int32	 selectedInstance;
     amf::AMFCapsPtr encoderCaps;

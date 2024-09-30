@@ -84,6 +84,9 @@ The output format must be same as the input and the format conversion is not sup
 |AMF_FRC_MODE|AMF_FRC_MODE_TYPE|
 |AMF_FRC_ENABLE_FALLBACK|Bool|
 |AMF_FRC_INDICATOR|Bool|
+|AMF_FRC_PROFILE|AMF_FRC_PROFILE_TYPE|
+|AMF_FRC_MV_SEARCH_MODE|AMF_FRC_SEARCH_MODE_TYPE|
+|AMF_FRC_USE_FUTURE_FRAME|Bool|
 
 <p align="center">
 Table 1. AMF FRC Properties
@@ -128,7 +131,6 @@ Specifies which FRC frames are presented.
 `AMF_FRC_ENABLE_FALLBACK`
 
 **Values:**
-
 |Name|Description|
 |:-|:-|
 |`true`|Low confidence to do the interpolation, two frames will be blended together.|
@@ -153,6 +155,55 @@ Specifies the fallback mode.
 
 **Description:**
 Specifies whether or not the FRC indicator square is shown in the top right corner of the video.
+
+---
+
+**Name:**
+`AMF_FRC_PROFILE`
+
+**Values:**
+|Name|Description|
+|:-|:-|
+|`FRC_PROFILE_LOW`|Less levels of hierarchical motion search. Only recommended for extremely low resolutions.|
+|`FRC_PROFILE_HIGH`|Recommended for any resolution up to 1440p.|
+|`FRC_PROFILE_SUPER`|More levels of hierarchical motion search. Recommended for resolutions 1440p or higher.|
+
+**Default Value:**
+`FRC_PROFILE_HIGH`
+
+**Description:**
+Specifies the levels of hierarchical motion search. It is recommended to set this value according to the resolution of the input.
+
+---
+
+**Name:**
+`AMF_FRC_MV_SEARCH_MODE`
+
+**Values:**
+|Name|Description|
+|:-|:-|
+|`FRC_MV_SEARCH_NATIVE`|Conduct motion search on the full resolution of source images.|
+|`FRC_MV_SEARCH_PERFORMANCE`|Conduct motion search on the down scaled source images. Recommended for APU or low end GPU for better performance.|
+
+**Default Value:**
+`FRC_MV_SEARCH_NATIVE`
+
+**Description:**
+Specifies the performance mode of the motion search.
+
+---
+
+**Name:**
+`AMF_FRC_USE_FUTURE_FRAME`
+
+**Values:**
+`true`, `false`
+
+**Default Value:**
+`false`
+
+**Description:**
+When enabled, the information contained in the next frame in the sequence will be used in FRC interpolation calculations, in addition to the current pair of frames. This will introduce one extra frame time of latency.
 
 ---
 

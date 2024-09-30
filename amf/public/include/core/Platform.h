@@ -66,6 +66,7 @@
 
 #define AMF_TODO(_todo) (__FILE__ "(" AMF_MACRO_STRING(__LINE__) "): TODO: "_todo)
 
+
 /**
 *******************************************************************************
 *   AMF_UNICODE
@@ -135,6 +136,7 @@ typedef signed int HRESULT;
     #define AMF_INLINE              __inline__
     #define AMF_FORCEINLINE         __inline__
 #endif
+
 
 #endif // WIN32
 

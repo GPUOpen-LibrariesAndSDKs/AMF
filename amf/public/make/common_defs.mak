@@ -162,7 +162,17 @@ pp_defines = \
 cxx_flags = \
    -pthread \
    -Werror \
-   -std=c++11 \
+   -Wall \
+   -Wextra \
+   -Wno-unknown-pragmas \
+   -Wno-reorder \
+   -Wno-unused \
+   -Wno-switch \
+   -Wno-sign-compare \
+   -Wno-nonnull \
+   -Wno-missing-field-initializers \
+   -Wno-overloaded-virtual \
+   -std=c++2a \
    -fexceptions \
    -fno-rtti \
    -fvisibility=hidden \
@@ -222,3 +232,11 @@ build_info_vars = \
     amf_root target_name custom_target host_bits build_type exe_target_file target_type CXX LNK
 
 vulkan_shader_output_dir = $(build_dir)
+
+ifeq ($(uname_p),aarch64)
+  ffmpeg_platform=arm
+else
+  ffmpeg_platform=lnx
+endif
+
+ffmpeg_dir = $(amf_root)/../Thirdparty/ffmpeg/ffmpeg/ffmpeg-7.0/$(ffmpeg_platform)$(host_bits)/release

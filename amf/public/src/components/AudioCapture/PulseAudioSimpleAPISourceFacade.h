@@ -51,7 +51,7 @@ namespace amf
         virtual AMF_RESULT Init(bool captureMic) override;
         virtual AMF_RESULT Terminate() override;
 
-        virtual AMF_RESULT CaptureAudio(AMFAudioBufferPtr& pAudioBuffer, AMFContextPtr& pContext, amf_uint32& capturedSampleCount, amf_pts& latencyPts) override;
+        virtual AMF_RESULT CaptureAudio(AMFAudioBufferPtr& pAudioBuffer, AMFContextPtr& pContext, amf_uint32& capturedSampleCount) override;
     private:
         AMF_RESULT Run(bool captureMic);
 

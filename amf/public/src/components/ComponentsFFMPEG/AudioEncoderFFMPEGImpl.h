@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -61,7 +61,7 @@ namespace amf
 
     //-------------------------------------------------------------------------------------------------
 
-    class AMFAudioEncoderFFMPEGImpl : 
+    class AMFAudioEncoderFFMPEGImpl :
         public AMFInterfaceBase,
         public AMFPropertyStorageExImpl<AMFComponent>
     {
@@ -100,19 +100,15 @@ namespace amf
         AMF_RESULT  AMF_STD_CALL  GetNewFrame(AMFAudioBuffer** pNewBuffer, amf_int32 requiredSize);
         AMF_RESULT  AMF_STD_CALL  SplitOrCombineFrames(AMFAudioBuffer* pInBuffer, amf_int32 requiredSize);
         AMF_RESULT  AMF_STD_CALL  InitializeFrame(AMFAudioBuffer* pInBuffer, AVFrame& avFrame);
+        AMF_RESULT  AMF_STD_CALL  PacketToBuffer(const AVPacket& avPacket, AMFBuffer** ppOutBuffer);
+        AMF_RESULT  AMF_STD_CALL  UpdatePacketProperties(AMFBuffer* pOutBuffer);
+
+        AMF_RESULT  AMF_STD_CALL  SubmitFrame(AMFAudioBuffer* pInBuffer);
+        AMF_RESULT  AMF_STD_CALL  RetrievePackets();
 
 
     private:
       mutable AMFCriticalSection  m_sync;
-
-      // in QueryOutput, we want to make sure that we match the 
-      // input frame that went in with what's coming out, so we 
-      // copy the right properties to the right data going out 
-      struct AMFTransitFrame
-      {
-          AMFDataPtr  pData;
-          amf_bool    isOriginal;
-      };
 
         AMFContextPtr                 m_pContext;
         amf_bool                      m_bEncodingEnabled;
@@ -124,32 +120,39 @@ namespace amf
         amf_int32                     m_channelCount;
         amf_int32                     m_sampleRate;
 
-        std::list<AMFTransitFrame>    m_inputData;
+        std::list<AMFAudioBufferPtr>  m_inputFrames;
+        std::list<AMFBufferPtr>       m_outputFrames;
+
+        // in QueryOutput, we want to make sure that we match the
+        // input frame that went in with what's coming out, so we
+        // copy the right properties to the right data going out
+        std::list<AMFAudioBufferPtr>  m_submittedFrames;
+
         amf_pts                       m_firstFramePts;
         amf_int64                     m_firstFFMPEGPts;
 
-        // it is possible we need to combine/split input 
+        // it is possible we need to combine/split input
         // frames to get them to what the encoder needs
-        // in which case, we need to keep track of the full
-        // frames ready to send to the encoder and to the 
-        // partial frame that still has data that needs to
-        // be filled with the next frame coming in
+        // in which case, we need to keep track of the
+        // partial frame that still has data that needs
+        // to be filled with the next frame coming in
         amf_bool                      m_samplePreProcRequired;
-        std::list<AMFAudioBufferPtr>  m_preparedFrames;
         std::list<AMFAudioBufferPtr>  m_recycledFrames;
         AMFAudioBufferPtr             m_pPartialFrame;
         amf_int32                     m_partialFrameSampleCount;
 
+        amf_bool                      m_isDraining;
+        amf_bool                      m_isEncDrained;
         amf_bool                      m_bEof;
 
         amf_int64                     m_audioFrameSubmitCount;
         amf_int64                     m_audioFrameQueryCount;
 
-        
+
         AMFAudioEncoderFFMPEGImpl(const AMFAudioEncoderFFMPEGImpl&);
         AMFAudioEncoderFFMPEGImpl& operator=(const AMFAudioEncoderFFMPEGImpl&);
     };
 
  //   typedef AMFInterfacePtr_T<AMFAudioEncoderFFMPEGImpl>    AMFAudioEncoderFFMPEGImplPtr;
-    
+
 }

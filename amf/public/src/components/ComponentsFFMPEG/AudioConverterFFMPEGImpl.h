@@ -115,8 +115,8 @@ namespace amf
         amf_int64               m_outSampleRate;
         amf_int64               m_inChannels;
         amf_int64               m_outChannels;
-        amf_int64               m_inChannelLayout;
-        amf_int64               m_outChannelLayout;
+        AVChannelLayout         m_inChannelLayout;
+        AVChannelLayout         m_outChannelLayout;
 
         bool                    m_bEof;
         amf_pts                 m_ptsNext;

@@ -23,7 +23,6 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>TranscodeHW</RootNamespace>
     <ProjectName>TranscodeHW</ProjectName>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -107,6 +106,7 @@
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(VK_SDK_PATH)\lib32;$(SolutionDir)..\..\lib\vs2019x$(PlatformArchitecture)$(Configuration)\;</AdditionalLibraryDirectories>
       <AdditionalDependencies>DXGI.LIB;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -156,6 +156,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(VK_SDK_PATH)\lib32;$(SolutionDir)..\..\lib\vs2019x$(PlatformArchitecture)$(Configuration)\;</AdditionalLibraryDirectories>
       <AdditionalDependencies>DXGI.LIB;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

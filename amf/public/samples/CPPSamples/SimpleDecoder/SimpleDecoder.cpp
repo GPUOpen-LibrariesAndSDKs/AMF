@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
     }
 
 	BitStreamType bsType = GetStreamType(fileNameIn);
-	// H264/H265 elemntary stream parser from samples common
+    // H264/H265/AV1 IVF elementary stream parser from samples common
 	parser = BitStreamParser::Create(datastream, bsType, context);
 
     // open output file with frame size in file name
@@ -168,6 +168,8 @@ int main(int argc, char* argv[])
 		res = g_AMFFactory.GetFactory()->CreateComponent(context, AMFVideoDecoderUVD_H264_AVC, &decoder);
 	else if (bsType == BitStream265AnnexB)
 		res = g_AMFFactory.GetFactory()->CreateComponent(context, AMFVideoDecoderHW_H265_HEVC, &decoder);
+    else if (bsType == BitStreamIVF)
+        res = g_AMFFactory.GetFactory()->CreateComponent(context, AMFVideoDecoderHW_AV1, &decoder);
 
     res = decoder->SetProperty(AMF_TIMESTAMP_MODE, amf_int64(AMF_TS_DECODE)); // our sample H264 parser provides decode order timestamps - change this depend on demuxer
 
@@ -202,12 +204,20 @@ int main(int argc, char* argv[])
         amf_pts start_time = amf_high_precision_clock();
         data->SetProperty(START_TIME_PROPERTY, start_time);
 
-        res = decoder->SubmitInput(data);
+        if (res == AMF_REPEAT)
+        { // current buffer contains more than one frame, process the remaining data before submitting new data
+            res = decoder->SubmitInput(NULL);
+        }
+        else
+        {
+            res = decoder->SubmitInput(data);
+        }
+
         if(res == AMF_NEED_MORE_INPUT)
         {
 			// do nothing
         }
-        else if(res == AMF_INPUT_FULL || res == AMF_DECODER_NO_FREE_SURFACES)
+        else if(res == AMF_INPUT_FULL || res == AMF_DECODER_NO_FREE_SURFACES || res == AMF_REPEAT)
         { // queue is full; sleep, try to get ready surfaces  in polling thread and repeat submission
             bNeedNewInput = false;
             amf_sleep(1);

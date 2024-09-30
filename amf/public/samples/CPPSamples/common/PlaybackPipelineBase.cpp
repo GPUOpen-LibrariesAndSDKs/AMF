@@ -506,7 +506,7 @@ AMF_RESULT PlaybackPipelineBase::Init()
 
 AMF_RESULT PlaybackPipelineBase::InitAudioPipeline(amf_uint32 iAudioStreamIndex, PipelineElementPtr pAudioSourceStream)
 {
-	if (iAudioStreamIndex >= 0 && m_pAudioPresenter != NULL && pAudioSourceStream != NULL)
+	if (m_pAudioPresenter != NULL && pAudioSourceStream != NULL)
 	{
 		Connect(PipelineElementPtr(new AMFComponentElement(m_pAudioDecoder)), 0, pAudioSourceStream, iAudioStreamIndex, m_bURL ? 1000 : 100, CT_ThreadQueue);
 		Connect(PipelineElementPtr(new AMFComponentElement(m_pAudioConverter)), 10);
@@ -897,7 +897,7 @@ AMF_RESULT  PlaybackPipelineBase::InitVideoDecoder(const wchar_t *pDecoderID, am
             {
                 m_eDecoderFormat = surfaceFormat;
             }
-            if (pExtraData != nullptr)
+            if (pExtraData != nullptr || std::wstring(pDecoderID) == AMFVideoDecoderUVD_MJPEG)
             {
                 res = m_pVideoDecoder->Init(m_eDecoderFormat, m_iVideoWidth, m_iVideoHeight);
             }
@@ -1532,7 +1532,7 @@ AMF_RESULT  PlaybackPipelineBase::InitVideo(amf::AMFOutput* pOutput, amf::AMF_ME
         pOutput->GetProperty(AMF_STREAM_EXTRA_DATA, &pInterface);
         pExtraData = amf::AMFBufferPtr(pInterface);
 
-        AMFSize frameSize;
+        AMFSize frameSize = {};
         pOutput->GetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, &frameSize);
         m_iVideoWidth = frameSize.width;
         m_iVideoHeight = frameSize.height;
@@ -1683,7 +1683,7 @@ AMF_RESULT PlaybackPipelineBase::OnActivate(bool bActivated)
             GetParam(PARAM_NAME_PIP, bEnablePIP);
             m_pVideoPresenter->SetEnablePIP(bEnablePIP);
 
-            AMFPoint PIPFocusPos;
+            AMFPoint PIPFocusPos = {};
             GetParam(PARAM_NAME_PIP_FOCUS_X, PIPFocusPos.x);
             GetParam(PARAM_NAME_PIP_FOCUS_Y, PIPFocusPos.y);
             AMFFloatPoint2D fPIPFocusPos = { (amf_float)PIPFocusPos.x / (amf_float)m_iVideoWidth, (amf_float)PIPFocusPos.y / (amf_float)m_iVideoHeight };
@@ -1714,11 +1714,11 @@ AMF_RESULT PlaybackPipelineBase::ReInit()
             GetParam(PARAM_NAME_PIP, bEnablePIP);
             m_pVideoPresenter->SetEnablePIP(bEnablePIP);
 
-            amf_int iPIPZoomFactor;
+            amf_int iPIPZoomFactor = 0;
             GetParam(PARAM_NAME_PIP_ZOOM_FACTOR, iPIPZoomFactor);
             m_pVideoPresenter->SetPIPZoomFactor(iPIPZoomFactor);
 
-            AMFPoint PIPFocusPos;
+            AMFPoint PIPFocusPos = {};
             GetParam(PARAM_NAME_PIP_FOCUS_X, PIPFocusPos.x);
             GetParam(PARAM_NAME_PIP_FOCUS_Y, PIPFocusPos.y);
             AMFFloatPoint2D fPIPFocusPos = { (amf_float)PIPFocusPos.x / (amf_float)m_iVideoWidth, (amf_float)PIPFocusPos.y / (amf_float)m_iVideoHeight };

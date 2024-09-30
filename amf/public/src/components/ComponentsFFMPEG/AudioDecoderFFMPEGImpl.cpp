@@ -172,9 +172,9 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
 
     // initialize the codec context from the component properties
     AMF_RETURN_IF_FAILED(GetProperty(AUDIO_DECODER_IN_AUDIO_BIT_RATE, &m_pCodecContext->bit_rate));
-    AMF_RETURN_IF_FAILED(GetProperty(AUDIO_DECODER_IN_AUDIO_CHANNELS, &m_pCodecContext->channels));
+    AMF_RETURN_IF_FAILED(GetProperty(AUDIO_DECODER_IN_AUDIO_CHANNELS, &m_pCodecContext->ch_layout.nb_channels));
     AMF_RETURN_IF_FAILED(GetProperty(AUDIO_DECODER_IN_AUDIO_BLOCK_ALIGN, &m_pCodecContext->block_align));
-    AMF_RETURN_IF_FAILED(GetProperty(AUDIO_DECODER_IN_AUDIO_CHANNEL_LAYOUT, &m_pCodecContext->channel_layout));
+    AMF_RETURN_IF_FAILED(GetProperty(AUDIO_DECODER_IN_AUDIO_CHANNEL_LAYOUT, &m_pCodecContext->ch_layout.u.mask));
     AMF_RETURN_IF_FAILED(GetProperty(AUDIO_DECODER_IN_AUDIO_FRAME_SIZE, &m_pCodecContext->frame_size));
 
     AMF_RETURN_IF_FAILED(GetProperty(AUDIO_DECODER_IN_AUDIO_SAMPLE_RATE, &m_pCodecContext->sample_rate));
@@ -219,9 +219,8 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
     }
 
 	AMFTraceInfo(AMF_FACILITY, L"AudioDecoder:IN codec=%S format=%d rate=%d channels=%d layout=%lld frame-size=%d",
-		avcodec_get_name((AVCodecID) codecID), m_pCodecContext->sample_fmt, m_pCodecContext->sample_rate, m_pCodecContext->channels,
-		m_pCodecContext->channel_layout, m_pCodecContext->frame_size);
-
+            avcodec_get_name((AVCodecID) codecID), m_pCodecContext->sample_fmt, m_pCodecContext->sample_rate, m_pCodecContext->ch_layout.nb_channels,
+            m_pCodecContext->ch_layout.u.mask, m_pCodecContext->frame_size);
     if (avcodec_open2(m_pCodecContext, pCodec, NULL) < 0)
     {
         Terminate();
@@ -229,9 +228,9 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
     }
 
     // MM get - around some WMV audio codecs
-    if(m_pCodecContext->channel_layout == 0)
+    if(m_pCodecContext->ch_layout.u.mask == 0)
     {
-        m_pCodecContext->channel_layout = AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT;
+        m_pCodecContext->ch_layout.u.mask = AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT;
     }
 
 	switch (m_pCodecContext->sample_fmt)
@@ -256,13 +255,13 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
     // output properties
     AMF_RETURN_IF_FAILED(SetProperty(AUDIO_DECODER_OUT_AUDIO_SAMPLE_FORMAT, sampleFormat));
     AMF_RETURN_IF_FAILED(SetProperty(AUDIO_DECODER_OUT_AUDIO_SAMPLE_RATE, m_pCodecContext->sample_rate));
-    AMF_RETURN_IF_FAILED(SetProperty(AUDIO_DECODER_OUT_AUDIO_CHANNELS, m_pCodecContext->channels));
-    AMF_RETURN_IF_FAILED(SetProperty(AUDIO_DECODER_OUT_AUDIO_CHANNEL_LAYOUT, m_pCodecContext->channel_layout));
+    AMF_RETURN_IF_FAILED(SetProperty(AUDIO_DECODER_OUT_AUDIO_CHANNELS, m_pCodecContext->ch_layout.nb_channels));
+    AMF_RETURN_IF_FAILED(SetProperty(AUDIO_DECODER_OUT_AUDIO_CHANNEL_LAYOUT, m_pCodecContext->ch_layout.u.mask));
 
-    const amf_int64  outputBitRate = (amf_int64) GetAudioSampleSize((AMF_AUDIO_FORMAT) sampleFormat) * m_pCodecContext->sample_rate * m_pCodecContext->channels * 8;
+    const amf_int64  outputBitRate = (amf_int64) GetAudioSampleSize((AMF_AUDIO_FORMAT) sampleFormat) * m_pCodecContext->sample_rate * m_pCodecContext->ch_layout.nb_channels * 8;
     AMF_RETURN_IF_FAILED(SetProperty(AUDIO_DECODER_OUT_AUDIO_BIT_RATE, outputBitRate));
 
-    const amf_int64  blockAlign = m_pCodecContext->channels * GetAudioSampleSize((AMF_AUDIO_FORMAT) sampleFormat);
+    const amf_int64  blockAlign = m_pCodecContext->ch_layout.nb_channels * GetAudioSampleSize((AMF_AUDIO_FORMAT) sampleFormat);
     AMF_RETURN_IF_FAILED(SetProperty(AUDIO_DECODER_OUT_AUDIO_BLOCK_ALIGN, blockAlign));
 
     AMF_RETURN_IF_FAILED(GetProperty(AUDIO_DECODER_ENABLE_DECODING, &m_bDecodingEnabled));
@@ -270,8 +269,8 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
 
     AMFTraceDebug(AMF_FACILITY, L"AMFAudioDecoderFFMPEGImpl::Init() - Completed for codec %d", m_pCodecContext->codec_id);
 	AMFTraceInfo(AMF_FACILITY, L"AudioDecoder:OUT codec=%S format=%lld rate=%d channels=%d layout=%d",
-		avcodec_get_name((AVCodecID) codecID), sampleFormat, m_pCodecContext->sample_rate, m_pCodecContext->channels,
-		m_pCodecContext->channel_layout);
+		avcodec_get_name((AVCodecID) codecID), sampleFormat, m_pCodecContext->sample_rate, m_pCodecContext->ch_layout.nb_channels,
+        m_pCodecContext->ch_layout.u.mask);
 
     return AMF_OK;
 }
@@ -585,7 +584,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
             (AMF_AUDIO_FORMAT) sampleFormat,
             decoded_frame.nb_samples,
             m_pCodecContext->sample_rate,
-            m_pCodecContext->channels,
+            m_pCodecContext->ch_layout.nb_channels,
             &pOutputAudioBuffer);
         AMF_RETURN_IF_FAILED(err, L"QueryOutput() - AllocAudioBuffer failed");
 
@@ -596,8 +595,8 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
         //
         // copy data to output buffer
         const amf_bool   isPlanar        = IsAudioPlanar((AMF_AUDIO_FORMAT) sampleFormat);
-        const amf_int32  audioSampleSize = GetAudioSampleSize((AMF_AUDIO_FORMAT) sampleFormat) * (isPlanar ? 1 : m_pCodecContext->channels);
-        const amf_int32  outputChannels  = isPlanar ? m_pCodecContext->channels : 1;
+        const amf_int32  audioSampleSize = GetAudioSampleSize((AMF_AUDIO_FORMAT) sampleFormat) * (isPlanar ? 1 : m_pCodecContext->ch_layout.nb_channels);
+        const amf_int32  outputChannels  = isPlanar ? m_pCodecContext->ch_layout.nb_channels : 1;
         for (amf_int32 ch = 0; ch < outputChannels; ch++)
         {
             AMF_RETURN_IF_INVALID_POINTER(decoded_frame.data[ch], L"QueryOutput() - decoded_frame.data[%d] is NULL", ch);

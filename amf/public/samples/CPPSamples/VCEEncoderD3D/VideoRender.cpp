@@ -37,6 +37,7 @@
 #include "VideoRenderOpenCL.h"
 #include "VideoRenderDX9.h"
 #include "VideoRenderDX11.h"
+#include "VideoRenderDX12.h"
 #endif
 #include "VideoRenderHost.h"
 #include "VideoRenderVulkan.h"
@@ -69,6 +70,9 @@ VideoRenderPtr VideoRender::Create(amf_int width, amf_int height, bool bInterlac
         break;
     case amf::AMF_MEMORY_DX11:
         engine = VideoRenderPtr(new VideoRenderDX11(width, height, bInterlaced, frames, pContext));
+        break;
+    case amf::AMF_MEMORY_DX12:
+        engine = VideoRenderPtr(new VideoRenderDX12(width, height, bInterlaced, frames, pContext));
         break;
     case amf::AMF_MEMORY_OPENGL:
         engine = VideoRenderPtr(new VideoRenderOpenGL(width, height, bInterlaced, frames, pContext));

@@ -285,6 +285,7 @@ DisplayDvrPipeline::DisplayDvrPipeline()
     , m_outVideoStreamMuxerIndex(-1)
     , m_outAudioStreamMuxerIndex(-1)
     , m_useOpenCLConverter(false)
+    , m_engineMemoryType(amf::AMF_MEMORY_UNKNOWN)
 {
     SetParamDescription(PARAM_NAME_CODEC, ParamCommon, L"Codec name (AVC or H264, HEVC or H265)", ParamConverterCodec);
     SetParamDescription(PARAM_NAME_OUTPUT, ParamCommon, L"Output file name", NULL);
@@ -295,7 +296,7 @@ DisplayDvrPipeline::DisplayDvrPipeline()
     SetParamDescription(PARAM_NAME_VIDEO_HEIGHT, ParamCommon, L"Video height (number, default = 1080)", NULL);
     SetParamDescription(PARAM_NAME_VIDEO_WIDTH, ParamCommon, L"Video width (number, default = 1920)", NULL);
     SetParamDescription(PARAM_NAME_OPENCL_CONVERTER, ParamCommon, L"Use OpenCL Converter (bool, default = false)", ParamConverterBoolean);
-    SetParamDescription(PARAM_NAME_CAPTURE_COMPONENT, ParamCommon, L"Display capture component (AMD or DD)", NULL);
+    SetParamDescription(PARAM_NAME_CAPTURE_COMPONENT, ParamCommon, L"Display capture component (AMD DX11/DX12 or DD)", NULL);
 
     // to demo frame-specific properties - will be applied to each N-th frame (force IDR)
     SetParam(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, amf_int64(AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR));
@@ -334,7 +335,14 @@ AMF_RESULT DisplayDvrPipeline::InitContext(const std::wstring& /*engineStr*/, am
 
     switch (engineMemoryType)
     {
-#if defined(_WIN32)
+#if !defined(_WIN32)
+    case amf::AMF_MEMORY_VULKAN:
+        res = m_deviceVulkan.Init(adapterID, m_pContext);
+        CHECK_AMF_ERROR_RETURN(res, L"m_deviceVulkan.Init() failed");
+        res = amf::AMFContext1Ptr(m_pContext)->InitVulkan(m_deviceVulkan.GetDevice());
+        CHECK_AMF_ERROR_RETURN(res, L"InitVulkan() failed");
+        break;
+#else
 #if !defined(METRO_APP)
     case amf::AMF_MEMORY_DX9:
         res = m_deviceDX9.Init(true, adapterID, false, 1, 1);
@@ -344,20 +352,20 @@ AMF_RESULT DisplayDvrPipeline::InitContext(const std::wstring& /*engineStr*/, am
         CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX9() failed");
         break;
 #endif//#if !defined(METRO_APP)
+    case amf::AMF_MEMORY_DX12:
+        res = m_deviceDX12.Init(adapterID);
+        CHECK_AMF_ERROR_RETURN(res, L"m_deviceDX12.Init() failed");
+
+        res = amf::AMFContext2Ptr(m_pContext)->InitDX12(m_deviceDX12.GetDevice());
+        CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX12() failed");
+        break;
     case amf::AMF_MEMORY_DX11:
+    default:
         res = m_deviceDX11.Init(adapterID);
         CHECK_AMF_ERROR_RETURN(res, L"m_deviceDX11.Init() failed");
 
         res = m_pContext->InitDX11(m_deviceDX11.GetDevice());
         CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX11() failed");
-        break;
-#else
-    case amf::AMF_MEMORY_VULKAN:
-        res = m_deviceVulkan.Init(adapterID, m_pContext);
-        CHECK_AMF_ERROR_RETURN(res, L"m_deviceVulkan.Init() failed");
-        res = amf::AMFContext1Ptr(m_pContext)->InitVulkan(m_deviceVulkan.GetDevice());
-        CHECK_AMF_ERROR_RETURN(res, L"InitVulkan() failed");
-        break;
 #endif
     }
 
@@ -390,7 +398,8 @@ AMF_RESULT DisplayDvrPipeline::InitVideo(amf_uint32 monitorID, amf::AMF_MEMORY_T
     amf::AMFComponentPtr pDisplayCapture;
     if (captureComp == L"AMD")
     {
-        // Create AMD capture component
+        // Create AMD capture component 
+        // Default capture type selects memory type by checking context->GetXXDevice()!=nullptr
         res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFDisplayCapture, &pDisplayCapture);
         CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << L"CreateComponent()" << L") failed");
     }
@@ -857,16 +866,15 @@ AMF_RESULT DisplayDvrPipeline::Init()
     // The duplicate display functionality used by the DisplayDvr
     // component requires DX11
 #if defined(_WIN32)
-    std::wstring engineStr = L"DX11";
-    amf::AMF_MEMORY_TYPE engineMemoryType = amf::AMF_MEMORY_DX11;
+    std::wstring engineStr = L"DX11";//not used
 #else
     std::wstring engineStr = L"Vulkan";
-    amf::AMF_MEMORY_TYPE engineMemoryType = amf::AMF_MEMORY_VULKAN;
+    m_engineMemoryType = amf::AMF_MEMORY_VULKAN;
 #endif
 
     //---------------------------------------------------------------------------------------------
     // Init context and devices
-    res = InitContext(engineStr, engineMemoryType, adapterID);
+    res = InitContext(engineStr, m_engineMemoryType, adapterID);
     if (AMF_OK != res)
     {
         return res;
@@ -879,7 +887,7 @@ AMF_RESULT DisplayDvrPipeline::Init()
     {
         //---------------------------------------------------------------------------------------------
         // Init video except the muxer
-        res = InitVideo(*it, engineMemoryType, videoWidth, videoHeight);
+        res = InitVideo(*it, m_engineMemoryType, videoWidth, videoHeight);
         if (AMF_OK == res)
         {
             hasDDVideoStream = true;
@@ -1113,6 +1121,16 @@ AMF_RESULT DisplayDvrPipeline::SetMonitorIDs(const std::vector<amf_uint32>& moni
     }
     SetParamAsString(PARAM_NAME_MONITORID, result.str());
     return AMF_OK;
+}
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT DisplayDvrPipeline::SetEngineMemoryTypes(amf::AMF_MEMORY_TYPE engineMemoryType)
+{
+    m_engineMemoryType = engineMemoryType;
+    return AMF_OK;
+}
+amf::AMF_MEMORY_TYPE DisplayDvrPipeline::GetEngineMemoryTypes()
+{
+    return m_engineMemoryType;
 }
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT                DisplayDvrPipeline::UpdateMuxerFileName()

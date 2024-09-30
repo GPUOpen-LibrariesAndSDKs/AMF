@@ -389,9 +389,9 @@ AMFFileDemuxerFFMPEGImpl::AMFAudioOutputDemuxerImpl::AMFAudioOutputDemuxerImpl(A
     // figure out the surface format conversion
     AMF_AUDIO_FORMAT  audioFormat = GetAMFAudioFormat((AVSampleFormat)ist->codecpar->format);
 
-    if(ist->codecpar->channels == 0) // ffmpeg return 0 for some AAC files
+    if(ist->codecpar->ch_layout.nb_channels == 0) // ffmpeg return 0 for some AAC files
     {
-        ist->codecpar->channels = 2;
+        ist->codecpar->ch_layout.nb_channels = 2;
     }
 
 
@@ -402,9 +402,9 @@ AMFFileDemuxerFFMPEGImpl::AMFAudioOutputDemuxerImpl::AMFAudioOutputDemuxerImpl(A
         AMFPropertyInfoInt64(AMF_STREAM_BIT_RATE, L"Bit Rate", ist->codecpar->bit_rate, 0, INT_MAX, false),
         AMFPropertyInfoInterface(AMF_STREAM_EXTRA_DATA, L"Extra Data", NULL, false),
         AMFPropertyInfoInt64(AMF_STREAM_AUDIO_SAMPLE_RATE, L"Sample Rate", ist->codecpar->sample_rate, 0, INT_MAX, false),
-        AMFPropertyInfoInt64(AMF_STREAM_AUDIO_CHANNELS, L"Channels", ist->codecpar->channels, 0, 100, false),
+        AMFPropertyInfoInt64(AMF_STREAM_AUDIO_CHANNELS, L"Channels", ist->codecpar->ch_layout.nb_channels, 0, 100, false),
         AMFPropertyInfoEnum(AMF_STREAM_AUDIO_FORMAT, L"Sample Format", audioFormat, AMF_SAMPLE_FORMAT_ENUM_DESCRIPTION, false),
-        AMFPropertyInfoInt64(AMF_STREAM_AUDIO_CHANNEL_LAYOUT, L"Channel Layout", ist->codecpar->channel_layout, 0, INT_MAX, false),
+        AMFPropertyInfoInt64(AMF_STREAM_AUDIO_CHANNEL_LAYOUT, L"Channel Layout", ist->codecpar->ch_layout.u.mask, 0, INT_MAX, false),
         AMFPropertyInfoInt64(AMF_STREAM_AUDIO_BLOCK_ALIGN, L"Block Align", ist->codecpar->block_align, 0, INT_MAX, false),
         AMFPropertyInfoInt64(AMF_STREAM_AUDIO_FRAME_SIZE, L"Frame Size", ist->codecpar->frame_size, 0, INT_MAX, false),
     AMFPrimitivePropertyInfoMapEnd
@@ -412,9 +412,9 @@ AMFFileDemuxerFFMPEGImpl::AMFAudioOutputDemuxerImpl::AMFAudioOutputDemuxerImpl(A
     SetProperty(AMF_STREAM_CODEC_ID, ist->codecpar->codec_id);
     SetProperty(AMF_STREAM_BIT_RATE, ist->codecpar->bit_rate);
     SetProperty(AMF_STREAM_AUDIO_SAMPLE_RATE, ist->codecpar->sample_rate);
-    SetProperty(AMF_STREAM_AUDIO_CHANNELS, ist->codecpar->channels);
+    SetProperty(AMF_STREAM_AUDIO_CHANNELS, ist->codecpar->ch_layout.nb_channels);
     SetProperty(AMF_STREAM_AUDIO_FORMAT, audioFormat);
-    SetProperty(AMF_STREAM_AUDIO_CHANNEL_LAYOUT, ist->codecpar->channel_layout);
+    SetProperty(AMF_STREAM_AUDIO_CHANNEL_LAYOUT, ist->codecpar->ch_layout.u.mask);
     SetProperty(AMF_STREAM_AUDIO_BLOCK_ALIGN, ist->codecpar->block_align);
     SetProperty(AMF_STREAM_AUDIO_FRAME_SIZE, ist->codecpar->frame_size);
 

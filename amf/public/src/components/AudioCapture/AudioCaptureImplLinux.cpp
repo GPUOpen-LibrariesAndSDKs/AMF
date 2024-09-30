@@ -291,11 +291,8 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
         // m_pContext should not be nullptr.
         AMF_RETURN_IF_FALSE(m_pContext != nullptr, AMF_FAIL, L"AMFAudioCaptureImpl::PollStream(): AMF context is NULL");
 
-        // This will be the latency between audio and record, i.e. the time of record - the time when the audio was played
-        // in default source.
-        amf_pts audioLatency;
         // Allocates memory for pAudioBuffer and capture audio directly into it.
-        res = m_pAMFDataStreamAudio->CaptureAudio(pAudioBuffer, m_pContext, capturedSamples, audioLatency);
+        res = m_pAMFDataStreamAudio->CaptureAudio(pAudioBuffer, m_pContext, capturedSamples);
         AMF_RETURN_IF_FALSE(pAudioBuffer!=nullptr, AMF_FAIL, L"CaptureAudio failed! pAudioBuffer is nullptr!");
         AMF_RETURN_IF_FAILED(res, L"CaptureAudio failed!");
 
@@ -304,11 +301,9 @@ AMF_RESULT AMFAudioCaptureImpl::PollStream()
 
         // If it's the frist time we capture, use the "real" time as current pts. For the rest we add the sample duration
         // calculated from sample amount and sample rate.
-        // Because it's after the capture, we deduct the audioLatency and duration from it to get approximate start time
-        // of the audio.
         if (0 == m_CurrentPts)
         {
-            m_CurrentPts = GetCurrentPts() - audioLatency - duration;
+            m_CurrentPts = GetCurrentPts() - duration;
         }
         pAudioBuffer->SetPts(m_CurrentPts);
         pAudioBuffer->SetDuration(duration);

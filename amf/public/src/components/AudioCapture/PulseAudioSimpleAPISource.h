@@ -84,8 +84,8 @@ namespace amf
         // With those constraints, currently we always capture 490 samples (corresponds to 1/90 ms)
         // so capturedSampleCount will always be 490.
         // CaptureAudio allocates pAudioBuffer and directly capture data into it.
-        virtual AMF_RESULT CaptureAudio(AMFAudioBufferPtr& pAudoBuffer, AMFContextPtr& pContext, amf_uint32& capturedSampleCount, amf_pts& latencyPts);
-        AMF_RESULT CaptureAudioRaw(short* dest, amf_uint32 sampleCount, amf_uint32& capturedSampleCount, amf_pts& latencyPts);
+        virtual AMF_RESULT CaptureAudio(AMFAudioBufferPtr& pAudoBuffer, AMFContextPtr& pContext, amf_uint32& capturedSampleCount);
+        AMF_RESULT CaptureAudioRaw(short* dest, amf_uint32 sampleCount, amf_uint32& capturedSampleCount);
 
         void AddToSourceList(amf_string& srcName);
         void AddToSinkMonitorList(amf_string& srcName);

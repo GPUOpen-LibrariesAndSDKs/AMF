@@ -439,12 +439,17 @@ void  PopulateComponentsMenu(HMENU hMenu)
 {
     HMENU  hCaptureComponents = GetSubMenu(hMenu, 3);
 
-    if (AppendMenu(hCaptureComponents, MF_BYPOSITION, ID_CAPTURE_COMPONENT_START, L"AMD DirectCapture") == false)
+    if (AppendMenu(hCaptureComponents, MF_BYPOSITION, ID_CAPTURE_COMPONENT_START, L"AMD DX11 DirectCapture") == false)
     {
-        LOG_ERROR(L"Could not insert AMD capture component menu item.");
+        LOG_ERROR(L"Could not insert AMD DX11 capture component menu item.");
         return;
     }
-    if (AppendMenu(hCaptureComponents, MF_BYPOSITION, ID_CAPTURE_COMPONENT_START + 1, L"Desktop Duplication") == false)
+    if (AppendMenu(hCaptureComponents, MF_BYPOSITION, ID_CAPTURE_COMPONENT_START + 1, L"AMD DX12 DirectCapture") == false)
+    {
+        LOG_ERROR(L"Could not insert AMD DX12 capture component menu item.");
+        return;
+    }
+    if (AppendMenu(hCaptureComponents, MF_BYPOSITION, ID_CAPTURE_COMPONENT_START + 2, L"Desktop Duplication") == false)
     {
         LOG_ERROR(L"Could not insert DD capture component menu item.");
     }
@@ -502,15 +507,20 @@ void UpdateMenuItems()
     }
 
     HMENU  hCaptureComponents = GetSubMenu(hMenu, 3);
-    if (iSelectedComponent == L"AMD")
+    CheckMenuItem(hCaptureComponents, ID_CAPTURE_COMPONENT_START, MF_BYCOMMAND | MF_UNCHECKED);
+    CheckMenuItem(hCaptureComponents, ID_CAPTURE_COMPONENT_START + 1, MF_BYCOMMAND | MF_UNCHECKED);
+    CheckMenuItem(hCaptureComponents, ID_CAPTURE_COMPONENT_START + 2, MF_BYCOMMAND | MF_UNCHECKED);
+    if (iSelectedComponent == L"DD")
     {
-        CheckMenuItem(hCaptureComponents, ID_CAPTURE_COMPONENT_START, MF_BYCOMMAND | MF_CHECKED);
-        CheckMenuItem(hCaptureComponents, ID_CAPTURE_COMPONENT_START + 1, MF_BYCOMMAND | MF_UNCHECKED);
+        CheckMenuItem(hCaptureComponents, ID_CAPTURE_COMPONENT_START + 2, MF_BYCOMMAND | MF_CHECKED);
+    }
+    else if (s_pPipeline->GetEngineMemoryTypes() == amf::AMF_MEMORY_DX12)
+    {
+        CheckMenuItem(hCaptureComponents, ID_CAPTURE_COMPONENT_START + 1, MF_BYCOMMAND | MF_CHECKED);
     }
     else
     {
-        CheckMenuItem(hCaptureComponents, ID_CAPTURE_COMPONENT_START + 1, MF_BYCOMMAND | MF_CHECKED);
-        CheckMenuItem(hCaptureComponents, ID_CAPTURE_COMPONENT_START, MF_BYCOMMAND | MF_UNCHECKED);
+        CheckMenuItem(hCaptureComponents, ID_CAPTURE_COMPONENT_START, MF_BYCOMMAND | MF_CHECKED);
     }
 
 }
@@ -619,6 +629,12 @@ INT_PTR CALLBACK DialogProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM /*lPa
             if (id == 0)
             {
                 s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_CAPTURE_COMPONENT, L"AMD");
+                s_pPipeline->SetEngineMemoryTypes(amf::AMF_MEMORY_DX11);
+            }
+            else if(id == 1)
+            {
+                s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_CAPTURE_COMPONENT, L"AMD");
+                s_pPipeline->SetEngineMemoryTypes(amf::AMF_MEMORY_DX12);
             }
             else
             {

@@ -817,7 +817,7 @@ void VideoPresenter::UpdateProcessor()
     {
         AMFLock lock(&m_cs);
 
-        if (m_pSwapChain != nullptr)
+        if (m_pSwapChain != nullptr && (m_pProcessor != nullptr || m_pHQScaler != nullptr))
         {
             // check and set color space and HDR support
             AMF_RESULT res = m_pSwapChain->GetColorSpace(colorSpace);

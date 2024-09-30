@@ -290,7 +290,7 @@ enum AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_PICTURE_STRUCTURE                     L"PictureStructure"         // amf_int64(AMF_VIDEO_ENCODER_PICTURE_STRUCTURE_ENUM); default = AMF_VIDEO_ENCODER_PICTURE_STRUCTURE_FRAME; indicate picture type
 #define AMF_VIDEO_ENCODER_MARK_CURRENT_WITH_LTR_INDEX           L"MarkCurrentWithLTRIndex"  // //amf_int64; default = N/A; Mark current frame with LTR index
 #define AMF_VIDEO_ENCODER_FORCE_LTR_REFERENCE_BITFIELD          L"ForceLTRReferenceBitfield"// amf_int64; default = 0; force LTR bit-field
-#define AMF_VIDEO_ENCODER_ROI_DATA                              L"ROIData"                  // 2D AMFSurface, surface format: AMF_SURFACE_GRAY32
+#define AMF_VIDEO_ENCODER_ROI_DATA                              L"ROIData"                  // 2D AMFSurface, surface format: AMF_SURFACE_GRAY32; Importance value for each 16x16 macro block ranges from `0` (least important) to `10` (most important), stored in 32bit unsigned format.
 #define AMF_VIDEO_ENCODER_REFERENCE_PICTURE                     L"ReferencePicture"         // AMFInterface(AMFSurface); surface used for frame injection
 #define AMF_VIDEO_ENCODER_PSNR_FEEDBACK                         L"PSNRFeedback"             // amf_bool; default = false; Signal encoder to calculate PSNR score
 #define AMF_VIDEO_ENCODER_SSIM_FEEDBACK                         L"SSIMFeedback"             // amf_bool; default = false; Signal encoder to calculate SSIM score
@@ -361,8 +361,8 @@ enum AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_CAP_FIXED_SLICE_MODE                  L"FixedSliceMode"           // bool  is fixed slice mode supported
 #define AMF_VIDEO_ENCODER_CAP_NUM_OF_HW_INSTANCES               L"NumOfHwInstances"         // amf_int64 number of HW encoder instances
 #define AMF_VIDEO_ENCODER_CAP_COLOR_CONVERSION                  L"ColorConversion"          // amf_int64(AMF_ACCELERATION_TYPE) - type of supported color conversion. default AMF_ACCEL_GPU
-#define AMF_VIDEO_ENCODER_CAP_PRE_ANALYSIS                      L"PreAnalysis"              // amf_bool - pre analysis module is available for H264 UVE encoder, n/a for the other encoders
-#define AMF_VIDEO_ENCODER_CAP_ROI                               L"ROIMap"                   // amf_bool - ROI map support is available for H264 UVE encoder, n/a for the other encoders
+#define AMF_VIDEO_ENCODER_CAP_PRE_ANALYSIS                      L"PreAnalysis"              // amf_bool - pre analysis module is available.
+#define AMF_VIDEO_ENCODER_CAP_ROI                               L"ROIMap"                   // amf_bool - ROI map support is available.
 #define AMF_VIDEO_ENCODER_CAP_MAX_THROUGHPUT                    L"MaxThroughput"            // amf_int64 - MAX throughput for H264 encoder in MB (16 x 16 pixel)
 #define AMF_VIDEO_ENCODER_CAP_REQUESTED_THROUGHPUT              L"RequestedThroughput"      // amf_int64 - Currently total requested throughput for H264 encoder in MB (16 x 16 pixel)
 #define AMF_VIDEO_ENCODER_CAPS_QUERY_TIMEOUT_SUPPORT            L"QueryTimeoutSupport"      // amf_bool - Timeout supported for QueryOutput call (Deprecated, please use AMF_VIDEO_ENCODER_CAP_QUERY_TIMEOUT_SUPPORT )

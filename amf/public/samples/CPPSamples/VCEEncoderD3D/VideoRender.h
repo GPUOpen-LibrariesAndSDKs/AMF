@@ -61,7 +61,6 @@ protected:
     virtual AMF_RESULT              Render(amf::AMFData** ppData) = 0;
 
     amf::AMFContext*                    m_pContext;
-
     amf_int                             m_width;
     amf_int                             m_height;
     bool                                m_bInterlaced;

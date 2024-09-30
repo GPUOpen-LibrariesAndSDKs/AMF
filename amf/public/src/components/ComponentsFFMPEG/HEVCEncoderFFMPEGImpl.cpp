@@ -197,7 +197,7 @@ AMF_RESULT AMF_STD_CALL HEVCEncoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT format, a
     m_pCodecContext->width = AV_CEIL_RSHIFT(m_pCodecContext->width, m_pCodecContext->lowres);
     m_pCodecContext->height = AV_CEIL_RSHIFT(m_pCodecContext->height, m_pCodecContext->lowres);
 
-    AMFRatio aspect_ratio;
+    AMFRatio aspect_ratio = {};
     AMF_RETURN_IF_FAILED(GetProperty(AMF_VIDEO_ENCODER_HEVC_ASPECT_RATIO, &aspect_ratio));
     m_pCodecContext->sample_aspect_ratio.num = aspect_ratio.num;
     m_pCodecContext->sample_aspect_ratio.den = aspect_ratio.den;

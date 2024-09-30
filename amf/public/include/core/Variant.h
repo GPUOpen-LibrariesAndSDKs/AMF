@@ -2062,7 +2062,7 @@ namespace amf
     AMF_INLINE void AMFVariant::Attach(AMFVariantStruct& pVariant)
     {
         Clear();
-        memcpy(this, &pVariant, sizeof(pVariant));
+        memcpy(static_cast<void*>(this), &pVariant, sizeof(pVariant));
         AMFVariantGetType(&pVariant) = AMF_VARIANT_EMPTY;
     }
     //-------------------------------------------------------------------------------------------------

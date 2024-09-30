@@ -402,7 +402,7 @@ void AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::OnPropertyChanged(const wchar_t* pNam
         bool bFound = false;
         for(amf_vector<AMFInputMuxerImplPtr>::iterator it = m_InputStreams.begin(); it != m_InputStreams.end(); it++)
         {
-            amf_int64 type;
+            amf_int64 type = 0;
             (*it)->GetProperty(AMF_STREAM_TYPE, &type);
             if(type == eType)
             {
@@ -506,7 +506,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
 
         if (streamType==AMF_STREAM_VIDEO)
         {
-            AMFRate  frameRate;
+            AMFRate frameRate = {};
             AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_VIDEO_FRAME_RATE, &frameRate));
 
             // default pts settings is MPEG like
@@ -515,7 +515,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
             ist->time_base.num = frameRate.den;
             ist->time_base.den = frameRate.num;
 
-            AMFSize frame;
+            AMFSize frame = {};
             AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_VIDEO_FRAME_SIZE, &frame));
 
             ist->codecpar->width = frame.width;
@@ -536,14 +536,14 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
         else if (streamType==AMF_STREAM_AUDIO)
         {
             AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_AUDIO_SAMPLE_RATE, &ist->codecpar->sample_rate));
-            AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_AUDIO_CHANNELS, &ist->codecpar->channels));
+            AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_AUDIO_CHANNELS, &ist->codecpar->ch_layout.nb_channels));
 
             amf_int64  sampleFormat = AMFAF_UNKNOWN;
             AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_AUDIO_FORMAT, &sampleFormat));
 
             ist->codecpar->format = GetFFMPEGAudioFormat((AMF_AUDIO_FORMAT) sampleFormat);
 
-            AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_AUDIO_CHANNEL_LAYOUT, &ist->codecpar->channel_layout));
+            AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_AUDIO_CHANNEL_LAYOUT, &ist->codecpar->ch_layout.u.mask));
             AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_AUDIO_BLOCK_ALIGN, &ist->codecpar->block_align));
             AMF_RETURN_IF_FAILED(spInput->GetProperty(AMF_STREAM_AUDIO_FRAME_SIZE, &ist->codecpar->frame_size));
 

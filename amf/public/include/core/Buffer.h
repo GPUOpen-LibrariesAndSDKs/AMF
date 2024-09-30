@@ -110,8 +110,16 @@ namespace amf
     #pragma clang diagnostic push
     #pragma clang diagnostic ignored "-Woverloaded-virtual"
 #endif
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverloaded-virtual"
+#endif
+
         virtual void                AMF_STD_CALL AddObserver(AMFBufferObserver* pObserver) = 0;
         virtual void                AMF_STD_CALL RemoveObserver(AMFBufferObserver* pObserver) = 0;
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 #ifdef __clang__
     #pragma clang diagnostic pop
 #endif

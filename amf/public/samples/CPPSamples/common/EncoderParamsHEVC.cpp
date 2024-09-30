@@ -101,6 +101,8 @@ static AMF_RESULT ParamConverterProfileHEVC(const std::wstring& value, amf::AMFV
     if(uppValue == L"MAIN"|| uppValue == L"1")
     {   // only main profile is supported for HEVC encoder
         paramValue = AMF_VIDEO_ENCODER_HEVC_PROFILE_MAIN;
+    } else if (uppValue == L"MAIN10" || uppValue == L"2") {
+        paramValue = AMF_VIDEO_ENCODER_HEVC_PROFILE_MAIN_10;
     }  else
     {
         LOG_ERROR(L"AMF_VIDEO_ENCODER_HEVC_PROFILE_ENUM hasn't \"" << value << L"\" value.");
@@ -213,6 +215,23 @@ static AMF_RESULT ParamConverterLTRMode(const std::wstring& value, amf::AMFVaria
     return AMF_OK;
 }
 
+static AMF_RESULT ParamConverterOutputModeHEVC(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_VIDEO_ENCODER_HEVC_OUTPUT_MODE_ENUM paramValue;
+    std::wstring uppValue = toUpper(value);
+    if(uppValue == L"FRAME" || uppValue == L"0")
+    {
+        paramValue =  AMF_VIDEO_ENCODER_HEVC_OUTPUT_MODE_FRAME;
+    } else if(uppValue == L"SLICE" || uppValue == L"1") {
+        paramValue =  AMF_VIDEO_ENCODER_HEVC_OUTPUT_MODE_SLICE;
+    } else {
+        LOG_ERROR(L"AMF_VIDEO_ENCODER_HEVC_OUTPUT_MODE_ENUM hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+
 static AMF_RESULT ParamConverterPictureTypeHEVC(const std::wstring& value, amf::AMFVariant& valueOut)
 {
     AMF_VIDEO_ENCODER_HEVC_PICTURE_TYPE_ENUM paramValue;
@@ -301,6 +320,7 @@ AMF_RESULT RegisterEncoderParamsHEVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_HIGH_MOTION_QUALITY_BOOST_ENABLE, ParamEncoderStatic, L"High motion quality boost mode enabled(integer, default = 0)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE, ParamEncoderStatic, L"Enables low latency mode (true, false default =  false)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_LTR_MODE, ParamEncoderStatic, L"LTR Mode (RESET_UNUSED = 0, KEEP_UNUSED = 1, default = RESET_UNUSED)", ParamConverterLTRMode);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_OUTPUT_MODE, ParamEncoderStatic, L"Output Mode (FRAME, SLICE, default = FRAME)", ParamConverterOutputModeHEVC);
 
     // Picture control properties
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_DE_BLOCKING_FILTER_DISABLE, ParamEncoderStatic, L"De-blocking Filter(true, false default =  false)", ParamConverterBoolean);
@@ -312,6 +332,10 @@ AMF_RESULT RegisterEncoderParamsHEVC(ParametersStorage* pParams)
 
     // color conversion
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_COLOR_BIT_DEPTH, ParamEncoderStatic, L"8 or 10 bit (integer, default = 8)", ParamConverterInt64);
+
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_OUTPUT_COLOR_PROFILE, ParamEncoderStatic, L"Output Color Profile (default = UNDEFINED)", ParamConverterColorProfile);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_OUTPUT_TRANSFER_CHARACTERISTIC, ParamEncoderStatic, L"Output Color Transfer Characteristic (default = UNDEFINED)", ParamConverterTransferCharacteristic);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_OUTPUT_COLOR_PRIMARIES, ParamEncoderStatic, L"Output Color Primaries (default = UNDEFINED)", ParamConverterColorPrimaries);
 
     // Rate control properties
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, ParamEncoderStatic, L"Frame Rate (num,den), default = depends on USAGE)", ParamConverterRate);
@@ -331,6 +355,9 @@ AMF_RESULT RegisterEncoderParamsHEVC(ParametersStorage* pParams)
 
     // AAA properties
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_ENABLE_SMART_ACCESS_VIDEO, ParamEncoderStatic, L"Enable encoder smart access video feature (bool, default = false)", ParamConverterBoolean);
+
+    // Split frame encode flag
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_MULTI_HW_INSTANCE_ENCODE, ParamEncoderStatic, L"Enable HEVC encoder split frame encode feature (bool, default = true)", ParamConverterBoolean);
 
     // ------------- Encoder params dynamic ---------------
 //    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_WIDTH, ParamEncoderDynamic, L"Frame width (integer, default = 0)");

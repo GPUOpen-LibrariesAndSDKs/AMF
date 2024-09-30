@@ -302,3 +302,17 @@ Flip timestamp of the presented frame acquired by `QueryPerformanceCounter()`.
 Array of `AMFRect` objects indicating changed areas on the captured surface since the last capture. The structure of `AMFRect` can be found in `public/include/core/Platform.h`.
 
 ---
+
+**Name:**
+`AMF_DISPLAY_CAPTURE_DCC`
+
+**Values:**
+`true` or `false`
+
+**Default Value:**
+`N/A`
+
+**Description:**
+Set to `true` when DCC compression is enabled on the output surface.
+
+---

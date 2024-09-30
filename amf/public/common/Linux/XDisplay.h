@@ -39,13 +39,21 @@ class XDisplay {
 public:
     typedef std::shared_ptr<XDisplay> Ptr;
 
-    XDisplay() : m_pDisplay(XOpenDisplay(nullptr)) {}
-    ~XDisplay() { if(IsValid()) XCloseDisplay(m_pDisplay); }
+    XDisplay()
+        : m_pDisplay(XOpenDisplay(nullptr))
+        , m_shouldClose(true)
+    {}
+    XDisplay(Display* dpy)
+        : m_pDisplay(dpy)
+        , m_shouldClose(false)
+    {}
+    ~XDisplay() { if(IsValid() && m_shouldClose) XCloseDisplay(m_pDisplay); }
 
     bool IsValid() { return m_pDisplay != nullptr; }
 
 private:
     Display* m_pDisplay;
+    bool m_shouldClose = false;
     friend class XDisplayPtr;
 };
 

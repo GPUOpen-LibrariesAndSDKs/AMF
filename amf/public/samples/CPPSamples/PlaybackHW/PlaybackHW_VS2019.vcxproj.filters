@@ -275,31 +275,15 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\common\QuadDX12_vs.hlsl">
-      <Filter>common</Filter>
-    </FxCompile>
-    <FxCompile Include="..\common\QuadDX9_vs.hlsl">
-      <Filter>common</Filter>
-    </FxCompile>
-    <FxCompile Include="..\common\QuadDX11_ps.hlsl">
-      <Filter>common</Filter>
-    </FxCompile>
-    <FxCompile Include="..\common\QuadDX11_vs.hlsl">
-      <Filter>common</Filter>
-    </FxCompile>
-    <FxCompile Include="..\common\QuadDX12_ps.hlsl">
-      <Filter>common</Filter>
-    </FxCompile>
-    <FxCompile Include="..\common\QuadDX9_ps.hlsl">
-      <Filter>common</Filter>
-    </FxCompile>
+    <FxCompile Include="$(SolutionDir)..\..\public\samples\CPPSamples\common\QuadDX11_ps.hlsl" />
+    <FxCompile Include="$(SolutionDir)..\..\public\samples\CPPSamples\common\QuadDX11_vs.hlsl" />
+    <FxCompile Include="$(SolutionDir)..\..\public\samples\CPPSamples\common\QuadDX12_ps.hlsl" />
+    <FxCompile Include="$(SolutionDir)..\..\public\samples\CPPSamples\common\QuadDX12_vs.hlsl" />
+    <FxCompile Include="$(SolutionDir)..\..\public\samples\CPPSamples\common\QuadDX9_ps.hlsl" />
+    <FxCompile Include="$(SolutionDir)..\..\public\samples\CPPSamples\common\QuadDX9_vs.hlsl" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\common\QuadVulkan_vs.vert">
-      <Filter>common</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\common\QuadVulkan_fs.frag">
-      <Filter>common</Filter>
-    </CustomBuild>
+    <CustomBuild Include="$(SolutionDir)..\..\public\samples\CPPSamples\common\QuadVulkan_fs.frag" />
+    <CustomBuild Include="$(SolutionDir)..\..\public\samples\CPPSamples\common\QuadVulkan_vs.vert" />
   </ItemGroup>
 </Project>

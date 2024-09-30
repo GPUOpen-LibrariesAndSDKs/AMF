@@ -60,7 +60,7 @@ SwapChainDX12::~SwapChainDX12()
     Terminate();
 }
 
-AMF_RESULT SwapChainDX12::Init(amf_handle hwnd, amf_handle hDisplay, AMFSurface* pSurface, amf_int32 width, amf_int32 height, 
+AMF_RESULT SwapChainDX12::Init(amf_handle hwnd, amf_handle hDisplay, AMFSurface* pSurface, amf_int32 width, amf_int32 height,
                                AMF_SURFACE_FORMAT format, amf_bool fullscreen, amf_bool hdr, amf_bool stereo)
 {
     AMF_RESULT res = SwapChainDXGI::Init(hwnd, hDisplay, pSurface, width, height, format, fullscreen, hdr, stereo);
@@ -501,10 +501,10 @@ AMF_RESULT DescriptorHeapPoolDX12::CreateDescriptorHeap(DescriptorHeapDX12& heap
     desc.Flags = heap.flags;
     HRESULT hr = m_pDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&heap.pHeap));
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"CreateDescriptorHeap() - m_Device->CreateDescriptorHeap() failed for heap type %d", heap.type);
-    
+
     heap.incrementSize = m_pDevice->GetDescriptorHandleIncrementSize(heap.type);
     AMF_RETURN_IF_FALSE(heap.incrementSize > 0, AMF_UNEXPECTED, L"CreateDescriptorHeap() - Heap descriptor handle increment size should not be 0");
-    
+
     heap.cpuHandle = heap.pHeap->GetCPUDescriptorHandleForHeapStart();
     AMF_RETURN_IF_FALSE(heap.cpuHandle.ptr != NULL, AMF_UNEXPECTED, L"CreateDescriptorHeap() - Heap CPU handle is NULL");
 
@@ -530,7 +530,7 @@ AMF_RESULT DescriptorHeapPoolDX12::CreateDescriptorHeaps()
     {
         AMFTraceWarning(AMF_FACILITY, L"CreateDescriptorHeaps() - No heap descriptors registered");
         return AMF_OK;
-    }   
+    }
 
     for (auto it = m_heapMap.begin(); it != m_heapMap.end();)
     {
@@ -540,7 +540,7 @@ AMF_RESULT DescriptorHeapPoolDX12::CreateDescriptorHeaps()
             it = m_heapMap.erase(it);
             continue;
         }
-       
+
         heap.type = it->first;
 
         AMF_RESULT res = CreateDescriptorHeap(heap);
@@ -554,7 +554,7 @@ AMF_RESULT DescriptorHeapPoolDX12::CreateDescriptorHeaps()
 
         it++;
     }
-    
+
     m_initialized = true;
 
     // Set handles for descriptors registered
@@ -633,7 +633,7 @@ AMF_RESULT DescriptorHeapPoolDX12::GetShaderDescriptorHeaps(amf_vector<ID3D12Des
 {
     AMF_RETURN_IF_FALSE(m_pDevice != nullptr, AMF_NOT_INITIALIZED, L"GetDescriptorHeap() - Device is not initialized");
     AMF_RETURN_IF_FALSE(m_initialized, AMF_NOT_INITIALIZED, L"GetDescriptorHeap() - Heap descriptors not created yet");
-    
+
     pHeaps.clear();
     // According to docs for ID3D12GraphicsCommandList::SetDescriptorHeaps
     // Only shader visible CBV/SRV/UAV and SAMPLER descriptor heaps can be set
@@ -823,7 +823,7 @@ AMF_RESULT CommandBufferDX12::SignalFences(ID3D12CommandQueue* pQueue)
         HRESULT hr = pQueue->Signal(pFence, fenceValue);
         ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"SignalFences() - failed to signal fence");
     }
-    
+
     return AMF_OK;
 }
 
@@ -934,10 +934,13 @@ AMF_RESULT CommandBufferDX12::SyncResource(ID3D12Resource* pResource)
 
     CComPtr<ID3D12Fence> pFence;
     AMF_RESULT res = GetResourceFenceDX12(pResource, &pFence);
-    AMF_RETURN_IF_FAILED(res, L"SyncResource() - Failed to get fence from resource private data");
-
-    res = SyncFence(pFence);
-    AMF_RETURN_IF_FAILED(res, L"SyncResource() - SyncFence() failed");
+    // Commented out next line : interop from DX11 may doesn't have fences
+    //AMF_RETURN_IF_FAILED(res, L"SyncResource() - Failed to get fence from resource private data");
+    if (pFence != nullptr)
+    {
+        res = SyncFence(pFence);
+        AMF_RETURN_IF_FAILED(res, L"SyncResource() - SyncFence() failed");
+    }
     return AMF_OK;
 }
 

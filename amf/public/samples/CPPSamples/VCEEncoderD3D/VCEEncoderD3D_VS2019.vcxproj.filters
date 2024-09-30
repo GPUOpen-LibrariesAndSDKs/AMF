@@ -129,6 +129,21 @@
     <ClInclude Include="..\..\..\common\Windows\UtilsWindows.h">
       <Filter>public\common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\DeviceDX12.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="VideoRenderDX12.h">
+      <Filter>RenderEncoder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\d3dx12.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\SwapChainDX12.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\SwapChainDXGI.h">
+      <Filter>common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\common\CmdLogger.cpp">
@@ -236,6 +251,18 @@
     </ClCompile>
     <ClCompile Include="..\..\..\common\Windows\UtilsWindows.cpp">
       <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\DeviceDX12.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoRenderDX12.cpp">
+      <Filter>RenderEncoder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\SwapChainDX12.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\SwapChainDXGI.cpp">
+      <Filter>common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

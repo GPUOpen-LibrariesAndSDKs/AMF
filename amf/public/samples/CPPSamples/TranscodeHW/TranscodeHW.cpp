@@ -247,6 +247,7 @@ private:
 
 
 static const wchar_t* PARAM_NAME_PREVIEW_MODE = L"PREVIEWMODE";
+static const wchar_t* PARAM_NAME_REPEAT       = L"REPEAT";
 
 
 static AMF_RESULT RegisterCodecParams(ParametersStorage* pParams)
@@ -286,6 +287,12 @@ AMF_RESULT RegisterParams(ParametersStorage* pParams)
 
     // Enable tracing to log files.
     pParams->SetParamDescription(PARAM_NAME_TRACE_TO_FILE, ParamCommon, L"Enable Tracing to File (true, false default = false)", ParamConverterBoolean);
+
+    // allow Transcode to run multiple times with the same paramters
+    pParams->SetParamDescription(PARAM_NAME_REPEAT, ParamCommon, L"How many times the command should be executed with the same parameters (integer, default = 1)", ParamConverterInt64);
+    
+    // allow Transcode to run decode with ffmpeg deocder.
+    pParams->SetParamDescription(PARAM_NAME_SWDECODE, ParamCommon, L"Enable FFMPEG decoder.(true, false default = false)", ParamConverterBoolean);
 
     return AMF_OK;
 }
@@ -428,79 +435,96 @@ int main(int argc, char* argv[])
         threadCount = 1;
     }
 
-    // run in multiple threads
-    std::vector<TranscodePipeline*> threads;
-
-    // start threads
-    int counter = 0;
-    for(amf_int32 i = 0 ; i < threadCount; i++)
+    amf_int32 loopCount = 1;
+    params.GetParam(PARAM_NAME_REPEAT, loopCount);
+    if (loopCount <= 0)
     {
-        TranscodePipeline *pipeline= new TranscodePipeline();
-        res = pipeline->Init(&params, 
-            i == 0 ? previewWindow.GetHwnd() : NULL,
-            i == 0 ? previewWindow.GetDisplay() : NULL,
-            threadCount ==1 ? -1 : counter);
-        if(res == AMF_OK)
-        {
-            threads.push_back(pipeline);
-            counter++;
-        }
-        else
-        {
-            delete pipeline;
-        }
+        loopCount = 1;
+    }
+    if (loopCount > 1)
+    {
+        LOG_SUCCESS(L"Run: " << loopCount << L" times");
     }
 
-    if(threads.size() == 0)
+    for (amf_int32 j = 0; j < loopCount; j++)
     {
-        LOG_ERROR(L"No threads were successfuly run");
-        return -101;
-    }
+        // run in multiple threads
+        std::vector<TranscodePipeline*> threads;
 
-    LOG_SUCCESS(L"Start: " << threadCount << L" threads");
-
-    for(std::vector<TranscodePipeline*>::iterator it = threads.begin(); it != threads.end(); it++)
-    {
-        (*it)->Run();
-    }
-
-    // wait till end
-    while(true)
-    {
-        if(previewWindow.GetHwnd())
+        // start threads
+        int counter = 0;
+        for(amf_int32 i = 0 ; i < threadCount; i++)
         {
-            previewWindow.ProcessWindowMessages();
-        }
-        bool bRunning = false;
-        for(std::vector<TranscodePipeline*>::iterator it = threads.begin(); it != threads.end(); it++)
-        {
-            if((*it)->GetState() != PipelineStateEof)
+            TranscodePipeline *pipeline= new TranscodePipeline();
+            res = pipeline->Init(&params,
+                i == 0 ? previewWindow.GetHwnd() : NULL,
+                i == 0 ? previewWindow.GetDisplay() : NULL,
+                threadCount ==1 ? -1 : counter);
+            if(res == AMF_OK)
             {
-                bRunning = true;
+                threads.push_back(pipeline);
+                counter++;
+            }
+            else
+            {
+                delete pipeline;
             }
         }
-        if(!bRunning)
+
+        if(threads.size() == 0)
         {
-            break;
+            LOG_ERROR(L"No threads were successfuly run");
+            return -101;
         }
+
+        LOG_SUCCESS(L"Start: " << threadCount << L" threads");
+
+        for(std::vector<TranscodePipeline*>::iterator it = threads.begin(); it != threads.end(); it++)
+        {
+            (*it)->Run();
+        }
+
+        // wait till end
+        while(true)
+        {
+            if(previewWindow.GetHwnd())
+            {
+                previewWindow.ProcessWindowMessages();
+            }
+            bool bRunning = false;
+            for(std::vector<TranscodePipeline*>::iterator it = threads.begin(); it != threads.end(); it++)
+            {
+                if((*it)->GetState() != PipelineStateEof)
+                {
+                    bRunning = true;
+                }
+            }
+            if(!bRunning)
+            {
+                break;
+            }
+        }
+
+        // calculate FPS and clean-up threads
+        double encodeFPS = 0;
+        for(std::vector<TranscodePipeline*>::iterator it = threads.begin(); it != threads.end(); it++)
+        {
+            (*it)->DisplayResult();
+            encodeFPS += (*it)->GetFPS();
+            (*it)->Terminate();
+            delete *it;
+        }
+
+        // print out FPS
+        std::wstringstream messageStream;
+        messageStream.precision(1);
+        messageStream.setf(std::ios::fixed, std::ios::floatfield);
+
+        messageStream << L" Average FPS: " << encodeFPS / threadCount;
+        messageStream << L" Combined FPS: " << encodeFPS << std::endl;
+
+        LOG_SUCCESS(messageStream.str());
     }
-    double encodeFPS = 0;
-
-    for(std::vector<TranscodePipeline*>::iterator it = threads.begin(); it != threads.end(); it++)
-    {
-        (*it)->DisplayResult();
-        encodeFPS += (*it)->GetFPS();
-        (*it)->Terminate();
-        delete *it;
-    }
-    std::wstringstream messageStream;
-    messageStream.precision(1);
-    messageStream.setf(std::ios::fixed, std::ios::floatfield);
-
-    messageStream << L" Average FPS: " << encodeFPS / threadCount;
-    messageStream << L" Combined FPS: " << encodeFPS;
-
-    LOG_SUCCESS(messageStream.str());
 
     g_AMFFactory.Terminate();
     return 0;

@@ -344,7 +344,7 @@ namespace amf
     {
     public:
         Quaternion(){}
-        Quaternion(const Quaternion& other){Assign(other.x, other.y, other.z, other.w);}
+        Quaternion(const Quaternion& other) : Vector() {Assign(other.x, other.y, other.z, other.w);}
         Quaternion(float pitch, float yaw, float roll) {FromEuler(pitch, yaw, roll);}
         Quaternion(float _x, float _y, float _z, float _w) {Assign(_x, _y, _z, _w);}
 
@@ -558,6 +558,7 @@ namespace amf
                     k[8] = i8;   k[9] = i9;   k[10] = i10; k[11] = i11;
                     k[12] = i12; k[13] = i13; k[14] = i14; k[15] = i15;
                 }
+        Matrix(const Matrix& other) = default;
 
         inline void Identity()
         {
@@ -1057,6 +1058,7 @@ namespace amf
 
         Pose() : m_ValidityFlags(PF_NONE){}
         Pose(const Pose &other) { *this = other; }
+        Pose& operator=(const Pose &other) = default;
 
         Pose(const amf::Quaternion& orientation, const amf::Vector& position)
         {

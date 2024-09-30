@@ -393,7 +393,7 @@ AMF_RESULT ParamConverterTransferCharacteristic(const std::wstring& value, amf::
 		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_IEC61966_2_1;
 	} else if (uppValue == L"BT2020_10" || uppValue == L"14") {
 		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_BT2020_10;
-	} else if (uppValue == L"BT2020_10" || uppValue == L"15") {
+	} else if (uppValue == L"BT2020_12" || uppValue == L"15") {
 		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_BT2020_12;
 	} else if (uppValue == L"SMPTE2084" || uppValue == L"16") {
 		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE2084;

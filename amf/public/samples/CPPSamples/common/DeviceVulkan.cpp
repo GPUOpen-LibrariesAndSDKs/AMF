@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -270,10 +270,6 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
     std::vector<VkPhysicalDevice> physicalDevices;
     AMF_RETURN_IF_FAILED(GetPhysicalDevices(physicalDevices));
 
-    if(adapterID < 0)
-    {
-        adapterID = 0;
-    }
     if(adapterID >= physicalDevices.size())
     {
         AMFTraceInfo(AMF_FACILITY, L"Invalid Adapter ID=%d", adapterID);
@@ -291,13 +287,14 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
     AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS, AMF_FAIL, L"CreateDeviceAndQueues() queueFamilyPropertyCount = 0");
 
     std::vector<VkQueueFamilyProperties2> queueFamilyProperties;
-    
+
     queueFamilyProperties.resize(queueFamilyPropertyCount, {VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2});
 
     GetVulkan()->vkGetPhysicalDeviceQueueFamilyProperties2(m_VulkanDev.hPhysicalDevice, &queueFamilyPropertyCount, queueFamilyProperties.data());
 
     m_uQueueGraphicsFamilyIndex  = UINT32_MAX;
     m_uQueueComputeFamilyIndex = UINT32_MAX;
+    amf_uint32 uQueueDecodeFamilyIndex = UINT32_MAX;
 
 
     amf_uint32 uQueueGraphicsIndex = UINT32_MAX;
@@ -318,25 +315,27 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
 
         queueCreateInfo.pQueuePriorities = &queuePriorities[0];
         queueCreateInfo.queueFamilyIndex = i;
-        queueCreateInfo.queueCount = queueFamilyProperty.queueFamilyProperties.queueCount;
+        queueCreateInfo.queueCount = 1;
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 
         if ((queueFamilyProperty.queueFamilyProperties.queueFlags & VK_QUEUE_COMPUTE_BIT) && (queueFamilyProperty.queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0 && m_uQueueComputeFamilyIndex == UINT32_MAX)
         {
             m_uQueueComputeFamilyIndex = i;
             uQueueComputeIndex = 0;
+            deviceQueueCreateInfoItems.push_back(queueCreateInfo);
         }
         if ((queueFamilyProperty.queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT) && m_uQueueGraphicsFamilyIndex == UINT32_MAX)
         {
             m_uQueueGraphicsFamilyIndex = i;
             uQueueGraphicsIndex = 0;
+            deviceQueueCreateInfoItems.push_back(queueCreateInfo);
         }
-        if (queueFamilyProperty.queueFamilyProperties.queueCount > 1)
+        if ((queueFamilyProperty.queueFamilyProperties.queueFlags & VK_QUEUE_VIDEO_DECODE_BIT_KHR) && uQueueDecodeFamilyIndex == UINT32_MAX)
         {
-            queueCreateInfo.queueCount = 1;
+            uQueueDecodeFamilyIndex = i;
+            deviceQueueCreateInfoItems.push_back(queueCreateInfo);
         }
 
-        deviceQueueCreateInfoItems.push_back(queueCreateInfo);
     }
     VkDeviceCreateInfo deviceCreateInfo = {};
 
@@ -411,7 +410,7 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
 
     AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS, AMF_FAIL, L"CreateDeviceAndQueues() vkCreateDevice() failed, Error=%d", (int)vkres);
     AMF_RETURN_IF_FALSE(m_VulkanDev.hDevice != nullptr, AMF_FAIL, L"CreateDeviceAndQueues() vkCreateDevice() returned nullptr");
-    
+
 	GetVulkan()->vkGetDeviceQueue(m_VulkanDev.hDevice, m_uQueueGraphicsFamilyIndex, uQueueGraphicsIndex, &m_hQueueGraphics);
 	GetVulkan()->vkGetDeviceQueue(m_VulkanDev.hDevice, m_uQueueComputeFamilyIndex, uQueueComputeIndex, &m_hQueueCompute);
 

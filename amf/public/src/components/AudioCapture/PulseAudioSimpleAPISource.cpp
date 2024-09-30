@@ -381,7 +381,7 @@ AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::Terminate()
 }
 
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::CaptureAudio(AMFAudioBufferPtr& pAudioBuffer, AMFContextPtr& pContext, amf_uint32& capturedSampleCount, amf_pts& latencyPts)
+AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::CaptureAudio(AMFAudioBufferPtr& pAudioBuffer, AMFContextPtr& pContext, amf_uint32& capturedSampleCount)
 {
     AMF_RETURN_IF_FALSE(pContext != nullptr, AMF_FAIL, L"AMFPulseAudioSimpleAPISourceImpl::CaptureAudio(): AMF context is NULL");
     AMF_RESULT res = AMF_FAIL;
@@ -393,12 +393,12 @@ AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::CaptureAudio(AMFAudioBufferPtr& pAu
     {
         // FI succesfully got audio buffer, alloc memory and pass captured data to it.
         pDst = (short*)pAudioBuffer->GetNative();
-        res = CaptureAudioRaw(pDst, m_SampleCount, capturedSampleCount, latencyPts);
+        res = CaptureAudioRaw(pDst, m_SampleCount, capturedSampleCount);
     }
     return res;
 }
 
-AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::CaptureAudioRaw(short* dest, amf_uint32 sampleCount, amf_uint32& capturedSampleCount, amf_pts& latencyPts)
+AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::CaptureAudioRaw(short* dest, amf_uint32 sampleCount, amf_uint32& capturedSampleCount)
 {
     // Capture audio and save directly into Audio Buffer.
     amf_int32 paReadErr = 0;
@@ -409,11 +409,6 @@ AMF_RESULT AMFPulseAudioSimpleAPISourceImpl::CaptureAudioRaw(short* dest, amf_ui
     AMF_RETURN_IF_FALSE(paReadReturn == 0, AMF_FAIL, L"pa_simple_read returned error: (%S)", m_pa.m_pPA_Strerror(paReadErr));
     capturedSampleCount = sampleCount;
 
-    // Get Latency.
-    pa_usec_t latency = m_pa.m_pPA_Simple_Get_Latency(m_pPaSimple,&paReadErr);
-    AMF_RETURN_IF_FALSE(latency != pa_usec_t(-1), AMF_FAIL, L"pa_simple_get_latency() failed: (%S)", m_pa.m_pPA_Strerror(paReadErr));
-
-    latencyPts = latency * AMF_MICROSECOND;
     return AMF_OK;
 }
 

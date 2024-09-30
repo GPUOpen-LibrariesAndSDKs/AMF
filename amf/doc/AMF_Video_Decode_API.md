@@ -20,13 +20,13 @@ Windows™, Visual Studio and DirectX are trademark of Microsoft Corp.
 
 ### Copyright Notice
 
-© 2014-2022 Advanced Micro Devices, Inc. All rights reserved
+© 2014-2024 Advanced Micro Devices, Inc. All rights reserved
 
 Notice Regarding Standards.  AMD does not provide a license or sublicense to any Intellectual Property Rights relating to any standards, including but not limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4; AVC/H.264; HEVC/H.265; AAC decode/FFMPEG; AAC encode/FFMPEG; VC-1; and MP3 (collectively, the “Media Technologies”). For clarity, you will pay any royalties due for such third party technologies, which may include the Media Technologies that are owed as a result of AMD providing the Software to you.
 
 ### MIT license
 
-Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -324,6 +324,8 @@ Once the Decoder component is successfully initialized, you may start submitting
 At the same time poll for output by calling `AMFComponent::QueryOutput` on the Decoder object. Polling for output samples can be done either from the same thread or from another thread.
 
 Suspend submission of input samples when `AMFComponent::SubmitInput` returns `AMF_INPUT_FULL` or `AMF_DECODER_NO_FREE_SURFACES`. Continue to poll for output samples and process them as they become available.
+
+When `AMF_REPEAT` is returned from `AMFComponent::SubmitInput()` this means that the currently submitted buffer has more than one frame and needs another `AMFComponent::SubmitInput()` call to process the remaining data before getting any new data. This second `AMFComponent::SubmitInput()` should be invoked with `NULL` as the argument to perform the processing of the remaining data.
 
 ### 2.4 Terminating the Decoder Component
 

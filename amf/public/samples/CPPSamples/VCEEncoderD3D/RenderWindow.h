@@ -52,7 +52,8 @@ public:
     RenderWindow();
     ~RenderWindow();
 
-    bool CreateD3Window(amf_int32 width, amf_int32 height, amf_int32 adapterID, bool bFullScreen);
+    bool CreateD3Window(amf_int32 width, amf_int32 height, amf_int32 adapterID, bool visible, bool bFullScreen);
+    bool CheckIntegratedMonitor();
 
     void ProcessWindowMessages();
     amf_handle GetHwnd() const;

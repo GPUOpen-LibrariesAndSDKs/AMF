@@ -211,6 +211,22 @@ static AMF_RESULT ParamConverterLTRMode(const std::wstring& value, amf::AMFVaria
     return AMF_OK;
 }
 
+static AMF_RESULT ParamConverterOutputModeAVC(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_VIDEO_ENCODER_OUTPUT_MODE_ENUM paramValue;
+    std::wstring uppValue = toUpper(value);
+    if(uppValue == L"FRAME" || uppValue == L"0")
+    {
+        paramValue =  AMF_VIDEO_ENCODER_OUTPUT_MODE_FRAME;
+    } else if(uppValue == L"SLICE" || uppValue == L"1") {
+        paramValue =  AMF_VIDEO_ENCODER_OUTPUT_MODE_SLICE;
+    } else {
+        LOG_ERROR(L"AMF_VIDEO_ENCODER_OUTPUT_MODE_ENUM hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
 
 static AMF_RESULT ParamConverterRateControlAVC(const std::wstring& value, amf::AMFVariant& valueOut)
 {
@@ -354,6 +370,7 @@ AMF_RESULT RegisterEncoderParamsAVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_LOWLATENCY_MODE, ParamEncoderStatic, L"Enables low latency mode and POC mode 2 in the encoder (bool, default = false)", ParamConverterBoolean);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_QVBR_QUALITY_LEVEL, ParamEncoderStatic, L"QVBR Quality Level (integer, default = 23)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_INTRA_PERIOD, ParamEncoderStatic, L"The distance between two intra frames (in frames, default = 0)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_OUTPUT_MODE, ParamEncoderStatic, L"Output Mode (FRAME, SLICE, default = FRAME)", ParamConverterOutputModeAVC);
 
     // color conversion
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_COLOR_BIT_DEPTH, ParamEncoderStatic, L"8 bit (integer, default = 8)", ParamConverterInt64);

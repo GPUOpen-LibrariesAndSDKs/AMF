@@ -132,17 +132,21 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*
 
     amf_int64  inSampleFormat = AMFAF_UNKNOWN;
     amf_int64  outSampleFormat = AMFAF_UNKNOWN;
-    AMF_RETURN_IF_FAILED(GetProperty(AUDIO_CONVERTER_IN_AUDIO_CHANNEL_LAYOUT, &m_inChannelLayout), L"Init() - Failed to get in channel layout property");
+    amf_int64  channelLayout = 0;
+    AMF_RETURN_IF_FAILED(GetProperty(AUDIO_CONVERTER_IN_AUDIO_CHANNEL_LAYOUT, &channelLayout), L"Init() - Failed to get in channel layout property");
     AMF_RETURN_IF_FAILED(GetProperty(AUDIO_CONVERTER_IN_AUDIO_SAMPLE_FORMAT, &inSampleFormat), L"Init() - Failed to get in sample format property");
     AMF_RETURN_IF_FAILED(GetProperty(AUDIO_CONVERTER_IN_AUDIO_SAMPLE_RATE, &m_inSampleRate), L"Init() - Failed to get in sample rate property");
     AMF_RETURN_IF_FAILED(GetProperty(AUDIO_CONVERTER_IN_AUDIO_CHANNELS, &m_inChannels), L"Init() - Failed to get in channel count property");
     m_inSampleFormat = (AMF_AUDIO_FORMAT)inSampleFormat;
+    av_channel_layout_from_mask(&m_inChannelLayout, channelLayout);
 
-    AMF_RETURN_IF_FAILED(GetProperty(AUDIO_CONVERTER_OUT_AUDIO_CHANNEL_LAYOUT, &m_outChannelLayout), L"Init() - Failed to get out channel layout property");
+    channelLayout = 0;
+    AMF_RETURN_IF_FAILED(GetProperty(AUDIO_CONVERTER_OUT_AUDIO_CHANNEL_LAYOUT, &channelLayout), L"Init() - Failed to get out channel layout property");
     AMF_RETURN_IF_FAILED(GetProperty(AUDIO_CONVERTER_OUT_AUDIO_SAMPLE_FORMAT, &outSampleFormat), L"Init() - Failed to get out sample format property");
     AMF_RETURN_IF_FAILED(GetProperty(AUDIO_CONVERTER_OUT_AUDIO_SAMPLE_RATE, &m_outSampleRate), L"Init() - Failed to get out sample rate property");
     AMF_RETURN_IF_FAILED(GetProperty(AUDIO_CONVERTER_OUT_AUDIO_CHANNELS, &m_outChannels), L"Init() - Failed to get out channel count property");
     m_outSampleFormat = (AMF_AUDIO_FORMAT)outSampleFormat;
+    av_channel_layout_from_mask(&m_outChannelLayout, channelLayout);
 
     // If there is a mismatch between input and output formats, sample rate and channels, a converter is required
     if ((m_outSampleFormat != m_inSampleFormat) || (m_outSampleRate != m_inSampleRate) || (m_outChannels != m_inChannels))
@@ -518,16 +522,10 @@ AMF_RESULT AMF_STD_CALL AMFAudioConverterFFMPEGImpl::InitResampler()
     }
 
     int err = 0;
-    err = av_opt_set_int(m_pResampler, "in_channel_count", (int)m_inChannels, 0);
-    AMF_RETURN_IF_FALSE(err == 0, AMF_FAIL, L"InitResampler() - Failed to set resampler in_channel_count to %" LPRId64 L"", m_inChannels);
-
-    err = av_opt_set_int(m_pResampler, "out_channel_count", (int)m_outChannels, 0);
-    AMF_RETURN_IF_FALSE(err == 0, AMF_FAIL, L"InitResampler() - Failed to set resampler out_channel_count to %" LPRId64 L"", m_outChannels);
-
-    err = av_opt_set_int(m_pResampler, "in_channel_layout", (int)m_inChannelLayout, 0);
+    err = av_opt_set_chlayout(m_pResampler, "in_chlayout", &m_inChannelLayout, 0);
     AMF_RETURN_IF_FALSE(err == 0, AMF_FAIL, L"InitResampler() - Failed to set resampler in_channel_layout to %" LPRId64 L"", m_inChannelLayout);
 
-    err = av_opt_set_int(m_pResampler, "out_channel_layout", (int)m_outChannelLayout, 0);
+    err = av_opt_set_chlayout(m_pResampler, "out_chlayout", &m_outChannelLayout, 0);
     AMF_RETURN_IF_FALSE(err == 0, AMF_FAIL, L"InitResampler() - Failed to set resampler out_channel_layout to %" LPRId64 L"", m_outChannelLayout);
 
     AVSampleFormat ffmpegInSampleFormat = GetFFMPEGAudioFormat(m_inSampleFormat);

@@ -255,7 +255,7 @@ enum AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE_ENUM
 
 #define AMF_VIDEO_ENCODER_HEVC_MARK_CURRENT_WITH_LTR_INDEX          L"HevcMarkCurrentWithLTRIndex"  // amf_int64; default = N/A; Mark current frame with LTR index
 #define AMF_VIDEO_ENCODER_HEVC_FORCE_LTR_REFERENCE_BITFIELD         L"HevcForceLTRReferenceBitfield"// amf_int64; default = 0; force LTR bit-field
-#define AMF_VIDEO_ENCODER_HEVC_ROI_DATA                             L"HevcROIData"					// 2D AMFSurface, surface format: AMF_SURFACE_GRAY32
+#define AMF_VIDEO_ENCODER_HEVC_ROI_DATA                             L"HevcROIData"					// 2D AMFSurface, surface format: AMF_SURFACE_GRAY32; Importance value for each 64x64 block ranges from `0` (least important) to `10` (most important), stored in 32bit unsigned format.
 #define AMF_VIDEO_ENCODER_HEVC_REFERENCE_PICTURE                    L"HevcReferencePicture"         // AMFInterface(AMFSurface); surface used for frame injection
 #define AMF_VIDEO_ENCODER_HEVC_PSNR_FEEDBACK                        L"HevcPSNRFeedback"             // amf_bool; default = false; Signal encoder to calculate PSNR score
 #define AMF_VIDEO_ENCODER_HEVC_SSIM_FEEDBACK                        L"HevcSSIMFeedback"             // amf_bool; default = false; Signal encoder to calculate SSIM score
@@ -315,8 +315,8 @@ enum AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_HEVC_CAP_MAX_TEMPORAL_LAYERS              L"HevcMaxTemporalLayers"        // amf_int64 maximum number of temporal layers
 #define AMF_VIDEO_ENCODER_HEVC_CAP_NUM_OF_HW_INSTANCES              L"HevcNumOfHwInstances"         // amf_int64 number of HW encoder instances
 #define AMF_VIDEO_ENCODER_HEVC_CAP_COLOR_CONVERSION                 L"HevcColorConversion"          // amf_int64(AMF_ACCELERATION_TYPE) - type of supported color conversion. default AMF_ACCEL_GPU
-#define AMF_VIDEO_ENCODER_HEVC_CAP_PRE_ANALYSIS                     L"HevcPreAnalysis"              // amf_bool - pre analysis module is available for HEVC UVE encoder, n/a for the other encoders
-#define AMF_VIDEO_ENCODER_HEVC_CAP_ROI                              L"HevcROIMap"                   // amf_bool - ROI map support is available for HEVC UVE encoder, n/a for the other encoders
+#define AMF_VIDEO_ENCODER_HEVC_CAP_PRE_ANALYSIS                     L"HevcPreAnalysis"              // amf_bool - pre analysis module is available.
+#define AMF_VIDEO_ENCODER_HEVC_CAP_ROI                              L"HevcROIMap"                   // amf_bool - ROI map support is available.
 #define AMF_VIDEO_ENCODER_HEVC_CAP_MAX_THROUGHPUT                   L"HevcMaxThroughput"            // amf_int64 - MAX throughput for HEVC encoder in MB (16 x 16 pixel)
 #define AMF_VIDEO_ENCODER_HEVC_CAP_REQUESTED_THROUGHPUT             L"HevcRequestedThroughput"      // amf_int64 - Currently total requested throughput for HEVC encode in MB (16 x 16 pixel)
 #define AMF_VIDEO_ENCODER_HEVC_CAP_QUERY_TIMEOUT_SUPPORT            L"HevcQueryTimeoutSupport"      // amf_bool - Timeout supported for QueryOutput call
@@ -324,5 +324,7 @@ enum AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_HEVC_CAP_SUPPORT_SLICE_OUTPUT             L"HevcSupportSliceOutput"       // amf_bool - if slice output is supported
 
 #define AMF_VIDEO_ENCODER_HEVC_CAP_SUPPORT_SMART_ACCESS_VIDEO       L"HevcEncoderSupportSmartAccessVideo"        // amf_bool; returns true if system supports SmartAccess Video
+
+#define AMF_VIDEO_ENCODER_HEVC_MULTI_HW_INSTANCE_ENCODE             L"HevcMultiHwInstanceEncode"      // amf_bool; flag to enable multi VCN encode.
 
 #endif //#ifndef AMF_VideoEncoderHEVC_h

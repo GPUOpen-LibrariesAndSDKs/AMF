@@ -173,7 +173,7 @@ Remark: quality layers are not supported on VCE 1.0. “QL0” must be used for 
 
 Region of importance (ROI) feature provides a way to specify the relative importance of the macroblocks in the video frame. Encoder will further adjust the bits allocation among code blocks based on the importance, on top of the base rate control decisions. More important blocks will be encoded with relatively better quality.
 
-The ROI map can be attached to the input frame on a per frame basis. Currently, the ROI map can only use system memory. The ROI map includes the importance values of each macro block, ranging from 0 to 10, stored in 32bit unsinged format. Refer to SimpleROI sample application for further implementation details.
+The ROI map can be attached to the input frame on a per frame basis. Currently, the ROI map can only use system memory. The ROI map includes the importance values of each 16x16 macro block, ranging from `0` (least important) to `10` (most important), stored in 32bit unsigned format. Refer to SimpleROI sample application for further implementation details.
 
 ### 2.2.6 Encoder Statistics Feedback
 
@@ -1362,6 +1362,7 @@ Enables/disables filler data to maintain constant bit rate.
 | :--------------------------------- | :-------- |
 | HEADER_INSERTION_SPACING           | amf_int64 |
 | IDR_PERIOD                         | amf_int64 |
+| INTRA_PERIOD                       | amf_int64 |
 | DE_BLOCKING_FILTER                 | amf_bool  |
 | INTRA_REFRESH_NUM_MBS_PER_SLOT     | amf_int64 |
 | SLICES_PER_FRAME                   | amf_int64 |
@@ -1410,6 +1411,22 @@ Sets IDR period. IDRPeriod = `0` turns IDR off.
 To get SPS/PPS for every IDR, header insertion spacing has to be the same as IDR period.
 
 ---
+
+
+**Name:**
+`AMF_VIDEO_ENCODER_INTRA_PERIOD`
+
+**Values:**
+`0` – `1000`
+
+**Default Value:**
+`0`
+
+**Description:**
+Number of frames between two intra frames.
+
+---
+
 
 **Name:**
 `AMF_VIDEO_ENCODER_DE_BLOCKING_FILTER`
@@ -1486,7 +1503,7 @@ Sets the number of consecutive B-pictures in a GOP.  BPicturesPattern = `0` indi
 
 **Default Value associated with usages:**
    - Transcoding: `true`
-   - Ultra low latency: `false`
+   - Ultra low latency: `true`
    - Low latency: `true`
    - Webcam: `true`
    - HQ: `true`
@@ -1643,7 +1660,8 @@ The application can turn on this flag for a specific input picture to allow dump
    - HQLL: `50`
 
 **Description:**
-Timeout for QueryOutput call in ms.
+Timeout for a `QueryOutput` call in ms.
+Setting this to a nonzero value will reduce polling load when `QueryOutput` is called; it will be blocked until the frame is ready or until the timeout is reached.
 
 ---
 
@@ -1998,13 +2016,13 @@ Remarks:
 `AMF_VIDEO_ENCODER_ROI_DATA`
 
 **Values:**
-Video surface
+Video surface in `AMF_SURFACE_GRAY32` format
 
 **Default Value:**
 `N\A`
 
 **Description:**
-Important value for each macro block ranges from `0` to `10`, stored in 32bit unsigned format.
+Importance value for each 16x16 macro block ranges from `0` (least important) to `10` (most important), stored in 32bit unsigned format.
 
 ---
 
@@ -2309,7 +2327,7 @@ Pre analysis module is available.
 
 
 **Description:**
-ROI map support is available for H264 UVE encoder, n/a for the other encoders.
+ROI map support is available.
 
 ---
 

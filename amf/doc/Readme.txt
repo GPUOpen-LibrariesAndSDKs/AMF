@@ -28,6 +28,12 @@
 //
 
 
+1.4.35.0 (30.9.2024) version
+--------------------------
+   - Added multi-HW instance encoder mode
+   - Updated FFmpeg to 7.0
+   - Added split frame encoding
+
 1.4.34.0 (13.5.2024) version
 --------------------------
    - Added Linux support for DVR sample

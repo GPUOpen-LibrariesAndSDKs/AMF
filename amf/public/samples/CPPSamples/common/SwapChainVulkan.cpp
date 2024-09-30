@@ -163,7 +163,7 @@ AMF_RESULT SwapChainVulkan::Terminate()
     m_hQueuePresent = nullptr;
     m_uQueuePresentFamilyIndex = UINT32_MAX;
     m_uQueueComputeFamilyIndex = UINT32_MAX;
- 
+
     VulkanContext::Terminate();
     return SwapChain::Terminate();
 }
@@ -215,6 +215,10 @@ AMF_RESULT SwapChainVulkan::TerminateSwapChain()
 
 AMF_RESULT SwapChainVulkan::CreateSwapChain(amf_int32 width, amf_int32 height, amf_bool fullscreen, AMF_SURFACE_FORMAT format)
 {
+    fullscreen;
+    width;
+    height;
+
     AMF_RETURN_IF_FALSE(m_pVulkanDevice != nullptr, AMF_NOT_INITIALIZED, L"CreateSwapChain() - m_pVulkanDevice is not initialized");
     AMF_RETURN_IF_FALSE(m_pVulkanDevice->hDevice != nullptr, AMF_NOT_INITIALIZED, L"CreateSwapChain() - m_pVulkanDevice->hDevice is not initialized");
     AMF_RETURN_IF_FALSE(m_hSurfaceKHR != NULL, AMF_NOT_INITIALIZED, L"CreateSwapChain() - m_hSurfaceKHR is not initialized");
@@ -230,17 +234,8 @@ AMF_RESULT SwapChainVulkan::CreateSwapChain(amf_int32 width, amf_int32 height, a
         minImageCount = surfaceCapabilities.maxImageCount;
     }
 
-    // Get size
-    if (fullscreen)
-    {
-        m_size.width = surfaceCapabilities.maxImageExtent.width;
-        m_size.height = surfaceCapabilities.maxImageExtent.height;
-    }
-    else
-    {
-        m_size.width = (amf_uint32)width;
-        m_size.height = (amf_uint32)height;
-    }
+    m_size.width = surfaceCapabilities.currentExtent.width;
+    m_size.height = surfaceCapabilities.currentExtent.height;
     VkExtent2D windowExtent = { (amf_uint32)m_size.width, (amf_uint32)m_size.height};
 
     // Find format
