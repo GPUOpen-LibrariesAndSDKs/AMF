@@ -11,9 +11,9 @@ jobs:
     - uses: actions/checkout@v3
     - name: bundle header
       run: |
-        mkdir amf-headers-${{ github.ref_name }
+        mkdir amf-headers-${{ github.ref_name }}
         mv amf/public/include amf-headers-${{ github.ref_name }}/AMF
-        tar czf AMF-headers.tar.gz amf-headers-${{ github.ref_name }}/
+        tar czf AMF-headers-${{ github.ref_name }}.tar.gz amf-headers-${{ github.ref_name }}/
     - name: Release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
