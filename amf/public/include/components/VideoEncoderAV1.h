@@ -356,11 +356,17 @@ enum AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_AV1_CAP_MAX_NUM_TEMPORAL_LAYERS           L"Av1CapMaxNumTemporalLayers"       // amf_int64; default = N/A; The cap of maximum number of temporal layers
 #define AMF_VIDEO_ENCODER_AV1_CAP_MAX_NUM_LTR_FRAMES                L"Av1CapMaxNumLTRFrames"            // amf_int64; default = N/A; The cap of maximum number of LTR frames. This value is calculated based on current value of AMF_VIDEO_ENCODER_AV1_MAX_NUM_TEMPORAL_LAYERS.
 #define AMF_VIDEO_ENCODER_AV1_CAP_SUPPORT_TILE_OUTPUT               L"AV1SupportTileOutput"             // amf_bool; if tile output is supported
+#define AMF_VIDEO_ENCODER_AV1_CAP_BFRAMES                           L"AV1BFrames"                       // amf_bool; if b frames are supported for AV1
 
 #define AMF_VIDEO_ENCODER_AV1_CAP_SUPPORT_SMART_ACCESS_VIDEO        L"Av1EncoderSupportSmartAccessVideo"    // amf_bool; returns true if system supports SmartAccess Video
 #define AMF_VIDEO_ENCODER_AV1_CAP_WIDTH_ALIGNMENT_FACTOR            L"Av1WidthAlignmentFactor"          // amf_int64; default = 1; The encoder capability for width alignment
 #define AMF_VIDEO_ENCODER_AV1_CAP_HEIGHT_ALIGNMENT_FACTOR           L"Av1HeightAlignmentFactor"         // amf_int64; default = 1; The encoder capability for height alignment
 
 #define AMF_VIDEO_ENCODER_AV1_MULTI_HW_INSTANCE_ENCODE              L"Av1MultiHwInstanceEncode"             // amf_bool; flag to enable AV1 multi VCN encode.
+
+// properties for Picture Management (VCN5 feature)
+#define AMF_VIDEO_ENCODER_AV1_MAX_CONSECUTIVE_BPICTURES             L"Av1MaxConsecutiveBPictures"        // amf_int64; default 0 or 127, determined by AMF_VIDEO_ENCODER_AV1_CAP_BFRAMES. Maximum number of consecutive B frames for B frame encoding
+#define AMF_VIDEO_ENCODER_AV1_B_PIC_PATTERN                         L"Av1BPicturesPattern"               // amf_int64; default 0. Number of B frames for B frame encoding
+#define AMF_VIDEO_ENCODER_AV1_ADAPTIVE_MINIGOP                      L"Av1AdaptiveMiniGop"                // amf_bool; default false. Adaptive miniGOP size for B frame encoding
 
 #endif //#ifndef AMF_VideoEncoderAV1_h

@@ -597,6 +597,8 @@ This command encodes `400` frames through D3D renderer and creates an output fil
 | TILES_PER_FRAME                        | amf_int64 |
 | LTR_MODE                               | amf_int64 |
 | MAX_NUM_REFRAMES                       | amf_int64 |
+| MAX_CONSECUTIVE_BPICTURES              | amf_int64 |
+| ADAPTIVE_MINIGOP                       | amf_bool  |
 | ENCODING_LATENCY_MODE                  | amf_int64 |
 | FRAMESIZE                              | AMFSize   |
 | ALIGNMENT_MODE                         | amf_int64 |
@@ -724,6 +726,34 @@ Remove/keep unused LTRs not specified inside the LTR reference bitfield.
 
 **Description:**
 Maximum number of reference frames.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_AV1_MAX_CONSECUTIVE_BPICTURES`
+
+**Values:**
+`0`...`0` or `127`
+
+**Default Value:**
+`0` or `127`
+
+**Description:**
+Maximum number of consecutive B Pictures. The default value is determined by `AMF_VIDEO_ENCODER_AV1_CAP_BFRAMES`. If `AMF_VIDEO_ENCODER_AV1_CAP_BFRAMES` is true, the default value is 127; otherwise, it is 0.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_AV1_ADAPTIVE_MINIGOP`
+
+**Values:**
+`true`, `false`
+
+**Default Value:**
+`false`
+
+**Description:**
+Disable/Enable Adaptive MiniGOP, can enable with PA enabled.
 
 ---
 
@@ -1187,6 +1217,7 @@ Enable high motion quality boost mode to pre-analyze the motion of the video and
 | CDEF_MODE                              | amd_int64 |
 | INTRA_REFRESH_MODE                     | amf_int64 |
 | INTRAREFRESH_STRIPES                   | amf_int64 |
+| B_PIC_PATTERN                          | amf_int64 |
 
 <p align="center">
 Table 6. Encoder picture-control parameters
@@ -1308,6 +1339,20 @@ The mode of intra refresh.
 
 **Description:**
 Valid only when intra refresh is enabled.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_AV1_B_PIC_PATTERN`
+
+**Values:**
+`0`...`127`
+
+**Default Value:**
+`0`
+
+**Description:**
+Sets the number of consecutive B-pictures in a GOP.  BPicturesPattern = `0` indicates that B-pictures are not used.
 
 ---
 
@@ -2014,6 +2059,7 @@ Returns reconstructed picture as an `AMFSurface` attached to the output buffer a
 | SUPPORT_TILE_OUTPUT                           | amf_bool  |
 | WIDTH_ALIGNMENT_FACTOR                        | amf_int64 |
 | HEIGHT_ALIGNMENT_FACTOR                       | amf_int64 |
+| BFRAMES                                       | amf_bool  |
 
 <p align="center">
 Table 14. Encoder capabilities exposed in AMFCaps interface
@@ -2171,6 +2217,18 @@ Integers, >=0
 
 **Description:**
 This is used for querying the av1 picture height alignment factor
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_AV1_CAP_BFRAMES`
+
+**Values:**
+`true`, `false`
+
+
+**Description:**
+This is used for querying av1 b frame support
 
 ---
 
