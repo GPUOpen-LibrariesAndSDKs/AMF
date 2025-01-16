@@ -37,7 +37,6 @@ uname_p := $(shell uname -p)
   platform_name=lnx
 endif
 
-ffmpeg_dir = $(amf_root)/../Thirdparty/ffmpeg/ffmpeg/ffmpeg-6.0/$(platform_name)$(host_bits)/release
 
 pp_defines += \
   AMF_COMPONENT_FFMPEG_EXPORTS
