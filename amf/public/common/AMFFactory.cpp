@@ -85,6 +85,12 @@ AMF_RESULT AMFFactoryHelper::Init(const wchar_t* dllName)
 #else
     m_hDLLHandle = amf_load_library1(dllName_, false); //load with local flags
 #endif
+#ifdef AMFLITE_DLL_NAME
+    if (m_hDLLHandle == NULL && dllName == nullptr)
+    {
+        m_hDLLHandle = amf_load_library(AMFLITE_DLL_NAME);
+    }
+#endif
     if(m_hDLLHandle == NULL)
     {
         return AMF_FAIL;
