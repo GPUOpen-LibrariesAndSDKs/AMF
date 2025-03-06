@@ -242,9 +242,31 @@ AMF_RESULT SwapChainVulkan::CreateSwapChain(amf_int32 width, amf_int32 height, a
     AMF_RESULT res = SetFormat(format);
     AMF_RETURN_IF_FAILED(res, L"CreateSwapChain() - SetFormat() failed");
 
-    const VkSurfaceFormatKHR surfaceFormats[] = { {m_surfaceFormat.format, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR} };
-    res = FindSurfaceFormat(surfaceFormats, amf_countof(surfaceFormats), m_surfaceFormat); // VK_FORMAT_R8G8B8A8_UNORM  VK_FORMAT_B8G8R8A8_UNORM
+    //const VkSurfaceFormatKHR surfaceFormats[] = { {m_surfaceFormat.format, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR} };
+
+    std::vector<VkSurfaceFormatKHR> surfaceFormats;
+    if (GetFormat() == amf::AMF_SURFACE_RGBA_F16)
+    {
+        surfaceFormats.push_back({ m_surfaceFormat.format, VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT });
+    }
+    else if (GetFormat() == amf::AMF_SURFACE_R10G10B10A2)
+    {
+        surfaceFormats.push_back({ m_surfaceFormat.format, VK_COLOR_SPACE_HDR10_ST2084_EXT });
+    }
+    surfaceFormats.push_back({ m_surfaceFormat.format, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR });
+
+
+    res = FindSurfaceFormat(surfaceFormats.data(), (amf_uint)surfaceFormats.size(), m_surfaceFormat); // VK_FORMAT_R8G8B8A8_UNORM  VK_FORMAT_B8G8R8A8_UNORM
+    if (res == AMF_NOT_SUPPORTED) //HDR is not supported - force default
+    {
+        SetFormat(AMF_SURFACE_UNKNOWN);
+        surfaceFormats.clear();
+        surfaceFormats.push_back({ m_surfaceFormat.format, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR });
+        res = FindSurfaceFormat(surfaceFormats.data(), (amf_uint)surfaceFormats.size(), m_surfaceFormat); // VK_FORMAT_R8G8B8A8_UNORM  VK_FORMAT_B8G8R8A8_UNORM
+    }
     AMF_RETURN_IF_FAILED(res, L"CreateSwapChain() - FindSurfaceFormat() failed");
+
+    UpdateColorSpace();
 
     // Find present mode
     // FindPresentMode should never fail since VK_PRESENT_MODE_FIFO_KHR is ALWAYS available
@@ -336,6 +358,7 @@ AMF_RESULT SwapChainVulkan::CreateSurface()
     surfaceCreateInfo.dpy = (Display*)m_hDisplay;
     surfaceCreateInfo.window = (Window)m_hwnd;
 
+    AMF_RETURN_IF_FALSE(GetVulkan()->vkCreateXlibSurfaceKHR != nullptr, AMF_FAIL, L"vkCreateXlibSurfaceKHR function missing. Was libvulkan.so.1 compiled without xlib support?");
     VkResult vkres = GetVulkan()->vkCreateXlibSurfaceKHR(m_pVulkanDevice->hInstance, &surfaceCreateInfo, nullptr, &m_hSurfaceKHR);
     ASSERT_RETURN_IF_VK_FAILED(vkres, AMF_VULKAN_FAILED, L"CreateSurface() - vkCreateXlibSurfaceKHR() failed");
 #endif
@@ -734,6 +757,8 @@ VkFormat SwapChainVulkan::GetSupportedVkFormat(AMF_SURFACE_FORMAT format)
     case AMF_SURFACE_UNKNOWN:  return VK_FORMAT_B8G8R8A8_UNORM;
     case AMF_SURFACE_BGRA:     return VK_FORMAT_B8G8R8A8_UNORM;
     case AMF_SURFACE_RGBA:     return VK_FORMAT_R8G8B8A8_UNORM;
+    case AMF_SURFACE_RGBA_F16: return VK_FORMAT_R16G16B16A16_SFLOAT;
+    case AMF_SURFACE_R10G10B10A2: return VK_FORMAT_A2R10G10B10_UNORM_PACK32;
     }
 
     return VK_FORMAT_UNDEFINED;
@@ -905,7 +930,7 @@ AMF_RESULT SwapChainVulkan::BackBufferToSurface(const BackBufferBase* pBuffer, a
     AMFPlane* pPlane = (*ppSurface)->GetPlane(AMF_PLANE_PACKED);
     constexpr amf_size origin[3] = { 0, 0, 0 };
     amf_size region[3] = { (amf_size)pPlane->GetWidth(), (amf_size)pPlane->GetHeight(), 0 };
-    constexpr amf_uint8 color[4] = { 0,0,0,0 };
+    constexpr amf_uint color[4] = { 0,0,0,0 };
     res = pCompute->FillPlane(pPlane, origin, region, color);
     AMF_RETURN_IF_FAILED(res, L"BackBufferToSurface() - FillPlane() failed");
 
@@ -1510,4 +1535,97 @@ AMF_RESULT CommandBufferVulkan::Reset()
     m_fenceSignaled = false;
 
     return AMF_OK;
+}
+AMF_RESULT           SwapChainVulkan::UpdateColorSpace()
+{
+    m_colorSpace = {};
+
+    bool hdrMode = false;
+    if(m_surfaceFormat.colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT || m_surfaceFormat.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT)
+    {
+        if (GetFormat() == amf::AMF_SURFACE_RGBA_F16)
+        {
+            m_colorSpace.transfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_LINEAR;
+            m_colorSpace.primaries = AMF_COLOR_PRIMARIES_BT709;
+            hdrMode = true;
+        }
+        else if (GetFormat() == amf::AMF_SURFACE_R10G10B10A2)
+        {
+            m_colorSpace.transfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE2084;
+            m_colorSpace.primaries = AMF_COLOR_PRIMARIES_BT2020;
+            hdrMode = true;
+        }
+    }
+    m_colorSpace.range = AMF_COLOR_RANGE_FULL;
+    switch (m_surfaceFormat.colorSpace)
+    {
+    case VK_COLOR_SPACE_SRGB_NONLINEAR_KHR:
+        m_colorSpace.transfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_GAMMA22;
+        m_colorSpace.primaries = AMF_COLOR_PRIMARIES_BT709;
+        break;
+    case VK_COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT:
+        break;
+    case VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT:
+        m_colorSpace.transfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_LINEAR;
+        m_colorSpace.primaries = AMF_COLOR_PRIMARIES_BT709;
+        break;
+    case VK_COLOR_SPACE_DISPLAY_P3_LINEAR_EXT:
+    case VK_COLOR_SPACE_DCI_P3_NONLINEAR_EXT:
+        break;
+    case VK_COLOR_SPACE_BT709_LINEAR_EXT:
+        m_colorSpace.transfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_LINEAR;
+        m_colorSpace.primaries = AMF_COLOR_PRIMARIES_BT709;
+        break;
+    case VK_COLOR_SPACE_BT709_NONLINEAR_EXT:
+        m_colorSpace.transfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_GAMMA22;
+        m_colorSpace.primaries = AMF_COLOR_PRIMARIES_BT709;
+        break;
+    case VK_COLOR_SPACE_BT2020_LINEAR_EXT:
+        m_colorSpace.transfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_LINEAR;
+        m_colorSpace.primaries = AMF_COLOR_PRIMARIES_BT2020;
+        break;
+
+    case VK_COLOR_SPACE_HDR10_ST2084_EXT:
+        m_colorSpace.transfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE2084;
+        m_colorSpace.primaries = AMF_COLOR_PRIMARIES_BT2020;
+        break;
+
+    case VK_COLOR_SPACE_DOLBYVISION_EXT:
+    case VK_COLOR_SPACE_HDR10_HLG_EXT:
+    case VK_COLOR_SPACE_ADOBERGB_LINEAR_EXT:
+    case VK_COLOR_SPACE_ADOBERGB_NONLINEAR_EXT:
+    case VK_COLOR_SPACE_PASS_THROUGH_EXT:
+    case VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT:
+        break;
+    case VK_COLOR_SPACE_DISPLAY_NATIVE_AMD:
+        m_colorSpace.transfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE2084;
+        m_colorSpace.primaries = AMF_COLOR_PRIMARIES_CCCS;
+        break;
+    }
+    if (hdrMode && GetFormat() == amf::AMF_SURFACE_RGBA_F16) // Used with RGBA_F16 HDR
+    {
+        // By default, DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709 is set to AMF_COLOR_PRIMARIES_BT709
+        // For HDR however, we want scRGB or CCCS to allow primary coordinates outside the BT709 range
+        m_colorSpace.primaries = AMF_COLOR_PRIMARIES_CCCS;
+    }
+
+    // MM TODO - needto update m_outputHDRMetaData read from display  currently VK allows only set it via vkSetHdrMetadataEXT
+    // in this case color coverter will go as default
+    if (hdrMode) // hard-code for now
+    {
+/*
+        m_outputHDRMetaData = { .redPrimary = {33837, 15820},
+                                .greenPrimary= {13769, 33056},
+                                .bluePrimary= {7617, 3076},
+                                .whitePoint = {15625, 16455},
+                                .maxMasteringLuminance = 6030000,
+                                .minMasteringLuminance= 491,
+                                .maxContentLightLevel = 0,
+                                .maxFrameAverageLightLevel = 36592,
+        };
+*/
+    }
+
+    return AMF_OK;
+
 }

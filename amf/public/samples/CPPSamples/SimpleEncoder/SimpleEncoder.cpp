@@ -71,9 +71,9 @@ static const wchar_t* pCodecNames[] = { AMFVideoEncoderVCE_AVC, AMFVideoEncoder_
 static const wchar_t* fileNames[] = { L"./output.h264", L"./output.h265", L"./output.av1" };
 
 #ifdef _WIN32
-//static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX11;
+static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_DX11;
 //static amf::AMF_MEMORY_TYPE memoryTypeIn = amf::AMF_MEMORY_DX12;
-static amf::AMF_MEMORY_TYPE memoryTypeIn = amf::AMF_MEMORY_VULKAN;
+//static amf::AMF_MEMORY_TYPE memoryTypeIn = amf::AMF_MEMORY_VULKAN;
 #else
 static amf::AMF_MEMORY_TYPE memoryTypeIn  = amf::AMF_MEMORY_VULKAN;
 #endif

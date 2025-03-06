@@ -53,18 +53,18 @@
 
 namespace amf
 {
-	class AMFDDAPISourceImpl : public 
-		AMFInterfaceImpl< AMFInterface >,
-		public amf::AMFSurfaceObserver
-	{
-	public:
-		AMFDDAPISourceImpl(AMFContext* pContext);
-		~AMFDDAPISourceImpl();
+    class AMFDDAPISourceImpl : public
+        AMFInterfaceImpl< AMFInterface >,
+        public amf::AMFSurfaceObserver
+    {
+    public:
+        AMFDDAPISourceImpl(AMFContext* pContext);
+        ~AMFDDAPISourceImpl();
 
-		AMF_RESULT                      InitDisplayCapture(uint32_t displayMonitorIndex, amf_pts frameDuration, bool bEnableDirtyRects);
-		AMF_RESULT                      TerminateDisplayCapture();
+        AMF_RESULT                      InitDisplayCapture(uint32_t displayMonitorIndex, amf_pts frameDuration, bool bEnableDirtyRects);
+        AMF_RESULT                      TerminateDisplayCapture();
 
-		AMF_RESULT                      AcquireSurface(bool bCopyOutputSurface, amf::AMFSurface **pSurface);
+        AMF_RESULT                      AcquireSurface(bool bCopyOutputSurface, amf::AMFSurface **pSurface);
 
         AMFSize                         GetResolution();
 
@@ -72,42 +72,45 @@ namespace amf
         AMF_ROTATION_ENUM               GetRotation();
         void                            SetMode(AMF_DISPLAYCAPTURE_MODE_ENUM mode);
 
-		// AMFSurfaceObserver interface
-		virtual void        AMF_STD_CALL OnSurfaceDataRelease(AMFSurface* pSurface);
+        // AMFSurfaceObserver interface
+        virtual void        AMF_STD_CALL OnSurfaceDataRelease(AMFSurface* pSurface);
 
-	private:
-		// Utility methods
+    private:
+        // Utility methods
         AMF_RESULT                      GetHDRInformation(AMFSurface* pSurface);
         AMF_RESULT                      GetNewDuplicator();
 
-		// When we are done with a texture, we push it onto a free list
-		// We must track the AMF surfaces in case Terminate() is called
-		// before the surface is released
-		amf_list< AMFSurface* >                 m_freeCopySurfaces;
+        // When we are done with a texture, we push it onto a free list
+        // We must track the AMF surfaces in case Terminate() is called
+        // before the surface is released
+        amf_list< AMFSurface* >                 m_freeCopySurfaces;
 
-		AMFContextPtr                           m_pContext;
+        AMFContextPtr                           m_pContext;
         AMFComputePtr                           m_pCompute;
 
-		mutable AMFCriticalSection              m_sync;
+        mutable AMFCriticalSection              m_sync;
 
-		ATL::CComPtr<IDXGIOutputDuplication>    m_displayDuplicator;
+        ATL::CComPtr<IDXGIOutputDuplication>    m_displayDuplicator;
 
         ATL::CComQIPtr<ID3D11Device1>           m_deviceAMF;
+        ATL::CComPtr<IDXGIAdapter>              m_dxgiAdapter;
         ATL::CComPtr<ID3D11DeviceContext>       m_contextAMF;
         ATL::CComPtr < ID3D11Texture2D >        m_acquiredTextureAMF;
 
         volatile bool                           m_bAcquired;
         DXGI_OUTPUT_DESC                        m_outputDescription;
 
-		amf_pts                                 m_frameDuration; // in 100 of nanosec
-		amf_pts                                 m_lastPts;
+
+        uint32_t                                m_displayMonitorIndex;
+        amf_pts                                 m_frameDuration; // in 100 of nanosec
+        amf_pts                                 m_lastPts;
 
         amf_int64                               m_iFrameCount;
 
 #ifdef USE_DUPLICATEOUTPUT1
-		ATL::CComPtr<IDXGIOutput5>              m_dxgiOutput5;
+        ATL::CComPtr<IDXGIOutput5>              m_dxgiOutput5;
 #else
-		ATL::CComPtr<IDXGIOutput1>              m_dxgiOutput1;
+        ATL::CComPtr<IDXGIOutput1>              m_dxgiOutput1;
 #endif
         amf_vector<RECT>                        m_DirtyRects;
         amf_vector<DXGI_OUTDUPL_MOVE_RECT>      m_MoveRects;
@@ -115,5 +118,5 @@ namespace amf
         bool                                    m_bEnableDirtyRects;
         AMF_DISPLAYCAPTURE_MODE_ENUM            m_eCaptureMode;
     };
-	typedef AMFInterfacePtr_T<AMFDDAPISourceImpl>    AMFDDAPISourceImplPtr;
+    typedef AMFInterfacePtr_T<AMFDDAPISourceImpl>    AMFDDAPISourceImplPtr;
 } //namespace amf

@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -94,6 +94,11 @@ static const amf::AMFEnumDescriptionEntry  AMF_ENGINE_ENUM_DESCRIPTION[] =
 };
 
 
+static const wchar_t*  decoderHighlightColour   = L"\033[2;31m";      // red
+static const wchar_t*  encoderHighlightColour   = L"\033[2;32m";      // green
+static const wchar_t*  converterHighlightColour = L"\033[2;34m";      // blue
+static const wchar_t*  highlightColourEnd       = L"\033[0m";
+
 
 
 
@@ -125,20 +130,20 @@ bool QueryIOCaps(amf::AMFIOCapsPtr& ioCaps)
     {
         amf_int32 minWidth, maxWidth;
         ioCaps->GetWidthRange(&minWidth, &maxWidth);
-        std::wcout << L"\t\t\tWidth: [" << minWidth << L"-" << maxWidth << L"]\n";
-    
+        std::wcout << L"\t\t\tWidth: [" << minWidth << L"-" << maxWidth << L"]" << std::endl;
+
         amf_int32 minHeight, maxHeight;
         ioCaps->GetHeightRange(&minHeight, &maxHeight);
-        std::wcout << L"\t\t\tHeight: [" << minHeight << L"-" << maxHeight << L"]\n";
+        std::wcout << L"\t\t\tHeight: [" << minHeight << L"-" << maxHeight << L"]" << std::endl;
 
         amf_int32 vertAlign = ioCaps->GetVertAlign();
-        std::wcout << L"\t\t\tVertical alignment: " << vertAlign << L" lines.\n";
+        std::wcout << L"\t\t\tVertical alignment: " << vertAlign << L" lines." << std::endl;
 
         amf_bool interlacedSupport = ioCaps->IsInterlacedSupported();
         std::wcout << L"\t\t\tInterlaced support: " << (interlacedSupport ? L"YES" : L"NO") << std::endl;
 
         amf_int32 numOfFormats = ioCaps->GetNumOfFormats();
-        std::wcout << L"\t\t\tTotal of " << numOfFormats << L" pixel format(s) supported:\n";
+        std::wcout << L"\t\t\tTotal of " << numOfFormats << L" pixel format(s) supported:" << std::endl;
         for (amf_int32 i = 0; i < numOfFormats; i++)
         {
             amf::AMF_SURFACE_FORMAT format;
@@ -157,7 +162,7 @@ bool QueryIOCaps(amf::AMFIOCapsPtr& ioCaps)
         if (result == true)
         {
             amf_int32 numOfMemTypes = ioCaps->GetNumOfMemoryTypes();
-            std::wcout << L"\t\t\tTotal of " << numOfMemTypes << L" memory type(s) supported:\n";
+            std::wcout << L"\t\t\tTotal of " << numOfMemTypes << L" memory type(s) supported:" << std::endl;
             for (amf_int32 i = 0; i < numOfMemTypes; i++)
             {
                 amf::AMF_MEMORY_TYPE memType;
@@ -171,7 +176,7 @@ bool QueryIOCaps(amf::AMFIOCapsPtr& ioCaps)
     }
     else
     {
-        std::wcerr << L"ERROR: ioCaps == NULL\n";
+        std::wcerr << L"ERROR: ioCaps == NULL" << std::endl;
         result = false;
     }
     return result;
@@ -179,20 +184,23 @@ bool QueryIOCaps(amf::AMFIOCapsPtr& ioCaps)
 
 bool QueryDecoderForCodec(const wchar_t *componentID, amf::AMFContext* pContext)
 {
-    std::wcout << L"\tCodec " << componentID << L" is ";
-    amf::AMFCapsPtr decoderCaps;
-    bool result = false;
+    std::wcout << decoderHighlightColour << L"\tCodec " << componentID << L" is " << highlightColourEnd;
+
     amf::AMFComponentPtr pDecoder;
     g_AMFFactory.GetFactory()->CreateComponent(pContext, componentID, &pDecoder);
+
     if(pDecoder == NULL)
     {
-        std::wcout << AccelTypeToString(amf::AMF_ACCEL_NOT_SUPPORTED) << std::endl;
+        std::wcout << decoderHighlightColour << AccelTypeToString(amf::AMF_ACCEL_NOT_SUPPORTED) << highlightColourEnd << std::endl;
         return false;
     }
+
+    amf::AMFCapsPtr decoderCaps;
+    bool result = false;
     if (pDecoder->GetCaps(&decoderCaps) == AMF_OK)
     {
         amf::AMF_ACCELERATION_TYPE accelType = decoderCaps->GetAccelerationType();
-        std::wcout << AccelTypeToString(accelType) << std::endl;
+        std::wcout << decoderHighlightColour << AccelTypeToString(accelType) << highlightColourEnd << std::endl;
 
         std::wcout << L"\t\tDecoder input:\n";
         amf::AMFIOCapsPtr inputCaps;
@@ -210,21 +218,19 @@ bool QueryDecoderForCodec(const wchar_t *componentID, amf::AMFContext* pContext)
 
         amf_bool saVideo = false;
         decoderCaps->GetProperty(AMF_VIDEO_DECODER_CAP_SUPPORT_SMART_ACCESS_VIDEO, &saVideo);
-        std::wcout << L"\t\tSmartAccess Video: " << (saVideo ? L"true" : L"false") << L"\n";
+        std::wcout << L"\t\tSmartAccess Video: " << (saVideo ? L"true" : L"false") << std::endl;
         return true;
     }
     else
     {
-        std::wcout << AccelTypeToString(amf::AMF_ACCEL_NOT_SUPPORTED) << std::endl;
+        std::wcout << decoderHighlightColour << AccelTypeToString(amf::AMF_ACCEL_NOT_SUPPORTED) << highlightColourEnd << std::endl;
         return false;
     }
 }
 
 bool QueryEncoderForCodecAVC(const wchar_t *componentID, amf::AMFContext* pContext)
 {
-    std::wcout << L"\tCodec " << componentID << std::endl;
-    amf::AMFCapsPtr encoderCaps;
-    bool result = false;
+    std::wcout << encoderHighlightColour << L"\tCodec " << componentID << highlightColourEnd << std::endl;
 
     amf::AMFComponentPtr pEncoder;
     g_AMFFactory.GetFactory()->CreateComponent(pContext, componentID, &pEncoder);
@@ -233,6 +239,9 @@ bool QueryEncoderForCodecAVC(const wchar_t *componentID, amf::AMFContext* pConte
         std::wcout << AccelTypeToString(amf::AMF_ACCEL_NOT_SUPPORTED) << std::endl;
         return false;
     }
+
+    amf::AMFCapsPtr encoderCaps;
+    bool result = false;
     if (pEncoder->GetCaps(&encoderCaps) == AMF_OK)
     {
         amf_uint32 NumOfHWInstances = 1;
@@ -271,23 +280,24 @@ bool QueryEncoderForCodecAVC(const wchar_t *componentID, amf::AMFContext* pConte
             encoderCaps->GetProperty(AMF_VIDEO_ENCODER_CAP_NUM_OF_STREAMS, &maxNumOfStreams);
             std::wcout << L"\t\tMax Number of streams supported:" << maxNumOfStreams << std::endl;
 
-            std::wcout << L"\t\tEncoder input:\n";
+            std::wcout << L"\t\tEncoder input:" << std::endl;
             amf::AMFIOCapsPtr inputCaps;
             if (encoderCaps->GetInputCaps(&inputCaps) == AMF_OK)
             {
                 result = QueryIOCaps(inputCaps);
             }
 
-            std::wcout << L"\t\tEncoder output:\n";
+            std::wcout << L"\t\tEncoder output:" << std::endl;
             amf::AMFIOCapsPtr outputCaps;
             if (encoderCaps->GetOutputCaps(&outputCaps) == AMF_OK)
             {
                 result = QueryIOCaps(outputCaps);
             }
         }
+
         amf_bool saVideo = false;
         encoderCaps->GetProperty(AMF_VIDEO_ENCODER_CAP_SUPPORT_SMART_ACCESS_VIDEO, &saVideo);
-        std::wcout << L"\t\tSmartAccess Video: " << (saVideo ? L"true" : L"false") << L"\n";
+        std::wcout << L"\t\tSmartAccess Video: " << (saVideo ? L"true" : L"false") << std::endl;
         return true;
     }
     else
@@ -299,9 +309,7 @@ bool QueryEncoderForCodecAVC(const wchar_t *componentID, amf::AMFContext* pConte
 
 bool QueryEncoderForCodecHEVC(const wchar_t *componentID, amf::AMFContext* pContext)
 {
-    std::wcout << L"\tCodec " << componentID << std::endl;
-    amf::AMFCapsPtr encoderCaps;
-    bool result = false;
+    std::wcout << encoderHighlightColour << L"\tCodec " << componentID << highlightColourEnd << std::endl;
 
     amf::AMFComponentPtr pEncoder;
     g_AMFFactory.GetFactory()->CreateComponent(pContext, componentID, &pEncoder);
@@ -310,6 +318,9 @@ bool QueryEncoderForCodecHEVC(const wchar_t *componentID, amf::AMFContext* pCont
         std::wcout << AccelTypeToString(amf::AMF_ACCEL_NOT_SUPPORTED) << std::endl;
         return false;
     }
+
+    amf::AMFCapsPtr encoderCaps;
+    bool result = false;
     if (pEncoder->GetCaps(&encoderCaps) == AMF_OK)
     {
         amf_uint32 NumOfHWInstances = 1;
@@ -344,23 +355,24 @@ bool QueryEncoderForCodecHEVC(const wchar_t *componentID, amf::AMFContext* pCont
             encoderCaps->GetProperty(AMF_VIDEO_ENCODER_HEVC_CAP_NUM_OF_STREAMS, &maxNumOfStreams);
             std::wcout << L"\t\tMax Number of streams supported:" << maxNumOfStreams << std::endl;
 
-            std::wcout << L"\t\tEncoder input:\n";
+            std::wcout << L"\t\tEncoder input:" << std::endl;
             amf::AMFIOCapsPtr inputCaps;
             if (encoderCaps->GetInputCaps(&inputCaps) == AMF_OK)
             {
                 result = QueryIOCaps(inputCaps);
             }
 
-            std::wcout << L"\t\tEncoder output:\n";
+            std::wcout << L"\t\tEncoder output:" << std::endl;
             amf::AMFIOCapsPtr outputCaps;
             if (encoderCaps->GetOutputCaps(&outputCaps) == AMF_OK)
             {
                 result = QueryIOCaps(outputCaps);
             }
         }
+
         amf_bool saVideo = false;
         encoderCaps->GetProperty(AMF_VIDEO_ENCODER_HEVC_CAP_SUPPORT_SMART_ACCESS_VIDEO, &saVideo);
-        std::wcout << L"\t\tSmartAccess Video: " << (saVideo ? L"true" : L"false") << L"\n";
+        std::wcout << L"\t\tSmartAccess Video: " << (saVideo ? L"true" : L"false") << std::endl;
         return true;
     }
     else
@@ -372,9 +384,7 @@ bool QueryEncoderForCodecHEVC(const wchar_t *componentID, amf::AMFContext* pCont
 
 bool QueryEncoderForCodecAV1(const wchar_t* componentID, amf::AMFContext* pContext)
 {
-    std::wcout << L"\tCodec " << componentID << std::endl;
-    amf::AMFCapsPtr encoderCaps;
-    bool result = false;
+    std::wcout << encoderHighlightColour << L"\tCodec " << componentID << highlightColourEnd << std::endl;
 
     amf::AMFComponentPtr pEncoder;
     g_AMFFactory.GetFactory()->CreateComponent(pContext, componentID, &pEncoder);
@@ -383,6 +393,9 @@ bool QueryEncoderForCodecAV1(const wchar_t* componentID, amf::AMFContext* pConte
         std::wcout << AccelTypeToString(amf::AMF_ACCEL_NOT_SUPPORTED) << std::endl;
         return false;
     }
+
+    amf::AMFCapsPtr encoderCaps;
+    bool result = false;
     if (pEncoder->GetCaps(&encoderCaps) == AMF_OK)
     {
         amf_uint32 NumOfHWInstances = 1;
@@ -427,13 +440,17 @@ bool QueryEncoderForCodecAV1(const wchar_t* componentID, amf::AMFContext* pConte
             encoderCaps->GetProperty(AMF_VIDEO_ENCODER_AV1_CAP_MAX_LEVEL, &maxLevel);
             std::wcout << L"\t\tmaximum level:" << maxLevel << std::endl;
 
-            std::wcout << L"\t\tEncoder input:\n";
+            bool bBPictureSupported = false;
+            encoderCaps->GetProperty(AMF_VIDEO_ENCODER_AV1_CAP_BFRAMES, &bBPictureSupported);
+            std::wcout << L"\t\tbBPictureSupported:" << bBPictureSupported << L"\n\n";
+
+            std::wcout << L"\t\tEncoder input:" << std::endl;
             if (encoderCaps->GetInputCaps(&inputCaps) == AMF_OK)
             {
                 result = QueryIOCaps(inputCaps);
             }
 
-            std::wcout << L"\t\tEncoder output:\n";
+            std::wcout << L"\t\tEncoder output:" << std::endl;
             amf::AMFIOCapsPtr outputCaps;
             if (encoderCaps->GetOutputCaps(&outputCaps) == AMF_OK)
             {
@@ -442,7 +459,7 @@ bool QueryEncoderForCodecAV1(const wchar_t* componentID, amf::AMFContext* pConte
         }
         amf_bool saVideo = false;
         encoderCaps->GetProperty(AMF_VIDEO_ENCODER_AV1_CAP_SUPPORT_SMART_ACCESS_VIDEO, &saVideo);
-        std::wcout << L"\t\tSmartAccess Video: " << (saVideo ? L"true" : L"false") << L"\n";
+        std::wcout << L"\t\tSmartAccess Video: " << (saVideo ? L"true" : L"false") << std::endl;
         return true;
     }
     else
@@ -454,7 +471,7 @@ bool QueryEncoderForCodecAV1(const wchar_t* componentID, amf::AMFContext* pConte
 
 void QueryDecoderCaps(amf::AMFContext* pContext)
 {
-    std::wcout << L"Querying video decoder capabilities...\n";
+    std::wcout << decoderHighlightColour << L"Querying video decoder capabilities..." << highlightColourEnd << std::endl;
 
 #ifdef _WIN32
     QueryDecoderForCodec(AMFVideoDecoderUVD_MJPEG, pContext);
@@ -463,13 +480,13 @@ void QueryDecoderCaps(amf::AMFContext* pContext)
 #endif
     QueryDecoderForCodec(AMFVideoDecoderUVD_H264_AVC, pContext);
     QueryDecoderForCodec(AMFVideoDecoderHW_H265_HEVC, pContext);
-    QueryDecoderForCodec(AMFVideoDecoderHW_H265_MAIN10, pContext);
+    QueryDecoderForCodec(AMFVideoDecoderHW_AV1, pContext);
 }
 
 void QueryEncoderCaps(amf::AMFContext* pContext)
 {
-    std::wcout << L"Querying video encoder capabilities...\n";
-    
+    std::wcout << std::endl << encoderHighlightColour << L"Querying video encoder capabilities..." << highlightColourEnd << std::endl;
+
     QueryEncoderForCodecAVC(AMFVideoEncoderVCE_AVC, pContext);
     QueryEncoderForCodecAVC(AMFVideoEncoderVCE_SVC, pContext);
     QueryEncoderForCodecHEVC(AMFVideoEncoder_HEVC, pContext);
@@ -478,9 +495,7 @@ void QueryEncoderCaps(amf::AMFContext* pContext)
 
 bool QueryConverterCaps(amf::AMFContext* pContext)
 {
-    std::wcout << L"Querying video converter capabilities...\n";
-    bool result = false;
-    amf::AMFCapsPtr converterCaps;
+    std::wcout << std::endl << converterHighlightColour << L"Querying video converter capabilities..." << highlightColourEnd << std::endl;
 
     amf::AMFComponentPtr pConverter;
     g_AMFFactory.GetFactory()->CreateComponent(pContext, AMFVideoConverter, &pConverter);
@@ -489,16 +504,19 @@ bool QueryConverterCaps(amf::AMFContext* pContext)
         std::wcout << AccelTypeToString(amf::AMF_ACCEL_NOT_SUPPORTED) << std::endl;
         return false;
     }
+
+    bool result = false;
+    amf::AMFCapsPtr converterCaps;
     if (pConverter->GetCaps(&converterCaps) == AMF_OK)
     {
-        std::wcout << L"\t\tConverter input:\n";
+        std::wcout << L"\t\tConverter input:" << std::endl;
         amf::AMFIOCapsPtr inputCaps;
         if (converterCaps->GetInputCaps(&inputCaps) == AMF_OK)
         {
             result = QueryIOCaps(inputCaps);
         }
 
-        std::wcout << L"\t\tConverter output:\n";
+        std::wcout << L"\t\tConverter output:" << std::endl;
         amf::AMFIOCapsPtr outputCaps;
         if (converterCaps->GetOutputCaps(&outputCaps) == AMF_OK)
         {
@@ -609,7 +627,7 @@ int main(int argc, char* argv[])
     if (!parseCmdLineParameters(&params))
 #else
     if (!parseCmdLineParameters(&params, argc, argv))
-#endif        
+#endif
     {
         return -1;
     }
@@ -618,7 +636,7 @@ int main(int argc, char* argv[])
     std::wstring     capability = L"DX11";
 #else
     std::wstring     capability = L"Vulkan";
-#endif        
+#endif
     CAPABILITY_ENUM  mode       = CAPABILITY_DX11;
     params.GetParamWString(PARAM_NAME_CAPABILITY, capability);
     std::transform(capability.begin(), capability.end(), capability.begin(), toUpperWchar);
@@ -663,7 +681,7 @@ int main(int argc, char* argv[])
     g_AMFFactory.GetDebug()->AssertsEnable(false);
 
     for (int deviceIdx = 0; ;deviceIdx++)
-    { 
+    {
         bool deviceInitOverall = false;
         for (int type = 0; type < sizeof(AMF_ENGINE_ENUM_DESCRIPTION) / sizeof(AMF_ENGINE_ENUM_DESCRIPTION[0]); type++)
         {
@@ -688,13 +706,13 @@ int main(int argc, char* argv[])
             memset(&osvi, 0, sizeof(osvi));
             osvi.dwOSVersionInfoSize = sizeof(osvi);
             GetVersionEx(&osvi);
-  
+
             if (osvi.dwMajorVersion >= 6)
             {
                 if (osvi.dwMinorVersion >= 2)   //  Win 8 or Win Server 2012 or newer
                 {
     #if USE_DX12==1
-                    if ((AMF_ENGINE_ENUM_DESCRIPTION[type].value == CAPABILITY_DX12) && 
+                    if ((AMF_ENGINE_ENUM_DESCRIPTION[type].value == CAPABILITY_DX12) &&
                         ((mode == CAPABILITY_DX12) || (mode == CAPABILITY_ALL)) )
                     {
                         amf::AMFContext2Ptr pContext2(pContext);
@@ -723,7 +741,7 @@ int main(int argc, char* argv[])
                     ((mode == CAPABILITY_DX9) || (mode == CAPABILITY_ALL)))
                 {
                     DeviceDX9   deviceDX9;
-                    if (deviceDX9.Init(true, deviceIdx, false, 1, 1) == AMF_OK || 
+                    if (deviceDX9.Init(true, deviceIdx, false, 1, 1) == AMF_OK ||
                         deviceDX9.Init(false, deviceIdx, false, 1, 1) == AMF_OK)    //  For DX9 try DX9Ex first and fall back to DX9 if Ex is not available
                     {
                         deviceInit = (pContext->InitDX9(deviceDX9.GetDevice()) == AMF_OK);
@@ -745,7 +763,7 @@ int main(int argc, char* argv[])
                     if (deviceVulkan.Init(deviceIdx, pContext) == AMF_OK)
                     {
                         deviceInit = (pContext1->InitVulkan(deviceVulkan.GetDevice()) == AMF_OK);
-                    }            
+                    }
                 }
             }
 

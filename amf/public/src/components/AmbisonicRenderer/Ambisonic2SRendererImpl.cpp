@@ -74,7 +74,7 @@ void Ambi2Stereo::loadTabulatedHRTFs()
     phi = new float[IRTABLEN];
 
     for (int n = 0; n < IRTABLEN; n++){
-        float elevation, azimuth;
+        float elevation = 0, azimuth = 0;
         vSpkrNresponse_L[n] = new float[responseLength];
         vSpkrNresponse_R[n] = new float[responseLength];
         memset(&vSpkrNresponse_L[n][0], 0, responseLength*sizeof(float));
@@ -329,7 +329,7 @@ void Ambi2Stereo::process(float newtheta, float newphi, int nSamples, float *W, 
                         break;
                     }
                 }
-                for (unsigned int n = responseLength-1; n >= 0; n--){
+                for (int n = responseLength-1; n >= 0; n--){
                     if (Responses[k][n] != 0.0) {
                         nzFL[k * 2+1] = n;
                         break;
@@ -545,12 +545,6 @@ AMF_RESULT AMF_STD_CALL  AMFAmbisonic2SRendererImpl::Init(AMF_SURFACE_FORMAT /*f
     GetProperty(AMF_AMBISONIC2SRENDERER_OUT_AUDIO_SAMPLE_FORMAT, &format);
     m_outSampleFormat = (AMF_AUDIO_FORMAT)format;
 
-    char dllPath[MAX_PATH + 1];
-    GetModuleFileNameA(NULL, dllPath, MAX_PATH);
-    char *pslash = strrchr(dllPath, '\\');
-    if (pslash){
-        *pslash = '\0';
-    }
     m_ambi2S = new Ambi2Stereo(m_eMode, inSampleRate);
     return AMF_OK;
 }

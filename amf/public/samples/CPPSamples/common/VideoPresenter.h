@@ -130,6 +130,7 @@ public:
     // Stats
     virtual amf_pts                     GetCurrentTime()                                    { return m_currentTime; }
     virtual amf_double                  GetFPS() const                                      { return m_lastFPS; }
+    virtual void                        SetEnableFrameDrop(amf_bool bEnableFrameDrop)       { m_bEnableFrameDrop = bEnableFrameDrop; }
     virtual amf_int64                   GetFramesDropped() const                            { return m_framesDropped; }
 
     // Swapchain
@@ -283,6 +284,7 @@ protected:
     Mode                                m_state;
     AVSyncObject*                       m_pAVSync;
     amf_bool                            m_doWait;
+    amf_bool                            m_bEnableFrameDrop;
     amf_pts                             m_startTime;
     amf_pts                             m_startPts;
     amf_pts                             m_ptsDropThreshold;

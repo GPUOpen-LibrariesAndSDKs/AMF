@@ -106,7 +106,7 @@ namespace amf
         AMF_RESULT AMF_STD_CALL  GetHDRInfo(const AVMasteringDisplayMetadata* pInFFmpegMetadata, AMFHDRMetadata* pAMFHDRInfo);
         AMF_RESULT AMF_STD_CALL  GetColorInfo(AMFSurface* pSurfaceOut, const AVFrame& picture);
 
-        AMF_RESULT AMF_STD_CALL  CopyFrameThreaded(AMFPlane* pPlane, const AVFrame& picture, amf_int threadCount, bool isUVPlane);
+        AMF_RESULT AMF_STD_CALL  CopyFrameThreaded(AMFPlane* pPlane, const AVFrame& picture, amf_int threadCount, bool isUPlane, bool isVPlane);
         AMF_RESULT AMF_STD_CALL  CopyFrameYUV422(AMFPlane* pPlane, const AVFrame& picture);
         AMF_RESULT AMF_STD_CALL  CopyFrameYUV444(AMFPlane* pPlane, const AVFrame& picture);
         AMF_RESULT AMF_STD_CALL  CopyFrameRGB_FP16(AMFPlane* pPlane, const AVFrame& picture);

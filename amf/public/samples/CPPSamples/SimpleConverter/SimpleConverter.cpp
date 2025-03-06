@@ -274,9 +274,9 @@ static void FillSurface(amf::AMFContext *context, amf::AMFSurface *surface, amf_
         amf::AMFComputePtr compute;
         context->GetCompute(surface->GetMemoryType(), &compute);
 
-        amf_uint8 color1[4] ={255, 0, 0, 255};
-        amf_uint8  color2[4] = {0, 255, 0, 255};
-        amf_uint8  *color = (i % 2) ? color1 : color2;
+        amf_uint color1[4] ={255, 0, 0, 255};
+        amf_uint  color2[4] = {0, 255, 0, 255};
+        amf_uint  *color = (i % 2) ? color1 : color2;
         amf::AMFPlane *plane = surface->GetPlaneAt(0);
         amf_size region[3] = {(amf_size)plane->GetWidth(), (amf_size)plane->GetHeight(), (amf_size)1};
         amf_size origin[3] = {0, 0 , 0};

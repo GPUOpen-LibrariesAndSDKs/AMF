@@ -47,13 +47,13 @@ using namespace amf;
 namespace
 {
 #ifdef USE_DUPLICATEOUTPUT1
-	const DXGI_FORMAT DesktopFormats[] = { 
+    const DXGI_FORMAT DesktopFormats[] = {
 //        DXGI_FORMAT_R8G8B8A8_UNORM,
         DXGI_FORMAT_B8G8R8A8_UNORM,
         DXGI_FORMAT_R16G16B16A16_FLOAT,
         DXGI_FORMAT_R10G10B10A2_UNORM,
     };
-	const unsigned DesktopFormatsCounts = amf_countof(DesktopFormats);
+    const unsigned DesktopFormatsCounts = amf_countof(DesktopFormats);
 #endif
 }
 
@@ -62,6 +62,7 @@ AMFDDAPISourceImpl::AMFDDAPISourceImpl(AMFContext* pContext) :
     m_pContext(pContext),
     m_bAcquired(false),
     m_outputDescription{},
+    m_displayMonitorIndex(0),
     m_frameDuration(0),
     m_lastPts(-1LL),
     m_iFrameCount(0),
@@ -75,116 +76,74 @@ AMFDDAPISourceImpl::AMFDDAPISourceImpl(AMFContext* pContext) :
 //-------------------------------------------------------------------------------------------------
 AMFDDAPISourceImpl::~AMFDDAPISourceImpl()
 {
-	TerminateDisplayCapture();
+    TerminateDisplayCapture();
 }
 
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMFDDAPISourceImpl::InitDisplayCapture(uint32_t displayMonitorIndex, amf_pts frameDuration, bool bEnableDirtyRects)
 {
-	// Make sure we are in Windows 8 or higher
-	if (!IsWindows8OrGreater())
-	{
-		return AMF_UNEXPECTED;
-	}
+    // Make sure we are in Windows 8 or higher
+    if (!IsWindows8OrGreater())
+    {
+        return AMF_UNEXPECTED;
+    }
 
-	m_frameDuration = frameDuration;
+    m_displayMonitorIndex = displayMonitorIndex;
+    m_frameDuration = frameDuration;
     m_bEnableDirtyRects = bEnableDirtyRects;
 
     m_pContext->GetCompute(amf::AMF_MEMORY_DX11, &m_pCompute);
 
-	// Set the device
+    // Set the device
     m_deviceAMF = static_cast<ID3D11Device*>(m_pContext->GetDX11Device());
-	AMF_RETURN_IF_FALSE(m_deviceAMF != NULL, AMF_NOT_INITIALIZED, L"Could not get m_device");
+    AMF_RETURN_IF_FALSE(m_deviceAMF != NULL, AMF_NOT_INITIALIZED, L"Could not get m_device");
     m_deviceAMF->GetImmediateContext(&m_contextAMF);
 
-	// Get DXGI device
-	ATL::CComPtr<IDXGIDevice> dxgiDevice;
-	HRESULT hr = m_deviceAMF->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void**>(&dxgiDevice));
+    // Get DXGI device
+    ATL::CComPtr<IDXGIDevice> dxgiDevice;
+    HRESULT hr = m_deviceAMF->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void**>(&dxgiDevice));
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_FAIL, L"Could not find dxgiDevice");
 
-	// Get DXGI adapter
-	ATL::CComPtr<IDXGIAdapter> dxgiAdapter;
-	hr = dxgiDevice->GetParent(__uuidof(IDXGIAdapter), reinterpret_cast<void**>(&dxgiAdapter));
+    // Get DXGI adapter
+    m_dxgiAdapter.Release();
+    hr = dxgiDevice->GetParent(__uuidof(IDXGIAdapter), reinterpret_cast<void**>(&m_dxgiAdapter));
     ASSERT_RETURN_IF_HR_FAILED(hr, AMF_FAIL, L"Could not find dxgiAdapter");
 
-	// Get output
-	std::vector<ATL::CComPtr<IDXGIOutput>> outputs;
-    CComPtr<IDXGIOutput> dxgiOutput;
-    UINT i = 0;
-    while (SUCCEEDED(dxgiAdapter->EnumOutputs(i, &dxgiOutput)))
-    {
-        outputs.push_back(dxgiOutput);
-        dxgiOutput = nullptr;
-        ++i;
-    }
-
-    AMF_RETURN_IF_FALSE(outputs.empty() == false, AMF_FAIL, L"Could not find dxgiOutput when calling EnumOutputs");
-
-    dxgiOutput = outputs[displayMonitorIndex % outputs.size()];
-
-	// m_OutputDescription will allow access to DesktopCoordinates
-	hr = dxgiOutput->GetDesc(&m_outputDescription);
-    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_FAIL, L"Could not find dxgiOutput description");
-
-	// Basic checks for simple screen display
-	bool supportedRotations = m_outputDescription.Rotation == DXGI_MODE_ROTATION_UNSPECIFIED ||
-		                      m_outputDescription.Rotation == DXGI_MODE_ROTATION_IDENTITY;
-	if (!supportedRotations)
-	{
-		AMF_RETURN_IF_FAILED(AMF_FAIL, L"Unsupported display rotation");
-	}
-    SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
-    
-    // Create desktop duplication
-#ifdef USE_DUPLICATEOUTPUT1
-	// Query the IDXGIOutput5 interface.  IDXGIOutput5 derives from IDXGIOutput and
-	// has a few extra methods such as DuplicateOutput1 which we use below
-	hr = dxgiOutput->QueryInterface(__uuidof(IDXGIOutput5), reinterpret_cast<void**>(&m_dxgiOutput5));
-    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_FAIL, L"could not find dxgiOutput5");
-
-	hr = m_dxgiOutput5->DuplicateOutput1(m_deviceAMF, 0, DesktopFormatsCounts, DesktopFormats, &m_displayDuplicator);
-#else
-	// Query the IDXGIOutput1 interface.  IDXGIOutput1 derives from IDXGIOutput and
-	// has a few extra methods such as DuplicateOutput which we use below
-	hr = dxgiOutput->QueryInterface(__uuidof(IDXGIOutput1), reinterpret_cast<void**>(&m_dxgiOutput1));
-    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_FAIL, L"Could not find dxgiOutput1");
-
-	hr = m_dxgiOutput1->DuplicateOutput(m_deviceAMF, &m_displayDuplicator);
-#endif
-    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_FAIL, L"Could not get display duplication object");
+    AMF_RETURN_IF_FAILED(GetNewDuplicator(), L"Could not get Duplicator");
 
     m_lastPts = -1LL;
     m_iFrameCount = 0;
-	return AMF_OK;
+    return AMF_OK;
 }
 
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMFDDAPISourceImpl::TerminateDisplayCapture()
 {
-	AMFLock lock(&m_sync);
-	//
+    AMFLock lock(&m_sync);
+    //
 
-	// Clear any active observers and then the surfaces
-	for (amf_list< AMFSurface* >::iterator it = m_freeCopySurfaces.begin(); it != m_freeCopySurfaces.end(); it++)
-	{
-		(*it)->RemoveObserver(this);
-	}
-	m_freeCopySurfaces.clear();
+    // Clear any active observers and then the surfaces
+    for (amf_list< AMFSurface* >::iterator it = m_freeCopySurfaces.begin(); it != m_freeCopySurfaces.end(); it++)
+    {
+        (*it)->RemoveObserver(this);
+    }
+    m_freeCopySurfaces.clear();
 
-	m_displayDuplicator.Release();
+    m_displayDuplicator.Release();
 #ifdef USE_DUPLICATEOUTPUT1
-	m_dxgiOutput5.Release();
+    m_dxgiOutput5.Release();
 #else
-	m_dxgiOutput1.Release();
+    m_dxgiOutput1.Release();
 #endif
     m_acquiredTextureAMF.Release();
+    m_dxgiAdapter.Release();
     m_deviceAMF.Release();
 
     m_contextAMF.Release();
     m_pCompute.Release();
     m_pContext.Release();
 
-	return AMF_OK;
+    return AMF_OK;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -203,30 +162,30 @@ AMF_RESULT AMFDDAPISourceImpl::AcquireSurface(bool bCopyOutputSurface, amf::AMFS
         amf_sleep(1);
     }
 
-	AMFLock lock(&m_sync);
+    AMFLock lock(&m_sync);
 
-	AMF_RESULT res = AMF_OK;
+    AMF_RESULT res = AMF_OK;
 
-	// AMF_RETURN_IF_FALSE(m_displayDuplicator != NULL, AMF_FAIL, L"AcquireSurface() has null display duplicator");
-	if (!m_displayDuplicator)
-	{
-		res = GetNewDuplicator();
+    // AMF_RETURN_IF_FALSE(m_displayDuplicator != NULL, AMF_FAIL, L"AcquireSurface() has null display duplicator");
+    if (!m_displayDuplicator)
+    {
+        res = GetNewDuplicator();
         if (res != AMF_OK)
         {
             return AMF_REPEAT;
         }
     }
 
-	// Get new frame
+    // Get new frame
 
     bool bWait = m_frameDuration != 0 && m_eCaptureMode == AMF_DISPLAYCAPTURE_MODE_KEEP_FRAMERATE;
 
-	DXGI_OUTDUPL_FRAME_INFO frameInfo = {};
-	ATL::CComPtr<IDXGIResource> desktopResource;
-	ATL::CComPtr<ID3D11Texture2D> displayTexture;
+    DXGI_OUTDUPL_FRAME_INFO frameInfo = {};
+    ATL::CComPtr<IDXGIResource> desktopResource;
+    ATL::CComPtr<ID3D11Texture2D> displayTexture;
 
 // MM AcquireNextFrame() blocks DX11 calls including calls to query encoder. Wait ourselves here
-//	UINT kAcquireTimeout = UINT(waitTime / 10000); // to ms
+//    UINT kAcquireTimeout = UINT(waitTime / 10000); // to ms
     UINT kAcquireTimeout = 0;
 
     amf_pts prevLastTime = m_lastPts;
@@ -259,8 +218,8 @@ AMF_RESULT AMFDDAPISourceImpl::AcquireSurface(bool bCopyOutputSurface, amf::AMFS
 
     AMFBufferPtr pDirtyRectBuffer;
 
-	if (hr == S_OK)
-	{
+    if (hr == S_OK)
+    {
         if (frameInfo.LastPresentTime.QuadPart == 0)
         {
             m_displayDuplicator->ReleaseFrame();
@@ -314,8 +273,8 @@ AMF_RESULT AMFDDAPISourceImpl::AcquireSurface(bool bCopyOutputSurface, amf::AMFS
             }
         }
 
-		hr = desktopResource->QueryInterface(__uuidof(ID3D11Texture2D), reinterpret_cast<void **>(&displayTexture));
-		AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"Could not get captured display texture");
+        hr = desktopResource->QueryInterface(__uuidof(ID3D11Texture2D), reinterpret_cast<void **>(&displayTexture));
+        AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"Could not get captured display texture");
 
         m_bAcquired = true;
 
@@ -356,31 +315,31 @@ AMF_RESULT AMFDDAPISourceImpl::AcquireSurface(bool bCopyOutputSurface, amf::AMFS
 
         return AMF_OK;
     }
-	if (DXGI_ERROR_WAIT_TIMEOUT == hr)
-	{
+    if (DXGI_ERROR_WAIT_TIMEOUT == hr)
+    {
         //AMFTraceInfo(AMF_FACILITY, L"Timeout");
         m_lastPts = prevLastTime;
         return AMF_REPEAT;
     }
-	if (DXGI_ERROR_ACCESS_LOST == hr)
-	{
-		res = GetNewDuplicator();
+    if (DXGI_ERROR_ACCESS_LOST == hr)
+    {
+        res = GetNewDuplicator();
         if (res != AMF_OK)
         {
             return AMF_REPEAT;
         }
         //
-		return AMF_REPEAT;
-	}
-	else 
-	{
+        return AMF_REPEAT;
+    }
+    else
+    {
         res = GetNewDuplicator();
         // Check for other errors
-		AMF_RETURN_IF_FALSE(SUCCEEDED(hr), AMF_FAIL, L"Could not AcquireNextFrame");
+        AMF_RETURN_IF_FALSE(res == AMF_OK || SUCCEEDED(hr), AMF_FAIL, L"Could not AcquireNextFrame");
         return AMF_REPEAT;
     }
 
-	return AMF_OK;
+    return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMFDDAPISourceImpl::GetHDRInformation(amf::AMFSurface* pSurface)
@@ -532,17 +491,58 @@ AMF_RESULT AMFDDAPISourceImpl::GetHDRInformation(amf::AMFSurface* pSurface)
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMFDDAPISourceImpl::GetNewDuplicator()
 {
-	HRESULT hr = S_OK;
+    HRESULT hr = S_OK;
 
     AMFLock lock(&m_sync);
     m_displayDuplicator.Release();
     m_bAcquired = false;
-	// Recreate desktop duplication ptr
+    // Recreate desktop duplication ptr
+
+    // Get output
+    std::vector<ATL::CComPtr<IDXGIOutput>> outputs;
+    CComPtr<IDXGIOutput> dxgiOutput;
+    UINT i = 0;
+    while (SUCCEEDED(m_dxgiAdapter->EnumOutputs(i, &dxgiOutput)))
+    {
+        outputs.push_back(dxgiOutput);
+        dxgiOutput = nullptr;
+        ++i;
+    }
+
+    AMF_RETURN_IF_FALSE(outputs.empty() == false, AMF_FAIL, L"Could not find dxgiOutput when calling EnumOutputs");
+
+    dxgiOutput = outputs[m_displayMonitorIndex % outputs.size()];
+
+    // m_OutputDescription will allow access to DesktopCoordinates
+    hr = dxgiOutput->GetDesc(&m_outputDescription);
+    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_FAIL, L"Could not find dxgiOutput description");
+
+    // Basic checks for simple screen display
+    bool supportedRotations = m_outputDescription.Rotation == DXGI_MODE_ROTATION_UNSPECIFIED ||
+        m_outputDescription.Rotation == DXGI_MODE_ROTATION_IDENTITY;
+    if (!supportedRotations)
+    {
+        AMF_RETURN_IF_FAILED(AMF_FAIL, L"Unsupported display rotation");
+    }
+    SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
+
+    // Create desktop duplication
 #ifdef USE_DUPLICATEOUTPUT1
-	hr = m_dxgiOutput5->DuplicateOutput1(m_deviceAMF, 0, DesktopFormatsCounts, DesktopFormats, &m_displayDuplicator);
+    // Query the IDXGIOutput5 interface.  IDXGIOutput5 derives from IDXGIOutput and
+    // has a few extra methods such as DuplicateOutput1 which we use below
+    m_dxgiOutput5 = dxgiOutput;
+    AMF_RETURN_IF_INVALID_POINTER(m_dxgiOutput5, L"could not find dxgiOutput5");
+
+    hr = m_dxgiOutput5->DuplicateOutput1(m_deviceAMF, 0, DesktopFormatsCounts, DesktopFormats, &m_displayDuplicator);
 #else
-	hr = m_dxgiOutput1->DuplicateOutput(m_device, &m_displayDuplicator);
+    // Query the IDXGIOutput1 interface.  IDXGIOutput1 derives from IDXGIOutput and
+    // has a few extra methods such as DuplicateOutput which we use below
+    m_dxgiOutput1 = dxgiOutput;
+    AMF_RETURN_IF_INVALID_POINTER(m_dxgiOutput1, L"could not find dxgiOutput1");
+
+    hr = m_dxgiOutput1->DuplicateOutput(m_deviceAMF, &m_displayDuplicator);
 #endif
+
     if (hr == E_ACCESSDENIED)
     {
         AMFTraceWarning(AMF_FACILITY, L"GetNewDuplicator(): DuplicateOutput() failed hr=E_ACCESSDENIED");
@@ -562,7 +562,7 @@ AMF_RESULT AMFDDAPISourceImpl::GetNewDuplicator()
 
 //    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_FAIL, L"DuplicateOutput() failed");
 
-	return AMF_OK;
+    return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
 AMFSize     AMFDDAPISourceImpl::GetResolution()
@@ -613,11 +613,11 @@ void AMF_STD_CALL AMFDDAPISourceImpl::OnSurfaceDataRelease(amf::AMFSurface* pSur
         }
     }
     m_acquiredTextureAMF = nullptr;
-	if (m_displayDuplicator != nullptr)
-	{
-		m_displayDuplicator->ReleaseFrame();
-	}
-	m_bAcquired = false;
+    if (m_displayDuplicator != nullptr)
+    {
+        m_displayDuplicator->ReleaseFrame();
+    }
+    m_bAcquired = false;
 }
 //-------------------------------------------------------------------------------------------------
 AMF_ROTATION_ENUM               AMFDDAPISourceImpl::GetRotation()

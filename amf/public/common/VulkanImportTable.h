@@ -72,6 +72,7 @@ struct VulkanImportTable
     PFN_vkGetPhysicalDeviceFeatures                         vkGetPhysicalDeviceFeatures;
     PFN_vkGetPhysicalDeviceProperties2KHR                   vkGetPhysicalDeviceProperties2KHR;
     PFN_vkGetPhysicalDeviceFormatProperties                 vkGetPhysicalDeviceFormatProperties;
+    PFN_vkGetPhysicalDeviceFormatProperties2                 vkGetPhysicalDeviceFormatProperties2;
     PFN_vkGetPhysicalDeviceImageFormatProperties            vkGetPhysicalDeviceImageFormatProperties;
     PFN_vkGetPhysicalDeviceProperties                       vkGetPhysicalDeviceProperties;
     PFN_vkGetPhysicalDeviceExternalSemaphoreProperties      vkGetPhysicalDeviceExternalSemaphoreProperties;

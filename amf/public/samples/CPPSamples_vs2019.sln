@@ -27,14 +27,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VCEEncoderD3D", "CPPSamples
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleEncoderC", "SamplesC\SimpleEncoderC\SimpleEncoderC_VS2019.vcxproj", "{74118461-A742-490F-BB54-86EB2509921C}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ComponentsFFMPEG", "..\proj\VS2019\ComponentsFFMPEG\ComponentsFFMPEG.vcxproj", "{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ComponentsFFMPEG", "..\proj\vs2019\ComponentsFFMPEG\ComponentsFFMPEG.vcxproj", "{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DVR", "CPPSamples\DVR\DVR_VS2019.vcxproj", "{7E7270B4-B894-4BA2-9E89-621276C6BF28}"
 	ProjectSection(ProjectDependencies) = postProject
 		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD} = {16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VideoStitch", "..\proj\VS2019\VideoStitch\VideoStitch.vcxproj", "{0D493826-E26D-42EB-88C7-86D20BBF3929}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VideoStitch", "..\proj\vs2019\VideoStitch\VideoStitch.vcxproj", "{0D493826-E26D-42EB-88C7-86D20BBF3929}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Stitch", "CPPSamples\Stitch\Stitch_VS2019.vcxproj", "{EFE185AE-CE9B-4CCB-8A30-FA4B63A40B3D}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -54,6 +54,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleFrameInjection", "CPPSamples\SimpleFrameInjection\SimpleFrameInjection_VS2019.vcxproj", "{C403272E-8D33-4292-8868-E5E10EE20073}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EncoderLatency", "CPPSamples\EncoderLatency\EncoderLatency_VS2019.vcxproj", "{7365BA40-C111-4F23-95C7-8F4847671234}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleFRC", "CPPSamples\SimpleFRC\SimpleFRC_VS2019.vcxproj", "{DE4D40FE-0820-4E9C-9D04-CAC67AF26D12}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -207,6 +209,14 @@ Global
 		{7365BA40-C111-4F23-95C7-8F4847671234}.Release|Win32.Build.0 = Release|Win32
 		{7365BA40-C111-4F23-95C7-8F4847671234}.Release|x64.ActiveCfg = Release|x64
 		{7365BA40-C111-4F23-95C7-8F4847671234}.Release|x64.Build.0 = Release|x64
+		{DE4D40FE-0820-4E9C-9D04-CAC67AF26D12}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DE4D40FE-0820-4E9C-9D04-CAC67AF26D12}.Debug|Win32.Build.0 = Debug|Win32
+		{DE4D40FE-0820-4E9C-9D04-CAC67AF26D12}.Debug|x64.ActiveCfg = Debug|x64
+		{DE4D40FE-0820-4E9C-9D04-CAC67AF26D12}.Debug|x64.Build.0 = Debug|x64
+		{DE4D40FE-0820-4E9C-9D04-CAC67AF26D12}.Release|Win32.ActiveCfg = Release|Win32
+		{DE4D40FE-0820-4E9C-9D04-CAC67AF26D12}.Release|Win32.Build.0 = Release|Win32
+		{DE4D40FE-0820-4E9C-9D04-CAC67AF26D12}.Release|x64.ActiveCfg = Release|x64
+		{DE4D40FE-0820-4E9C-9D04-CAC67AF26D12}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

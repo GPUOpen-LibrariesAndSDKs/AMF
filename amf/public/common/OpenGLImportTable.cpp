@@ -241,15 +241,15 @@ OpenGLImportTable::OpenGLImportTable() :
 
 OpenGLImportTable::~OpenGLImportTable()
 {
+#if defined(_WIN32)
+    DestroyDummy();
+#endif
+
     if (m_hOpenGLDll != nullptr)
     {
         amf_free_library(m_hOpenGLDll);
     }
     m_hOpenGLDll = nullptr;
-
-#if defined(_WIN32)
-    DestroyDummy();
-#endif
 }
 
 AMF_RESULT OpenGLImportTable::LoadFunctionsTable()

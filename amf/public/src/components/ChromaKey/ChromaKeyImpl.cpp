@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -110,19 +110,19 @@ extern "C"
 
 using namespace amf;
 
-static const AMFEnumDescriptionEntry AMF_OUTPUT_FORMATS_ENUM[] = 
+static const AMFEnumDescriptionEntry AMF_OUTPUT_FORMATS_ENUM[] =
 {
     {AMF_SURFACE_UNKNOWN,       L"DEFAULT"},
-    {AMF_SURFACE_BGRA,          L"BGRA"}, 
-    {AMF_SURFACE_RGBA,          L"RGBA"}, 
-    {AMF_SURFACE_ARGB,          L"ARGB"}, 
+    {AMF_SURFACE_BGRA,          L"BGRA"},
+    {AMF_SURFACE_RGBA,          L"RGBA"},
+    {AMF_SURFACE_ARGB,          L"ARGB"},
     {AMF_SURFACE_NV12,          L"NV12"},
     {AMF_SURFACE_YUV420P,       L"YUV420P"},
     {AMF_SURFACE_RGBA_F16,      L"RGBA_FP16"},
     {0,                         NULL}  // This is end of description mark
 };
 
-static const AMFEnumDescriptionEntry AMF_MEMORY_ENUM_DESCRIPTION[] = 
+static const AMFEnumDescriptionEntry AMF_MEMORY_ENUM_DESCRIPTION[] =
 {
     {AMF_MEMORY_UNKNOWN,    L"Default"},
     {AMF_MEMORY_DX11,       L"DX11"},
@@ -138,7 +138,7 @@ enum ComputeDeviceEnum
     ComputeDeviceHost,
 };
 
-static const AMFEnumDescriptionEntry AMF_COMPUTE_DEVICE_ENUM_DESCRIPTION[] = 
+static const AMFEnumDescriptionEntry AMF_COMPUTE_DEVICE_ENUM_DESCRIPTION[] =
 {
     {ComputeDeviceDefault,    L"Default"},
     {ComputeDeviceOpenCL,     L"OpenCL"},
@@ -179,7 +179,7 @@ AMF_RESULT  AMF_STD_CALL AMFChromaKeyImpl::AMFChromaKeyInputImpl::SubmitInput(AM
 
     m_pSurface = pSurfaceIn; // store surface
 
-    ///todo, workaround to map DX11 surface to OpenCL surface 
+    ///todo, workaround to map DX11 surface to OpenCL surface
     if (m_pHost->m_deviceMemoryType == AMF_MEMORY_OPENCL)
     {
         AMF_RETURN_IF_FAILED(pSurfaceIn->Convert(AMF_MEMORY_HOST), L"Failed to interop input surface");
@@ -573,7 +573,7 @@ AMF_RESULT AMF_STD_CALL AMFChromaKeyImpl::QueryOutput(AMFData** ppData)
     {
         m_iHistoMax = 0;
     }
-    
+
     if (!(m_iFrameCount % 10) && m_bUpdateKeyColorAuto && !m_bAlphaFromSrc) //collect histogram every 10 frames
     {
         //using histogram to locate the Green key color
@@ -675,7 +675,7 @@ AMF_RESULT AMF_STD_CALL AMFChromaKeyImpl::QueryOutput(AMFData** ppData)
         {
             amf_size org[3] = { 0, 0, 0 };
             amf_size size[3] = { (amf_size)m_pSurfaceMaskSpill->GetPlaneAt(0)->GetWidth(), (amf_size)m_pSurfaceMaskSpill->GetPlaneAt(0)->GetHeight(), 1 };
-            int fillColor[4] = { 0 };
+            amf_uint fillColor[4] = { 0 };
             AMF_RETURN_IF_FAILED(m_Compute->FillPlane(m_pSurfaceMaskSpill->GetPlaneAt(0), org, size, fillColor));
             m_pSurfaceMaskBlur = m_pSurfaceMask;
         }
@@ -690,7 +690,7 @@ AMF_RESULT AMF_STD_CALL AMFChromaKeyImpl::QueryOutput(AMFData** ppData)
     {
         amf_size org[3] = { 0, 0, 0 };
         amf_size size[3] = { (amf_size)m_pSurfaceMaskBlur->GetPlaneAt(0)->GetWidth(), (amf_size)m_pSurfaceMaskBlur->GetPlaneAt(0)->GetHeight(), 1 };
-        int fillColor[4] = { 0 };
+        amf_uint fillColor[4] = { 0 };
         AMF_RETURN_IF_FAILED(m_Compute->FillPlane(m_pSurfaceMaskBlur->GetPlaneAt(0), org, size, fillColor));
 
         if (m_Inputs[0]->m_pSurface->GetFormat() == AMF_SURFACE_RGBA_F16)
@@ -726,8 +726,8 @@ AMF_RESULT AMF_STD_CALL AMFChromaKeyImpl::QueryOutput(AMFData** ppData)
     }
 
     firstInSurface = m_Inputs[0]->m_pSurface;
-    ///todo, optimize 
-    //copy openCL surface data to UE4 DX11 surface 
+    ///todo, optimize
+    //copy openCL surface data to UE4 DX11 surface
     if (m_pDataAllocatorCB && (m_outputMemoryType == AMF_MEMORY_DX11) && (m_deviceMemoryType == AMF_MEMORY_OPENCL))
     {
         AMFSurfacePtr   pSurfaceOut;
@@ -1216,7 +1216,7 @@ AMF_RESULT AMFChromaKeyImpl::BlendBK(
 
     amf_int32 keycolor = m_iKeyColor[0];// (m_iKeyColor[0] & 0x00FF00) >> 8;
     AMF_RETURN_IF_FAILED(pKernelChromaKeyBlendBK->SetArgInt32(index++, keycolor));       //key color
-    
+
     AMF_RETURN_IF_FAILED(pKernelChromaKeyBlendBK->SetArgInt32(index++, posX));       //posX
     AMF_RETURN_IF_FAILED(pKernelChromaKeyBlendBK->SetArgInt32(index++, posY));       //posY
     //color transfer mode. map 8bit to linear space for FP16 rendering
@@ -1391,7 +1391,7 @@ AMF_RESULT AMFChromaKeyImpl::Bokeh(AMFSurfacePtr pSurfaceIn, AMFSurfacePtr pSurf
 AMF_RESULT AMFChromaKeyImpl::UpdateKeyColor(AMFSurfacePtr pSurfaceIn)
 {
     AMF_RESULT res = AMF_OK;
-    //copy a portion of the area and lock the small surface to read 
+    //copy a portion of the area and lock the small surface to read
     amf_int32 widthIn = pSurfaceIn->GetPlane(AMF_PLANE_Y)->GetWidth();
     amf_int32 heightIn = pSurfaceIn->GetPlane(AMF_PLANE_Y)->GetHeight();
     AMFSurfacePtr pSurface;
@@ -1415,10 +1415,10 @@ AMF_RESULT AMFChromaKeyImpl::UpdateKeyColor(AMFSurfacePtr pSurfaceIn)
         posKeyColor.y -= posY;
     }
 
-    //make sure the 2x2 aera is valid aera 
+    //make sure the 2x2 aera is valid aera
     posKeyColor.x = std::max(0, std::min(widthIn - width, posKeyColor.x));
     posKeyColor.y = std::max(0, std::min(heightIn - height, posKeyColor.y));
-    
+
     //NV12 needs to be aligned with 2
     posKeyColor.x = (posKeyColor.x / 2) * 2;
     posKeyColor.y = (posKeyColor.y / 2) * 2;
@@ -1427,7 +1427,7 @@ AMF_RESULT AMFChromaKeyImpl::UpdateKeyColor(AMFSurfacePtr pSurfaceIn)
     {
         posKeyColor.x /= 2;
     }
- 
+
     res = pSurfaceIn->CopySurfaceRegion(pSurface, 0, 0, posKeyColor.x, posKeyColor.y, width, height);
     AMF_RETURN_IF_FAILED(res, L"AMFChromaKeyImpl::UpdateKeyColor, CopySurfaceRegion failed!");
 
@@ -1481,7 +1481,7 @@ AMF_RESULT AMFChromaKeyImpl::UpdateKeyColor(AMFSurfacePtr pSurfaceIn)
         iKeyColor = ((keyColor[0] << 14) & 0x3FF00000) | ((keyColor[1] << 4) & 0x000FFC00) | ((keyColor[2] >> 6) & 0x000003FF);
     }
 
- 
+
     pSurface.Release();
     bool ctrlDown = (GetKeyState(VK_CONTROL)  & (1 << 16)) != 0;
     bool altDown = (GetKeyState(VK_MENU)  & (1 << 16)) != 0;
@@ -1800,7 +1800,7 @@ AMF_RESULT AMFChromaKeyImpl::SaveSurface(AMFSurfacePtr pSurfaceIn, std::wstring 
 {
     //-------------------------------------------------------------------------------------------------
         AMF_RESULT res = AMF_OK;
-        //copy a portion of the area and lock the small surface to read 
+        //copy a portion of the area and lock the small surface to read
         amf_int32 widthIn = pSurfaceIn->GetPlane(AMF_PLANE_Y)->GetWidth();
         amf_int32 heightIn = pSurfaceIn->GetPlane(AMF_PLANE_Y)->GetHeight();
         if (m_deviceMemoryType == AMF_MEMORY_DX11)
@@ -1900,7 +1900,7 @@ AMF_RESULT AMFChromaKeyImpl::SaveToBmp(amf_uint8* pData, std::wstring fileName, 
 AMF_RESULT AMFChromaKeyImpl::DumpSurface(AMFSurfacePtr pSurfaceIn)
 {
     AMF_RESULT res = AMF_OK;
-    //copy a portion of the area and lock the small surface to read 
+    //copy a portion of the area and lock the small surface to read
     amf_int32 widthIn = pSurfaceIn->GetPlane(AMF_PLANE_Y)->GetWidth();
     amf_int32 heightIn = pSurfaceIn->GetPlane(AMF_PLANE_Y)->GetHeight();
     AMFSurfacePtr pSurface;
@@ -2087,7 +2087,7 @@ amf_uint32 AMFChromaKeyImpl::GetColorTransferMode(AMFSurfacePtr pSurfaceIn)
     else
     {
         bool bIs8bitSrc = Is8bit(pSurfaceIn);
-        //todo, get this info from source 
+        //todo, get this info from source
         if (bIs8bitSrc ||
             (pSurfaceIn->GetFormat() == AMF_SURFACE_P010) ||
             (pSurfaceIn->GetFormat() == AMF_SURFACE_Y210))

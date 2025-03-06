@@ -14,8 +14,8 @@ AMF is a light-weight, portable multimedia framework that abstracts away most of
     * Windows Subsystem for Linux (DX12 Decoder and Converter Only)
     * Visual Studio&reg; 2019
 * Linux
-    * RHEL 9.4 / 8.10
-    * Ubuntu 24.04.1 / 22.04.5
+    * RHEL 9.5 / 8.10
+    * Ubuntu 24.04.2 / 22.04.5
     * SLED/SLES 15 SP6
 * Driver and AMF component installation instructions are available on the [Wiki page](https://github.com/GPUOpen-LibrariesAndSDKs/AMF/wiki).
     * The following table contains the driver versions in which the Linux pro driver started including the AMF runtime, otherwise, the AMF runtime is optional and has to be installed separately.
@@ -28,6 +28,7 @@ AMF is a light-weight, portable multimedia framework that abstracts away most of
       | \**All supported distros* | 20.40                             |
 
 * AMF SDK is backward compatible with all previous driver versions.
+* Version 1.4.36: AMD Radeon Software Adrenalin Edition 25.1.1 (24.30.31.03) or newer. Added B-frame support and picture management options for AV1 encoder. New high quality presets for HEVC and AVC encoders. New SimpleFRC sample app.
 * Version 1.4.35: AMD Radeon Software Adrenalin Edition 24.9.1 (24.20.11.01) or newer. Added multi-HW instance encoder mode. Updated FFmpeg to 7.0. Added split frame encoding.
 * Version 1.4.34: AMD Radeon Software Adrenalin Edition 24.6.1 (24.10.21.01) or newer. Added Linux support for DVR sample. New HEVC header insertion mode. Stable support for RADV drivers for AMF on Linux in VideoConverter/HQScaler/VideoEncoder and experimental for decoder. Added DX11 support for FRC component.
 * Version 1.4.33: AMD Radeon Software Adrenalin Edition 24.1.1 (23.40.02) or newer. Added native DX12 support for encoding and PreAnalysis. Switched to public Vulkan Khronos extensions for decoder. AMF on Linux can now be used with AMD Pro Vulkan, and experimentally with RADV drivers.

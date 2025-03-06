@@ -128,6 +128,7 @@
     <ClCompile Include="..\..\..\common\OpenGLImportTable.cpp">
       <Filter>public\common</Filter>
     </ClCompile>
+    <ClCompile Include="..\common\DeviceDX12.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="common">
@@ -279,6 +280,7 @@
     <ClInclude Include="..\..\..\common\OpenGLImportTable.h">
       <Filter>public\common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\DeviceDX12.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="TranscodeSVC.bat">

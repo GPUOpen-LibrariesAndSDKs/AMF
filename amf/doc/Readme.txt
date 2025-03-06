@@ -28,7 +28,13 @@
 //
 
 
-1.4.35.0 (30.9.2024) version
+1.4.36.0 (6.3.2025) version
+--------------------------
+   - Added B-frame support and picture management options for AV1 encoder
+   - New high quality presets for HEVC and AVC encoders
+   - New SimpleFRC sample app
+
+1.4.35.0 (16.9.2024) version
 --------------------------
    - Added multi-HW instance encoder mode
    - Updated FFmpeg to 7.0

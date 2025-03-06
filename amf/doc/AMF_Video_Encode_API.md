@@ -1399,11 +1399,11 @@ Sets the headers insertion spacing.
 `0` … `1000`
 
 **Default Value associated with usages:**
-   - Transcoding: `30`
-   - Ultra low latency: `300`
-   - Low latency: `300`
+   - Transcoding: `240`
+   - Ultra low latency: `240`
+   - Low latency: `240`
    - Webcam: `30`
-   - HQ: `300`
+   - HQ: `240`
    - HQLL: `120`
 
 **Description:**

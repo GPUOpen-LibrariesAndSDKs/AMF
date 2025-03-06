@@ -94,6 +94,10 @@ static AMF_RESULT ParamConverterAlignmentModeAV1(const std::wstring& value, amf:
     {
         paramValue = AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_NO_RESTRICTIONS;
     }
+    else if (uppValue == L"8X2ONLY" || uppValue == L"4")
+    {
+        paramValue = AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_8X2_ONLY;
+    }
     else {
         LOG_ERROR(L"AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_ENUM hasn't \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
@@ -509,6 +513,7 @@ AMF_RESULT RegisterEncoderParamsAV1(ParametersStorage* pParams)
 
     // ------------- Encoder params static---------------
     // Encoder Engine Settings
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_INPUT_QUEUE_SIZE, ParamEncoderStatic, L"AV1 Input Queue size 0, 1 etc, default = 16", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE, ParamEncoderStatic, L"Enables low latency mode ( NONE, PWRSAVING, REALTIME, LOWLATENCY, default =  false)", ParamConverterLatencyModeAV1);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_ENCODER_INSTANCE_INDEX, ParamEncoderStatic, L" Index of VCN instance 0, 1 etc, default = 0", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_QUERY_TIMEOUT, ParamEncoderStatic, L" QueryOutput timeout in ms , default = 0", ParamConverterInt64);
@@ -540,6 +545,8 @@ AMF_RESULT RegisterEncoderParamsAV1(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_MAX_NUM_TEMPORAL_LAYERS, ParamEncoderStatic, L" Max Of LTR frames (integer, default = depends on USAGE)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_MAX_LTR_FRAMES, ParamEncoderStatic, L" Max Of LTR frames (integer, default = depends on USAGE)", ParamConverterInt64);
 
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_MAX_CONSECUTIVE_BPICTURES, ParamEncoderStatic, L"Max Number of Consecutive B frame (integer 0-127, default = depends on USAGE)", ParamConverterInt64);
+
     // AAA properties
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_ENABLE_SMART_ACCESS_VIDEO, ParamEncoderStatic, L"Enable encoder smart access video feature (bool, default = false)", ParamConverterBoolean);
 
@@ -567,8 +574,11 @@ AMF_RESULT RegisterEncoderParamsAV1(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_MAX_Q_INDEX_INTRA, ParamEncoderDynamic, L"Max QIndex for intra frame (integer 0-255, default = depends on USAGE)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_MIN_Q_INDEX_INTER, ParamEncoderDynamic, L"Min QIndex for inter frame (integer 0-255, default = depends on USAGE)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_MAX_Q_INDEX_INTER, ParamEncoderDynamic, L"Max QIndex for inter frame (integer 0-255, default = depends on USAGE)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_MIN_Q_INDEX_INTER_B, ParamEncoderDynamic, L"Min QIndex for B-frame (integer 0-255, default = depends on USAGE)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_MAX_Q_INDEX_INTER_B, ParamEncoderDynamic, L"Max QIndex for  B-frame (integer 0-255, default = depends on USAGE)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_Q_INDEX_INTRA, ParamEncoderDynamic, L"intra-frame QIndex (integer 0-255, default = depends on USAGE)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_Q_INDEX_INTER, ParamEncoderDynamic, L"inter-frame QIndex (integer 0-255, default = depends on USAGE)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_Q_INDEX_INTER_B, ParamEncoderDynamic, L"B-frame QIndex (integer 0-255, default = depends on USAGE)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_SKIP_FRAME, ParamEncoderDynamic, L"Rate Control Based Frame Skip (true, false default =  depends on USAGE)", ParamConverterBoolean);
     // Picture Management Configuration
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_GOP_SIZE, ParamEncoderDynamic, L"GOP Size (in frames, depends on USAGE)", ParamConverterInt64);
@@ -577,6 +587,8 @@ AMF_RESULT RegisterEncoderParamsAV1(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_SWITCH_FRAME_INSERTION_MODE, ParamEncoderDynamic, L"Switch frame insertin mode (none, fixed default = depends on USAGE)", ParamConverterSwitchInsertionModeAV1);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_SWITCH_FRAME_INTERVAL, ParamEncoderDynamic, L"The interval between two inserted switch frames (integer, default = depends on USAGE)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_NUM_TEMPORAL_LAYERS, ParamEncoderDynamic, L"Number of temporal layers (integer, default = depends on USAGE)", ParamConverterInt64);
+
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_B_PIC_PATTERN, ParamEncoderDynamic, L"Number of Consecutive B frame (integer 0-127, default = depends on USAGE)", ParamConverterInt64);
 
     //pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_TEMPORAL_LAYER_SELECT, ParamEncoderDynamic, L"Select temporal layer to apply parameter changes and queries (integer, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_INTRA_REFRESH_MODE, ParamEncoderDynamic, L"Intra Refresh mode (disable, GOP aligned, continuous, default = disable)", ParamConverterIntraRefreshAV1);
@@ -609,6 +621,8 @@ AMF_RESULT RegisterEncoderParamsAV1(ParametersStorage* pParams)
 
     pParams->SetParamDescription(AMF_PA_LOOKAHEAD_BUFFER_DEPTH, ParamEncoderDynamic, L"PA Buffer size (integer 0 - MAX_LOOKAHEAD_DEPTH, default = 0)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_PA_TAQ_MODE, ParamEncoderDynamic, L"TAQ Mode (NONE, 1, 2, default = NONE)", ParamConverterTAQModeAV1);
+
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_AV1_ADAPTIVE_MINIGOP, ParamEncoderStatic, L"Adaptive MiniGOP Enable default = false)", ParamConverterBoolean);
 
 
     return AMF_OK;

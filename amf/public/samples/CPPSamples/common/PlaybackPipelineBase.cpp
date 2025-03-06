@@ -325,7 +325,7 @@ AMF_RESULT PlaybackPipelineBase::Init()
 
     amf::AMFOutputPtr       pAudioOutput;
     amf::AMFOutputPtr       pVideoOutput;
-    if( streamType != BitStreamUnknown)
+    if( streamType != BitStreamUnknown && streamType != BitStreamIVF)
     {
 #if !defined(METRO_APP)
         amf::AMFDataStream::OpenDataStream(inputPath.c_str(), amf::AMFSO_READ, amf::AMFFS_SHARE_READ, &m_pVideoStream);
@@ -571,7 +571,7 @@ AMF_RESULT PlaybackPipelineBase::InitVideoPipeline(amf_uint32 /* iVideoStreamInd
     bool bForceFRCRGB = false;
     GetParam(PARAM_NAME_FRC_RGB, bForceFRCRGB);
 
-    bool bYUVInput = (m_eDecoderFormat == amf::AMF_SURFACE_NV12) || (m_eDecoderFormat == amf::AMF_SURFACE_P010) || (m_eDecoderFormat == amf::AMF_SURFACE_P012) || (m_eDecoderFormat == amf::AMF_SURFACE_P016);
+    bool bYUVInput = (m_eDecoderFormat == amf::AMF_SURFACE_YUV420P) || (m_eDecoderFormat == amf::AMF_SURFACE_NV12) || (m_eDecoderFormat == amf::AMF_SURFACE_P010) || (m_eDecoderFormat == amf::AMF_SURFACE_P012) || (m_eDecoderFormat == amf::AMF_SURFACE_P016);
 
     if (bYUVInput == false)
     {

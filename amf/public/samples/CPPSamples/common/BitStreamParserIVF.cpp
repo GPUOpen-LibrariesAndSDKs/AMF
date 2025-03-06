@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -80,6 +80,7 @@ public:
 	amf::AMFDataStreamPtr m_pStream;
 	amf::AMFContext* m_pContext;
 	amf_uint32 m_CurrentFrameSize;
+	amf_uint32 m_FrameCount;
 	IVF_CODEC_TYPE m_codec;
 };
 //-------------------------------------------------------------------------------------------------
@@ -99,7 +100,8 @@ IVFParser::IVFParser(amf::AMFDataStream* stream, amf::AMFContext* pContext) :
 	m_pContext(pContext),
 	m_codec(IVF_CODEC_UNKNOWN),
 	m_pheight(0),
-	m_pwidth(0)
+	m_pwidth(0),
+	m_FrameCount(0)
 {
 	stream->Seek(amf::AMF_SEEK_BEGIN, 0, NULL);
 	size_t ready = m_HeaderData.GetSize();
@@ -128,13 +130,13 @@ IVFParser::IVFParser(amf::AMFDataStream* stream, amf::AMFContext* pContext) :
 			amf_uint16 *length = (amf_uint16*)data;
 			m_pwidth = (amf_uint16)*length;
 		}
-		if (i == 8) 
+		if (i == 8)
 		{
 			char *s = (char*)data;
 			char codec[]="VP80";
 			strncpy(codec, s, sizeof(codec)-1);
 			if (!strcmp(codec, "VP90"))
-			{ 
+			{
 				m_codec = IVF_CODEC_VP9;
 			}
 			else if (!strcmp(codec, "AV01"))
@@ -146,17 +148,17 @@ IVFParser::IVFParser(amf::AMFDataStream* stream, amf::AMFContext* pContext) :
 				m_codec = IVF_CODEC_UNKNOWN;
 			}
 		}
-		if (i == 12) 
+		if (i == 12)
 		{
 			amf_uint16 *width = (amf_uint16*)data;
 			m_pwidth = *width;
 		}
-		if (i == 14) 
+		if (i == 14)
 		{
 			amf_uint16 *height = (amf_uint16*)data;
 			m_pheight = *height;
 		}
-		if (i == 24) 
+		if (i == 24)
 		{
 			amf_uint32 *number = (amf_uint32*)data;
 			m_maxFramesNumber = *number;
@@ -234,7 +236,7 @@ void                    IVFParser::GetFrameRate(AMFRate * /* frameRate */) const
 }
 //-------------------------------------------------------------------------------------------------
 const wchar_t* IVFParser::GetCodecComponent()
-{ 
+{
 	if (m_codec == IVF_CODEC_VP9)
 	{
 		return AMFVideoDecoderHW_VP9;
@@ -248,9 +250,8 @@ const wchar_t* IVFParser::GetCodecComponent()
 AMF_RESULT              IVFParser::ReInit()
 {
 	m_CurrentFrameSize = 0;
-	m_maxFramesNumber = 0;
 	m_currentFrameTimestamp = 0;
-	m_pStream->Seek(amf::AMF_SEEK_BEGIN, 0, NULL);
+	m_pStream->Seek(amf::AMF_SEEK_BEGIN, 32, NULL);
 	m_PacketCount = 0;
 	m_bEof = false;
 	m_ReadData.SetSize(0);
@@ -336,15 +337,16 @@ AMF_RESULT IVFParser::QueryOutput(amf::AMFData** ppData)
 	amf::AMFBufferPtr pictureBuffer;
 	AMF_RESULT res = m_pContext->AllocBuffer(amf::AMF_MEMORY_HOST, currentOutputSize, &pictureBuffer);
 
-	if (res != AMF_OK) 
+	if (res != AMF_OK)
 	{
 		return res;
 	}
 
+	m_FrameCount++;
 
 	amf_uint8 *data = (amf_uint8*)pictureBuffer->GetNative();
 
-	memcpy(data, m_ReadData.GetData(), m_CurrentFrameSize);
+	memcpy(data, m_ReadData.GetData(), currentOutputSize);
 
 	pictureBuffer->SetPts(m_currentFrameTimestamp);
 

@@ -90,7 +90,7 @@ AMF_RESULT DeviceVulkan::Init(amf_uint32 adapterID, amf::AMFContext *pContext)
    AMF_RETURN_IF_FAILED(res, L"LoadInstanceFunctionsTableExt() failed - check if the proper Vulkan SDK is installed");
 
 // load instance based functions
-   res = CreateDeviceAndFindQueues(adapterID, deviceExtensions);
+   res = CreateDeviceAndFindQueues(adapterID, deviceExtensions, pContext1);
    if(res == AMF_NO_DEVICE)
    {
        return res; // Adapter ID out of range
@@ -263,9 +263,10 @@ AMF_RESULT DeviceVulkan::GetPhysicalDevices(std::vector<VkPhysicalDevice>& devic
     return AMF_OK;
 }
 
-AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::vector<const char*> &deviceExtensions)
+AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::vector<const char*> &deviceExtensions, amf::AMFContext* pContext)
 {
     VkResult vkres = VK_SUCCESS;
+    AMF_RETURN_IF_FALSE(pContext != NULL, AMF_NOT_INITIALIZED, L"CreateDeviceAndFindQueues() pContext is NULL");
 
     std::vector<VkPhysicalDevice> physicalDevices;
     AMF_RETURN_IF_FAILED(GetPhysicalDevices(physicalDevices));
@@ -318,10 +319,26 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
         queueCreateInfo.queueCount = 1;
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 
-        if ((queueFamilyProperty.queueFamilyProperties.queueFlags & VK_QUEUE_COMPUTE_BIT) && (queueFamilyProperty.queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0 && m_uQueueComputeFamilyIndex == UINT32_MAX)
+        if ((queueFamilyProperty.queueFamilyProperties.queueFlags & VK_QUEUE_COMPUTE_BIT)
+            && (queueFamilyProperty.queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0
+            && m_uQueueComputeFamilyIndex == UINT32_MAX)
         {
             m_uQueueComputeFamilyIndex = i;
             uQueueComputeIndex = 0;
+
+            amf_int64 queueComputeIndex = -1;
+            if (pContext->GetProperty(AMF_CONTEXT_VULKAN_COMPUTE_QUEUE, &queueComputeIndex) == AMF_OK)
+            {
+                AMF_RETURN_IF_FALSE(queueComputeIndex >= 0 && queueComputeIndex < queueFamilyProperty.queueFamilyProperties.queueCount,
+                    AMF_FAIL,
+                    L"CreateDeviceAndFindQueues() invalid VulkanComputeQueue index %d not in range [%d,%d]",
+                    static_cast<int>(queueComputeIndex),
+                    0,
+                    static_cast<int>(queueFamilyProperty.queueFamilyProperties.queueCount - 1));
+                uQueueComputeIndex = static_cast<amf_uint32>(queueComputeIndex);
+                queueCreateInfo.queueCount = uQueueComputeIndex + 1;
+            }
+
             deviceQueueCreateInfoItems.push_back(queueCreateInfo);
         }
         if ((queueFamilyProperty.queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT) && m_uQueueGraphicsFamilyIndex == UINT32_MAX)

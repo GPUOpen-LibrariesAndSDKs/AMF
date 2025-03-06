@@ -46,6 +46,12 @@
 #include "public/include/components/VideoEncoderVCE.h"
 #include "public/include/components/VideoEncoderHEVC.h"
 #include "public/include/components/VideoEncoderAV1.h"
+#ifdef _WIN32
+#include "public/samples/CPPSamples/common/DeviceDX9.h"
+#include "public/samples/CPPSamples/common/DeviceDX11.h"
+#include "public/samples/CPPSamples/common/DeviceDX12.h"
+#endif
+#include "public/samples/CPPSamples/common/DeviceVulkan.h"
 #include "public/samples/CPPSamples/common/EncoderParamsAVC.h"
 #include "public/samples/CPPSamples/common/EncoderParamsHEVC.h"
 #include "public/samples/CPPSamples/common/EncoderParamsAV1.h"
@@ -67,6 +73,7 @@ static amf_bool frameCountPassedIn = false;
 static amf_int32 preRender = 0;
 static amf_int32 vcnInstance = -1;
 static bool bMaximumSpeed = true;
+static bool bRTModeFrameBase = true; // real time encode is frame based (true) or stream based (false)
 static float fFrameRate = 30.f;
 static bool bRealTime = false;
 
@@ -172,6 +179,7 @@ AMF_RESULT RegisterParams(ParametersStorage* pParams)
 #if defined(_WIN32)
     pParams->SetParamDescription(PARAM_NAME_PRIORITY, ParamCommon, L"Sets process priority class: (Idle, Below_Normal, Normal, Above_Normal, High, Realtime)", PriorityParam::Converter);
 #endif
+    pParams->SetParamDescription(PARAM_NAME_ADAPTERID, ParamCommon, L"Index of GPU adapter (number, default = 0)", NULL);
 
     return AMF_OK;
 }
@@ -359,12 +367,8 @@ AMF_RESULT SetEncoderDefaults(ParametersStorage* pParams, amf::AMFComponent* enc
     AMF_RESULT res;
     if (codecStr == amf_wstring(AMFVideoEncoderVCE_AVC))
     {
-        // usage parameters come first
+        // AMF_VIDEO_ENCODER_USAGE needs to be set before the rest, default transcoding
         AMF_RETURN_IF_FAILED(PushParamsToPropertyStorage(pParams, ParamEncoderUsage, encoder));
-
-        // AMF_VIDEO_ENCODER_USAGE needs to be set before the rest
-        res = encoder->SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_TRANSCODING);
-        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_USAGE, AMF_VIDEO_ENCODER_USAGE_TRANSCODING) failed");
 
         // initialize command line parameters
         AMF_RETURN_IF_FAILED(PushParamsToPropertyStorage(pParams, ParamEncoderStatic, encoder));
@@ -405,12 +409,8 @@ AMF_RESULT SetEncoderDefaults(ParametersStorage* pParams, amf::AMFComponent* enc
     }
     else if (codecStr == amf_wstring(AMFVideoEncoder_HEVC))
     {
-        // usage parameters come first
+        // AMF_VIDEO_ENCODER_HEVC_USAGE needs to be set before the rest, default transcoding
         AMF_RETURN_IF_FAILED(PushParamsToPropertyStorage(pParams, ParamEncoderUsage, encoder));
-
-        // AMF_VIDEO_ENCODER_HEVC_USAGE needs to be set before the rest
-        res = encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_USAGE, AMF_VIDEO_ENCODER_HEVC_USAGE_TRANSCODING);
-        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_HEVC_USAGE, AMF_VIDEO_ENCODER_HEVC_USAGE_TRANSCODING)");
 
         // initialize command line parameters
         AMF_RETURN_IF_FAILED(PushParamsToPropertyStorage(pParams, ParamEncoderStatic, encoder));
@@ -449,12 +449,11 @@ AMF_RESULT SetEncoderDefaults(ParametersStorage* pParams, amf::AMFComponent* enc
     }
     else if (codecStr == amf_wstring(AMFVideoEncoder_AV1))
     {
-        // usage parameters come first
-        AMF_RETURN_IF_FAILED(PushParamsToPropertyStorage(pParams, ParamEncoderUsage, encoder));
+        // AMF_VIDEO_ENCODER_AV1_USAGE needs to be set before the rest, default transcoding
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_AV1_USAGE, AMF_VIDEO_ENCODER_AV1_USAGE_LOW_LATENCY);
+        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_AV1_USAGE, AMF_VIDEO_ENCODER_AV1_USAGE_LOW_LATENCY)");
 
-        // AMF_VIDEO_ENCODER_AV1_USAGE needs to be set before the rest
-        res = encoder->SetProperty(AMF_VIDEO_ENCODER_AV1_USAGE, AMF_VIDEO_ENCODER_AV1_USAGE_TRANSCODING);
-        AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_AV1_USAGE, AMF_VIDEO_ENCODER_AV1_USAGE_TRANSCODING)");
+        AMF_RETURN_IF_FAILED(PushParamsToPropertyStorage(pParams, ParamEncoderUsage, encoder));
 
         // initialize command line parameters
         AMF_RETURN_IF_FAILED(PushParamsToPropertyStorage(pParams, ParamEncoderStatic, encoder));
@@ -495,18 +494,20 @@ AMF_RESULT SetEncoderDefaults(ParametersStorage* pParams, amf::AMFComponent* enc
 }
 
 
-static void printTime(amf_pts total_time, amf_pts latency_time, amf_pts first_frame, amf_pts min_latency, amf_pts max_latency)
+static void printTime(amf_pts total_time, amf_pts latency_time, amf_pts first_frame_latency, amf_pts min_latency, amf_pts max_latency, amf_pts first_slice_latency)
 {
     fprintf(stderr, "Total  : Frames = %i Duration = %.2fms FPS = %.2fframes\n" \
            "Latency: First,Min,Max = %.2fms, %.2fms, %.2fms\n" \
-           "Latency: Average = %.2fms\n",
+           "Latency: Average = %.2fms\n" \
+           "First Slice Latency = %.2fms\n",
         frameCount,
         double(total_time) / AMF_MILLISECOND,
         double(AMF_SECOND) * double(frameCount) / double(total_time),
-        double(first_frame) / AMF_MILLISECOND,
+        double(first_frame_latency) / AMF_MILLISECOND,
         double(min_latency) / AMF_MILLISECOND,
         double(max_latency) / AMF_MILLISECOND,
-        double(latency_time) / AMF_MILLISECOND / frameCount
+        double(latency_time) / AMF_MILLISECOND / frameCount,
+        double(first_slice_latency) / AMF_MILLISECOND / frameCount
     );
     fflush(stderr);
 }
@@ -515,24 +516,32 @@ static void printTime(amf_pts total_time, amf_pts latency_time, amf_pts first_fr
 class EncPollingThread : public PollingThread
 {
 public:
-    EncPollingThread(amf::AMFContext* pContext, amf::AMFComponent* pEncoder, const wchar_t* pFileName);
+    EncPollingThread(amf::AMFContext* pContext, amf::AMFComponent* pEncoder, const wchar_t* pFileName, const amf_wstring& enc_codec);
 protected:
     virtual bool Init() override;
     void ProcessData(amf::AMFData* pData) override;
     void PrintResults() override;
 
     amf_pts m_StartTime;
-    amf_pts m_FirstFrame;
+    amf_pts m_FirstFrameLatency;
+    amf_pts m_FrameTime;
     amf_pts m_MinLatency;
     amf_pts m_MaxLatency;
+    amf_pts m_FirstSliceLatency;
+    amf_bool m_IsFirstSlice;
+    amf_wstring m_Codec;
 };
 
-EncPollingThread::EncPollingThread(amf::AMFContext* pContext, amf::AMFComponent* pEncoder, const wchar_t* pFileName)
+EncPollingThread::EncPollingThread(amf::AMFContext* pContext, amf::AMFComponent* pEncoder, const wchar_t* pFileName, const amf_wstring& enc_codec)
     : PollingThread(pContext, pEncoder, pFileName, bWriteToFile),
     m_StartTime(0),
-    m_FirstFrame(0),
+    m_FirstFrameLatency(0),
+    m_FrameTime(0),
     m_MinLatency(INT64_MAX),
-    m_MaxLatency(0)
+    m_MaxLatency(0),
+    m_IsFirstSlice(true),
+    m_FirstSliceLatency(0),
+    m_Codec(enc_codec)
 {}
 
 bool EncPollingThread::Init()
@@ -541,9 +550,12 @@ bool EncPollingThread::Init()
 
     bool ret = PollingThread::Init();
 
-    m_FirstFrame = 0;
+    m_FirstFrameLatency = 0;
+    m_FrameTime = 0;
     m_MinLatency = INT64_MAX;
     m_MaxLatency = 0;
+    m_IsFirstSlice = true;
+    m_FirstSliceLatency = 0;
     return ret;
 }
 
@@ -551,6 +563,9 @@ void EncPollingThread::ProcessData(amf::AMFData* pData)
 {
     amf_pts poll_time = amf_high_precision_clock();
     amf_pts start_time = 0;
+    amf_uint64  bufType = AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_FRAME;
+    amf_bool last_output = false;
+
     pData->GetProperty(START_TIME_PROPERTY, &start_time);
     if (start_time < m_LastPollTime) // remove wait time if submission was faster then encode
     {
@@ -558,18 +573,53 @@ void EncPollingThread::ProcessData(amf::AMFData* pData)
     }
     m_LastPollTime = poll_time;
 
-    amf_pts tmp_time = poll_time - start_time;
-    if (m_FirstFrame == 0)
+    m_FrameTime += poll_time - start_time;
+
+    if (m_IsFirstSlice)
     {
-        m_FirstFrame = tmp_time;
+        m_FirstSliceLatency += m_FrameTime;
+    }
+
+    if (codec == amf_wstring(AMFVideoEncoderVCE_AVC))
+    {
+        pData->GetProperty(AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE, &bufType);
+        last_output = (bufType == AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_SLICE_LAST) ||
+                      (bufType == AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_FRAME);
+    }
+    else if (codec == amf_wstring(AMFVideoEncoder_HEVC))
+    {
+        pData->GetProperty(AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE, &bufType);
+        last_output = (bufType == AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE_SLICE_LAST) ||
+                      (bufType == AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE_FRAME);
+    }
+    else if (codec == amf_wstring(AMFVideoEncoder_AV1))
+    {
+        pData->GetProperty(AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE, &bufType);
+        last_output = (bufType == AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE_TILE_LAST) ||
+                      (bufType == AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE_FRAME);
+    }
+
+    // last output of a frame
+    if (last_output)
+    {
+        if (m_FirstFrameLatency == 0)
+        {
+            m_FirstFrameLatency = m_FrameTime;
+        }
+        else
+        {
+            m_MinLatency = m_MinLatency < m_FrameTime ? m_MinLatency : m_FrameTime;
+            m_MaxLatency = m_MaxLatency > m_FrameTime ? m_MaxLatency : m_FrameTime;
+        }
+
+        m_LatencyTime += m_FrameTime;
+        m_FrameTime = 0;
+        m_IsFirstSlice = true;
     }
     else
     {
-        m_MinLatency = m_MinLatency < tmp_time ? m_MinLatency : tmp_time;
-        m_MaxLatency = m_MaxLatency > tmp_time ? m_MaxLatency : tmp_time;
+        m_IsFirstSlice = false;
     }
-
-    m_LatencyTime += tmp_time;
 
     amf::AMFBufferPtr pBuffer(pData); // query for buffer interface
     if ((bWriteToFile == true) && (m_pFile != NULL))
@@ -582,7 +632,7 @@ void EncPollingThread::ProcessData(amf::AMFData* pData)
 void EncPollingThread::PrintResults()
 {
     amf_pts end_time = amf_high_precision_clock();
-    printTime(end_time - m_StartTime, m_LatencyTime, m_FirstFrame, m_MinLatency, m_MaxLatency);
+    printTime(end_time - m_StartTime, m_LatencyTime, m_FirstFrameLatency, m_MinLatency, m_MaxLatency, m_FirstSliceLatency);
 }
 
 void CheckAndRestartReader(RawStreamReader *pRawStreamReader)
@@ -641,6 +691,18 @@ int main(int argc, char* argv[])
     amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_CONSOLE, true);
     amf::AMFTraceEnableWriter(AMF_TRACE_WRITER_DEBUG_OUTPUT, true);
 
+    // adapterID
+    amf_uint32 adapterID = 0;
+    params.GetParam(PARAM_NAME_ADAPTERID, adapterID);
+
+    // Device
+#ifdef _WIN32
+	DeviceDX9 deviceDX9{};
+	DeviceDX11 deviceDX11{};
+	DeviceDX12 deviceDX12{};
+#endif
+	DeviceVulkan deviceVulkan{};
+
     // initialize AMF
     amf::AMFContextPtr context;
     amf::AMFComponentPtr encoder;
@@ -652,26 +714,41 @@ int main(int argc, char* argv[])
 
     if (memoryTypeIn == amf::AMF_MEMORY_VULKAN)
     {
-        res = amf::AMFContext1Ptr(context)->InitVulkan(NULL);
-        AMF_RETURN_IF_FAILED(res, L"InitVulkan(NULL) failed");
+        res = deviceVulkan.Init(adapterID, amf::AMFContext1Ptr(context));
+        AMF_RETURN_IF_FAILED(res, L"deviceVulkan.Init() failed");
+
+        res = amf::AMFContext1Ptr(context)->InitVulkan(deviceVulkan.GetDevice());
+        AMF_RETURN_IF_FAILED(res, L"InitVulkan() failed");
         PrepareFillFromHost(context, memoryTypeIn, formatIn, widthIn, heightIn, false);
     }
 #ifdef _WIN32
     else if (memoryTypeIn == amf::AMF_MEMORY_DX9)
     {
-        res = context->InitDX9(NULL); // can be DX9 or DX9Ex device
-        AMF_RETURN_IF_FAILED(res, L"InitDX9(NULL) failed");
+        res = deviceDX9.Init(true, adapterID, false, widthIn, heightIn);
+        if (res != AMF_OK) {
+            res = deviceDX9.Init(false, adapterID, false, widthIn, heightIn);
+        }
+        AMF_RETURN_IF_FAILED(res, L"deviceDX9.Init() failed");
+
+        res = context->InitDX9(deviceDX9.GetDevice()); // can be DX9 or DX9Ex device
+        AMF_RETURN_IF_FAILED(res, L"InitDX9() failed");
     }
     else if (memoryTypeIn == amf::AMF_MEMORY_DX11)
     {
-        res = context->InitDX11(NULL); // can be DX11 device
-        AMF_RETURN_IF_FAILED(res, L"InitDX11(NULL) failed");
+        res = deviceDX11.Init(adapterID);
+        AMF_RETURN_IF_FAILED(res, L"deviceDX11.Init() failed");
+
+        res = context->InitDX11(deviceDX11.GetDevice()); // can be DX11 device
+        AMF_RETURN_IF_FAILED(res, L"InitDX11() failed");
         PrepareFillFromHost(context, memoryTypeIn, formatIn, widthIn, heightIn, false);
     }
     else if (memoryTypeIn == amf::AMF_MEMORY_DX12)
     {
-        res = amf::AMFContext2Ptr(context)->InitDX12(NULL); // can be DX11 device
-        AMF_RETURN_IF_FAILED(res, L"InitDX12(NULL) failed");
+        res = deviceDX12.Init(adapterID);
+        AMF_RETURN_IF_FAILED(res, L"deviceDX12.Init() failed");
+
+        res = amf::AMFContext2Ptr(context)->InitDX12(deviceDX12.GetDevice()); // can be DX11 device
+        AMF_RETURN_IF_FAILED(res, L"InitDX12() failed");
         PrepareFillFromHost(context, memoryTypeIn, formatIn, widthIn, heightIn, false);
     }
 #endif
@@ -727,7 +804,7 @@ int main(int argc, char* argv[])
 
     if (workAlgorithm == L"ASAP")
     {
-        EncPollingThread thread(context, encoder, fileNameOut.c_str());
+        EncPollingThread thread(context, encoder, fileNameOut.c_str(), codec);
         thread.Start();
 
         // encode some frames
@@ -804,12 +881,13 @@ int main(int argc, char* argv[])
     {
         // encode some frames
         amf_int32 submitted = 0;
-        amf_pts   first_frame = 0;
+        amf_pts   first_frame_latency = 0;
         amf_pts   min_latency = INT64_MAX;
         amf_pts   max_latency = 0;
         amf_pts   latency_time = 0;
         amf_pts   write_duration = 0;
         amf::AMFPreciseWaiter waiter;
+        amf_pts first_slice_latency = 0;
 
         // output file, if we have one
         amf::AMFDataStreamPtr pLogFile;
@@ -823,6 +901,8 @@ int main(int argc, char* argv[])
         while (submitted < frameCount)
         {
             amf_pts begin_frame = amf_high_precision_clock();
+            amf_bool    first_slice_output = true;
+            amf_uint64  bufType = AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_FRAME;
 
             if (preRenderedSurf.empty() == false)
             {
@@ -856,41 +936,88 @@ int main(int argc, char* argv[])
 
             surfaceIn = NULL;
             submitted++;
+            amf_pts last_poll_time = start_time;
+            amf_pts poll_time = 0;  //the time data is ready
+            amf_pts slice_time = 0; // slice time (or slice latency)
+            amf_pts frame_time = 0; // frame latency
 
             amf::AMFDataPtr data;
-            do
-            {
-                res = encoder->QueryOutput(&data);
-                if (res == AMF_REPEAT)
+            amf_bool last_output = false;
+
+            do { // get all encoded slices of a frame
+                do
                 {
-                    amf_sleep(1);
+                    res = encoder->QueryOutput(&data);
+                    if (res == AMF_REPEAT)
+                    {
+                        amf_sleep(1);
+                    }
+                } while (res == AMF_REPEAT);
+
+                poll_time = amf_high_precision_clock();
+                slice_time = poll_time - last_poll_time;
+
+                last_poll_time = poll_time;
+
+                if ((data != NULL) && (bWriteToFile == true) && (pLogFile != NULL))
+                {
+                    amf::AMFBufferPtr buffer(data); // query for buffer interface
+                    pLogFile->Write(buffer->GetNative(), buffer->GetSize(), NULL);
+                    write_duration += amf_high_precision_clock() - poll_time;
                 }
-            } while (res == AMF_REPEAT);
 
-            amf_pts poll_time = amf_high_precision_clock();
-            amf_pts tmp_time = poll_time - start_time;
+                frame_time += slice_time;
+                if (first_slice_output)
+                {
+                    first_slice_latency += slice_time;
+                    first_slice_output = false;
+                }
 
-            if (first_frame == 0)
+                if (codec == amf_wstring(AMFVideoEncoderVCE_AVC))
+                {
+                    data->GetProperty(AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE, &bufType);
+                    last_output = (bufType == AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_SLICE_LAST) ||
+                                  (bufType == AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_FRAME);
+                }
+                else if (codec == amf_wstring(AMFVideoEncoder_HEVC))
+                {
+                    data->GetProperty(AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE, &bufType);
+                    last_output = (bufType == AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE_SLICE_LAST) ||
+                                  (bufType == AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE_FRAME);
+                }
+                else if (codec == amf_wstring(AMFVideoEncoder_AV1))
+                {
+                    data->GetProperty(AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE, &bufType);
+                    last_output = (bufType == AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE_TILE_LAST) ||
+                                  (bufType == AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE_FRAME);
+                }
+            } while (!last_output);
+
+            if (first_frame_latency == 0)
             {
-                first_frame = tmp_time;
+                first_frame_latency = frame_time;
             }
             else
             {
-                min_latency = (tmp_time < min_latency) ? tmp_time : min_latency;
-                max_latency = (tmp_time > max_latency) ? tmp_time : max_latency;
+                min_latency = (frame_time < min_latency) ? frame_time : min_latency;
+                max_latency = (frame_time > max_latency) ? frame_time : max_latency;
             }
-            latency_time += tmp_time;
+            latency_time += frame_time;
 
-            if ((data != NULL) && (bWriteToFile == true) && (pLogFile != NULL))
-            {
-                amf::AMFBufferPtr buffer(data); // query for buffer interface
-                pLogFile->Write(buffer->GetNative(), buffer->GetSize(), NULL);
-                write_duration += amf_high_precision_clock() - poll_time;
-            }
+
             if (bRealTime == true)
             {
                 amf_pts end_frame = amf_high_precision_clock();
-                amf_pts time_to_sleep = amf_pts(AMF_SECOND / fFrameRate) - (end_frame - begin_frame);
+                amf_pts time_to_sleep;
+
+                if (bRTModeFrameBase)
+                {
+                    time_to_sleep = amf_pts(AMF_SECOND / fFrameRate) - (end_frame - begin_frame);
+                }
+                else
+                {
+                    time_to_sleep = amf_pts(AMF_SECOND / fFrameRate) * submitted - (end_frame - begin_time);
+                }
                 if (time_to_sleep > 0)
                 {
                     waiter.Wait(time_to_sleep);
@@ -898,7 +1025,7 @@ int main(int argc, char* argv[])
             }
         }
         amf_pts end_time = amf_high_precision_clock();
-        printTime(end_time - begin_time, latency_time, first_frame, min_latency, max_latency);
+        printTime(end_time - begin_time, latency_time, first_frame_latency, min_latency, max_latency, first_slice_latency);
 
         if (pLogFile != NULL)
         {
@@ -921,6 +1048,13 @@ int main(int argc, char* argv[])
     pipelineElPtr = NULL;
     context->Terminate();
     context = NULL; // context is the last
+
+#ifdef _WIN32
+    deviceDX9.Terminate();
+    deviceDX11.Terminate();
+    deviceDX12.Terminate();
+#endif
+    deviceVulkan.Terminate();
 
     g_AMFFactory.Terminate();
 

@@ -113,6 +113,7 @@ extern "C"
 
         #define AMFLITE_DLL_NAME    L"amfrtlt64.dll"
         #define AMFLITE_DLL_NAMEA   "amfrtlt64.dll"
+
 #else
         #define AMF_DLL_NAME    L"amfrt32.dll"
         #define AMF_DLL_NAMEA   "amfrt32.dll"
@@ -133,12 +134,14 @@ extern "C"
 
         #define AMFLITE_DLL_NAME    L"libamfrtlt64.so.1"
         #define AMFLITE_DLL_NAMEA   "libamfrtlt64.so.1"
+
     #else
         #define AMF_DLL_NAME    L"libamfrt32.so.1"
         #define AMF_DLL_NAMEA   "libamfrt32.so.1"
 
         #define AMFLITE_DLL_NAME    L"libamfrtlt32.so.1"
         #define AMFLITE_DLL_NAMEA   "libamfrtlt32.so.1"
+
     #endif
 #endif
 //----------------------------------------------------------------------------------------------

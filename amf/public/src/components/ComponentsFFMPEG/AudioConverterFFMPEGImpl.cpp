@@ -198,6 +198,9 @@ AMF_RESULT AMF_STD_CALL  AMFAudioConverterFFMPEGImpl::Terminate()
         m_pTempBuffer = NULL;
     }
 
+    av_channel_layout_uninit(&m_inChannelLayout);
+    av_channel_layout_uninit(&m_outChannelLayout);
+
     m_audioFrameSubmitCount = 0;
     m_audioFrameQueryCount = 0;
 
@@ -522,9 +525,13 @@ AMF_RESULT AMF_STD_CALL AMFAudioConverterFFMPEGImpl::InitResampler()
     }
 
     int err = 0;
+    m_inChannelLayout.nb_channels = (int)m_inChannels;
+    av_channel_layout_default(&m_inChannelLayout, m_inChannelLayout.nb_channels);
     err = av_opt_set_chlayout(m_pResampler, "in_chlayout", &m_inChannelLayout, 0);
     AMF_RETURN_IF_FALSE(err == 0, AMF_FAIL, L"InitResampler() - Failed to set resampler in_channel_layout to %" LPRId64 L"", m_inChannelLayout);
 
+    m_outChannelLayout.nb_channels = (int)m_outChannels;
+    av_channel_layout_default(&m_outChannelLayout, m_outChannelLayout.nb_channels);
     err = av_opt_set_chlayout(m_pResampler, "out_chlayout", &m_outChannelLayout, 0);
     AMF_RETURN_IF_FALSE(err == 0, AMF_FAIL, L"InitResampler() - Failed to set resampler out_channel_layout to %" LPRId64 L"", m_outChannelLayout);
 

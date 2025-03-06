@@ -72,7 +72,7 @@ public:
 private:
     AMF_RESULT CreateInstance();
     AMF_RESULT GetPhysicalDevices(std::vector<VkPhysicalDevice>& devices);
-    AMF_RESULT CreateDeviceAndFindQueues(amf_uint32 adapterID, std::vector<const char*> &deviceExtensions);
+    AMF_RESULT CreateDeviceAndFindQueues(amf_uint32 adapterID, std::vector<const char*> &deviceExtensions, amf::AMFContext* pContext);
 
     std::vector<const char*> GetDebugInstanceExtensionNames();
     std::vector<const char*> GetDebugInstanceLayerNames();

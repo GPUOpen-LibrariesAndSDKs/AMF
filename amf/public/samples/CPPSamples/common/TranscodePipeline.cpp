@@ -205,6 +205,7 @@ void TranscodePipeline::Terminate()
     m_deviceDX9.Terminate();
 #endif//#if !defined(METRO_APP)
     m_deviceDX11.Terminate();
+    m_deviceDX12.Terminate();
 #endif
     m_deviceVulkan.Terminate();
 
@@ -422,7 +423,11 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
     {
         amf::AMFContext2Ptr pContext2(m_pContext);
         CHECK_RETURN(pContext2 != nullptr, AMF_FAIL, "amf::AMFContext2 is not available");
-        res = pContext2->InitDX12(NULL);
+
+        res = m_deviceDX12.Init(adapterID);
+        CHECK_AMF_ERROR_RETURN(res, L"m_deviceDX12.Init() failed");
+
+        res = pContext2->InitDX12(m_deviceDX12.GetDevice());
         CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitDX12() failed");
     }
 		break;
@@ -434,8 +439,11 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
         {
             amf::AMFContext1Ptr(m_pContext)->SetProperty(AMF_CONTEXT_VULKAN_COMPUTE_QUEUE, computeQueue);
         }
-        //        res = m_deviceVulkan.Init(adapterID, m_pContext);
-        res = amf::AMFContext1Ptr(m_pContext)->InitVulkan(NULL);
+
+        res = m_deviceVulkan.Init(adapterID, amf::AMFContext1Ptr(m_pContext));
+        CHECK_AMF_ERROR_RETURN(res, L"m_deviceVulkan.Init() failed");
+
+        res = amf::AMFContext1Ptr(m_pContext)->InitVulkan(m_deviceVulkan.GetDevice());
         CHECK_AMF_ERROR_RETURN(res, L"m_pContext->InitVulkan() failed");
         break;
     }

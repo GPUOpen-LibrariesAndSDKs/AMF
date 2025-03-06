@@ -228,7 +228,7 @@ namespace amf
             const int m_maxReadThreads;
             AMFSemaphore m_readSemaphore;
             AMFCriticalSection m_writeCriticalSection;
-            ReadWriteResources() : 
+            ReadWriteResources() :
             m_maxReadThreads(10),
                 m_readSemaphore(m_maxReadThreads, m_maxReadThreads),
                 m_writeCriticalSection()
@@ -356,7 +356,7 @@ namespace amf
         typedef std::list< ItemData > QueueList;
 
         QueueList m_Queue;
-        AMFCriticalSection m_cSect;
+        mutable AMFCriticalSection m_cSect;
         AMFEvent m_SomethingInQueueEvent;
         AMFSemaphore m_QueueSizeSem;
         amf_int32 m_iQueueSize;
@@ -456,7 +456,7 @@ namespace amf
                 bValue = InternalGet(ulID, item);
             }
         }
-        virtual amf_size GetSize()
+        virtual amf_size GetSize() const
         {
             AMFLock lock(&m_cSect);
             return m_Queue.size();
@@ -664,7 +664,7 @@ namespace amf
             m_bCancel = false;
             amf_pts start = amf_high_precision_clock();
             amf_pts waited = 0;
-            int count = 0; 
+            int count = 0;
             while(!m_bCancel)
             {
                 count++;

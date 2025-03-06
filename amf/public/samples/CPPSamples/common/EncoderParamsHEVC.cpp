@@ -87,6 +87,8 @@ static AMF_RESULT ParamConverterQualityHEVC(const std::wstring& value, amf::AMFV
         paramValue = AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED;
     } else if (uppValue == L"QUALITY" || uppValue == L"2") {
         paramValue = AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_QUALITY;
+    } else if (uppValue == L"HIGHQUALITY" || uppValue == L"3") {
+        paramValue = AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_HIGH_QUALITY;
     } else {
         LOG_ERROR(L"AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_ENUM hasn't \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
@@ -307,6 +309,7 @@ AMF_RESULT RegisterEncoderParamsHEVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_USAGE, ParamEncoderUsage, L"Encoder usage type. Set many default parameters. (TRANSCODING, ULTRALOWLATENCY, LOWLATENCY, WEBCAM, HIGHQUALITY (or HQ), LOWLATENCYHIGHQUALITY (or LLHQ), default = N/A)", ParamConverterUsageHEVC);
 
     // ------------- Encoder params static---------------
+    pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_INPUT_QUEUE_SIZE, ParamEncoderStatic, L"HEVC Input Queue size 0, 1 etc, default = 16", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_INSTANCE_INDEX, ParamEncoderStatic, L" Index of VCN instance 0, 1 etc, default = 0", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_QUERY_TIMEOUT, ParamEncoderStatic, L" QueryOutput timeout in ms , default = 0", ParamConverterInt64);
     pParams->SetParamDescription(AMF_VIDEO_ENCODER_HEVC_PROFILE, ParamEncoderStatic, L"HEVC profile (Main, default = Main", ParamConverterProfileHEVC);

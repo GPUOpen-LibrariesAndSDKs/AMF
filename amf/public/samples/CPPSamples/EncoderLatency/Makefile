@@ -29,7 +29,8 @@ include $(amf_root)/public/make/common_defs.mak
 
 target_name = EncoderLatency
 
-pp_include_dirs = $(amf_root)
+pp_include_dirs = $(amf_root) \
+    $(VULKAN_SDK)/include
 
 src_files = \
     public/samples/CPPSamples/EncoderLatency/EncoderLatency.cpp \
@@ -42,12 +43,14 @@ src_files = \
     $(public_common_dir)/Thread.cpp \
     $(public_common_dir)/TraceAdapter.cpp \
     $(public_common_dir)/Linux/ThreadLinux.cpp \
+    $(public_common_dir)/VulkanImportTable.cpp \
     $(samples_common_dir)/CmdLogger.cpp \
     $(samples_common_dir)/CmdLineParser.cpp \
     $(samples_common_dir)/ParametersStorage.cpp \
     $(samples_common_dir)/RawStreamReader.cpp \
     $(samples_common_dir)/EncoderParamsAVC.cpp \
     $(samples_common_dir)/EncoderParamsHEVC.cpp \
-	$(samples_common_dir)/EncoderParamsAV1.cpp \
+    $(samples_common_dir)/EncoderParamsAV1.cpp \
+    $(samples_common_dir)/DeviceVulkan.cpp
 
 include $(amf_root)/public/make/common_rules.mak

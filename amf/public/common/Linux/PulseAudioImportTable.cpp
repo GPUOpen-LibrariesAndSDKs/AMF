@@ -111,7 +111,7 @@ void PulseAudioImportTable::UnloadFunctionsTable()
     if (nullptr != m_hLibPulseSimpleSO)
     {
         amf_free_library(m_hLibPulseSimpleSO);
-        m_hLibPulseSO = nullptr;
+        m_hLibPulseSimpleSO = nullptr;
     }
 
     if (nullptr != m_hLibPulseSO)

@@ -881,35 +881,3 @@ AMF_RESULT ParamConverterFRCProfile(const std::wstring& value, amf::AMFVariant& 
     valueOut = amf_int64(paramValue);
     return AMF_OK;
 }
-
-
-
-
-
-AMF_RESULT ParamConverterFRCSnapshotMode(const std::wstring& value, amf::AMFVariant& valueOut)
-{
-    amf_int64    paramValue = -1;
-    std::wstring uppValue = toUpper(value);
-    if ((uppValue == L"OFF") || (uppValue == L"0"))
-    {
-        paramValue = FRC_SNAPSHOT_OFF;
-    }
-    else if ((uppValue == L"LOAD") || (uppValue == L"1"))
-    {
-        paramValue = FRC_SNAPSHOT_LOAD;
-    }
-    else if ((uppValue == L"STORE") || (uppValue == L"2"))
-    {
-        paramValue = FRC_SNAPSHOT_STORE;
-    }
-    else if ((uppValue == L"TEST") || (uppValue == L"3"))
-    {
-        paramValue = FRC_SNAPSHOT_REGRESSION_TEST;
-    }
-    else if ((uppValue == L"STORE_NO_PADDING") || (uppValue == L"4"))
-    {
-        paramValue = FRC_SNAPSHOT_STORE_NO_PADDING;
-    }
-    valueOut = amf_int64(paramValue);
-    return AMF_OK;
-}

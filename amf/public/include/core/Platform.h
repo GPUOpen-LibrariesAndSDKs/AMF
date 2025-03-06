@@ -64,8 +64,12 @@
 #define AMF_MACRO_STRING2(x) #x
 #define AMF_MACRO_STRING(x) AMF_MACRO_STRING2(x)
 
+#ifdef _WIN32
 #define AMF_TODO(_todo) (__FILE__ "(" AMF_MACRO_STRING(__LINE__) "): TODO: "_todo)
-
+#else
+//TODO is not helpful on linux because the pragma already includes line number and file
+#define AMF_TODO
+#endif
 
 /**
 *******************************************************************************
@@ -159,9 +163,15 @@ typedef signed int HRESULT;
 #endif
 #endif
 
+#ifndef LPRId64
 #define LPRId64   AMF_UNICODE(AMFPRId64)
+#endif
+#ifndef LPRIud64
 #define LPRIud64  AMF_UNICODE(AMFPRIud64)
+#endif
+#ifndef LPRIx64
 #define LPRIx64   AMF_UNICODE(AMFPRIx64)
+#endif
 
 
 #if defined(_WIN32)

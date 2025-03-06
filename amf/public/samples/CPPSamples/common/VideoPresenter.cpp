@@ -63,6 +63,8 @@ using namespace amf;
 
 #define RESIZE_CHECK_THRESHOLD  (4   * AMF_MILLISECOND) // 4 ms
 
+#define FPS_UPDATE_INTERVAL     100
+
 // if elapsed pts/local time difference more than this, then resync
 #define RESYNC_THRESHOLD        (100  * AMF_MILLISECOND) // 100 ms
 
@@ -97,6 +99,7 @@ VideoPresenter::VideoPresenter(amf_handle hwnd, AMFContext* pContext, amf_handle
     m_frameCount(0),
     m_fpsStatStartTime(0),
     m_lastFPS(0),
+    m_bEnableFrameDrop(true),
     m_framesDropped(0),
     m_firstFrame(true),
 
@@ -327,24 +330,30 @@ amf_bool VideoPresenter::WaitForPTS(amf_pts pts, amf_bool realWait)
     // diff is difference between elapsed pts and elapsed amf_high_precision_clock
     // if elapsed > local (positive diff), then pts is in the 'future'
     // if local > elapsed (negative diff), then pts is in the 'past'
+    amf_bool bReSync = false;
     amf_pts diff = -RESYNC_THRESHOLD;
-    if (m_startTime != -1LL && pts > 0 && pts >= m_startPts)
+    if (pts > 0 && pts >= m_startPts)
     {
         diff = CalculatePtsWaitDiff(pts);
-        if (diff >= RESYNC_THRESHOLD || diff < 0)
+        if (m_bEnableFrameDrop && (diff >= RESYNC_THRESHOLD || diff < 0))
         {
             AMFTraceDebug(AMF_FACILITY, L"Resync #%d pts=%5.2f ms diff=%5.2f ms", (int)m_frameCount, (amf_double)pts / AMF_MILLISECOND, (amf_double)diff / AMF_MILLISECOND);
             if (diff < -m_ptsDropThreshold) // ignore lags < 10 ms
             {
-                //                AMFTraceWarning(AMF_FACILITY, L"+++ Drop Frame #%d pts=%5.2f time=%5.2f diff=%5.2f %s", (int)m_frameCount, (amf_double)pts / 10000., (amf_double)currTime / 10000., (amf_double)diff / 10000., bRealWait ? L"R" : L"");
                 AMFTraceDebug(AMF_FACILITY, L"+++ Drop Frame #%d pts=%5.2f diff=%5.2f", (int)m_frameCount, (amf_double)pts / AMF_MILLISECOND, (amf_double)diff / AMF_MILLISECOND);
                 ret = false;
             }
-            diff = -RESYNC_THRESHOLD;
+            bReSync = true;
         }
     }
 
-    if (diff >= 0)
+    if (bReSync || m_startTime == -1LL) // this should only execute on the first frame or on resync
+    {
+        m_startTime = amf_high_precision_clock();
+        m_fpsStatStartTime = amf_high_precision_clock();
+        m_startPts = pts;
+    }
+    else
     {
         if (m_doWait && realWait && diff > WAIT_THRESHOLD) // ignore delays < 5 ms
         {
@@ -352,19 +361,12 @@ amf_bool VideoPresenter::WaitForPTS(amf_pts pts, amf_bool realWait)
         }
 
         // update FPS = alpha filter
-        if ((m_frameCount % 100) == 0)
+        if (!(m_frameCount % FPS_UPDATE_INTERVAL))
         {
-            amf_pts presentTime = amf_high_precision_clock() - m_startTime;
-            amf_double currFPS = amf_double(AMF_SECOND) / ((presentTime - m_fpsStatStartTime) / 100.);
-            m_lastFPS = currFPS;
+            amf_pts presentTime = amf_high_precision_clock();
+            m_lastFPS = FPS_UPDATE_INTERVAL * amf_double(AMF_SECOND) / (presentTime - m_fpsStatStartTime);
             m_fpsStatStartTime = presentTime;
         }
-    }
-    else
-    {
-        m_startTime = amf_high_precision_clock();
-        m_startPts = pts;
-        m_fpsStatStartTime = 0;
     }
 
     return ret;

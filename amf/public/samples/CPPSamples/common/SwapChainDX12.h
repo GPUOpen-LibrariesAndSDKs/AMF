@@ -257,6 +257,7 @@ namespace {
 template<typename _Ty>
 AMF_RESULT GetPrivateDataDX12(ID3D12Object* pObject, const GUID& guid, _Ty* pData)
 {
+    static_assert(std::is_pointer<_Ty>::value == false || std::is_same<IUnknown*, _Ty>::value == true, "Only IUnknown pointer type");
     if (pObject == nullptr) { return AMF_INVALID_POINTER; }
 
     UINT dataSize = sizeof(_Ty);
@@ -284,11 +285,11 @@ AMF_RESULT SetPrivateDataDX12(ID3D12Object* pObject, const GUID& guid, const _Ty
     return AMF_OK;
 }
 
-static AMF_RESULT SetPrivateDataInterfaceDX12(ID3D12Object* pObject, const GUID& guid, const IUnknown* pData)
+static AMF_RESULT SetPrivateDataInterfaceDX12(ID3D12Object* pObject, const GUID& guid, const IUnknown* pUnknown)
 {
     if (pObject == nullptr) { return AMF_INVALID_POINTER; }
 
-    HRESULT hr = pObject->SetPrivateDataInterface(guid, pData);
+    HRESULT hr = pObject->SetPrivateDataInterface(guid, pUnknown);
     if (FAILED(hr))
     {
         return AMF_DIRECTX_FAILED;
@@ -309,12 +310,20 @@ inline AMF_RESULT SetFenceValueDX12(ID3D12Fence* pFence, UINT64 fenceValue)
 
 inline AMF_RESULT GetResourceFenceDX12(ID3D12Resource* pResource, ID3D12Fence** ppFence)
 {
-    return GetPrivateDataDX12(pResource, AMFFenceGUID, ppFence);
+    ATL::CComPtr<IUnknown> pFenceUnk;
+    AMF_RESULT res = GetPrivateDataDX12(pResource, AMFFenceGUID, &pFenceUnk);
+    *ppFence = CComQIPtr<ID3D12Fence>(pFenceUnk).Detach();
+    if ((*ppFence) == nullptr)
+    {
+        return AMF_NOT_FOUND;
+    }
+    return res;
 }
 
-inline AMF_RESULT SetResourceFenceDX12(ID3D12Resource* pResource, const ID3D12Fence* pFence)
+inline AMF_RESULT SetResourceFenceDX12(ID3D12Resource* pResource, ID3D12Fence* pFence)
 {
-    return SetPrivateDataInterfaceDX12(pResource, AMFFenceGUID, pFence);
+    ATL::CComPtr<IUnknown> pFenceUnk(pFence);
+    return SetPrivateDataInterfaceDX12(pResource, AMFFenceGUID, pFenceUnk);
 }
 
 inline AMF_RESULT GetResourceStateDX12(ID3D12Resource* pResource, D3D12_RESOURCE_STATES& state)

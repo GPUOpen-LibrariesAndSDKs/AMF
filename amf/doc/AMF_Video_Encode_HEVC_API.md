@@ -1260,12 +1260,12 @@ Sets the headers insertion mode.
 `0` ... `1000`
 
 **Default Value associated with usages:**
-   - Transcoding: `30`
+   - Transcoding: `240`
    - Ultra low latency: `300`
    - Low latency: `300`
-   - Webcam: `30`
-   - HQ: `30`
-   - HQLL: `30`
+   - Webcam: `240`
+   - HQ: `240`
+   - HQLL: `240`
 
 **Description:**
 The period to insert IDR/CRA in fixed size mode. `0` means only insert the first IDR/CRA (infinite GOP size).

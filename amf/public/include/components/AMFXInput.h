@@ -35,7 +35,7 @@
 
 #pragma once
 
-#include "../../../public/include/core/Interface.h"
+#include "../core/Interface.h"
 
 // XInput injection API:
 // - XBox  - like controller emulation

@@ -1034,6 +1034,7 @@ AMF_RESULT DisplayDvrPipeline::Stop()
     m_deviceDX9.Terminate();
 #endif // !defined(METRO_APP)
     m_deviceDX11.Terminate();
+    m_deviceDX12.Terminate();
 #else
     m_deviceVulkan.Terminate();
 #endif

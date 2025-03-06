@@ -44,6 +44,8 @@ using namespace amf;
 //
 #define GET_DLL_ENTRYPOINT(h, w) w = reinterpret_cast<PFN_##w>(amf_get_proc_address(h, #w)); if(w==nullptr) \
     { AMFTraceError(L"VulkanImportTable", L"Failed to aquire entrypoint %S", #w); return AMF_FAIL; };
+#define GET_DLL_ENTRYPOINT_NORETURN(h, w) w = reinterpret_cast<PFN_##w>(amf_get_proc_address(h, #w)); if(w==nullptr) \
+    { AMFTraceDebug(L"VulkanImportTable", L"Failed to aquire entrypoint %S", #w); };
 #define GET_INSTANCE_ENTRYPOINT(i, w) w = reinterpret_cast<PFN_##w>(vkGetInstanceProcAddr(i, #w)); if(w==nullptr) \
     { AMFTraceError(L"VulkanImportTable", L"Failed to aquire entrypoint %S", #w); return AMF_FAIL; };
 #define GET_INSTANCE_ENTRYPOINT_NORETURN(i, w) w = reinterpret_cast<PFN_##w>(vkGetInstanceProcAddr(i, #w));
@@ -59,6 +61,7 @@ VulkanImportTable::VulkanImportTable() :
     vkEnumeratePhysicalDevices(nullptr),
     vkGetPhysicalDeviceFeatures(nullptr),
     vkGetPhysicalDeviceFormatProperties(nullptr),
+    vkGetPhysicalDeviceFormatProperties2(nullptr),
     vkGetPhysicalDeviceImageFormatProperties(nullptr),
     vkGetPhysicalDeviceProperties(nullptr),
     vkGetPhysicalDeviceExternalSemaphoreProperties(nullptr),
@@ -260,6 +263,7 @@ AMF_RESULT VulkanImportTable::LoadFunctionsTable()
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkEnumeratePhysicalDevices);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetPhysicalDeviceFeatures);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetPhysicalDeviceFormatProperties);
+    GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetPhysicalDeviceFormatProperties2);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetPhysicalDeviceImageFormatProperties);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetPhysicalDeviceProperties);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetPhysicalDeviceExternalSemaphoreProperties);
@@ -402,7 +406,7 @@ AMF_RESULT VulkanImportTable::LoadFunctionsTable()
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkDestroySurfaceKHR);
 
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
-    GET_DLL_ENTRYPOINT(m_hVulkanDll, vkCreateXlibSurfaceKHR);
+    GET_DLL_ENTRYPOINT_NORETURN(m_hVulkanDll, vkCreateXlibSurfaceKHR);
 #endif
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkCreateAndroidSurfaceKHR);

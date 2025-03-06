@@ -101,7 +101,8 @@ enum AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_ENUM
 {
     AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_64X16_ONLY               = 1,
     AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_64X16_1080P_CODED_1082   = 2,
-    AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_NO_RESTRICTIONS          = 3
+    AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_NO_RESTRICTIONS          = 3,
+    AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_8X2_ONLY                 = 4
 };
 
 enum AMF_VIDEO_ENCODER_AV1_FORCE_FRAME_TYPE_ENUM
@@ -186,6 +187,7 @@ enum AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE_ENUM
     AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE_TILE = 1,
     AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE_TILE_LAST = 2
 };
+
 // *** Static properties - can be set only before Init() ***
 
 // Encoder Engine Settings
@@ -264,9 +266,13 @@ enum AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_AV1_MAX_Q_INDEX_INTRA                     L"Av1MaxQIndex_Intra"               // amf_int64; default = depends on USAGE; Max QIndex for intra frames; range = 1-255
 #define AMF_VIDEO_ENCODER_AV1_MIN_Q_INDEX_INTER                     L"Av1MinQIndex_Inter"               // amf_int64; default = depends on USAGE; Min QIndex for inter frames; range = 1-255
 #define AMF_VIDEO_ENCODER_AV1_MAX_Q_INDEX_INTER                     L"Av1MaxQIndex_Inter"               // amf_int64; default = depends on USAGE; Max QIndex for inter frames; range = 1-255
+#define AMF_VIDEO_ENCODER_AV1_MIN_Q_INDEX_INTER_B                   L"Av1MinQIndex_Inter_B"             // amf_int64; default = depends on USAGE; Min QIndex for inter frames (bi-directional); range = 1-255
+#define AMF_VIDEO_ENCODER_AV1_MAX_Q_INDEX_INTER_B                   L"Av1MaxQIndex_Inter_B"             // amf_int64; default = depends on USAGE; Max QIndex for inter frames (bi-directional); range = 1-255
+
 
 #define AMF_VIDEO_ENCODER_AV1_Q_INDEX_INTRA                         L"Av1QIndex_Intra"                  // amf_int64; default = depends on USAGE; intra-frame QIndex; range = 1-255
 #define AMF_VIDEO_ENCODER_AV1_Q_INDEX_INTER                         L"Av1QIndex_Inter"                  // amf_int64; default = depends on USAGE; inter-frame QIndex; range = 1-255
+#define AMF_VIDEO_ENCODER_AV1_Q_INDEX_INTER_B                       L"Av1QIndex_Inter_B"                // amf_int64; default = depends on USAGE; inter-frame QIndex (bi-directional); range = 1-255
 
 #define AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_SKIP_FRAME               L"Av1RateControlSkipFrameEnable"    // bool; default = depends on USAGE; If true, rate control may code skip frame when needed; if false, rate control will not code skip frame.
 
@@ -359,13 +365,16 @@ enum AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_AV1_CAP_BFRAMES                           L"AV1BFrames"                       // amf_bool; if b frames are supported for AV1
 
 #define AMF_VIDEO_ENCODER_AV1_CAP_SUPPORT_SMART_ACCESS_VIDEO        L"Av1EncoderSupportSmartAccessVideo"    // amf_bool; returns true if system supports SmartAccess Video
+
 #define AMF_VIDEO_ENCODER_AV1_CAP_WIDTH_ALIGNMENT_FACTOR            L"Av1WidthAlignmentFactor"          // amf_int64; default = 1; The encoder capability for width alignment
 #define AMF_VIDEO_ENCODER_AV1_CAP_HEIGHT_ALIGNMENT_FACTOR           L"Av1HeightAlignmentFactor"         // amf_int64; default = 1; The encoder capability for height alignment
 
-#define AMF_VIDEO_ENCODER_AV1_MULTI_HW_INSTANCE_ENCODE              L"Av1MultiHwInstanceEncode"             // amf_bool; flag to enable AV1 multi VCN encode.
+#define AMF_VIDEO_ENCODER_AV1_MULTI_HW_INSTANCE_ENCODE              L"Av1MultiHwInstanceEncode"         // amf_bool; flag to enable AV1 multi VCN encode.
 
-// properties for Picture Management (VCN5 feature)
-#define AMF_VIDEO_ENCODER_AV1_MAX_CONSECUTIVE_BPICTURES             L"Av1MaxConsecutiveBPictures"        // amf_int64; default 0 or 127, determined by AMF_VIDEO_ENCODER_AV1_CAP_BFRAMES. Maximum number of consecutive B frames for B frame encoding
+#define AMF_VIDEO_ENCODER_AV1_NOMINAL_RANGE                         L"Av1NominalRange"                  // amf_bool; default = false; inidicates that YUV input is (0,255)
+
+// properties for AV1 B-frame (VCN5 feature)
+#define AMF_VIDEO_ENCODER_AV1_MAX_CONSECUTIVE_BPICTURES             L"Av1MaxConsecutiveBPictures"        // amf_int64; default 0. Maximum number of consecutive B frames for B frame encoding
 #define AMF_VIDEO_ENCODER_AV1_B_PIC_PATTERN                         L"Av1BPicturesPattern"               // amf_int64; default 0. Number of B frames for B frame encoding
 #define AMF_VIDEO_ENCODER_AV1_ADAPTIVE_MINIGOP                      L"Av1AdaptiveMiniGop"                // amf_bool; default false. Adaptive miniGOP size for B frame encoding
 

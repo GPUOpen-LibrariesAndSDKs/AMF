@@ -3878,7 +3878,7 @@ Fill a surface plane with a solid color.
 
 The `origin` and the `region` parameters represent the 3D coordinates and the size of the area of the plane to be filled. For 2D planes `origin[2]` and `region[2]` must be set to 0.
 
-The fill color is a four component RGBA floating-point color value if the image channel data type is not an unnormalized signed and unsigned integer type, is a four-component signed integer value if the image channel data type is an unnormalized signed integer type and is a four component unsigned integer value if the image channel data type is an unormalized unsigned integer type.
+The fill color is a four component RGBA floating-point color value if the surface is RGBA_F16, and is a four component unsigned integer value for other surface types.
 
 | Parameter        | Description                                                                                                          |
 | :--------------- | :------------------------------------------------------------------------------------------------------------------- |

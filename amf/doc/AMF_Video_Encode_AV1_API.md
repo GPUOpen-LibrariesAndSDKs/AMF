@@ -733,13 +733,13 @@ Maximum number of reference frames.
 `AMF_VIDEO_ENCODER_AV1_MAX_CONSECUTIVE_BPICTURES`
 
 **Values:**
-`0`...`0` or `127`
+`0`...`127`
 
 **Default Value:**
-`0` or `127`
+`0`
 
 **Description:**
-Maximum number of consecutive B Pictures. The default value is determined by `AMF_VIDEO_ENCODER_AV1_CAP_BFRAMES`. If `AMF_VIDEO_ENCODER_AV1_CAP_BFRAMES` is true, the default value is 127; otherwise, it is 0.
+Maximum number of consecutive B Pictures.
 
 ---
 
@@ -795,10 +795,11 @@ Frame width/Height in pixels, maximum value is hardware-specific, should be quer
 `AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE`
 
 **Values:**
-`AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_ENUM`: `AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_64X16_ONLY`, `AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_64X16_1080P_CODED_1082`, `AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_NO_RESTRICTIONS`
+`AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_ENUM`: `AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_64X16_ONLY`, `AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_64X16_1080P_CODED_1082`, `AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_NO_RESTRICTIONS`,
+`AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_8X2_ONLY`
 
 **Default Value:**
-`AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_64X16_ONLY`
+Depends on Encoder capabilities
 
 **Description:**
 AV1 alignment Mode.
@@ -863,8 +864,11 @@ When set to `true`, enables the SmartAccess Video feature, which optimally alloc
 | MAX_Q_INDEX_INTRA                      | amf_int64 |
 | MIN_Q_INDEX_INTER                      | amf_int64 |
 | MAX_Q_INDEX_INTER                      | amf_int64 |
+| MIN_Q_INDEX_INTER_B                    | amf_int64 |
+| MAX_Q_INDEX_INTER_B                    | amf_int64 |
 | Q_INDEX_INTRA                          | amf_int64 |
 | Q_INDEX_INTER                          | amf_int64 |
+| Q_INDEX_INTER_B                        | amf_int64 |
 | FRAMERATE                              | AMFRate   |
 | VBV_BUFFER_SIZE                        | amf_int64 |
 | INITIAL_VBV_BUFFER_FULLNESS            | amf_int64 |
@@ -1038,6 +1042,34 @@ Sets the maximum QIndex for Inter frame.
 ---
 
 **Name:**
+`AMF_VIDEO_ENCODER_AV1_MIN_Q_INDEX_INTER_B`
+
+**Values:**
+`1` – `255`
+
+**Default Value:**
+`1`
+
+**Description:**
+Sets the minimum QIndex for B-frames.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_AV1_MAX_Q_INDEX_INTER_B`
+
+**Values:**
+`1` – `255`
+
+**Default Value:**
+`255`
+
+**Description:**
+Sets the maximum QIndex for B-frames.
+
+---
+
+**Name:**
 `AMF_VIDEO_ENCODER_AV1_Q_INDEX_INTRA`
 
 **Values:**
@@ -1064,6 +1096,22 @@ Remarks: Only available for CQP rate control method.
 
 **Description:**
 Sets the constant QIndex for Inter frames.
+
+Remarks: Only available for CQP rate control method.
+
+---
+
+**Name:**
+`AMF_VIDEO_ENCODER_AV1_Q_INDEX_INTER_B`
+
+**Values:**
+`1` – `255`
+
+**Default Value:**
+`26`
+
+**Description:**
+Sets the constant QIndex for B-frames.
 
 Remarks: Only available for CQP rate control method.
 
@@ -1288,12 +1336,12 @@ The interval between two inserted switch frames. Valid only when `AMF_VIDEO_ENCO
 `>0`
 
 **Default Value associated with usages:**
-   - Transcoding: `30`
+   - Transcoding: `240`
    - Ultra low latency: `300`
    - Low latency: `300`
-   - Webcam: `30`
-   - HQ: `30`
-   - HQLL: `30`
+   - Webcam: `240`
+   - HQ: `300`
+   - HQLL: `120`
 
 **Description:**
 The period to insert key frame in fixed size mode. 0 means only insert the first frame (infinite GOP size).
@@ -2059,7 +2107,6 @@ Returns reconstructed picture as an `AMFSurface` attached to the output buffer a
 | SUPPORT_TILE_OUTPUT                           | amf_bool  |
 | WIDTH_ALIGNMENT_FACTOR                        | amf_int64 |
 | HEIGHT_ALIGNMENT_FACTOR                       | amf_int64 |
-| BFRAMES                                       | amf_bool  |
 
 <p align="center">
 Table 14. Encoder capabilities exposed in AMFCaps interface

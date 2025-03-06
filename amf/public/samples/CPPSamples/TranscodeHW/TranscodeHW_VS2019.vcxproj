@@ -213,6 +213,7 @@
     <ClCompile Include="..\common\CmdLineParser.cpp" />
     <ClCompile Include="..\common\CmdLogger.cpp" />
     <ClCompile Include="..\common\DeviceDX11.cpp" />
+    <ClCompile Include="..\common\DeviceDX12.cpp" />
     <ClCompile Include="..\common\DeviceDX9.cpp" />
     <ClCompile Include="..\common\DeviceVulkan.cpp" />
     <ClCompile Include="..\common\EncoderParamsAV1.cpp" />
@@ -257,6 +258,7 @@
     <ClInclude Include="..\common\CmdLineParser.h" />
     <ClInclude Include="..\common\CmdLogger.h" />
     <ClInclude Include="..\common\DeviceDX11.h" />
+    <ClInclude Include="..\common\DeviceDX12.h" />
     <ClInclude Include="..\common\DeviceDX9.h" />
     <ClInclude Include="..\common\DeviceVulkan.h" />
     <ClInclude Include="..\common\EncoderParamsAV1.h" />

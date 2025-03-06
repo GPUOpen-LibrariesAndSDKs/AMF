@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -172,6 +172,7 @@ protected:
     virtual const BackBufferBasePtr*    GetBackBuffers() const override { return m_hSwapChain != NULL ? m_pBackBuffers.data() : nullptr; }
     virtual AMF_RESULT                  BackBufferToSurface(const BackBufferBase* pBuffer, amf::AMFSurface** ppSurface) const override;
     virtual void*                       GetSurfaceNative(amf::AMFSurface* pSurface) const override;
+    virtual AMF_RESULT                  UpdateColorSpace();
 
 
     amf::AMFContext1Ptr                 m_pContext1;

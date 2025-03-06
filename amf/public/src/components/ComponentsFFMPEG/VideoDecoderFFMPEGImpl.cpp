@@ -582,7 +582,7 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
                                        m_eFormat != AMF_SURFACE_P012 &&
                                        m_eFormat != AMF_SURFACE_P016)
     {
-        CopyFrameThreaded(pPlaneY, picture, iThreadCount, false);
+        CopyFrameThreaded(pPlaneY, picture, iThreadCount, false, false);
     }
     else if (picture.format == AV_PIX_FMT_YUV422P10LE)  //ProRes 10bit 4:2:2 from BM camera
     {
@@ -627,18 +627,40 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
     // handle the UV plane
     if (bIsPlanar)
     {
-        AMFPlanePtr pPlaneUV = pSurfaceOut->GetPlane(AMF_PLANE_UV);
-        AMF_RETURN_IF_INVALID_POINTER(pPlaneUV, L"QueryOutput() - pPlaneUV is NULL");
+        if (pSurfaceOut->GetPlanesCount() == 3)
+        {
+            AMFPlanePtr pPlaneU = pSurfaceOut->GetPlane(AMF_PLANE_U);
+            AMF_RETURN_IF_INVALID_POINTER(pPlaneU, L"QueryOutput() - pPlaneUV is NULL");
+            AMFPlanePtr pPlaneV = pSurfaceOut->GetPlane(AMF_PLANE_V);
+            AMF_RETURN_IF_INVALID_POINTER(pPlaneV, L"QueryOutput() - pPlaneUV is NULL");
 
-        if (pPlaneUV->GetHeight() > 2160 / 2 && m_eFormat != AMF_SURFACE_P010 &&
-                                                m_eFormat != AMF_SURFACE_P012 &&
-                                                m_eFormat != AMF_SURFACE_P016)
-        {
-            CopyFrameThreaded(pPlaneUV, picture, iThreadCount, true);
+            if (pPlaneU->GetHeight() > 2160 /2)
+            {
+                CopyFrameThreaded(pPlaneU, picture, iThreadCount, true, false);
+                CopyFrameThreaded(pPlaneV, picture, iThreadCount, false, true);
+            }
+            else
+            {
+                CopyFrameThreaded(pPlaneU, picture, 1, true, false);
+                CopyFrameThreaded(pPlaneV, picture, 1, false, true);
+            }
+
         }
-        else
+        else 
         {
-            CopyFrameUV(pPlaneUV, picture, paddedLSB);
+            AMFPlanePtr pPlaneUV = pSurfaceOut->GetPlane(AMF_PLANE_UV);
+            AMF_RETURN_IF_INVALID_POINTER(pPlaneUV, L"QueryOutput() - pPlaneUV is NULL");
+
+            if (pPlaneUV->GetHeight() > 2160 / 2 && m_eFormat != AMF_SURFACE_P010 &&
+                m_eFormat != AMF_SURFACE_P012 &&
+                m_eFormat != AMF_SURFACE_P016)
+            {
+                CopyFrameThreaded(pPlaneUV, picture, iThreadCount, true, true);
+            }
+            else
+            {
+                CopyFrameUV(pPlaneUV, picture, paddedLSB);
+            }
         }
     }
 
@@ -915,7 +937,7 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::GetColorInfo(AMFSurface* pSu
     return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
-AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::CopyFrameThreaded(AMFPlane* pPlane, const AVFrame& picture, amf_int threadCount, bool isUVPlane)
+AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::CopyFrameThreaded(AMFPlane* pPlane, const AVFrame& picture, amf_int threadCount, bool isUPlane, bool isVPlane)
 {
     AMF_RETURN_IF_INVALID_POINTER(pPlane, L"CopyFrameThreaded() - pPlane is NULL");
 
@@ -928,10 +950,29 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::CopyFrameThreaded(AMFPlane* 
 
     CopyTask task = {};
 
-    task.pSrc = (!isUVPlane) ? picture.data[0] : picture.data[1];
-    task.pSrc1 = (!isUVPlane) ? nullptr : picture.data[2];
+    task.pSrc1 = nullptr;
+    if (isUPlane && isVPlane)
+    {
+        task.pSrc = picture.data[1];
+        task.pSrc1 =picture.data[2];
+        task.SrcLineSize = picture.linesize[1];
+    }
+    else if (isUPlane)
+    {
+        task.pSrc = picture.data[1];
+        task.SrcLineSize = picture.linesize[1];
+    }
+    else if (isVPlane)
+    {
+        task.pSrc = picture.data[2];
+        task.SrcLineSize = picture.linesize[2];
+    }
+    else
+    {
+        task.pSrc = picture.data[0];
+        task.SrcLineSize = picture.linesize[0];
+    }
     task.pDst = (amf_uint8*)pPlane->GetNative();
-    task.SrcLineSize = (!isUVPlane) ? picture.linesize[0] : picture.linesize[1];
     task.DstLineSize = pPlane->GetHPitch();
     task.pEvent = &m_CopyPipeline.m_endEvent;
     task.pCounter = &counter;

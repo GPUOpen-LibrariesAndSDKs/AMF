@@ -45,6 +45,7 @@
     #include "DeviceDX9.h"
     #endif//#if defined(METRO_APP)
     #include "DeviceDX11.h"
+    #include "DeviceDX12.h"
 #endif
     #include "DeviceVulkan.h"
 
@@ -101,6 +102,7 @@ protected:
     DeviceDX9                   m_deviceDX9;
 #endif//#if !defined(METRO_APP)
     DeviceDX11                  m_deviceDX11;
+    DeviceDX12                  m_deviceDX12;
 #endif
     DeviceVulkan                m_deviceVulkan;
 
