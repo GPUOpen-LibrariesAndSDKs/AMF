@@ -1897,7 +1897,7 @@ If `true`, force insert sequence header with current frame.
 `AMF_VIDEO_ENCODER_AV1_FORCE_FRAME_TYPE_NONE`
 
 **Description:**
-Forces the frame type.
+Forces the frame type determined by the picture management with the following precedence `KEY`, `INTRA_ONLY`, `SWITCH` and `SHOW_EXISTING`. Force frame type will only take effect to override types with lower precedence.
 
 ---
 

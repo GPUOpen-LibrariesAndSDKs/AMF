@@ -1943,7 +1943,7 @@ Picture structure.
 `AMF_VIDEO_ENCODER_PICTURE_TYPE_NONE`
 
 **Description:**
-Forces the picture type (to use this feature, set `AMF_VIDEO_ENCODER_IDR_PERIOD` to `0`).
+Forces the picture type (to use this feature, set `AMF_VIDEO_ENCODER_IDR_PERIOD` to `0`) determined by the picture management with the following precedence `IDR`, `I`, `P` and `B`. Force picture type will only take effect to override type with lower precedence.
 `B` feature is not supported by VCE 1.0.
 
 ---

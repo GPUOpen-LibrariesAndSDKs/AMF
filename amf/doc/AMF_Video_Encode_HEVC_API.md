@@ -1721,7 +1721,7 @@ Inserts AUD.
 `AMF_VIDEO_ENCODER_HEVC_PICTURE_TYPE_NONE`
 
 **Description:**
-Forces the picture type.
+Forces the picture type determined by the picture management with the following precedence `IDR`, `I` and `P`. Force picture type will only take effect to override types with lower precedence.
 
 ---
 
