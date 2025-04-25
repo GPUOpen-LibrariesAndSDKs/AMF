@@ -33,6 +33,7 @@
 #define CL_USE_DEPRECATED_OPENCL_2_0_APIS
 #if !defined(CL_EXT_PREFIX__VERSION_2_0_DEPRECATED)
     #define CL_EXT_SUFFIX__VERSION_2_0_DEPRECATED
+    #define CL_EXT_PREFIX__VERSION_2_0_DEPRECATED
 #endif
 #include <CL/cl.h>
 #include "public/include/core/Result.h"
