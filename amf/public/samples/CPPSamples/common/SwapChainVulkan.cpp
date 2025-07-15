@@ -758,7 +758,7 @@ VkFormat SwapChainVulkan::GetSupportedVkFormat(AMF_SURFACE_FORMAT format)
     case AMF_SURFACE_BGRA:     return VK_FORMAT_B8G8R8A8_UNORM;
     case AMF_SURFACE_RGBA:     return VK_FORMAT_R8G8B8A8_UNORM;
     case AMF_SURFACE_RGBA_F16: return VK_FORMAT_R16G16B16A16_SFLOAT;
-    case AMF_SURFACE_R10G10B10A2: return VK_FORMAT_A2R10G10B10_UNORM_PACK32;
+    case AMF_SURFACE_R10G10B10A2: return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
     }
 
     return VK_FORMAT_UNDEFINED;
@@ -1403,6 +1403,14 @@ AMF_RESULT CommandBufferVulkan::Execute(VkQueue hQueue)
         submitInfo.signalSemaphoreCount = (amf_uint32)m_signalSemaphores.size();
         submitInfo.pSignalSemaphores = &m_signalSemaphores[0];
     }
+
+    VkTimelineSemaphoreSubmitInfo timelineSemaphoreSubmitInfo = {VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO};
+    timelineSemaphoreSubmitInfo.waitSemaphoreValueCount = (uint32_t)m_waitSemaphoresValues.size();
+    timelineSemaphoreSubmitInfo.pWaitSemaphoreValues = m_waitSemaphoresValues.data();
+    timelineSemaphoreSubmitInfo.signalSemaphoreValueCount = (uint32_t)m_signalSemaphoresValues.size();
+    timelineSemaphoreSubmitInfo.pSignalSemaphoreValues= m_signalSemaphoresValues.data();
+    submitInfo.pNext = &timelineSemaphoreSubmitInfo;
+
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &m_hCmdBuffer;
 
@@ -1421,6 +1429,9 @@ AMF_RESULT CommandBufferVulkan::Execute(VkQueue hQueue)
     m_waitFlags.clear();
     m_signalSemaphores.clear();
     m_pSyncFences.clear();
+    m_waitSemaphoresValues.clear();
+    m_signalSemaphoresValues.clear();
+
 
     return AMF_OK;
 }
@@ -1432,17 +1443,39 @@ AMF_RESULT CommandBufferVulkan::SyncResource(amf::AMFVulkanSync* pSync, VkPipeli
 
     if (pSync->hSemaphore != VK_NULL_HANDLE)
     {
+        AMFVulkanTimeline* sync1 = (AMFVulkanTimeline*)pSync->pNext;
+        while (sync1 != nullptr)
+        {
+            if (sync1->eExtensionType == AMF_VARIANT_TIMELINE_SEMAPHORE)
+            {
+                break;
+            }
+            sync1 = (AMFVulkanTimeline*)sync1->pNext;
+        }
+        uint64_t value = 0;
+        if (sync1 != nullptr)
+        {
+            value = sync1->uiCount;
+        }
         amf_vector<VkSemaphore>::iterator it = std::find(m_signalSemaphores.begin(), m_signalSemaphores.end(), pSync->hSemaphore);
         if (it == m_signalSemaphores.end())
         {
-            if (pSync->bSubmitted)
+
+            if (pSync->bSubmitted || sync1 != nullptr)
             {
                 m_waitSemaphores.push_back(pSync->hSemaphore);
+                m_waitSemaphoresValues.push_back(value);
                 m_waitFlags.push_back(waitFlags);
                 pSync->bSubmitted = false;
             }
 
             m_signalSemaphores.push_back(pSync->hSemaphore);
+            if (sync1 != nullptr)
+            {
+                sync1->uiCount++;
+                value = sync1->uiCount;
+            }
+            m_signalSemaphoresValues.push_back(value);
             pSync->bSubmitted = true;
         }
         else

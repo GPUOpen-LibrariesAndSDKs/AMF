@@ -99,6 +99,8 @@ private:
 
     amf::amf_vector<VkSemaphore>            m_waitSemaphores;
     amf::amf_vector<VkSemaphore>            m_signalSemaphores;
+    amf::amf_vector<uint64_t>               m_waitSemaphoresValues;
+    amf::amf_vector<uint64_t>               m_signalSemaphoresValues;
     amf::amf_vector<VkPipelineStageFlags>   m_waitFlags;
     amf::amf_vector<VkFence*>               m_pSyncFences;
 

@@ -100,7 +100,7 @@ PlaybackPipelineBase::PlaybackPipelineBase() :
     SetParamDescription(PARAM_NAME_SIDE_BY_SIDE, ParamCommon, L"Specifies Side-by-Side mode, true, false, default false", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_HQ_SCALER_RGB, ParamCommon, L"Force RGB scaling, true, false, default false", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_HQ_SCALER_RATIO, ParamCommon, L"Scaling Ratio (1.3x, 1.5x, 1.7x, 2.0x), default 2.0x", ParamConverterRatio);
-    SetParamDescription(PARAM_NAME_ENABLE_AUDIO, ParamCommon, L"Enables audio playback, boolean, default = true", ParamConverterDouble);
+    SetParamDescription(PARAM_NAME_ENABLE_AUDIO, ParamCommon, L"Enables audio playback, boolean, default = true", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_HQSCALER_SHARPNESS, ParamCommon, L"Specifies FSR RCAS attenuation, double, default = 0.75", ParamConverterDouble);
     SetParamDescription(PARAM_NAME_FRAME_RATE, ParamCommon, L"Frame Rate (off, 15fps, 30fps, 60fps), default = off", ParamConverterInt64);
     SetParamDescription(PARAM_NAME_FRC_ENGINE, ParamCommon, L"Frame Rate Conversion, (DX11, DX12) default = from '-presenter'", ParamConverterFRCEngine);
@@ -122,7 +122,7 @@ PlaybackPipelineBase::PlaybackPipelineBase() :
     SetParam(PARAM_NAME_SIDE_BY_SIDE, false);
     SetParam(PARAM_NAME_HQ_SCALER_RGB, false);
     SetParam(PARAM_NAME_HQ_SCALER_RATIO, AMFRatio({ 20, 10 }));
-    SetParam(PARAM_NAME_ENABLE_AUDIO, false);
+    SetParam(PARAM_NAME_ENABLE_AUDIO, true);
     SetParam(PARAM_NAME_HQSCALER_SHARPNESS, 0.75);
     SetParam(PARAM_NAME_FRAME_RATE, 0);
 #if defined(_WIN32)
@@ -146,11 +146,6 @@ PlaybackPipelineBase::~PlaybackPipelineBase()
 void PlaybackPipelineBase::Terminate()
 {
     Stop();
-    if (m_pContext != nullptr)
-    {
-        m_pContext->Terminate();
-        m_pContext = NULL;
-    }
 }
 
 AMF_RESULT PlaybackPipelineBase::GetDuration(amf_pts& duration) const
@@ -445,6 +440,23 @@ AMF_RESULT PlaybackPipelineBase::Init()
         {
             LOG_AMF_ERROR(res, L"InitAudio() failed");
             iAudioStreamIndex = -1;
+            if (m_pAudioDecoder != NULL)
+            {
+                m_pAudioDecoder->Terminate();
+                m_pAudioDecoder = NULL;
+            }
+
+            if (m_pAudioConverter != NULL)
+            {
+                m_pAudioConverter->Terminate();
+                m_pAudioConverter = NULL;
+            }
+
+            if (m_pAudioPresenter != NULL)
+            {
+                m_pAudioPresenter = NULL;
+            }
+
         }
 //        CHECK_AMF_ERROR_RETURN(res, L"InitAudio() failed");
     }
@@ -559,7 +571,7 @@ AMF_RESULT  PlaybackPipelineBase::ConnectScaler()
     }
     return res;
 }
-AMF_RESULT PlaybackPipelineBase::InitVideoPipeline(amf_uint32 /* iVideoStreamIndex */, PipelineElementPtr pVideoSourceStream)
+AMF_RESULT PlaybackPipelineBase::InitVideoPipeline(amf_uint32 /* iVideoStreamIndex */, PipelineElementPtr /*pVideoSourceStream*/)
 {
     bool bAllocator = true;
 
@@ -677,7 +689,6 @@ AMF_RESULT  PlaybackPipelineBase::InitFRC(amf::AMF_MEMORY_TYPE type)
             bForceFRCRGB = false;
         }
 
-
         res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFFRC, &m_pFRC);
         CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFFRC << L") failed");
         //m_pFRC->SetProperty(AMF_HQ_SCALER_ENGINE_TYPE, type);
@@ -688,7 +699,6 @@ AMF_RESULT  PlaybackPipelineBase::InitFRC(amf::AMF_MEMORY_TYPE type)
             SetParam(PARAM_NAME_HQ_SCALER_RATIO, AMFRatio({ 10, 10 }));
 
             m_pFRC->SetProperty(AMF_FRC_ENGINE_TYPE, frcEngineType);
-
 
             m_pFRC->SetProperty(AMF_FRC_MODE, frcMode);
 
@@ -1158,14 +1168,11 @@ AMF_RESULT PlaybackPipelineBase::Stop()
         m_pDemuxerAudio->Terminate();
         m_pDemuxerAudio = NULL;
     }
-
-
     if(m_pContext != NULL)
     {
         m_pContext->Terminate();
         m_pContext = NULL;
     }
-
     return AMF_OK;
 }
 
