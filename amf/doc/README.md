@@ -18,6 +18,9 @@ AMF is a light-weight, portable multimedia framework that abstracts away most of
     * Ubuntu 24.04.2 / 22.04.5
     * SLED/SLES 15 SP6
 * Driver and AMF component installation instructions are available on the [Wiki page](https://github.com/GPUOpen-LibrariesAndSDKs/AMF/wiki).
+    
+  Note: the 25.10 Linux driver has a known installation bug. See the [Linux Driver Install](https://github.com/GPUOpen-LibrariesAndSDKs/AMF/wiki/Driver%20Linux) Wiki page for details.
+
     * The following table contains the driver versions in which the Linux pro driver started including the AMF runtime, otherwise, the AMF runtime is optional and has to be installed separately.
     * All supported distros include the AMF runtime starting driver version 20.40.
 
