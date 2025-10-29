@@ -34,6 +34,7 @@
 
 #include "public/include/core/Platform.h"
 
+
 class AMFHalfFloat
 {
 public:
@@ -56,11 +57,13 @@ public:
         return amf_uint16(m_basetable[(val.u >> 23) & 0x1ff] + ((val.u & 0x007fffff) >> m_shifttable[(val.u >> 23) & 0x1ff]));
     }
 
+
+    // the function doesn't actually require anything from the class
     AMF_FORCEINLINE static float FromHalfFloat(amf_uint16 value)
     {
         uint32_t mantissa = (uint32_t)(value & 0x03FF);
-
         uint32_t exponent = (value & 0x7C00);
+
         if (exponent == 0x7C00) // INF/NAN
         {
             exponent = (uint32_t)0x8f;
@@ -88,11 +91,13 @@ public:
         }
 
         uint32_t result = ((value & 0x8000) << 16) | // Sign
-            ((exponent + 112) << 23) | // exponent
-            (mantissa << 13);          // mantissa
+                          ((exponent + 112) << 23) | // exponent
+                          (mantissa << 13);          // mantissa
 
         return reinterpret_cast<float*>(&result)[0];
     }
+
+
 private:
 
     static amf_uint16 m_basetable[512];
@@ -149,4 +154,4 @@ private:
 
 };
 
-static AMFHalfFloat s_InitHalfFLoat;
+extern AMFHalfFloat s_InitHalfFLoat;

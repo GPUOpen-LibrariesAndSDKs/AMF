@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 #include "public/include/core/Platform.h"
-#include "wav.h"
+#include "wavUtil.h"
 #include "HRTFtable.h"
 
 typedef struct _IRdescr {

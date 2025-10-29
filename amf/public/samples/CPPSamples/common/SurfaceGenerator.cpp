@@ -292,6 +292,7 @@ AMF_RESULT FillBGRASurfaceWithColor(amf::AMFSurface* pSurface, amf_uint8 R, amf_
 
 amf_uint16 AMFHalfFloat::m_basetable[512];
 amf_uint8 AMFHalfFloat::m_shifttable[512];
+AMFHalfFloat s_InitHalfFLoat;
 
 AMF_RESULT FillRGBA_F16SurfaceWithColor(amf::AMFSurface* pSurface, amf_uint8 R, amf_uint8 G, amf_uint8 B)
 {

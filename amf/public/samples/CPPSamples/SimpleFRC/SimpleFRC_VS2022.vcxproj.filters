@@ -4,6 +4,12 @@
     <ClCompile Include="..\..\..\common\AMFFactory.cpp">
       <Filter>public\common</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\common\Thread.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\Windows\ThreadWindows.cpp">
+      <Filter>public\common</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\common\AMFSTL.cpp">
       <Filter>public\common</Filter>
     </ClCompile>
@@ -29,20 +35,11 @@
     <ClCompile Include="..\common\CmdLineParser.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="..\common\MiscHelpers.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
     <ClCompile Include="..\common\CmdLogger.cpp">
       <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\common\RawStreamReader.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\common\SurfaceGenerator.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\common\Thread.cpp">
-      <Filter>public\common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\common\Windows\ThreadWindows.cpp">
-      <Filter>public\common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -58,6 +55,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\AMFFactory.h">
+      <Filter>public\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\Thread.h">
       <Filter>public\common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\common\AMFSTL.h">
@@ -84,17 +84,11 @@
     <ClInclude Include="..\common\CmdLineParser.h">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\MiscHelpers.h">
+      <Filter>common</Filter>
+    </ClInclude>
     <ClInclude Include="..\common\CmdLogger.h">
       <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\RawStreamReader.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\SurfaceGenerator.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\common\Thread.h">
-      <Filter>public\common</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -20,13 +20,13 @@ Windows™, Visual Studio and DirectX are trademark of Microsoft Corp.
 
 ### Copyright Notice
 
-© 2022 Advanced Micro Devices, Inc. All rights reserved
+© 2025 Advanced Micro Devices, Inc. All rights reserved
 
 Notice Regarding Standards.  AMD does not provide a license or sublicense to any Intellectual Property Rights relating to any standards, including but not limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4; AVC/H.264; HEVC/H.265; AV1; AAC decode/FFMPEG; AAC encode/FFMPEG; VC-1; and MP3 (collectively, the “Media Technologies”). For clarity, you will pay any royalties due for such third party technologies, which may include the Media Technologies that are owed as a result of AMD providing the Software to you.
 
 ### MIT license
 
-Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2025 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -649,10 +649,10 @@ Selects the AV1 profile.
 `AMF_VIDEO_ENCODER_AV1_LEVEL_2_0`, `AMF_VIDEO_ENCODER_AV1_LEVEL_2_1`, `AMF_VIDEO_ENCODER_AV1_LEVEL_2_2`, `AMF_VIDEO_ENCODER_AV1_LEVEL_2_3`, `AMF_VIDEO_ENCODER_AV1_LEVEL_3_0`, `AMF_VIDEO_ENCODER_AV1_LEVEL_3_1`, `AMF_VIDEO_ENCODER_AV1_LEVEL_3_2`, `AMF_VIDEO_ENCODER_AV1_LEVEL_3_3`, `AMF_VIDEO_ENCODER_AV1_LEVEL_4_0`, `AMF_VIDEO_ENCODER_AV1_LEVEL_4_1`, `AMF_VIDEO_ENCODER_AV1_LEVEL_4_2`, `AMF_VIDEO_ENCODER_AV1_LEVEL_4_3`, `AMF_VIDEO_ENCODER_AV1_LEVEL_5_0`, `AMF_VIDEO_ENCODER_AV1_LEVEL_5_1`, `AMF_VIDEO_ENCODER_AV1_LEVEL_5_2`, `AMF_VIDEO_ENCODER_AV1_LEVEL_5_3`, `AMF_VIDEO_ENCODER_AV1_LEVEL_6_0`, `AMF_VIDEO_ENCODER_AV1_LEVEL_6_1`, `AMF_VIDEO_ENCODER_AV1_LEVEL_6_2`, `AMF_VIDEO_ENCODER_AV1_LEVEL_6_3`, `AMF_VIDEO_ENCODER_AV1_LEVEL_7_0`, `AMF_VIDEO_ENCODER_AV1_LEVEL_7_1`, `AMF_VIDEO_ENCODER_AV1_LEVEL_7_2`, `AMF_VIDEO_ENCODER_AV1_LEVEL_7_3`
 
 **Default Value:**
-`AMF_VIDEO_ENCODER_AV1_LEVEL_6_2`
+`AMF_VIDEO_ENCODER_AV1_LEVEL_5_2`
 
 **Description:**
-Selects the AV1 Level.
+Selects the AV1 Level. Automatically adjusted upwards based on frame size.
 
 ---
 
@@ -1195,7 +1195,7 @@ Disables/enables constraints on rate control to meet HRD model requirement(s) wi
    - Ultra low latency: `false`
    - Low latency: `false`
    - Webcam: `false`
-   - HQ: `true`
+   - HQ: `false`
    - HQLL: `false`
 
 **Description:**
@@ -2107,6 +2107,7 @@ Returns reconstructed picture as an `AMFSurface` attached to the output buffer a
 | SUPPORT_TILE_OUTPUT                           | amf_bool  |
 | WIDTH_ALIGNMENT_FACTOR                        | amf_int64 |
 | HEIGHT_ALIGNMENT_FACTOR                       | amf_int64 |
+| BFRAMES                                       | amf_bool  |
 
 <p align="center">
 Table 14. Encoder capabilities exposed in AMFCaps interface

@@ -76,7 +76,7 @@ define shader_compile_rule_fn
 all: $$(bin_dir)/$1.spv
 
 $$(bin_dir)/$1.spv: $$(amf_root)/$$(sample_path)/$1
-	$$(VK_SDK_PATH)/x86_64/bin/glslangValidator -V "$$<" -o "$$@"
+	$$(VK_SDK_PATH)/bin/glslangValidator -V "$$<" -o "$$@"
 endef
 
 $(foreach shader_file,$(shader_sources),\

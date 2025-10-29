@@ -937,26 +937,38 @@ int                RunMessageLoop()
     bool bRun = true;
     while (bRun)
     {
-        XNextEvent(dpy, &e);
-        switch(e.type)
+        // iterate until no events are found
+        while (bRun)
         {
-        case Expose:
-            break;
-        case KeyPress:
-            break;
-        case ConfigureNotify:
+            XLockDisplay(dpy);
+            if (XPending(dpy) == 0)
             {
-                XConfigureEvent xce = e.xconfigure;
-                s_pPipeline->CheckForResize();
+                XUnlockDisplay(dpy);
+                break;
             }
-            break;
-        case ClientMessage:
-            if((static_cast<unsigned int>(e.xclient.data.l[0]) == WM_DELETE_WINDOW))
+            XNextEvent(dpy, &e);
+            XUnlockDisplay(dpy);
+            switch(e.type)
             {
-                bRun = false;
+            case Expose:
+                break;
+            case KeyPress:
+                break;
+            case ConfigureNotify:
+                {
+                    XConfigureEvent xce = e.xconfigure;
+                    s_pPipeline->CheckForResize();
+                }
+                break;
+            case ClientMessage:
+                if((static_cast<unsigned int>(e.xclient.data.l[0]) == WM_DELETE_WINDOW))
+                {
+                    bRun = false;
+                }
+                break;
             }
-            break;
         }
+        amf_sleep(10);
     }
     return 0;
 }

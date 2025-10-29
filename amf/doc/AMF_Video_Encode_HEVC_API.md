@@ -20,13 +20,13 @@ Windows™, Visual Studio and DirectX are trademark of Microsoft Corp.
 
 ### Copyright Notice
 
-© 2022 Advanced Micro Devices, Inc. All rights reserved
+© 2025 Advanced Micro Devices, Inc. All rights reserved
 
 Notice Regarding Standards.  AMD does not provide a license or sublicense to any Intellectual Property Rights relating to any standards, including but not limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4; AVC/H.264; HEVC/H.265; AAC decode/FFMPEG; AAC encode/FFMPEG; VC-1; and MP3 (collectively, the “Media Technologies”). For clarity, you will pay any royalties due for such third party technologies, which may include the Media Technologies that are owed as a result of AMD providing the Software to you.
 
 ### MIT license
 
-Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2025 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -694,10 +694,10 @@ Selects the HEVC tier.
 `AMF_VIDEO_ENCODER_LEVEL_ENUM`: `AMF_LEVEL_1`, `AMF_LEVEL_2`, `AMF_LEVEL_2_1`, `AMF_LEVEL_3`, `AMF_LEVEL_3_1`, `AMF_LEVEL_4`, `AMF_LEVEL_4_1`, `AMF_LEVEL_5`, `AMF_LEVEL_5_1`, `AMF_LEVEL_5_2`, `AMF_LEVEL_6`, `AMF_LEVEL_6_1`, `AMF_LEVEL_6_2`
 
 **Default Value:**
-`AMF_LEVEL_6_2`
+`AMF_LEVEL_5_2`
 
 **Description:**
-Selects the HEVC Profile Level.
+Selects the HEVC Profile Level. Automatically adjusted upwards based on frame size.
 
 ---
 
@@ -1148,7 +1148,7 @@ Disables/enables constraints on rate control to meet HRD model requirement(s) wi
    - Ultra low latency: `false`
    - Low latency: `false`
    - Webcam: `false`
-   - HQ: `true`
+   - HQ: `false`
    - HQLL: `false`
 
 **Description:**

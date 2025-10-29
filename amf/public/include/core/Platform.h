@@ -244,15 +244,22 @@ typedef struct AMFRect
     amf_int32 right;
     amf_int32 bottom;
 #if defined(__cplusplus)
-    bool operator==(const AMFRect& other) const
-    {
-         return left == other.left && top == other.top && right == other.right && bottom == other.bottom;
-    }
-    AMF_INLINE bool operator!=(const AMFRect& other) const { return !operator==(other); }
     amf_int32 Width() const { return right - left; }
     amf_int32 Height() const { return bottom - top; }
 #endif
 } AMFRect;
+
+#if defined(__cplusplus)
+static AMF_INLINE bool operator==(const AMFRect& self, const AMFRect& other)
+{
+        return self.left == other.left && self.top == other.top && self.right == other.right && self.bottom == other.bottom;
+}
+
+static AMF_INLINE bool operator!=(const AMFRect& self, const AMFRect& other)
+{
+    return !operator==(self, other);
+}
+#endif
 
 static AMF_INLINE struct AMFRect AMFConstructRect(amf_int32 left, amf_int32 top, amf_int32 right, amf_int32 bottom)
 {

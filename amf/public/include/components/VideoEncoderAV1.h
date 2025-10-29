@@ -292,10 +292,12 @@ enum AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_AV1_INPUT_COLOR_PROFILE                   L"Av1InputColorProfile"             // amf_int64(AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM); default = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN - mean AUTO by size
 #define AMF_VIDEO_ENCODER_AV1_INPUT_TRANSFER_CHARACTERISTIC         L"Av1InputColorTransferChar"        // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 section 7.2 See VideoDecoderUVD.h for enum
 #define AMF_VIDEO_ENCODER_AV1_INPUT_COLOR_PRIMARIES                 L"Av1InputColorPrimaries"           // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 section 7.1 See ColorSpace.h for enum
+#define AMF_VIDEO_ENCODER_AV1_INPUT_MATRIX_COEFF                    L"Av1InMatrixCoeff"                 // amf_int64(AMF_COLOR_MATRIX_COEFF_ENUM); default = AMF_COLOR_MATRIX_COEFF_UNKNOWN - mean AUTO by size
 
 #define AMF_VIDEO_ENCODER_AV1_OUTPUT_COLOR_PROFILE                  L"Av1OutputColorProfile"            // amf_int64(AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM); default = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN - mean AUTO by size
 #define AMF_VIDEO_ENCODER_AV1_OUTPUT_TRANSFER_CHARACTERISTIC        L"Av1OutputColorTransferChar"       // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 ?7.2 See VideoDecoderUVD.h for enum
 #define AMF_VIDEO_ENCODER_AV1_OUTPUT_COLOR_PRIMARIES                L"Av1OutputColorPrimaries"          // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 section 7.1 See ColorSpace.h for enum
+#define AMF_VIDEO_ENCODER_AV1_OUTPUT_MATRIX_COEFF                   L"Av1OutMatrixCoeff"                // amf_int64(AMF_COLOR_MATRIX_COEFF_ENUM); default = AMF_COLOR_MATRIX_COEFF_UNKNOWN - mean AUTO by size
 
 
 // Frame encode parameters
@@ -371,10 +373,12 @@ enum AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE_ENUM
 
 #define AMF_VIDEO_ENCODER_AV1_MULTI_HW_INSTANCE_ENCODE              L"Av1MultiHwInstanceEncode"         // amf_bool; flag to enable AV1 multi VCN encode.
 
-#define AMF_VIDEO_ENCODER_AV1_NOMINAL_RANGE                         L"Av1NominalRange"                  // amf_bool; default = false; inidicates that YUV input is (0,255)
+#define AMF_VIDEO_ENCODER_AV1_INPUT_FULL_RANGE_COLOR                L"Av1InputFullRangeColor"           // amf_bool; default = false; indicates color range of RGB/YUV input is FULL. e.g. for 8bit (0,255)
+#define AMF_VIDEO_ENCODER_AV1_OUTPUT_FULL_RANGE_COLOR               L"Av1NominalRange"                  // amf_bool; default = false; indicates color range of YUV output is FULL. e.g. for 8bit (0,255)
+#define AMF_VIDEO_ENCODER_AV1_NOMINAL_RANGE                         L"Av1NominalRange"                  // amf_bool; deprecated same usage as AMF_VIDEO_ENCODER_AV1_OUTPUT_FULL_RANGE_COLOR
 
 // properties for AV1 B-frame (VCN5 feature)
-#define AMF_VIDEO_ENCODER_AV1_MAX_CONSECUTIVE_BPICTURES             L"Av1MaxConsecutiveBPictures"        // amf_int64; default 0. Maximum number of consecutive B frames for B frame encoding
+#define AMF_VIDEO_ENCODER_AV1_MAX_CONSECUTIVE_BPICTURES             L"Av1MaxConsecutiveBPictures"       // amf_int64; default 0. Maximum number of consecutive B frames for B frame encoding
 #define AMF_VIDEO_ENCODER_AV1_B_PIC_PATTERN                         L"Av1BPicturesPattern"               // amf_int64; default 0. Number of B frames for B frame encoding
 #define AMF_VIDEO_ENCODER_AV1_ADAPTIVE_MINIGOP                      L"Av1AdaptiveMiniGop"                // amf_bool; default false. Adaptive miniGOP size for B frame encoding
 

@@ -93,14 +93,21 @@ $(target_dir) $(obj_dirs):
 vulkan_shader_headers =
 # compile Vulkan shaders
 uname_p := $(shell uname -p)
+ifeq (, $(VK_SDK_PATH))
+  VULKAN_COMP = glslangValidator
+else
   ifeq ($(uname_p),aarch64)
-    VULKAN_COMP = $(amf_root)/../Thirdparty/VulkanSDK/1.2.131.2/arm64/bin/glslangValidator
-    FILE_TO_HEADER = $(amf_root)/../Thirdparty/file_to_header/arm64/file_to_header
+    VULKAN_COMP = $(VK_SDK_PATH)/arm64/bin/glslangValidator
   else
-    VULKAN_COMP = $(amf_root)/../Thirdparty/VulkanSDK/1.3.243.0/x86_64/bin/glslangValidator
-    FILE_TO_HEADER = $(amf_root)/../Thirdparty/file_to_header/Linux64/file_to_header
+    VULKAN_COMP = $(VK_SDK_PATH)/bin/glslangValidator
+  endif
 endif
 
+ifeq ($(uname_p),aarch64)
+  FILE_TO_HEADER = $(amf_root)/../Thirdparty/file_to_header/arm64/file_to_header
+else
+  FILE_TO_HEADER = $(amf_root)/../Thirdparty/file_to_header/Linux64/file_to_header
+endif
 
 define shader_compile_rule_fn
 

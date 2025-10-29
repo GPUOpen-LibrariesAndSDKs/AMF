@@ -14,12 +14,14 @@ AMF is a light-weight, portable multimedia framework that abstracts away most of
     * Windows Subsystem for Linux (DX12 Decoder and Converter Only)
     * Visual Studio&reg; 2019
 * Linux
-    * RHEL 9.5 / 8.10
+    * RHEL 9.6 / 10
     * Ubuntu 24.04.2 / 22.04.5
-    * SLED/SLES 15 SP6
+    * SLED/SLES 15.7 / 16
 * Driver and AMF component installation instructions are available on the [Wiki page](https://github.com/GPUOpen-LibrariesAndSDKs/AMF/wiki).
     
   Note: the 25.10 Linux driver has a known installation bug. See the [Linux Driver Install](https://github.com/GPUOpen-LibrariesAndSDKs/AMF/wiki/Driver%20Linux) Wiki page for details.
+
+  Note: starting with the 25.20 Linux driver, the AMF runtime is released separately. See the [Linux Driver Install](https://github.com/GPUOpen-LibrariesAndSDKs/AMF/wiki/Driver%20Linux) Wiki page for updated instructions.
 
     * The following table contains the driver versions in which the Linux pro driver started including the AMF runtime, otherwise, the AMF runtime is optional and has to be installed separately.
     * All supported distros include the AMF runtime starting driver version 20.40.
@@ -31,6 +33,7 @@ AMF is a light-weight, portable multimedia framework that abstracts away most of
       | \**All supported distros* | 20.40                             |
 
 * AMF SDK is backward compatible with all previous driver versions.
+* Version 1.5.0: AMD Radeon Software Adrenalin Edition 25.10.2 (25.20.21.01) or newer. Added 4:4:4/4:2:2 chroma subsampling support for VideoConverter color space conversion and scaling. Samples updated to VS 2022.
 * Version 1.4.36: AMD Radeon Software Adrenalin Edition 25.1.1 (24.30.31.03) or newer. Added B-frame support and picture management options for AV1 encoder. New high quality presets for HEVC and AVC encoders. New SimpleFRC sample app.
 * Version 1.4.35: AMD Radeon Software Adrenalin Edition 24.9.1 (24.20.11.01) or newer. Added multi-HW instance encoder mode. Updated FFmpeg to 7.0. Added split frame encoding.
 * Version 1.4.34: AMD Radeon Software Adrenalin Edition 24.6.1 (24.10.21.01) or newer. Added Linux support for DVR sample. New HEVC header insertion mode. Stable support for RADV drivers for AMF on Linux in VideoConverter/HQScaler/VideoEncoder and experimental for decoder. Added DX11 support for FRC component.

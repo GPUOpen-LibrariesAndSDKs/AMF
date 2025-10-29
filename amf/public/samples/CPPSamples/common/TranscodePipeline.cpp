@@ -751,7 +751,7 @@ AMF_RESULT TranscodePipeline::Init(const wchar_t* path, IRandomAccessStream^ inp
         SetStatSlot( pPipelineElementDemuxer, iVideoStreamIndex);
         if (m_pRawStreamReader == NULL)
         {
-            Connect(PipelineElementPtr(new AMFComponentElement(m_pDecoder)), 0, pPipelineElementDemuxer, iVideoStreamIndex, 4, CT_Direct);
+            Connect(PipelineElementPtr(new AMFComponentElement(m_pDecoder)), 0, pPipelineElementDemuxer, iVideoStreamIndex, 4, CT_ThreadQueue);
         }
         if(m_pSplitter != 0)
         {

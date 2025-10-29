@@ -444,6 +444,7 @@ AMF_RESULT DisplayDvrPipeline::InitVideo(amf_uint32 monitorID, amf::AMF_MEMORY_T
     pConverter->SetProperty(AMF_VIDEO_CONVERTER_MEMORY_TYPE, engineMemoryType);
     pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, amf::AMF_SURFACE_NV12);
     pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, AMFConstructSize(videoWidth, videoHeight));
+    pConverter->SetProperty(AMF_VIDEO_CONVERTER_INPUT_TONEMAPPING, AMF_VIDEO_CONVERTER_TONEMAPPING_AMD);
 
     pConverter->Init((amf::AMF_SURFACE_FORMAT)eCurrentFormat, resolution.width, resolution.height);
 

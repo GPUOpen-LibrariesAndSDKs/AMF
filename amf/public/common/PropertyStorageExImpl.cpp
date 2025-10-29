@@ -87,7 +87,7 @@ AMF_RESULT amf::CastVariantToAMFProperty(amf::AMFVariantStruct* pDest, const amf
                 {
                     if(pEnumDescriptionCache->value == AMFVariantGetInt64(pDest))
                     {
-                        AMFVariantAssignInt64(pDest, pEnumDescriptionCache->value);
+                        //pDest already AMF_VARIANT_INT64 
                         found = true;
                         break;
                     }
@@ -97,15 +97,16 @@ AMF_RESULT amf::CastVariantToAMFProperty(amf::AMFVariantStruct* pDest, const amf
             }
             if(!found)
             {
+                AMFVariant tmp;
                 pEnumDescriptionCache = pEnumDescription;
-                err = AMFVariantChangeType(pDest, pSrc, AMF_VARIANT_WSTRING);
+                err = AMFVariantChangeType(&tmp, pSrc, AMF_VARIANT_WSTRING);
                 if(err == AMF_OK)
                 {
                     //string came. validating and assigning numeric
                     found = false;
                     while(pEnumDescriptionCache->name)
                     {
-                        if(amf_wstring(pEnumDescriptionCache->name) == AMFVariantGetWString(pDest))
+                        if(amf_wstring(pEnumDescriptionCache->name) == AMFVariantGetWString(&tmp))
                         {
                             AMFVariantAssignInt64(pDest, pEnumDescriptionCache->value);
                             found = true;
@@ -172,9 +173,9 @@ void AMFPropertyInfoImpl::Init(const wchar_t* name_, const wchar_t* desc_, AMF_V
     type = type_;
     contentType = contentType_;
     accessType = accessType_;
-    AMFVariantInit(&defaultValue);
-    AMFVariantInit(&minValue);
-    AMFVariantInit(&maxValue);
+    AMFVariantClear(&defaultValue);
+    AMFVariantClear(&minValue);
+    AMFVariantClear(&maxValue);
     pEnumDescription = pEnumDescription_;
 
     switch(type)

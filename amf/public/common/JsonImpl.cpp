@@ -311,7 +311,25 @@ void amf::JSONParserImpl::ValueImpl::SetValueAsBool(bool val)
 
 void amf::JSONParserImpl::ValueImpl::SetValueAsTime(time_t date, bool utc)
 {
-    int64_t val = (utc == true) ? date : std::mktime(std::localtime(&date));
+    int64_t val{};
+    if (utc)
+    {
+        val = date;
+    }
+    else
+    {
+#if defined(_MSC_VER)
+        time_t curTime;
+        time(&curTime);
+        struct tm curTimeInfo;
+        localtime_s(&curTimeInfo, &curTime);
+        val = static_cast<int64_t>(std::mktime(&curTimeInfo));
+#else // POSIX
+        struct tm local_tm{};
+        localtime_r(&date, &local_tm);
+        val = static_cast<int64_t>(std::mktime(&local_tm));
+#endif // _MSC_VER
+    }
     std::stringstream str;
     str << val;
     m_Value = str.str();
@@ -1578,7 +1596,7 @@ extern "C"
 
     bool amf::GetRectFromJSON(const amf::JSONParser::Element* element, AMFRect& val)
     {
-        int32_t arrayVal[4];
+        int32_t arrayVal[4] = {};
         size_t size = amf_countof(arrayVal);
         amf::JSONParser::Array::Ptr array(const_cast<amf::JSONParser::Element*>(element));
         bool ret = (array != nullptr ? GetInt32ArrayFromJSON(array, arrayVal, size) : false);
@@ -1637,7 +1655,7 @@ extern "C"
 
     bool amf::GetColorFromJSON(const amf::JSONParser::Element* element, AMFColor & val)
     {
-        uint32_t arrayVal[4];
+        uint32_t arrayVal[4] = {};
         size_t size = amf_countof(arrayVal);
         amf::JSONParser::Array::Ptr array(const_cast<amf::JSONParser::Element*>(element));
         bool ret = (array != nullptr ? GetUInt32ArrayFromJSON(array, arrayVal, size) : false);

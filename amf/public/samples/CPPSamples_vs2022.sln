@@ -3,59 +3,59 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29503.13
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CapabilityManager", "CPPSamples\CapabilityManager\CapabilityManager_VS2019.vcxproj", "{6C3B9FF8-624F-4D7F-89E1-2B4AFFAAA873}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CapabilityManager", "CPPSamples\CapabilityManager\CapabilityManager_VS2022.vcxproj", "{6C3B9FF8-624F-4D7F-89E1-2B4AFFAAA873}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PlaybackHW", "CPPSamples\PlaybackHW\PlaybackHW_VS2019.vcxproj", "{88CB35A2-25B3-4638-898D-A7A3F989A789}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PlaybackHW", "CPPSamples\PlaybackHW\PlaybackHW_VS2022.vcxproj", "{88CB35A2-25B3-4638-898D-A7A3F989A789}"
 	ProjectSection(ProjectDependencies) = postProject
 		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD} = {16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleConverter", "CPPSamples\SimpleConverter\SimpleConverter_VS2019.vcxproj", "{F14957B2-15F4-4E6C-A629-061D31D850ED}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleConverter", "CPPSamples\SimpleConverter\SimpleConverter_VS2022.vcxproj", "{F14957B2-15F4-4E6C-A629-061D31D850ED}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleDecoder", "CPPSamples\SimpleDecoder\SimpleDecoder_VS2019.vcxproj", "{C50A72E0-1BA0-480F-97C1-9B64E506BDF9}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleDecoder", "CPPSamples\SimpleDecoder\SimpleDecoder_VS2022.vcxproj", "{C50A72E0-1BA0-480F-97C1-9B64E506BDF9}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleEncoder", "CPPSamples\SimpleEncoder\SimpleEncoder_VS2019.vcxproj", "{268F909B-0382-4837-9893-FA5BB81326D0}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleEncoder", "CPPSamples\SimpleEncoder\SimpleEncoder_VS2022.vcxproj", "{268F909B-0382-4837-9893-FA5BB81326D0}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SVCSplitter", "CPPSamples\SVCSplitter\SVCSplitter_VS2019.vcxproj", "{680B87CB-C196-4169-9E52-BB07605DA79C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SVCSplitter", "CPPSamples\SVCSplitter\SVCSplitter_VS2022.vcxproj", "{680B87CB-C196-4169-9E52-BB07605DA79C}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TranscodeHW", "CPPSamples\TranscodeHW\TranscodeHW_VS2019.vcxproj", "{A17A79DA-46EF-4EDB-88F8-C2469ECA26B7}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TranscodeHW", "CPPSamples\TranscodeHW\TranscodeHW_VS2022.vcxproj", "{A17A79DA-46EF-4EDB-88F8-C2469ECA26B7}"
 	ProjectSection(ProjectDependencies) = postProject
 		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD} = {16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VCEEncoderD3D", "CPPSamples\VCEEncoderD3D\VCEEncoderD3D_VS2019.vcxproj", "{56B12545-31EB-4DFE-B4FC-CC7F60F3D797}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VCEEncoderD3D", "CPPSamples\VCEEncoderD3D\VCEEncoderD3D_VS2022.vcxproj", "{56B12545-31EB-4DFE-B4FC-CC7F60F3D797}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleEncoderC", "SamplesC\SimpleEncoderC\SimpleEncoderC_VS2019.vcxproj", "{74118461-A742-490F-BB54-86EB2509921C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleEncoderC", "SamplesC\SimpleEncoderC\SimpleEncoderC_VS2022.vcxproj", "{74118461-A742-490F-BB54-86EB2509921C}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ComponentsFFMPEG", "..\proj\vs2019\ComponentsFFMPEG\ComponentsFFMPEG.vcxproj", "{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ComponentsFFMPEG", "..\proj\VS2022\ComponentsFFMPEG\ComponentsFFMPEG.vcxproj", "{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DVR", "CPPSamples\DVR\DVR_VS2019.vcxproj", "{7E7270B4-B894-4BA2-9E89-621276C6BF28}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DVR", "CPPSamples\DVR\DVR_VS2022.vcxproj", "{7E7270B4-B894-4BA2-9E89-621276C6BF28}"
 	ProjectSection(ProjectDependencies) = postProject
 		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD} = {16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VideoStitch", "..\proj\vs2019\VideoStitch\VideoStitch.vcxproj", "{0D493826-E26D-42EB-88C7-86D20BBF3929}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VideoStitch", "..\proj\VS2022\VideoStitch\VideoStitch.vcxproj", "{0D493826-E26D-42EB-88C7-86D20BBF3929}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Stitch", "CPPSamples\Stitch\Stitch_VS2019.vcxproj", "{EFE185AE-CE9B-4CCB-8A30-FA4B63A40B3D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Stitch", "CPPSamples\Stitch\Stitch_VS2022.vcxproj", "{EFE185AE-CE9B-4CCB-8A30-FA4B63A40B3D}"
 	ProjectSection(ProjectDependencies) = postProject
 		{0D493826-E26D-42EB-88C7-86D20BBF3929} = {0D493826-E26D-42EB-88C7-86D20BBF3929}
 		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD} = {16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleROI", "CPPSamples\SimpleROI\SimpleROI_VS2019.vcxproj", "{1DB62CE9-B8D9-4BA0-95A5-D38C0C13181A}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleROI", "CPPSamples\SimpleROI\SimpleROI_VS2022.vcxproj", "{1DB62CE9-B8D9-4BA0-95A5-D38C0C13181A}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimplePA", "CPPSamples\SimplePA\SimplePA_VS2019.vcxproj", "{D1A6ECA1-0F29-4DDF-B8B3-C49C02EFADF7}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimplePA", "CPPSamples\SimplePA\SimplePA_VS2022.vcxproj", "{D1A6ECA1-0F29-4DDF-B8B3-C49C02EFADF7}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CaptureVideo", "CPPSamples\CaptureVideo\CaptureVideo_VS2019.vcxproj", "{35BBD358-FEC3-4388-9F42-B5498ECBE2EF}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CaptureVideo", "CPPSamples\CaptureVideo\CaptureVideo_VS2022.vcxproj", "{35BBD358-FEC3-4388-9F42-B5498ECBE2EF}"
 	ProjectSection(ProjectDependencies) = postProject
 		{16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD} = {16D5EA62-0CAB-4DFD-AD0F-7813FA89B6FD}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleFrameInjection", "CPPSamples\SimpleFrameInjection\SimpleFrameInjection_VS2019.vcxproj", "{C403272E-8D33-4292-8868-E5E10EE20073}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleFrameInjection", "CPPSamples\SimpleFrameInjection\SimpleFrameInjection_VS2022.vcxproj", "{C403272E-8D33-4292-8868-E5E10EE20073}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EncoderLatency", "CPPSamples\EncoderLatency\EncoderLatency_VS2019.vcxproj", "{7365BA40-C111-4F23-95C7-8F4847671234}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EncoderLatency", "CPPSamples\EncoderLatency\EncoderLatency_VS2022.vcxproj", "{7365BA40-C111-4F23-95C7-8F4847671234}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleFRC", "CPPSamples\SimpleFRC\SimpleFRC_VS2019.vcxproj", "{DE4D40FE-0820-4E9C-9D04-CAC67AF26D12}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleFRC", "CPPSamples\SimpleFRC\SimpleFRC_VS2022.vcxproj", "{DE4D40FE-0820-4E9C-9D04-CAC67AF26D12}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -69,13 +69,13 @@ enum AMF_FRC_MV_SEARCH_MODE_TYPE {
     TOTAL_FRC_MV_SEARCH_MODES
 };
 
-#define AMF_FRC_ENGINE_TYPE         L"FRCEngineType"           // amf_int64(AMF_FRC_ENGINE); default = DX12; determines how the object is initialized and what kernels to use
-#define AMF_FRC_OUTPUT_SIZE         L"FRCSOutputSize"          // AMFSize - output scaling width/height
-#define AMF_FRC_MODE                L"FRCMode"                 // amf_int64(AMF_FRC_MODE_TYPE); default = FRC_ONLY_INTERPOLATED; FRC mode
-#define AMF_FRC_ENABLE_FALLBACK	    L"FRCEnableFallback"	   // bool; default = true; FRC enable fallback mode
-#define AMF_FRC_INDICATOR           L"FRCIndicator"            // bool; default : false; draw indicator in the corner
-#define AMF_FRC_PROFILE		        L"FRCProfile"		       // amf_int64(AMF_FRC_PROFILE_TYPE); default=FRC_PROFILE_HIGH; FRC profile
-#define AMF_FRC_MV_SEARCH_MODE      L"FRCMVSEARCHMODE"         // amf_int64(AMF_FRC_MV_SEARCH_MODE_TYPE); defaut = FRC_MV_SEARCH_NATIVE; FRC MV search mode
-#define AMF_FRC_USE_FUTURE_FRAME    L"FRCUseFutureFrame"       // bool; default = true; Enable dependency on future frame, improves quality for the cost of latency
+#define AMF_FRC_ENGINE_TYPE             L"FRCEngineType"            // amf_int64(AMF_FRC_ENGINE); default = DX12; determines how the object is initialized and what kernels to use
+#define AMF_FRC_OUTPUT_SIZE             L"FRCSOutputSize"           // AMFSize - output scaling width/height
+#define AMF_FRC_MODE                    L"FRCMode"                  // amf_int64(AMF_FRC_MODE_TYPE); default = FRC_ONLY_INTERPOLATED; FRC mode
+#define AMF_FRC_ENABLE_FALLBACK         L"FRCEnableFallback"        // bool; default = true; FRC enable fallback mode
+#define AMF_FRC_INDICATOR               L"FRCIndicator"             // bool; default : false; draw indicator in the corner
+#define AMF_FRC_PROFILE                 L"FRCProfile"               // amf_int64(AMF_FRC_PROFILE_TYPE); default=FRC_PROFILE_HIGH; FRC profile
+#define AMF_FRC_MV_SEARCH_MODE          L"FRCMVSEARCHMODE"          // amf_int64(AMF_FRC_MV_SEARCH_MODE_TYPE); defaut = FRC_MV_SEARCH_NATIVE; FRC MV search mode
+#define AMF_FRC_USE_FUTURE_FRAME        L"FRCUseFutureFrame"        // bool; default = true; Enable dependency on future frame, improves quality for the cost of latency
 
 #endif //#ifndef AMFFRC_h

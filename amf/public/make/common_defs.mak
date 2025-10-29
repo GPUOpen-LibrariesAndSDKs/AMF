@@ -176,7 +176,8 @@ cxx_flags = \
    -fexceptions \
    -fno-rtti \
    -fvisibility=hidden \
-   -fPIC
+   -fPIC \
+   -v 
 
 ifdef AMF_STDCXX_STATIC
     cxx_flags += -static-libgcc -static-libstdc++

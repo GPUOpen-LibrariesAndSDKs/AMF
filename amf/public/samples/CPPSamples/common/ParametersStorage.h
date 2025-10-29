@@ -68,6 +68,7 @@ AMF_RESULT ParamConverterColorProfile(const std::wstring& value, amf::AMFVariant
 AMF_RESULT ParamConverterTransferCharacteristic(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterColorPrimaries(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterColorRange(const std::wstring& value, amf::AMFVariant& valueOut);
+AMF_RESULT ParamConverterToneMapping(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterHQScalerAlgorithm(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterHighMotionQualityBoostMode(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterSceneChange(const std::wstring& value, amf::AMFVariant& valueOut);

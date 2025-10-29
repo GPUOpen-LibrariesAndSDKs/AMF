@@ -20,13 +20,13 @@ Windows™, Visual Studio and DirectX are trademark of Microsoft Corp.
 
 ### Copyright Notice
 
-© 2022 Advanced Micro Devices, Inc. All rights reserved
+© 2025 Advanced Micro Devices, Inc. All rights reserved
 
 Notice Regarding Standards.  AMD does not provide a license or sublicense to any Intellectual Property Rights relating to any standards, including but not limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4; AVC/H.264; HEVC/H.265; AAC decode/FFMPEG; AAC encode/FFMPEG; VC-1; and MP3 (collectively, the “Media Technologies”). For clarity, you will pay any royalties due for such third party technologies, which may include the Media Technologies that are owed as a result of AMD providing the Software to you.
 
 ### MIT license
 
-Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2025 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -55,7 +55,9 @@ AMF currently offers two components to perform display capture. One legacy compo
 
 Functionally both methods are equivalent and implement the same API. The legacy DD component is available in the source code form as a sample.
 
-Note: The Display Capture API requires root or super user privileges when running on Linux systems.
+**Note**: The Display Capture API requires root or super user privileges when running on Linux systems.
+
+**Note**: For Linux, to disable Delta Color Compression (DCC), put `export AMD_DEBUG=nodcc` into `.profile` in the home directory and reboot. DCC is a domain-specific compression that tries to take advantage of data coherence. The key idea is to process whole blocks instead of individual pixels. DCC is image compression on the captured surface and such surfaces cannot be submitted to the encoder directly. Therefore, either DCC needs to be disabled or the surfaces need to be copied or submitted to the color converter before submitting to the encoder.
 
 ---
 

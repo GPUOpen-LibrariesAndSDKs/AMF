@@ -49,6 +49,7 @@
 #include "public/common/TraceAdapter.h"
 #include <fstream>
 #include <iostream>
+#include <array>
 
 #define AMF_FACILITY L"SimpleConverter"
 
@@ -67,6 +68,11 @@ static amf::AMF_MEMORY_TYPE memoryTypeOut = amf::AMF_MEMORY_VULKAN;
 static amf::AMF_MEMORY_TYPE memoryTypeCompute = amf::AMF_MEMORY_VULKAN;
 #endif
 static amf::AMF_SURFACE_FORMAT formatIn   = amf::AMF_SURFACE_BGRA;
+//static amf::AMF_SURFACE_FORMAT formatIn   = amf::AMF_SURFACE_Y210;
+//static amf::AMF_SURFACE_FORMAT formatIn   = amf::AMF_SURFACE_Y216;
+//static amf::AMF_SURFACE_FORMAT formatIn   = amf::AMF_SURFACE_AYUV;
+//static amf::AMF_SURFACE_FORMAT formatIn   = amf::AMF_SURFACE_Y410;
+//static amf::AMF_SURFACE_FORMAT formatIn   = amf::AMF_SURFACE_Y416;
 static amf_int32 widthIn                  = 1920;
 static amf_int32 heightIn                 = 1080;
 static amf_int32 frameCount               = 100;
@@ -101,7 +107,7 @@ protected:
             m_LatencyTime = poll_time - m_StartTime;
         }
 
-        // this operation is slow nneed to remove it from stat
+        // this operation is slow need to remove it from stat
         res = pData->Convert(amf::AMF_MEMORY_HOST); // convert to system memory
 
         amf_pts convert_time = amf_high_precision_clock();
@@ -274,12 +280,50 @@ static void FillSurface(amf::AMFContext *context, amf::AMFSurface *surface, amf_
         amf::AMFComputePtr compute;
         context->GetCompute(surface->GetMemoryType(), &compute);
 
-        amf_uint color1[4] ={255, 0, 0, 255};
-        amf_uint  color2[4] = {0, 255, 0, 255};
-        amf_uint  *color = (i % 2) ? color1 : color2;
-        amf::AMFPlane *plane = surface->GetPlaneAt(0);
-        amf_size region[3] = {(amf_size)plane->GetWidth(), (amf_size)plane->GetHeight(), (amf_size)1};
-        amf_size origin[3] = {0, 0 , 0};
+        amf::AMF_SURFACE_FORMAT format = surface->GetFormat();
+
+        std::array<amf_uint32, 4> color1 = { 0, 0, 0, 0 };
+        std::array<amf_uint32, 4> color2 = { 0, 0, 0, 0 };
+
+        switch (format)
+        {
+        case amf::AMF_SURFACE_BGRA:
+            // R, G, B, A
+            color1 = { 255, 0, 0, 255 };                // red
+            color2 = { 0, 255, 0, 255 };                // green
+            break;
+        case amf::AMF_SURFACE_Y210:
+        case amf::AMF_SURFACE_Y216:
+            // Y0, U(Cb), Y1, V(Cr)
+            color1 = { 65535, 8192, 65535, 49152 };     // yellow
+            color2 = { 0, 65535, 0, 0 };                // blue
+            break;
+        case amf::AMF_SURFACE_AYUV:
+            // Y, U(Cb), V(Cr), A
+            color1 = { 255, 32, 190, 255 };             // yellow
+            color2 = { 0, 255, 0, 255 };                // blue
+            break;
+        case amf::AMF_SURFACE_Y410:
+            // Y, U(Cb), V(Cr), A
+            color1 = { 1023, 128, 768, 1023 };          // yellow
+            color2 = { 0, 1023, 0, 1023 };              // blue
+            break;
+        case amf::AMF_SURFACE_Y416:
+            // Y, U(Cb), V(Cr), A
+            color1 = { 65535, 16384, 49152, 65535 };    // yellow
+            color2 = { 0, 65535, 0, 65535 };            // blue
+            break;
+        default:
+            AMFTraceError(AMF_FACILITY, L"FillSurface() - Missing values for surface format");
+            break;
+        }
+
+        amf_uint32* color = (i % 2) ? color1.data() : color2.data();
+
+        amf::AMFPlane* plane = surface->GetPlaneAt(0);
+        amf_size region[3] = { (amf_size)plane->GetWidth(), (amf_size)plane->GetHeight(), 1 };
+        amf_size origin[3] = { 0, 0, 0 };
+
         compute->FillPlane(plane, origin, region, color);
     }
 }

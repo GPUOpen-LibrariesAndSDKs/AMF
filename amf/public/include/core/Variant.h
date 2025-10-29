@@ -587,6 +587,7 @@ namespace amf
     static AMF_INLINE AMF_RESULT AMF_CDECL_CALL AMFVariantInit(AMFVariantStruct* pVariant)
     {
         AMF_VARIANT_RETURN_IF_INVALID_POINTER(pVariant);
+        memset(pVariant, 0, sizeof(AMFVariantStruct));
         pVariant->type = AMF_VARIANT_EMPTY;
         return AMF_OK;
     }

@@ -20,13 +20,13 @@ Windows™, Visual Studio and DirectX are trademark of Microsoft Corp.
 
 ### Copyright Notice
 
-© 2022 Advanced Micro Devices, Inc. All rights reserved
+© 2025 Advanced Micro Devices, Inc. All rights reserved
 
 Notice Regarding Standards.  AMD does not provide a license or sublicense to any Intellectual Property Rights relating to any standards, including but not limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4; AVC/H.264; HEVC/H.265; AAC decode/FFMPEG; AAC encode/FFMPEG; VC-1; and MP3 (collectively, the “Media Technologies”). For clarity, you will pay any royalties due for such third party technologies, which may include the Media Technologies that are owed as a result of AMD providing the Software to you.
 
 ### MIT license
 
-Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2025 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -57,8 +57,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     - [2.2.5 ROI Feature](#225-roi-feature)
     - [2.2.6 Encoder Statistics Feedback](#226-encoder-statistics-feedback)
     - [2.2.7 Picture Transfer Mode](#227-picture-transfer-mode)
-      - [2.2.8 LTR Properties](#228-ltr-properties)
-      - [2.2.9 SmartAccess Video](#229-smartaccess-video)
+    - [2.2.8 LTR Properties](#228-ltr-properties)
+    - [2.2.9 SmartAccess Video](#229-smartaccess-video)
   - [3 Sample Applications](#3-sample-applications)
     - [3.1 List of Parameters](#31-list-of-parameters)
     - [3.2 Command line example](#32-command-line-example)
@@ -183,7 +183,7 @@ If an application sets the `AMF_VIDEO_ENCODER_STATISTICS_FEEDBACK` flag on for a
 
 If an application enables `AMF_VIDEO_ENCODER_PICTURE_TRANSFER_MODE` for a specific input picture, it can dump out the reconstructed picture after encoding and/or it can inject a picture to be used as the reference picture during the encoding. It is worth noting that reference picture injection is a feature that is intended for advanced algorithm testing and exploration. It needs to be used with care since the internal DPB in the current encoding session will be overridden by the injected reference picture(s). The reader can refer to `SimpleFrameInjection` sample application for further implementation details. This feature is supported by Radeon RX 5000 Series or newer GPUs as well as Ryzen 2000 U/H series or newer APUs.
 
-#### 2.2.8 LTR Properties
+### 2.2.8 LTR Properties
 
 LTR (Long Term Reference) is to manually select a reference frame which can be far away to encode current frame. Normally, the encoder selects last frame as reference or a frame at lower layer in the SVC case.
 
@@ -225,7 +225,9 @@ When we encode a key frame or switch frame, all save LTR slots will be cleared.
 
 Referring to a LTR frame not exiting in LTR slot will generate an Intra only frame.
 
-#### 2.2.9 SmartAccess Video
+Please note that LTR and B-frames (including fixed B-frames set through `AMF_VIDEO_ENCODER_B_PIC_PATTERN` and adaptive B-frames set through `AMF_VIDEO_ENCODER_ADAPTIVE_MINIGOP`) cannot be used simultaneously in the encoder. The encoder will check parameter settings during operation. If both LTR and B-frames are detected as enabled, the encoder will disable LTR.
+
+### 2.2.9 SmartAccess Video
 
 On supported APU + GPU systems, there is an opportunity to use SmartAccess Video. SmartAccess Video - an optimization logic which enables the parallelization of encode and decode streams across multiple Video Codec Engine (VCN) hardware instances – empowers apps to process streams faster through seamless job distribution across available hardware. With a simple enablement of the encoder and decoder control flags, the SmartAccess Video logic will optimally use hardware resources to benefit media apps. Follow the `SMART_ACCESS_VIDEO` tag in the documentation to search for the property flags to set. On systems without SmartAccess Video support, the `SMART_ACCESS_VIDEO` properties have no effect.
 
@@ -691,7 +693,7 @@ Selects the H.264 profile.
 `AMF_H264_LEVEL__4_2`
 
 **Description:**
-Selects the H.264 profile level.
+Selects the H.264 profile level. Automatically adjusted upwards based on frame size.
 
 ---
 
@@ -1336,7 +1338,7 @@ Selects delta QP of reference B pictures with respect to I pictures. This featur
    - Ultra low latency: `AMF_VIDEO_ENCODER_PREENCODE_DISABLED`
    - Low latency: `AMF_VIDEO_ENCODER_PREENCODE_DISABLED`
    - Webcam: `AMF_VIDEO_ENCODER_PREENCODE_DISABLED`
-   - HQ: `AMF_VIDEO_ENCODER_PREENCODE_ENABLED`
+   - HQ: `AMF_VIDEO_ENCODER_PREENCODE_DISABLED`
    - HQLL: `AMF_VIDEO_ENCODER_PREENCODE_DISABLED`
 
 **Description:**

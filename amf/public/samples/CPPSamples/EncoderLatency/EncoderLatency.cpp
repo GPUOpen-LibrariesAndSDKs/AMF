@@ -299,6 +299,14 @@ AMF_RESULT ReadParams(ParametersStorage* params, int argc, char* argv[])
             fFrameRate = float(fps.num) / fps.den;
         }
     }
+    else if (codec == amf_wstring(AMFVideoEncoder_AV1))
+    {
+        AMFRate fps = {};
+        if (params->GetParam(AMF_VIDEO_ENCODER_AV1_FRAMERATE, fps) == AMF_OK)
+        {
+            fFrameRate = float(fps.num) / fps.den;
+        }
+    }
     else
     {
         AMFRate fps = {};

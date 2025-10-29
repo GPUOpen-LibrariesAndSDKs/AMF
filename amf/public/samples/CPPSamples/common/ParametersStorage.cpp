@@ -302,40 +302,92 @@ AMF_RESULT ParamConverterFormat(const std::wstring& value, amf::AMFVariant& valu
 {
     amf::AMF_SURFACE_FORMAT paramValue = amf::AMF_SURFACE_UNKNOWN;
     std::wstring uppValue = toUpper(value);
-    if(uppValue == L"NV12" || uppValue == L"1")
+    if (uppValue == L"NV12" || uppValue == L"1")
     {
-        paramValue =  amf::AMF_SURFACE_NV12;
-    } else if(uppValue == L"YV12" || uppValue == L"2") {
-        paramValue =  amf::AMF_SURFACE_YV12;
-    } else if(uppValue == L"BGRA" || uppValue == L"3") {
-        paramValue =  amf::AMF_SURFACE_BGRA;
-    } else if(uppValue == L"ARGB" || uppValue == L"4") {
-        paramValue =  amf::AMF_SURFACE_ARGB;
-    } else if(uppValue == L"RGBA" || uppValue == L"5") {
-        paramValue =  amf::AMF_SURFACE_RGBA;
-    } else if(uppValue == L"GRAY8" || uppValue == L"6") {
-        paramValue =  amf::AMF_SURFACE_GRAY8;
-	} else if (uppValue == L"YUV420P" || uppValue == L"420P" || uppValue == L"7") {
-        paramValue =  amf::AMF_SURFACE_YUV420P;
-    } else if(uppValue == L"U8V8" || uppValue == L"8") {
-        paramValue =  amf::AMF_SURFACE_U8V8;
-    } else if(uppValue == L"YUY2" || uppValue == L"9") {
-        paramValue =  amf::AMF_SURFACE_YUY2;
-    } else if(uppValue == L"P010" || uppValue == L"10") {
-        paramValue =  amf::AMF_SURFACE_P010;
-    } else if (uppValue == L"P012" || uppValue == L"12") {
-        paramValue = amf::AMF_SURFACE_P012;
-    }else if (uppValue == L"P016" || uppValue == L"16") {
-        paramValue = amf::AMF_SURFACE_P016;
-    } else if(uppValue == L"RGBAF16" || uppValue == L"RGBA_F16" || uppValue == L"11") {
-        paramValue =  amf::AMF_SURFACE_RGBA_F16;
-    } else if(uppValue == L"UYVY" || uppValue == L"12") {
-        paramValue =  amf::AMF_SURFACE_UYVY;
-    }else if (uppValue == L"R10G10B10A2" || uppValue == L"13") {
+        paramValue = amf::AMF_SURFACE_NV12;
+    }
+    else if (uppValue == L"YV12" || uppValue == L"2")
+    {
+        paramValue = amf::AMF_SURFACE_YV12;
+    }
+    else if (uppValue == L"BGRA" || uppValue == L"3")
+    {
+        paramValue = amf::AMF_SURFACE_BGRA;
+    }
+    else if (uppValue == L"ARGB" || uppValue == L"4")
+    {
+        paramValue = amf::AMF_SURFACE_ARGB;
+    }
+    else if (uppValue == L"RGBA" || uppValue == L"5")
+    {
+        paramValue = amf::AMF_SURFACE_RGBA;
+    }
+    else if (uppValue == L"GRAY8" || uppValue == L"6")
+    {
+        paramValue = amf::AMF_SURFACE_GRAY8;
+    }
+    else if (uppValue == L"YUV420P" || uppValue == L"420P" || uppValue == L"7")
+    {
+        paramValue = amf::AMF_SURFACE_YUV420P;
+    }
+    else if (uppValue == L"U8V8" || uppValue == L"8")
+    {
+        paramValue = amf::AMF_SURFACE_U8V8;
+    }
+    else if (uppValue == L"YUY2" || uppValue == L"9")
+    {
+        paramValue = amf::AMF_SURFACE_YUY2;
+    }
+    else if (uppValue == L"P010" || uppValue == L"10")
+    {
+        paramValue = amf::AMF_SURFACE_P010;
+    }
+    else if (uppValue == L"RGBAF16" || uppValue == L"RGBA_F16" || uppValue == L"11")
+    {
+        paramValue = amf::AMF_SURFACE_RGBA_F16;
+    }
+    else if (uppValue == L"UYVY" || uppValue == L"12")
+    {
+        paramValue = amf::AMF_SURFACE_UYVY;
+    }
+    else if (uppValue == L"R10G10B10A2" || uppValue == L"13")
+    {
         paramValue = amf::AMF_SURFACE_R10G10B10A2;
-    } else {
-
-            LOG_ERROR(L"AMF_SURFACE_FORMAT hasn't \"" << value << L"\" value.");
+    }
+    else if (uppValue == L"Y210" || uppValue == L"14")
+    {
+        paramValue = amf::AMF_SURFACE_Y210;
+    }
+    else if (uppValue == L"AYUV" || uppValue == L"15")
+    {
+        paramValue = amf::AMF_SURFACE_AYUV;
+    }
+    else if (uppValue == L"Y410" || uppValue == L"16")
+    {
+        paramValue = amf::AMF_SURFACE_Y410;
+    }
+    else if (uppValue == L"Y416" || uppValue == L"17")
+    {
+        paramValue = amf::AMF_SURFACE_Y416;
+    }
+    else if (uppValue == L"GRAY32" || uppValue == L"18")
+    {
+        paramValue = amf::AMF_SURFACE_GRAY32;
+    }
+    else if (uppValue == L"P012" || uppValue == L"19")
+    {
+        paramValue = amf::AMF_SURFACE_P012;
+    }
+    else if (uppValue == L"P016" || uppValue == L"20")
+    {
+        paramValue = amf::AMF_SURFACE_P016;
+    }
+    else if (uppValue == L"Y216" || uppValue == L"21")
+    {
+        paramValue = amf::AMF_SURFACE_Y216;
+    }
+    else {
+        LOG_ERROR(L"AMF_SURFACE_FORMAT hasn't \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
     }
     valueOut = amf_int64(paramValue);
@@ -353,6 +405,12 @@ AMF_RESULT ParamConverterColorProfile(const std::wstring& value, amf::AMFVariant
         paramValue =  AMF_VIDEO_CONVERTER_COLOR_PROFILE_2020;
     } else if(uppValue == L"JPEG" || uppValue == L"3") {
         paramValue =  AMF_VIDEO_CONVERTER_COLOR_PROFILE_JPEG;
+    } else if(uppValue == L"FULL_601" || uppValue == L"3") {
+        paramValue =  AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_601;
+    } else if (uppValue == L"FULL_709" || uppValue == L"7") {
+        paramValue = AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_709;
+    } else if (uppValue == L"FULL_2020" || uppValue == L"8") {
+        paramValue = AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_2020;
     } else {
         LOG_ERROR(L"AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM hasn't \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
@@ -479,6 +537,30 @@ AMF_RESULT ParamConverterColorRange(const std::wstring& value, amf::AMFVariant& 
 	}
 	valueOut = amf_int64(paramValue);
 	return AMF_OK;
+}
+
+AMF_RESULT ParamConverterToneMapping(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_VIDEO_CONVERTER_TONEMAPPING_ENUM paramValue = AMF_VIDEO_CONVERTER_TONEMAPPING_AMD;
+    std::wstring uppValue = toUpper(value);
+    if (uppValue == L"COPY" || uppValue == L"0") {
+        paramValue = AMF_VIDEO_CONVERTER_TONEMAPPING_COPY;
+    } else if (uppValue == L"AMD" || uppValue == L"1") {
+        paramValue = AMF_VIDEO_CONVERTER_TONEMAPPING_AMD;
+    } else if (uppValue == L"LINEAR" || uppValue == L"2") {
+        paramValue = AMF_VIDEO_CONVERTER_TONEMAPPING_LINEAR;
+    } else if (uppValue == L"GAMMA" || uppValue == L"3") {
+        paramValue = AMF_VIDEO_CONVERTER_TONEMAPPING_GAMMA;
+    } else if (uppValue == L"REINHARD" || uppValue == L"4") {
+        paramValue = AMF_VIDEO_CONVERTER_TONEMAPPING_REINHARD;
+    } else if (uppValue == L"2390" || uppValue == L"5") {
+        paramValue = AMF_VIDEO_CONVERTER_TONEMAPPING_2390;
+    } else {
+        LOG_ERROR(L"AMF_VIDEO_CONVERTER_TONEMAPPING_ENUM hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
 }
 
 AMF_RESULT ParamConverterBoolean(const std::wstring& value, amf::AMFVariant& valueOut)

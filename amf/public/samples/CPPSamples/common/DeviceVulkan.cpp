@@ -31,6 +31,7 @@
 //
 
 #include "DeviceVulkan.h"
+#include "public/common/AMFSTL.h"
 #include "public/common/TraceAdapter.h"
 #include <set>
 
@@ -382,6 +383,11 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
     indexingFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind = VK_TRUE;
     indexingFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind = VK_TRUE;
 
+    VkPhysicalDeviceShaderAtomicInt64FeaturesKHR atomicInt64Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR};
+    atomicInt64Features.shaderBufferInt64Atomics = VK_TRUE;
+    indexingFeatures.pNext = &atomicInt64Features;
+    deviceExtensions.insert(deviceExtensions.begin(), "VK_KHR_shader_atomic_int64");
+
     std::vector<const char*> deviceLayers;
 
 #if defined(_DEBUG) && defined(ENABLE_VALIDATION)
@@ -417,6 +423,11 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
         if (deviceExtensionLookup.find(*it) != deviceExtensionLookup.end())
         {
             SupportDeviceExtensions.push_back(*it);
+        }
+        else
+        {
+            amf_wstring extensionName = amf::amf_from_utf8_to_unicode(*it);
+            AMFTraceWarning(AMF_FACILITY, L"Extension %s is not available. Some Vulkan features may not work correctly.", extensionName.c_str());
         }
     }
 

@@ -49,7 +49,7 @@ AMF FRC is a technique for achieving high-end video frame rate conversion result
 
 ## 2 AMF Video FRC Component
 
-Video FRC accepts input frames stored in `AMFSurface` objects wrapping DirectX 12 textures or OpenCL surfaces. The output is placed in `AMFSurface` objects wrapping DirectX 12 textures or OpenCL surfaces, depending on the component configuration.
+Video FRC accepts input frames stored in `AMFSurface` objects wrapping DirectX 11 or DirectX 12 textures. The output is placed in `AMFSurface` objects wrapping DirectX 11 or DirectX 12 textures, depending on the component configuration.
 
 Include `public/include/components/FRC.h`
 
@@ -58,8 +58,8 @@ Include `public/include/components/FRC.h`
 The AMF Video FRC component should be initialized using the following sequence:
 
 1. Create an AMF Context and initialize it for one of the following:
-   1. DirectX 12
-   2. OpenCL
+   1. DirectX 11
+   2. DirectX 12
 2. Configure the FRC component by setting the necessary properties using the `AMFPropertyStorage::SetProperty` method on the FRC object.
 3. Call the `AMFFRCImpl::Init` method of the video FRC object.
 
@@ -98,13 +98,13 @@ Table 1. AMF FRC Properties
 `AMF_FRC_ENGINE_TYPE`
 
 **Values:**
-`DX12`, `OpenCL`, `DX11`
+`DX12`, `DX11`
 
 **Default Value:**
 `DX12`
 
 **Description:**
-Specifies the engine used to run shaders. 
+Specifies the engine used to run shaders.
 
 ---
 

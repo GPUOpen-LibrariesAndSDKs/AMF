@@ -165,7 +165,9 @@ enum AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_HEVC_ASPECT_RATIO                         L"HevcAspectRatio"              // AMFRatio; default = 1, 1
 #define AMF_VIDEO_ENCODER_HEVC_LOWLATENCY_MODE                      L"LowLatencyInternal"           // bool; default = false, enables low latency mode
 #define AMF_VIDEO_ENCODER_HEVC_PRE_ANALYSIS_ENABLE                  L"HevcEnablePreAnalysis"        // bool; default = false; enables the pre-analysis module. Currently only works in AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR mode. Refer to AMF Video PreAnalysis API reference for more details.
-#define AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE                        L"HevcNominalRange"				// amf_int64(AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE); default = amf_int64(AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE_STUDIO); property is bool but amf_int64 also works for backward compatibility.
+#define AMF_VIDEO_ENCODER_HEVC_INPUT_FULL_RANGE_COLOR               L"HevcInputFullRangeColor"		// bool; default = false; indicates color range of RGB/YUV input is FULL. e.g. for 8bit (0,255)
+#define AMF_VIDEO_ENCODER_HEVC_OUTPUT_FULL_RANGE_COLOR              L"HevcNominalRange"				// amf_int64(AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE); default = amf_int64(AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE_STUDIO); property is bool but amf_int64 also works for backward compatibility.
+#define AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE                        L"HevcNominalRange"				// deprecated; same usage as AMF_VIDEO_ENCODER_HEVC_OUTPUT_FULL_RANGE_COLOR
 #define AMF_VIDEO_ENCODER_HEVC_MAX_NUM_TEMPORAL_LAYERS              L"HevcMaxNumOfTemporalLayers"   // amf_int64; default = 1; Max number of temporal layers.
 
 // Picture control properties
@@ -202,10 +204,12 @@ enum AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_HEVC_INPUT_COLOR_PROFILE                  L"HevcInColorProfile"           // amf_int64(AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM); default = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN - mean AUTO by size
 #define AMF_VIDEO_ENCODER_HEVC_INPUT_TRANSFER_CHARACTERISTIC        L"HevcInColorTransferChar"      // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 section 7.2 See VideoDecoderUVD.h for enum
 #define AMF_VIDEO_ENCODER_HEVC_INPUT_COLOR_PRIMARIES                L"HevcInColorPrimaries"         // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 section 7.1 See ColorSpace.h for enum
+#define AMF_VIDEO_ENCODER_HEVC_INPUT_MATRIX_COEFF                   L"HevcInMatrixCoeff"            // amf_int64(AMF_COLOR_MATRIX_COEFF_ENUM); default = AMF_COLOR_MATRIX_COEFF_UNKNOWN - mean AUTO by size
 
 #define AMF_VIDEO_ENCODER_HEVC_OUTPUT_COLOR_PROFILE                 L"HevcOutColorProfile"          // amf_int64(AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM); default = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN - mean AUTO by size
 #define AMF_VIDEO_ENCODER_HEVC_OUTPUT_TRANSFER_CHARACTERISTIC       L"HevcOutColorTransferChar"     // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 ?7.2 See VideoDecoderUVD.h for enum
 #define AMF_VIDEO_ENCODER_HEVC_OUTPUT_COLOR_PRIMARIES               L"HevcOutColorPrimaries"        // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 section 7.1 See ColorSpace.h for enum
+#define AMF_VIDEO_ENCODER_HEVC_OUTPUT_MATRIX_COEFF                  L"HevcOutMatrixCoeff"           // amf_int64(AMF_COLOR_MATRIX_COEFF_ENUM); default = AMF_COLOR_MATRIX_COEFF_UNKNOWN - mean AUTO by size
 
 // Slice output
 #define AMF_VIDEO_ENCODER_HEVC_OUTPUT_MODE                          L"HevcOutputMode"               // amf_int64(AMF_VIDEO_ENCODER_HEVC_OUTPUT_MODE_ENUM); default = AMF_VIDEO_ENCODER_HEVC_OUTPUT_MODE_FRAME - defines encoder output mode

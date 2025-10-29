@@ -66,17 +66,34 @@ static bool PicGetStride(amf::AMF_SURFACE_FORMAT eFormat, amf_int32 width, amf_i
             break;
         case amf::AMF_SURFACE_BGRA:
         case amf::AMF_SURFACE_RGBA:
+        case amf::AMF_SURFACE_AYUV:
             stride = width * 4;
             break;
 
         case amf::AMF_SURFACE_R10G10B10A2:
+        case amf::AMF_SURFACE_Y410:
             stride = width * 4;
             break;
+
+        case amf::AMF_SURFACE_Y416:
+            stride = width * 8;
+            break;
+
+        case amf::AMF_SURFACE_Y210:
+        case amf::AMF_SURFACE_Y216:
+            stride = width * 4;
+            break;
+
         case amf::AMF_SURFACE_RGBA_F16:
             stride = width * 8;
             break;
 
         default:
+            //AMF_SURFACE_YV12
+            //AMF_SURFACE_ARGB
+            //AMF_SURFACE_GRAY8
+            //AMF_SURFACE_U8V8
+            //AMF_SURFACE_GRAY32
             LOG_ERROR("Stride cannot be calculated, unknown pixel format");
             return false;
     }
@@ -108,9 +125,19 @@ static bool PicGetFrameSize(amf::AMF_SURFACE_FORMAT format, amf_int32 width, amf
         case amf::AMF_SURFACE_RGBA:
         case amf::AMF_SURFACE_RGBA_F16:
         case amf::AMF_SURFACE_R10G10B10A2:
+        case amf::AMF_SURFACE_AYUV:
+        case amf::AMF_SURFACE_Y410:
+        case amf::AMF_SURFACE_Y416:
+        case amf::AMF_SURFACE_Y210:
+        case amf::AMF_SURFACE_Y216:
             size = stride*height;
             break;
         default:
+            //AMF_SURFACE_YV12
+            //AMF_SURFACE_ARGB
+            //AMF_SURFACE_GRAY8
+            //AMF_SURFACE_U8V8
+            //AMF_SURFACE_GRAY32
             LOG_ERROR("Frame size cannot be calculated, unknown pixel format");
             return false;
     }
@@ -287,13 +314,32 @@ AMF_RESULT RawStreamReader::Init(ParametersStorage* pParams, amf::AMFContext* pC
         return AMF_FAIL;
     }
 
-    if (m_format != amf::AMF_SURFACE_YUV420P && m_format != amf::AMF_SURFACE_BGRA && m_format != amf::AMF_SURFACE_RGBA &&
-        m_format != amf::AMF_SURFACE_NV12 && m_format != amf::AMF_SURFACE_P010 && m_format != amf::AMF_SURFACE_P012 &&
-        m_format != amf::AMF_SURFACE_P016 && m_format != amf::AMF_SURFACE_RGBA_F16 && m_format != amf::AMF_SURFACE_R10G10B10A2 &&
-        m_format != amf::AMF_SURFACE_YUY2 && m_format != amf::AMF_SURFACE_UYVY
-        )
+    switch (m_format)
     {
-        LOG_ERROR("Only YUV420P or BGRA or NV12 or RGBA picture format supported");
+    case amf::AMF_SURFACE_YUV420P:
+    case amf::AMF_SURFACE_BGRA:
+    case amf::AMF_SURFACE_RGBA:
+    case amf::AMF_SURFACE_NV12:
+    case amf::AMF_SURFACE_P010:
+    case amf::AMF_SURFACE_P012:
+    case amf::AMF_SURFACE_P016:
+    case amf::AMF_SURFACE_RGBA_F16:
+    case amf::AMF_SURFACE_R10G10B10A2:
+    case amf::AMF_SURFACE_YUY2:
+    case amf::AMF_SURFACE_UYVY:
+    case amf::AMF_SURFACE_AYUV:
+    case amf::AMF_SURFACE_Y410:
+    case amf::AMF_SURFACE_Y416:
+    case amf::AMF_SURFACE_Y210:
+    case amf::AMF_SURFACE_Y216:
+        break;
+    default:
+        //AMF_SURFACE_YV12
+        //AMF_SURFACE_ARGB
+        //AMF_SURFACE_GRAY8
+        //AMF_SURFACE_U8V8
+        //AMF_SURFACE_GRAY32
+        LOG_ERROR("Only YUV420P, BGRA, RGBA, NV12, P010, P012, P016, RGBA_F16, R10G10B10A2, YUY2, UYVY, AYUV, Y410, Y416, Y210, Y216 picture format supported");
         return AMF_FAIL;
     }
 
@@ -417,6 +463,11 @@ AMF_RESULT RawStreamReader::ReadNextFrame(int dstStride, int /* dstHeight */, in
     case amf::AMF_SURFACE_RGBA:
     case amf::AMF_SURFACE_RGBA_F16:
     case amf::AMF_SURFACE_R10G10B10A2:
+    case amf::AMF_SURFACE_AYUV:
+    case amf::AMF_SURFACE_Y410:
+    case amf::AMF_SURFACE_Y416:
+    case amf::AMF_SURFACE_Y210:
+    case amf::AMF_SURFACE_Y216:
         PlaneCopy(m_frame.GetData(), m_stride, m_height, pDstBits, dstStride, valignment);
         break;
     case amf::AMF_SURFACE_YUV420P:
@@ -429,6 +480,11 @@ AMF_RESULT RawStreamReader::ReadNextFrame(int dstStride, int /* dstHeight */, in
         NV12PicCopy(m_frame.GetData(), m_stride, m_height, pDstBits, dstStride, valignment);
         break;
     default:
+        //AMF_SURFACE_YV12
+        //AMF_SURFACE_ARGB
+        //AMF_SURFACE_GRAY8
+        //AMF_SURFACE_U8V8
+        //AMF_SURFACE_GRAY32
         LOG_ERROR("Format reading is not supported");
         return AMF_FAIL;
     }
@@ -599,6 +655,31 @@ amf::AMF_SURFACE_FORMAT AMF_STD_CALL GetFormatFromString(const wchar_t* str)
     {
         ret = amf::AMF_SURFACE_R10G10B10A2;
     }
+    else if (std_string == L"y210")
+    {
+        ret = amf::AMF_SURFACE_Y210;
+    }
+    else if (std_string == L"y216")
+    {
+        ret = amf::AMF_SURFACE_Y216;
+    }
+    else if (std_string == L"ayuv")
+    {
+        ret = amf::AMF_SURFACE_AYUV;
+    }
+    else if (std_string == L"y410")
+    {
+        ret = amf::AMF_SURFACE_Y410;
+    }
+    else if (std_string == L"y416")
+    {
+        ret = amf::AMF_SURFACE_Y416;
+    }
+    //AMF_SURFACE_YV12
+    //AMF_SURFACE_ARGB
+    //AMF_SURFACE_GRAY8
+    //AMF_SURFACE_U8V8
+    //AMF_SURFACE_GRAY32
     return ret;
 }
 //----------------------------------------------------------------------------------------------

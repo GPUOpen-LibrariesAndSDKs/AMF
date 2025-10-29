@@ -195,7 +195,9 @@ enum AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_MAX_CONSECUTIVE_BPICTURES             L"MaxConsecutiveBPictures"  // amf_int64; Maximum number of consecutive B Pictures
 #define AMF_VIDEO_ENCODER_ADAPTIVE_MINIGOP                      L"AdaptiveMiniGOP"          // bool; default = false; Disable/Enable Adaptive MiniGOP
 #define AMF_VIDEO_ENCODER_ASPECT_RATIO                          L"AspectRatio"              // AMFRatio; default = 1, 1
-#define AMF_VIDEO_ENCODER_FULL_RANGE_COLOR                      L"FullRangeColor"           // bool; default = false; inidicates that YUV input is (0,255)
+#define AMF_VIDEO_ENCODER_INPUT_FULL_RANGE_COLOR                L"InputFullRangeColor"      // bool; default = false; indicates color range of RGB/YUV input is FULL. e.g. for 8bit (0,255)
+#define AMF_VIDEO_ENCODER_OUTPUT_FULL_RANGE_COLOR               L"FullRangeColor"           // bool; default = false; indicates color range of YUV output is FULL. e.g. for 8bit (0,255)
+#define AMF_VIDEO_ENCODER_FULL_RANGE_COLOR                      L"FullRangeColor"           // bool; deprecated same usage as AMF_VIDEO_ENCODER_OUTPUT_FULL_RANGE_COLOR
 #define AMF_VIDEO_ENCODER_LOWLATENCY_MODE                       L"LowLatencyInternal"       // bool; default = false, enables low latency mode and POC mode 2 in the encoder
 #define AMF_VIDEO_ENCODER_PRE_ANALYSIS_ENABLE                   L"EnablePreAnalysis"        // bool; default = false; enables the pre-analysis module. Currently only works in AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR mode. Refer to AMF Video PreAnalysis API reference for more details.
 #define AMF_VIDEO_ENCODER_PREENCODE_ENABLE                      L"RateControlPreanalysisEnable"     // amf_int64(AMF_VIDEO_ENCODER_PREENCODE_MODE_ENUM); default =  AMF_VIDEO_ENCODER_PREENCODE_DISABLED; enables pre-encode assisted rate control
@@ -218,11 +220,13 @@ enum AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_INPUT_TRANSFER_CHARACTERISTIC         L"InColorTransferChar"      // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 ?7.2 See VideoDecoderUVD.h for enum
 #define AMF_VIDEO_ENCODER_INPUT_COLOR_PRIMARIES                 L"InColorPrimaries"         // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 Section 7.1 See ColorSpace.h for enum
 #define AMF_VIDEO_ENCODER_INPUT_HDR_METADATA                    L"InHDRMetadata"            // AMFBuffer containing AMFHDRMetadata; default NULL
+#define AMF_VIDEO_ENCODER_INPUT_MATRIX_COEFF                    L"InMatrixCoeff"            // amf_int64(AMF_COLOR_MATRIX_COEFF_ENUM); default = AMF_COLOR_MATRIX_COEFF_UNKNOWN - mean AUTO by size
 
 #define AMF_VIDEO_ENCODER_OUTPUT_COLOR_PROFILE                  L"OutColorProfile"          // amf_int64(AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM); default = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN - mean AUTO by size
 #define AMF_VIDEO_ENCODER_OUTPUT_TRANSFER_CHARACTERISTIC        L"OutColorTransferChar"     // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 Section 7.2 See VideoDecoderUVD.h for enum
 #define AMF_VIDEO_ENCODER_OUTPUT_COLOR_PRIMARIES                L"OutColorPrimaries"        // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 Section 7.1 See ColorSpace.h for enum
 #define AMF_VIDEO_ENCODER_OUTPUT_HDR_METADATA                   L"OutHDRMetadata"           // AMFBuffer containing AMFHDRMetadata; default NULL
+#define AMF_VIDEO_ENCODER_OUTPUT_MATRIX_COEFF                   L"OutMatrixCoeff"           // amf_int64(AMF_COLOR_MATRIX_COEFF_ENUM); default = AMF_COLOR_MATRIX_COEFF_UNKNOWN - mean AUTO by size
 
 // Slice output
 #define AMF_VIDEO_ENCODER_OUTPUT_MODE                           L"OutputMode"               // amf_int64(AMF_VIDEO_ENCODER_OUTPUT_MODE_ENUM); default = AMF_VIDEO_ENCODER_OUTPUT_MODE_FRAME - defines encoder output mode

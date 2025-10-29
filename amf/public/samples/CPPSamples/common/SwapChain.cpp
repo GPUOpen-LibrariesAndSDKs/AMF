@@ -293,8 +293,11 @@ AMFRect GetClientRect(amf_handle hwnd, amf_handle hDisplay)
     amf_uint width_return, height_return;
     amf_uint border_width_return;
     amf_uint depth_return;
+
+    XLockDisplay((Display*)hDisplay);
     XGetGeometry((Display*)hDisplay, (Window)hwnd, &root_return, &x_return, &y_return, &width_return,
         &height_return, &border_width_return, &depth_return);
+    XUnlockDisplay((Display*)hDisplay);
 
     clientRect = AMFConstructRect(0, 0, width_return - 2 * border_width_return, height_return - 2 * border_width_return);
 #endif        

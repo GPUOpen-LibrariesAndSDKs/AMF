@@ -27,7 +27,7 @@ amf_root = ../../../..
 
 include $(amf_root)/public/make/common_defs.mak
 
-target_name = SimpleROI
+target_name = SimplePA
 
 pp_include_dirs = $(amf_root)
 

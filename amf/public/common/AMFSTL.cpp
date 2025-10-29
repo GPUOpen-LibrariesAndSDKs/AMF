@@ -508,7 +508,7 @@ amf_wstring AMF_STD_CALL amf::amf_from_url_utf8_to_unicode(const amf_string& dat
             Result += data.substr(old_pos);
             break;
         }
-        if(pos - old_pos > 0)
+        if(pos > old_pos)
         {
             Result += data.substr(old_pos, pos - old_pos);
         }

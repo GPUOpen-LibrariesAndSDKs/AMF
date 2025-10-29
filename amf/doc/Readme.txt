@@ -28,7 +28,12 @@
 //
 
 
-1.4.36.0 (6.3.2025) version
+1.5.0.0 (29.10.2025) version
+--------------------------
+   - Added 4:4:4/4:2:2 chroma subsampling support for VideoConverter color space conversion and scaling
+   - Samples updated to VS 2022
+
+1.4.36.0 (23.01.2025) version
 --------------------------
    - Added B-frame support and picture management options for AV1 encoder
    - New high quality presets for HEVC and AVC encoders

@@ -40,11 +40,18 @@
 
 #include "Component.h"
 
+#if defined(__cplusplus)
 extern "C"
 {
+    using namespace amf;
+#endif // defined(__cplusplus)
+
     // To create capture component with Desktop Duplication API use this function
-    AMF_RESULT AMF_CDECL_CALL AMFCreateComponentDisplayCapture(amf::AMFContext* pContext, void* reserved, amf::AMFComponent** ppComponent);
+    AMF_RESULT AMF_CDECL_CALL AMFCreateComponentDisplayCapture(AMFContext* pContext, void* reserved, AMFComponent** ppComponent);
+
+#if defined(__cplusplus)
 }
+#endif // defined(__cplusplus)
 
 // To create AMD Direct Capture component use this component ID with AMFFactory::CreateComponent()
 #define AMFDisplayCapture L"AMFDisplayCapture"

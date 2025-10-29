@@ -54,6 +54,23 @@ AMF_RESULT WritePlane(amf::AMFPlane* pPlane, amf::AMFDataStream *pDataStr)
     amf_int32 width = pPlane->GetWidth();
     amf_int32 pitchH = pPlane->GetHPitch();
 
+    // writes to the disk are slow, so it's easier to copy the data 
+    // to a memory buffer and then just write everything in one shot
+    std::unique_ptr<amf_uint8[]> writeData(new amf_uint8[width * height * pixelSize]);
+    amf_uint8* pWriteData = writeData.get();
+    amf_size   toWrite = (amf_size)pixelSize * (amf_size)width;
+
+    for (amf_int32 y = 0; y < height; y++)
+    {
+        amf_uint8* pLine = pData + (y + offsetY) * pitchH;
+        memcpy(pWriteData, pLine + offsetX * pixelSize, toWrite);
+        pWriteData += toWrite;
+    }
+
+    AMF_RESULT res = pDataStr->Write(writeData.get(), toWrite * height, NULL);
+    AMF_RETURN_IF_FAILED(res);
+
+/*
     for (amf_int32 y = 0; y < height; y++)
     {
         AMF_RESULT res = AMF_OK;
@@ -62,7 +79,7 @@ AMF_RESULT WritePlane(amf::AMFPlane* pPlane, amf::AMFDataStream *pDataStr)
         res = pDataStr->Write(pLine + offsetX * pixelSize, toWrite, NULL);
         AMF_RETURN_IF_FAILED(res);
     }
-
+*/
     return AMF_OK;
 }
 

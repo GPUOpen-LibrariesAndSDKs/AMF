@@ -62,17 +62,22 @@ namespace amf
         AMF_SURFACE_P010,               ///< 10 - planar 4:2:0 Y width x height + packed UV width/2 x height/2 - 10 bit per component (16 allocated, upper 10 bits are used)
         AMF_SURFACE_RGBA_F16,           ///< 11 - packed 4:4:4 - 16 bit per component float
         AMF_SURFACE_UYVY,               ///< 12 - packed 4:2:2 the similar to YUY2 but Y and UV swapped: Byte 0=8-bit Cb; Byte 1=8-bit Y'0; Byte 2=8-bit Cr Byte 3=8-bit Y'1; (used the same DX/CL/Vulkan storage as YUY2)
-        AMF_SURFACE_R10G10B10A2,        ///< 13 - packed 4:4:4 to 4 bytes, 10 bit per RGB component, 2 bits per A
+        AMF_SURFACE_R10G10B10A2,        ///< 13 - packed 4:4:4 to 4 bytes, 10 bit per RGB component, 2 bits per A, ABGR
         AMF_SURFACE_Y210,               ///< 14 - packed 4:2:2 - Word 0=10-bit Y'0; Word 1=10-bit Cb; Word 2=10-bit Y'1; Word 3=10-bit Cr
-        AMF_SURFACE_AYUV,               ///< 15 - packed 4:4:4 - 8 bit per component YUVA
+        AMF_SURFACE_AYUV,               ///< 15 - packed 4:4:4 - 8 bit per component VUYA
         AMF_SURFACE_Y410,               ///< 16 - packed 4:4:4 - 10 bit per YUV component, 2 bits per A, AVYU
-        AMF_SURFACE_Y416,               ///< 17 - packed 4:4:4 - 16 bit per component 4 bytes, AVYU
+        AMF_SURFACE_Y416,               ///< 17 - packed 4:4:4 - 16 bit per component 8 bytes, UYVA
         AMF_SURFACE_GRAY32,             ///< 18 - single component - 32 bit
         AMF_SURFACE_P012,               ///< 19 - planar 4:2:0 Y width x height + packed UV width/2 x height/2 - 12 bit per component (16 allocated, upper 12 bits are used)
         AMF_SURFACE_P016,               ///< 20 - planar 4:2:0 Y width x height + packed UV width/2 x height/2 - 16 bit per component (16 allocated, all bits are used)
+        AMF_SURFACE_Y216,               ///< 21 - packed 4:2:2 - Word 0=16-bit Y'0; Word 1=16-bit Cb; Word 2=16-bit Y'1; Word 3=16-bit Cr
+        AMF_SURFACE_R16G16,             ///< 22 - packed 4:4 - 16-bit R; 16-bit G
+        AMF_SURFACE_R24G8,              ///< 23 - packed 4:4 - 24-bit R; 8-bit G
+        AMF_SURFACE_R32,                ///< 24 - single component float - 32 bit
+        AMF_SURFACE_R16,                ///< 25 - single component float - 16 bit
 
         AMF_SURFACE_FIRST = AMF_SURFACE_NV12,
-        AMF_SURFACE_LAST = AMF_SURFACE_P016
+        AMF_SURFACE_LAST = AMF_SURFACE_R16
     } AMF_SURFACE_FORMAT;
     //----------------------------------------------------------------------------------------------
     // AMF_SURFACE_USAGE translates to D3D11_BIND_FLAG or VkImageUsageFlags
