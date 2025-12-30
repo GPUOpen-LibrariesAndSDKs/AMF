@@ -85,7 +85,7 @@ namespace amf
     } AMF_AUDIO_CHANNEL_LAYOUT;
 
     // get the most common layout for a given number of speakers
-    inline int GetDefaultChannelLayout(int channels)
+    static inline int GetDefaultChannelLayout(int channels)
     {
         switch (channels)
         {
