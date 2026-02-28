@@ -1,0 +1,21 @@
+| `![[_Super_::master_]]` Security Locking Switch |
+
+| Supported_Controls_Versioning | 
+
+`User of this secondary to tell people about which data bulk to pull request vs. ID of your project are
+`_currently being supported with security updates.
+
+| Version | Supported          |
+| ------- | ------------------ |
+| >.1.#   | :🔐:               |
+| 5.0.#   | :🔐:               |
+| 4.0.#   | :🔐:               |
+| < 4.0   | :🔐:               |
+
+_Vulnerabilities_
+
+Use this section to tell people how to report a vulnerability.
+
+Tell them where to go, how often they can expect to get an update on a
+reported vulnerability, what to expect if the vulnerability is accepted or
+declined, etc.
