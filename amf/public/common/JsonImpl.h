@@ -72,31 +72,31 @@ namespace amf
             AMF_END_INTERFACE_MAP
 
 
-            virtual JSONParser::Error Parse(const std::string& str, size_t start, size_t end);
-            virtual std::string Stringify() const;
-            virtual std::string StringifyFormatted(const OutputFormatDesc& format, int indent) const;
+            virtual JSONParser::Error Parse(const std::string& str, size_t start, size_t end) override;
+            virtual std::string Stringify() const override;
+            virtual std::string StringifyFormatted(const OutputFormatDesc& format, int indent) const override;
 
-            virtual void                SetValue(const std::string& val);
-            virtual void                SetValueAsInt32(int32_t val);
-            virtual void                SetValueAsUInt32(uint32_t val);
-            virtual void                SetValueAsInt64(int64_t val);
-            virtual void                SetValueAsUInt64(uint64_t val);
-            virtual void                SetValueAsDouble(double val);
-            virtual void                SetValueAsFloat(float val);
-            virtual void                SetValueAsBool(bool val);
-            virtual void                SetValueAsTime(time_t date, bool utc);
-            virtual void                SetToNull();
+            virtual void                SetValue(const std::string& val) override;
+            virtual void                SetValueAsInt32(int32_t val) override;
+            virtual void                SetValueAsUInt32(uint32_t val) override;
+            virtual void                SetValueAsInt64(int64_t val) override;
+            virtual void                SetValueAsUInt64(uint64_t val) override;
+            virtual void                SetValueAsDouble(double val) override;
+            virtual void                SetValueAsFloat(float val) override;
+            virtual void                SetValueAsBool(bool val) override;
+            virtual void                SetValueAsTime(time_t date, bool utc) override;
+            virtual void                SetToNull() override;
 
-            virtual const std::string&  GetValue() const;
-            virtual int32_t             GetValueAsInt32() const;
-            virtual uint32_t            GetValueAsUInt32() const;
-            virtual int64_t             GetValueAsInt64() const;
-            virtual uint64_t            GetValueAsUInt64() const;
-            virtual double              GetValueAsDouble() const;
-            virtual float               GetValueAsFloat() const;
-            virtual bool                GetValueAsBool() const;
-            virtual time_t              GetValueAsTime() const;
-            virtual bool                IsNull() const;
+            virtual const std::string&  GetValue() const override;
+            virtual int32_t             GetValueAsInt32() const override;
+            virtual uint32_t            GetValueAsUInt32() const override;
+            virtual int64_t             GetValueAsInt64() const override;
+            virtual uint64_t            GetValueAsUInt64() const override;
+            virtual double              GetValueAsDouble() const override;
+            virtual float               GetValueAsFloat() const override;
+            virtual bool                GetValueAsBool() const override;
+            virtual time_t              GetValueAsTime() const override;
+            virtual bool                IsNull() const override;
 
         private:
             enum VALUE_TYPE
@@ -125,15 +125,15 @@ namespace amf
 
             NodeImpl();
 
-            virtual JSONParser::Error Parse(const std::string& str, size_t start, size_t end);
-            virtual std::string Stringify() const;
-            virtual std::string StringifyFormatted(const OutputFormatDesc& format, int indent) const;
+            virtual JSONParser::Error Parse(const std::string& str, size_t start, size_t end) override;
+            virtual std::string Stringify() const override;
+            virtual std::string StringifyFormatted(const OutputFormatDesc& format, int indent) const override;
             
 
-            virtual size_t GetElementCount() const;
-            virtual JSONParser::Element* GetElementByName(const std::string& name) const;
-            virtual JSONParser::Result AddElement(const std::string& name, JSONParser::Element* element);
-            virtual JSONParser::Element* GetElementAt(size_t idx, std::string& name) const;
+            virtual size_t GetElementCount() const override;
+            virtual JSONParser::Element* GetElementByName(const std::string& name) const override;
+            virtual JSONParser::Result AddElement(const std::string& name, JSONParser::Element* element) override;
+            virtual JSONParser::Element* GetElementAt(size_t idx, std::string& name) const override;
 
             const ElementMap& GetElements() const { return m_Elements; }
 
@@ -155,13 +155,13 @@ namespace amf
 
             ArrayImpl();
 
-            virtual JSONParser::Error Parse(const std::string& str, size_t start, size_t end);
-            virtual std::string Stringify() const;
-            virtual std::string StringifyFormatted(const OutputFormatDesc& format, int indent) const;
+            virtual JSONParser::Error Parse(const std::string& str, size_t start, size_t end) override;
+            virtual std::string Stringify() const override;
+            virtual std::string StringifyFormatted(const OutputFormatDesc& format, int indent) const override;
 
-            virtual size_t GetElementCount() const;
-            virtual JSONParser::Element* GetElementAt(size_t idx) const;
-            virtual void AddElement(Element* element);
+            virtual size_t GetElementCount() const override;
+            virtual JSONParser::Element* GetElementAt(size_t idx) const override;
+            virtual void AddElement(Element* element) override;
 
         private:
             ElementVector m_Elements;

@@ -1052,9 +1052,11 @@ AMF_RESULT WaitForFenceOnGpu(ID3D12CommandQueue* pQueue, ID3D12Fence* pFence)
     AMF_RESULT res = GetFenceValueDX12(pFence, fenceValue);
     AMF_RETURN_IF_FAILED(res, L"WaitForFenceOnGpu() - GetFenceValueDX12() failed");
 
-    HRESULT hr = pQueue->Wait(pFence, fenceValue);
-    ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"WaitForFenceOnGpu() - failed to make GPU wait for fence");
-
+    if(fenceValue != 0)
+    { 
+        HRESULT hr = pQueue->Wait(pFence, fenceValue);
+        ASSERT_RETURN_IF_HR_FAILED(hr, AMF_DIRECTX_FAILED, L"WaitForFenceOnGpu() - failed to make GPU wait for fence");
+    }
     return AMF_OK;
 }
 

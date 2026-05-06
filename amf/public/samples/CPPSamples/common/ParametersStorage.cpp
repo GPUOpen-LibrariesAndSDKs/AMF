@@ -882,6 +882,10 @@ AMF_RESULT ParamConverterFRCEngine(const std::wstring& value, amf::AMFVariant& v
     {
         paramValue = FRC_ENGINE_DX11;
     }
+    else if ((uppValue == L"VULKAN") || (uppValue == L"4"))
+    {
+        paramValue = FRC_ENGINE_VULKAN;
+    }
     else {
         LOG_ERROR(L"AMF_FRC_ENGINE hasn't \"" << value << L"\" value.");
         return AMF_INVALID_ARG;

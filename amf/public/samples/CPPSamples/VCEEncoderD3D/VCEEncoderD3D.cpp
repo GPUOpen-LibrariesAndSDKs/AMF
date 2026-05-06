@@ -92,7 +92,7 @@ static AMF_RESULT RegisterParams(ParametersStorage* pParams)
 	pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_QUERY_INST_COUNT, ParamCommon, L"If the flag is set, the number of independent VCE instances will be quried and printed.", ParamConverterBoolean);
 	pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_SELECT_INSTANCE, ParamCommon, L"If there are more than one VCE Instances, you can force which instance to use. Valid range is [0.. (number of instances - 1)] (integer, default = depends on usage).", ParamConverterInt64);
 
-	pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_FRAMERATE, ParamCommon, L"Render frame rate (integer, default = 0)", ParamConverterInt64);
+	pParams->SetParamDescription(RenderEncodePipeline::PARAM_NAME_RENDER_FRAMERATE, ParamCommon, L"Render frame rate (integer, default = 0)", ParamConverterInt64);
 
     // to demo frame-specific properties - will be applied to each N-th frame (force IDR)
     // pParams->SetParam(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, amf_int64(AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR) );
@@ -108,6 +108,10 @@ int _tmain(int /* argc */, _TCHAR* /* argv */[])
 int main(int argc, char* argv[])
 #endif
 {
+
+#if defined(__linux)
+    XInitThreads(); // required for vkCreateXlibSurfaceKHR
+#endif
     AMF_RESULT              res = AMF_OK; // error checking can be added later
     res = g_AMFFactory.Init();
     if(res != AMF_OK)

@@ -96,6 +96,9 @@
     <ClCompile Include="..\common\DeviceDX12.cpp">
       <Filter>public\samples\CPPSamples\common</Filter>
     </ClCompile>
+    <ClCompile Include="..\common\EncoderParamsAV1.cpp">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DVR.h">
@@ -189,6 +192,9 @@
       <Filter>public\common</Filter>
     </ClInclude>
     <ClInclude Include="..\common\DeviceDX12.h">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\EncoderParamsAV1.h">
       <Filter>public\samples\CPPSamples\common</Filter>
     </ClInclude>
   </ItemGroup>

@@ -608,12 +608,10 @@ void AMF_STD_CALL VideoPresenter::ResizeIfNeeded()
 
 AMF_RESULT VideoPresenter::ApplyCSC(AMFSurface* pSurface)
 {
-    AMFLock lock(&m_cs);
-
-    pSurface; // Suppress C4100 Unreferenced parameter warning
 #ifdef USE_COLOR_TWITCH_IN_DISPLAY
     AMF_RETURN_IF_FALSE(pSurface != nullptr, AMF_INVALID_ARG, L"ApplyCSC() - pSurface is NULL");
 
+    AMFLock lock(&m_cs);
     if (m_firstFrame == false || m_pSwapChain == nullptr)
     {
         return AMF_OK;
@@ -640,7 +638,8 @@ AMF_RESULT VideoPresenter::ApplyCSC(AMFSurface* pSurface)
         return AMF_OK;
     }
     AMF_RETURN_IF_FAILED(res, L"ApplyCSC() - SetHDRMetaData() failed");
-
+#else
+    (void)pSurface; // Suppress C4100 Unreferenced parameter warning
 #endif
     return AMF_OK;
 }
@@ -1076,7 +1075,7 @@ AMF_RESULT VideoPresenter::SetFullscreenState(amf_bool fullscreen)
 
 AMF_RESULT VideoPresenter::SetWindowFullscreenState(amf_handle hwnd, amf_handle hDisplay, amf_bool fullscreen)
 {
-    hDisplay; // Suppress unreferenced parameter warning (C4100)
+    (void)hDisplay; // Suppress unreferenced parameter warning (C4100)
 
     AMF_RETURN_IF_FALSE(hwnd != nullptr, AMF_INVALID_ARG, L"SetWindowFullscreenState() - hwnd is NULL");
 

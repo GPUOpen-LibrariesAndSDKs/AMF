@@ -81,7 +81,7 @@ class DisplayDvrPipeline : public Pipeline, public ParametersStorage
 public:
     DisplayDvrPipeline();
     virtual ~DisplayDvrPipeline();
-
+    void RegisterParams();
 public:
     // Codec
     static const wchar_t* PARAM_NAME_CODEC;

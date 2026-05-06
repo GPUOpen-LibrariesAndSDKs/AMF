@@ -67,6 +67,7 @@
                
 #define PARAM_NAME_TEST_MODE               L"TEST_MODE"
 #define PARAM_NAME_VALIDATE                L"VALIDATE"
+#define PARAM_NAME_PROFILE                 L"PROFILE"
 #define PARAM_NAME_THREADCOUNT             L"THREADCOUNT"
 #define PARAM_NAME_ADAPTERID               L"ADAPTERID"
 #define PARAM_NAME_ENGINE                  L"ENGINE"

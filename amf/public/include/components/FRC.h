@@ -44,6 +44,7 @@ enum AMF_FRC_ENGINE
     FRC_ENGINE_DX12             = 1,
     FRC_ENGINE_OPENCL           = 2,
     FRC_ENGINE_DX11             = 3,
+    FRC_ENGINE_VULKAN           = 4,
 };
 
 // Select present mode for FRC

@@ -41,13 +41,13 @@ pp_include_dirs = $(amf_root) \
   $(ffmpeg_dir)/include
 
 ffmpeg_libs = \
-  libavcodec.so.61 \
-  libavdevice.so.61 \
-  libavfilter.so.10 \
-  libavformat.so.61 \
-  libavutil.so.59 \
-  libswresample.so.5 \
-  libswscale.so.8
+  libavcodec.so.62 \
+  libavdevice.so.62 \
+  libavfilter.so.11 \
+  libavformat.so.62 \
+  libavutil.so.60 \
+  libswresample.so.6 \
+  libswscale.so.9
 
 linker_libs += $(patsubst %,:"%",$(ffmpeg_libs))
 

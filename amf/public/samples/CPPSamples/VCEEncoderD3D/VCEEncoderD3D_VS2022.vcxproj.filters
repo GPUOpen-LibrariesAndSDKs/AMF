@@ -19,6 +19,15 @@
     <Filter Include="public\common">
       <UniqueIdentifier>{1bafa27b-88c0-4801-805e-e1c1c12ce1f3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="public\samples">
+      <UniqueIdentifier>{fd523fde-3be3-4e2c-a704-494aeabe93ca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\samples\CPPSamples">
+      <UniqueIdentifier>{1385b7d7-e275-495d-b26c-a69e29a5c313}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\samples\CPPSamples\common">
+      <UniqueIdentifier>{896c365f-476b-4f70-af35-c197712ea847}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\common\CmdLogger.h">
@@ -35,9 +44,6 @@
     </ClInclude>
     <ClInclude Include="..\common\DeviceOpenGL.h">
       <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderWindow.h">
-      <Filter>RenderEncoder</Filter>
     </ClInclude>
     <ClInclude Include="VideoRender.h">
       <Filter>RenderEncoder</Filter>
@@ -144,6 +150,9 @@
     <ClInclude Include="..\common\SwapChainDXGI.h">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\RenderWindow.h">
+      <Filter>public\samples\CPPSamples\common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\common\CmdLogger.cpp">
@@ -161,9 +170,6 @@
     </ClCompile>
     <ClCompile Include="..\common\DeviceOpenGL.cpp">
       <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderWindow.cpp">
-      <Filter>RenderEncoder</Filter>
     </ClCompile>
     <ClCompile Include="VideoRender.cpp">
       <Filter>RenderEncoder</Filter>
@@ -263,6 +269,9 @@
     </ClCompile>
     <ClCompile Include="..\common\SwapChainDXGI.cpp">
       <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\RenderWindow.cpp">
+      <Filter>public\samples\CPPSamples\common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

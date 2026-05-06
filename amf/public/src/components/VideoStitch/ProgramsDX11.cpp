@@ -34,21 +34,12 @@
 #include "public/common/TraceAdapter.h"
 #include "public/common/AMFFactory.h"
 
-#if defined( _M_AMD64)
-#include "ProgramsDX11/BuildLUT_64.h"
-#include "ProgramsDX11/BuildLUTCenter_64.h"
-#include "ProgramsDX11/BuildShifts_64.h"
-#include "ProgramsDX11/Color_64.h"
-#include "ProgramsDX11/Histogram_64.h"
-#include "ProgramsDX11/NV12toRGB_64.h"
-#else
-#include "ProgramsDX11/BuildLUT_32.h"
-#include "ProgramsDX11/BuildLUTCenter_32.h"
-#include "ProgramsDX11/BuildShifts_32.h"
-#include "ProgramsDX11/Color_32.h"
-#include "ProgramsDX11/Histogram_32.h"
-#include "ProgramsDX11/NV12toRGB_32.h"
-#endif
+#include "BuildLUT.h"
+#include "BuildLUTCenter.h"
+#include "BuildShifts.h"
+#include "Color.h"
+#include "Histogram.h"
+#include "NV12toRGB.h"
 
 extern amf::AMF_KERNEL_ID   m_KernelHistogramIdDX11;
 extern amf::AMF_KERNEL_ID   m_KernelColorIdDX11;

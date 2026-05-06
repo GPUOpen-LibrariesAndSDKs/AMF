@@ -294,13 +294,6 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
 
     GetVulkan()->vkGetPhysicalDeviceQueueFamilyProperties2(m_VulkanDev.hPhysicalDevice, &queueFamilyPropertyCount, queueFamilyProperties.data());
 
-    m_uQueueGraphicsFamilyIndex  = UINT32_MAX;
-    m_uQueueComputeFamilyIndex = UINT32_MAX;
-    amf_uint32 uQueueDecodeFamilyIndex = UINT32_MAX;
-
-
-    amf_uint32 uQueueGraphicsIndex = UINT32_MAX;
-    amf_uint32 uQueueComputeIndex = UINT32_MAX;
     for(uint32_t i = 0; i < queueFamilyPropertyCount; i++)
     {
         VkQueueFamilyProperties2 &queueFamilyProperty = queueFamilyProperties[i];
@@ -309,52 +302,128 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
             queuePriorities.resize(queueFamilyProperty.queueFamilyProperties.queueCount, 1.0f);
         }
     }
+    m_uQueueGraphicsFamilyIndex = UINT32_MAX;
+    m_uQueueComputeFamilyIndex = UINT32_MAX;
+    amf_uint32 uQueueDecodeFamilyIndex = UINT32_MAX;
+    amf_uint32 uQueueComputeIndex = 0;
+
+    struct QueueFamilyDesc
+    {
+        uint32_t    family;
+        uint32_t    count;
+        bool        dedicated;
+        bool        hasProtected;
+    };
+    typedef std::deque<QueueFamilyDesc>   QueueFamilyIndexList;
+    QueueFamilyIndexList  computeQueues, gfxQueues, decodeQueues;
+
+    // Create lists of queues that support the required operations
     for (uint32_t i = 0; i < queueFamilyPropertyCount; i++)
     {
-        VkQueueFamilyProperties2 &queueFamilyProperty = queueFamilyProperties[i];
+        VkQueueFamilyProperties2& queueFamilyProperty = queueFamilyProperties[i];
         VkDeviceQueueCreateInfo queueCreateInfo = {};
 
+        constexpr const int queueTypeMask = VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_VIDEO_DECODE_BIT_KHR;
+        int queueTypeFlags = queueFamilyProperty.queueFamilyProperties.queueFlags & queueTypeMask;
+        bool hasProtected = (queueFamilyProperty.queueFamilyProperties.queueFlags & VK_QUEUE_PROTECTED_BIT) != 0; // prioritize non-protected queues
 
-        queueCreateInfo.pQueuePriorities = &queuePriorities[0];
-        queueCreateInfo.queueFamilyIndex = i;
+        if ((queueTypeFlags & VK_QUEUE_COMPUTE_BIT) != 0)
+        {
+            bool isDedicated = (queueTypeFlags & (~VK_QUEUE_COMPUTE_BIT)) == 0;
+            computeQueues.push_back({ i, queueFamilyProperty.queueFamilyProperties.queueCount, isDedicated, hasProtected });
+        }
+        if ((queueTypeFlags & VK_QUEUE_GRAPHICS_BIT) != 0)
+        {
+            bool isDedicated = (queueTypeFlags & (~VK_QUEUE_GRAPHICS_BIT)) == 0;
+            gfxQueues.push_back({ i, queueFamilyProperty.queueFamilyProperties.queueCount, isDedicated, hasProtected });
+        }
+        if ((queueTypeFlags & VK_QUEUE_VIDEO_DECODE_BIT_KHR) != 0)
+        {
+            bool isDedicated = (queueTypeFlags & (~VK_QUEUE_VIDEO_DECODE_BIT_KHR)) == 0;
+            decodeQueues.push_back({ i, queueFamilyProperty.queueFamilyProperties.queueCount, isDedicated, hasProtected });
+        }
+    }
+    // sort queues based on 1. Dedicated, 2. Non-protected (if multiple dedicated)
+    // sort returns true if a is better than b
+    struct QueueFamilyDescSorter
+    {
+        bool operator() (const QueueFamilyDesc& a, const QueueFamilyDesc& b) const
+        {
+            if (a.dedicated != b.dedicated)
+            {
+                return a.dedicated; // dedicated is better
+            }
+            if (a.hasProtected != b.hasProtected)
+            {
+                return !a.hasProtected; // non-protected is better
+            }
+            return false;
+        }
+    } queueFamilyInfoSorter;
+
+    std::sort(computeQueues.begin(), computeQueues.end(), queueFamilyInfoSorter);
+    std::sort(gfxQueues.begin(), gfxQueues.end(), queueFamilyInfoSorter);
+    std::sort(decodeQueues.begin(), decodeQueues.end(), queueFamilyInfoSorter);
+
+    if (computeQueues.size() > 0)
+    {
+        m_uQueueComputeFamilyIndex = computeQueues[0].family;
+    }
+    if (gfxQueues.size() > 0)
+    {
+        m_uQueueGraphicsFamilyIndex = gfxQueues[0].family;
+    }
+    if (decodeQueues.size() > 0)
+    {
+        uQueueDecodeFamilyIndex = decodeQueues[0].family;
+    }
+
+    if (m_uQueueGraphicsFamilyIndex != UINT32_MAX)
+    {
+        VkDeviceQueueCreateInfo queueCreateInfo = {};
+        queueCreateInfo.pQueuePriorities = queuePriorities.data();
+        queueCreateInfo.queueFamilyIndex = m_uQueueGraphicsFamilyIndex;
+        queueCreateInfo.queueCount = 1;
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        deviceQueueCreateInfoItems.push_back(queueCreateInfo);
+    }
+
+    if (m_uQueueComputeFamilyIndex != UINT32_MAX && m_uQueueComputeFamilyIndex != m_uQueueGraphicsFamilyIndex)
+    {
+        VkDeviceQueueCreateInfo queueCreateInfo = {};
+        queueCreateInfo.pQueuePriorities = queuePriorities.data();
+        queueCreateInfo.queueFamilyIndex = m_uQueueComputeFamilyIndex;
         queueCreateInfo.queueCount = 1;
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 
-        if ((queueFamilyProperty.queueFamilyProperties.queueFlags & VK_QUEUE_COMPUTE_BIT)
-            && (queueFamilyProperty.queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0
-            && m_uQueueComputeFamilyIndex == UINT32_MAX)
+        amf_int64 queueComputeIndex = -1;
+        if (pContext->GetProperty(AMF_CONTEXT_VULKAN_COMPUTE_QUEUE, &queueComputeIndex) == AMF_OK)
         {
-            m_uQueueComputeFamilyIndex = i;
-            uQueueComputeIndex = 0;
+            VkQueueFamilyProperties2& queueFamilyProperty = queueFamilyProperties[m_uQueueComputeFamilyIndex];
 
-            amf_int64 queueComputeIndex = -1;
-            if (pContext->GetProperty(AMF_CONTEXT_VULKAN_COMPUTE_QUEUE, &queueComputeIndex) == AMF_OK)
-            {
-                AMF_RETURN_IF_FALSE(queueComputeIndex >= 0 && queueComputeIndex < queueFamilyProperty.queueFamilyProperties.queueCount,
-                    AMF_FAIL,
-                    L"CreateDeviceAndFindQueues() invalid VulkanComputeQueue index %d not in range [%d,%d]",
-                    static_cast<int>(queueComputeIndex),
-                    0,
-                    static_cast<int>(queueFamilyProperty.queueFamilyProperties.queueCount - 1));
-                uQueueComputeIndex = static_cast<amf_uint32>(queueComputeIndex);
-                queueCreateInfo.queueCount = uQueueComputeIndex + 1;
-            }
-
-            deviceQueueCreateInfoItems.push_back(queueCreateInfo);
-        }
-        if ((queueFamilyProperty.queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT) && m_uQueueGraphicsFamilyIndex == UINT32_MAX)
-        {
-            m_uQueueGraphicsFamilyIndex = i;
-            uQueueGraphicsIndex = 0;
-            deviceQueueCreateInfoItems.push_back(queueCreateInfo);
-        }
-        if ((queueFamilyProperty.queueFamilyProperties.queueFlags & VK_QUEUE_VIDEO_DECODE_BIT_KHR) && uQueueDecodeFamilyIndex == UINT32_MAX)
-        {
-            uQueueDecodeFamilyIndex = i;
-            deviceQueueCreateInfoItems.push_back(queueCreateInfo);
+            AMF_RETURN_IF_FALSE(queueComputeIndex >= 0 && queueComputeIndex < queueFamilyProperty.queueFamilyProperties.queueCount,
+                AMF_FAIL,
+                L"CreateDeviceAndFindQueues() invalid VulkanComputeQueue index %d not in range [%d,%d]",
+                static_cast<int>(queueComputeIndex),
+                0,
+                static_cast<int>(queueFamilyProperty.queueFamilyProperties.queueCount - 1));
+            uQueueComputeIndex = static_cast<amf_int32>(queueComputeIndex);
+            queueCreateInfo.queueCount = static_cast<amf_uint32>(queueComputeIndex) + 1;
         }
 
+        deviceQueueCreateInfoItems.push_back(queueCreateInfo);
     }
+
+    if (uQueueDecodeFamilyIndex != UINT32_MAX)
+    {
+        VkDeviceQueueCreateInfo queueCreateInfo = {};
+        queueCreateInfo.pQueuePriorities = queuePriorities.data();
+        queueCreateInfo.queueFamilyIndex = uQueueDecodeFamilyIndex;
+        queueCreateInfo.queueCount = 1;
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        deviceQueueCreateInfoItems.push_back(queueCreateInfo);
+    }
+
     VkDeviceCreateInfo deviceCreateInfo = {};
 
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -439,8 +508,17 @@ AMF_RESULT DeviceVulkan::CreateDeviceAndFindQueues(amf_uint32 adapterID, std::ve
     AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS, AMF_FAIL, L"CreateDeviceAndQueues() vkCreateDevice() failed, Error=%d", (int)vkres);
     AMF_RETURN_IF_FALSE(m_VulkanDev.hDevice != nullptr, AMF_FAIL, L"CreateDeviceAndQueues() vkCreateDevice() returned nullptr");
 
+    int uQueueGraphicsIndex = 0;
 	GetVulkan()->vkGetDeviceQueue(m_VulkanDev.hDevice, m_uQueueGraphicsFamilyIndex, uQueueGraphicsIndex, &m_hQueueGraphics);
-	GetVulkan()->vkGetDeviceQueue(m_VulkanDev.hDevice, m_uQueueComputeFamilyIndex, uQueueComputeIndex, &m_hQueueCompute);
+    if(m_hQueueGraphics == VK_NULL_HANDLE)
+    {
+        AMFTraceWarning(AMF_FACILITY, L"No Graphics Queue: vkGetDeviceQueue fam[%d] idx[%d] failed.", m_uQueueGraphicsFamilyIndex, uQueueGraphicsIndex);
+    }
+    GetVulkan()->vkGetDeviceQueue(m_VulkanDev.hDevice, m_uQueueComputeFamilyIndex, uQueueComputeIndex, &m_hQueueCompute);
+    if (m_hQueueCompute == VK_NULL_HANDLE)
+    {
+        AMFTraceWarning(AMF_FACILITY, L"No Compute Queue: vkGetDeviceQueue fam[%d] idx[%d] failed.", m_uQueueComputeFamilyIndex, uQueueComputeIndex);
+    }
 
     return AMF_OK;
 }

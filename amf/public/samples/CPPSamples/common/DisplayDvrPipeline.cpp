@@ -41,6 +41,7 @@
 #include "public/include/components/DisplayCapture.h"
 #include "public/include/components/AudioCapture.h"
 #include "public/common/PropertyStorageExImpl.h"
+#include "public/include/core/Dump.h"
 
 #pragma warning(disable:4355)
 
@@ -287,6 +288,17 @@ DisplayDvrPipeline::DisplayDvrPipeline()
     , m_useOpenCLConverter(false)
     , m_engineMemoryType(amf::AMF_MEMORY_UNKNOWN)
 {
+    RegisterParams();
+}
+
+//-------------------------------------------------------------------------------------------------
+DisplayDvrPipeline::~DisplayDvrPipeline()
+{
+    Terminate();
+}
+//-------------------------------------------------------------------------------------------------
+void DisplayDvrPipeline::RegisterParams()
+{
     SetParamDescription(PARAM_NAME_CODEC, ParamCommon, L"Codec name (AVC or H264, HEVC or H265)", ParamConverterCodec);
     SetParamDescription(PARAM_NAME_OUTPUT, ParamCommon, L"Output file name", NULL);
     SetParamDescription(PARAM_NAME_URL, ParamCommon, L"Output URL name", NULL);
@@ -300,14 +312,8 @@ DisplayDvrPipeline::DisplayDvrPipeline()
 
     // to demo frame-specific properties - will be applied to each N-th frame (force IDR)
     SetParam(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, amf_int64(AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR));
-}
 
-//-------------------------------------------------------------------------------------------------
-DisplayDvrPipeline::~DisplayDvrPipeline()
-{
-    Terminate();
 }
-
 //-------------------------------------------------------------------------------------------------
 void DisplayDvrPipeline::Terminate()
 {

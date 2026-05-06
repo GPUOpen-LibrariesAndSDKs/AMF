@@ -164,6 +164,7 @@ namespace amf
     };
 #else // #if defined(__cplusplus)
     typedef struct AMFSurface AMFSurface;
+    typedef struct AMFSurface1 AMFSurface1;
     typedef struct AMFSurfaceObserver AMFSurfaceObserver;
 
     typedef struct AMFSurfaceObserverVtbl
@@ -223,8 +224,29 @@ namespace amf
     //----------------------------------------------------------------------------------------------
     typedef AMFInterfacePtr_T<AMFSurface> AMFSurfacePtr;
     //----------------------------------------------------------------------------------------------
+
+
+    //----------------------------------------------------------------------------------------------
+    // AMFSurface1 interface
+    //----------------------------------------------------------------------------------------------
+    class AMF_NO_VTABLE AMFSurface1 : public AMFSurface
+    {
+    public:
+        AMF_DECLARE_IID(0xd236db3e, 0x6945, 0x4158, 0xad, 0x29, 0x4a, 0x8a, 0x38, 0x6b, 0xfc, 0x61)
+
+        virtual AMF_RESULT  AMF_STD_CALL Map(AMF_MEMORY_CPU_ACCESS flags, amf_size planeCount, amf_size* pRowPitches, void** ppData) = 0; // only READ and WRITE flags are valid
+        virtual AMF_RESULT  AMF_STD_CALL Unmap() = 0;
+    };
+    //----------------------------------------------------------------------------------------------
+    // smart pointer
+    //----------------------------------------------------------------------------------------------
+    typedef AMFInterfacePtr_T<AMFSurface1> AMFSurface1Ptr;
+    //----------------------------------------------------------------------------------------------
+
+
 #else // #if defined(__cplusplus)
-        AMF_DECLARE_IID(AMFSurface, 0x3075dbe3, 0x8718, 0x4cfa, 0x86, 0xfb, 0x21, 0x14, 0xc0, 0xa5, 0xa4, 0x51)
+    AMF_DECLARE_IID(AMFSurface, 0x3075dbe3, 0x8718, 0x4cfa, 0x86, 0xfb, 0x21, 0x14, 0xc0, 0xa5, 0xa4, 0x51)
+
     typedef struct AMFSurfaceVtbl
     {
         // AMFInterface interface
@@ -286,6 +308,76 @@ namespace amf
     struct AMFSurface
     {
         const AMFSurfaceVtbl *pVtbl;
+    };
+
+
+    AMF_DECLARE_IID(AMFSurface1, 0xd236db3e, 0x6945, 0x4158, 0xad, 0x29, 0x4a, 0x8a, 0x38, 0x6b, 0xfc, 0x61)
+
+    typedef struct AMFSurface1Vtbl
+    {
+        // AMFInterface interface
+        amf_long            (AMF_STD_CALL *Acquire)(AMFSurface1* pThis);
+        amf_long            (AMF_STD_CALL *Release)(AMFSurface1* pThis);
+        enum AMF_RESULT     (AMF_STD_CALL *QueryInterface)(AMFSurface1* pThis, const struct AMFGuid *interfaceID, void** ppInterface);
+
+        // AMFPropertyStorage interface
+        AMF_RESULT          (AMF_STD_CALL *SetProperty)(AMFSurface1* pThis, const wchar_t* name, AMFVariantStruct value);
+        AMF_RESULT          (AMF_STD_CALL *GetProperty)(AMFSurface1* pThis, const wchar_t* name, AMFVariantStruct* pValue);
+        amf_bool            (AMF_STD_CALL *HasProperty)(AMFSurface1* pThis, const wchar_t* name);
+        amf_size            (AMF_STD_CALL *GetPropertyCount)(AMFSurface1* pThis);
+        AMF_RESULT          (AMF_STD_CALL *GetPropertyAt)(AMFSurface1* pThis, amf_size index, wchar_t* name, amf_size nameSize, AMFVariantStruct* pValue);
+        AMF_RESULT          (AMF_STD_CALL *Clear)(AMFSurface1* pThis);
+        AMF_RESULT          (AMF_STD_CALL *AddTo)(AMFSurface1* pThis, AMFPropertyStorage* pDest, amf_bool overwrite, amf_bool deep);
+        AMF_RESULT          (AMF_STD_CALL *CopyTo)(AMFSurface1* pThis, AMFPropertyStorage* pDest, amf_bool deep);
+        void                (AMF_STD_CALL *AddObserver)(AMFSurface1* pThis, AMFPropertyStorageObserver* pObserver);
+        void                (AMF_STD_CALL *RemoveObserver)(AMFSurface1* pThis, AMFPropertyStorageObserver* pObserver);
+
+        // AMFData interface
+
+        AMF_MEMORY_TYPE     (AMF_STD_CALL *GetMemoryType)(AMFSurface1* pThis);
+
+        AMF_RESULT          (AMF_STD_CALL *Duplicate)(AMFSurface1* pThis, AMF_MEMORY_TYPE type, AMFData** ppData);
+        AMF_RESULT          (AMF_STD_CALL *Convert)(AMFSurface1* pThis, AMF_MEMORY_TYPE type); // optimal interop if possilble. Copy through host memory if needed
+        AMF_RESULT          (AMF_STD_CALL *Interop)(AMFSurface1* pThis, AMF_MEMORY_TYPE type); // only optimal interop if possilble. No copy through host memory for GPU objects
+
+        AMF_DATA_TYPE       (AMF_STD_CALL *GetDataType)(AMFSurface1* pThis);
+
+        amf_bool            (AMF_STD_CALL *IsReusable)(AMFSurface1* pThis);
+
+        void                (AMF_STD_CALL *SetPts)(AMFSurface1* pThis, amf_pts pts);
+        amf_pts             (AMF_STD_CALL *GetPts)(AMFSurface1* pThis);
+        void                (AMF_STD_CALL *SetDuration)(AMFSurface1* pThis, amf_pts duration);
+        amf_pts             (AMF_STD_CALL *GetDuration)(AMFSurface1* pThis);
+
+        // AMFSurface interface
+
+        AMF_SURFACE_FORMAT  (AMF_STD_CALL *GetFormat)(AMFSurface1* pThis);
+
+        // do not store planes outside. should be used together with Surface
+        amf_size            (AMF_STD_CALL *GetPlanesCount)(AMFSurface1* pThis);
+        AMFPlane*           (AMF_STD_CALL *GetPlaneAt)(AMFSurface1* pThis, amf_size index);
+        AMFPlane*           (AMF_STD_CALL *GetPlane)(AMFSurface1* pThis, AMF_PLANE_TYPE type);
+
+        AMF_FRAME_TYPE      (AMF_STD_CALL *GetFrameType)(AMFSurface1* pThis);
+        void                (AMF_STD_CALL *SetFrameType)(AMFSurface1* pThis, AMF_FRAME_TYPE type);
+
+        AMF_RESULT          (AMF_STD_CALL *SetCrop)(AMFSurface1* pThis, amf_int32 x,amf_int32 y, amf_int32 width, amf_int32 height);
+        AMF_RESULT          (AMF_STD_CALL *CopySurfaceRegion)(AMFSurface1* pThis, AMFSurface1* pDest, amf_int32 dstX, amf_int32 dstY, amf_int32 srcX, amf_int32 srcY, amf_int32 width, amf_int32 height);
+
+
+        // Observer management
+        void                (AMF_STD_CALL *AddObserver_Surface)(AMFSurface1* pThis, AMFSurfaceObserver* pObserver);
+        void                (AMF_STD_CALL *RemoveObserver_Surface)(AMFSurface1* pThis, AMFSurfaceObserver* pObserver);
+
+        // AMFSurface1 interface
+
+        AMF_RESULT          (AMF_STD_CALL *Map)(AMFSurface1* pThis, AMF_MEMORY_CPU_ACCESS flags, amf_size planeCount, amf_size* pRowPitches, void** ppData); // only READ and WRITE flags are valid
+        AMF_RESULT          (AMF_STD_CALL *Unmap)(AMFSurface1* pThis);
+    } AMFSurface1Vtbl;
+
+    struct AMFSurface1
+    {
+        const AMFSurface1Vtbl *pVtbl;
     };
 #endif // #if defined(__cplusplus)
 #if defined(__cplusplus)

@@ -45,7 +45,7 @@ public:
     RawStreamReader();
     virtual ~RawStreamReader();
 
-    virtual AMF_RESULT Init(ParametersStorage* pParams, amf::AMFContext* pContext);
+	virtual AMF_RESULT Init(ParametersStorage* pParams, amf::AMFContext* pContext, bool enableRepeat = false);
 
     virtual amf::AMF_SURFACE_FORMAT GetFormat()                 { return m_format; }
     virtual amf_int32               GetWidth()                  { return m_roi_width; }
@@ -86,6 +86,8 @@ private:
     amf_int64               m_framesCount;
     amf_int64               m_framesCountRead;
 
+    amf_int64               m_streamFramesCount;
+
     AMFByteArray            m_frame;
 
 	amf::AMFDataStreamPtr   m_pSearchCenterMapStream;   
@@ -102,5 +104,9 @@ typedef std::shared_ptr<RawStreamReader> RawStreamReaderPtr;
 
 amf::AMF_SURFACE_FORMAT AMF_STD_CALL  GetFormatFromString(const wchar_t* str);
 bool                    AMF_STD_CALL  amf_path_is_relative(const wchar_t* const path);
+
+// Utility functions for surface format calculations
+bool                    AMF_STD_CALL  PicGetStride(amf::AMF_SURFACE_FORMAT eFormat, amf_int32 width, amf_int32& stride);
+bool                    AMF_STD_CALL  PicGetFrameSize(amf::AMF_SURFACE_FORMAT format, amf_int32 width, amf_int32 height, int& size);
 
 #endif // AMF_RawStreamReader_h

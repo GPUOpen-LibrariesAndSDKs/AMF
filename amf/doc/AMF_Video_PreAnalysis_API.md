@@ -132,6 +132,8 @@ Table 1 shows the available parameters in AMF PA encoder mode. The list undernea
 Table 1. AMF PA properties in encoder mode
 </p>
 
+**Note:** Property constraints (min/max values, allowed enum values, etc.) can be queried through the `AMFPropertyStorageEx` interface using `AMFPropertyInfo`. See the [AMF API Reference](AMF_API_Reference.md#22143-amfpropertystorageex) for details.
+
 ---
 
 **Name:**
@@ -200,7 +202,7 @@ Sensitivity of scene change detection. The higher the sensitivity, the more rest
 `false`
 
 **Description:**
-Enables static scene detection. A frame in a static scene will be encoded as a skip frame if the reference frame quality is acceptable. Refer to AMF_PA_MAX_QP_BEFORE_FORCE_SKIP for details.
+Enables static scene detection. A frame in a static scene will be encoded as a skip frame if the reference frame quality is acceptable. Refer to AMF_PA_MAX_QP_BEFORE_FORCE_SKIP for details. Requires a minimum `LOOKAHEAD_BUFFER_DEPTH` size of 1.
 
 ---
 
@@ -292,18 +294,18 @@ Enables automatic long term reference frame management. Last frame of a scene wi
 `LOOKAHEAD_BUFFER_DEPTH`
 
 **Values:**
-`0 - MAX_LOOKAHEAD_DEPTH`
+`0 - 41`
 
 **Default Value associated with usages:**
-   - Transcoding: `0`
-   - Ultra low latency: `0`
-   - Low latency: `0`
-   - Webcam: `0`
+   - Transcoding: `11`
+   - Ultra low latency: `1`
+   - Low latency: `1`
+   - Webcam: `1`
    - HQ: `11`
-   - HQLL: `0`
+   - HQLL: `1`
 
 **Description:**
-Sets the PA lookahead buffer size. The longer the buffer depth, the better the quality and the longer the latency. Suggested lookahead buffer sizes are 11(short), 21(medium) or 41(long).
+Sets the PA lookahead buffer size. The longer the buffer depth, the better the quality and the longer the latency. Suggested lookahead buffer sizes are 1(very short), 11(short), 21(medium) or 41(long). Some PA features require a minimum size of 1 to operate correctly.
 
 ---
 
@@ -336,7 +338,7 @@ Sets the perceptual adaptive quantization mode.
    - HQLL: `AMF_PA_TAQ_MODE_NONE`
 
 **Description:**
-Sets the temporal adaptive quantization mode. MODE_1 is suitable for non-gaming applications whereas MODE_2 is suitable for gaming applications. MODE_2 is supported on encoder memory type DX11.
+Sets the temporal adaptive quantization mode. MODE_1 is suitable for non-gaming applications whereas MODE_2 is suitable for gaming applications. MODE_2 is supported on encoder memory type DX11. Requires a minimum `LOOKAHEAD_BUFFER_DEPTH` size of 1.
 
 ---
 
@@ -460,7 +462,7 @@ Sensitivity of scene change detection. The higher the sensitivity, the more rest
 `false`
 
 **Description:**
-Enables static scene detection. A frame in a static scene will be encoded as a skip frame if the reference frame quality is acceptable. Refer to AMF_PA_MAX_QP_BEFORE_FORCE_SKIP for details.
+Enables static scene detection. A frame in a static scene will be encoded as a skip frame if the reference frame quality is acceptable. Refer to AMF_PA_MAX_QP_BEFORE_FORCE_SKIP for details. Requires a minimum `LOOKAHEAD_BUFFER_DEPTH` size of 1.
 
 ---
 

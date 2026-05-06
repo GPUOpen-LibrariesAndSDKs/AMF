@@ -3,19 +3,25 @@
 AMF is a light-weight, portable multimedia framework that abstracts away most of the platform and API-specific details and allows for easy implementation of multimedia applications using a variety of technologies, such as DirectX 11, OpenGL, and OpenCL and facilitates an efficient interop between them.
 
 <div>
-  <a href="https://github.com/GPUOpen-LibrariesAndSDKs/AMF/releases/latest/"><img src="http://gpuopen-librariesandsdks.github.io/media/latest-release-button.svg" alt="Latest release" title="Latest release"></a>
+  <a href="https://www.amd.com/en/support/download/"><img src="https://img.shields.io/badge/Windows%20Driver-Download-0078D6?style=for-the-badge&logo=windows" alt="Windows Driver" title="Windows Driver"></a>
+  <a href="https://repo.radeon.com/amf/"><img src="https://img.shields.io/badge/Linux%20Driver-Download-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Linux Driver" title="Linux Driver"></a>
 </div>
+
+## Table of Contents
+- [Prerequisites](#prerequisites)
+- [Version History](#version-history)
+- [Getting Started](#getting-started)
+- [Third-Party Software](#third-party-software)
+- [Attribution](#attribution)
 
 ### Prerequisites
 * Windows
-    * Windows&reg; 7 (SP1 with the Platform Update) (AMF v1.4.18.0 and older)
-    * Windows&reg; 8.1 (AMF v1.4.0.0 and older)
     * Windows&reg; 10, or Windows&reg; 11
     * Windows Subsystem for Linux (DX12 Decoder and Converter Only)
-    * Visual Studio&reg; 2019
+    * Visual Studio&reg; 2022
 * Linux
-    * RHEL 9.6 / 10
-    * Ubuntu 24.04.2 / 22.04.5
+    * RHEL 9.8 / 10.2
+    * Ubuntu 24.04.4 / 26.04.0
     * SLED/SLES 15.7 / 16
 * Driver and AMF component installation instructions are available on the [Wiki page](https://github.com/GPUOpen-LibrariesAndSDKs/AMF/wiki).
     
@@ -32,8 +38,14 @@ AMF is a light-weight, portable multimedia framework that abstracts away most of
       | Ubuntu 20.04.0            | 20.20                             |
       | \**All supported distros* | 20.40                             |
 
+
+### Version History
 * AMF SDK is backward compatible with all previous driver versions.
-* Version 1.5.0: AMD Radeon Software Adrenalin Edition 25.10.2 (25.20.21.01) or newer. Added 4:4:4/4:2:2 chroma subsampling support for VideoConverter color space conversion and scaling. Samples updated to VS 2022.
+* Version 1.5.2: AMD Radeon Software Adrenalin Edition 26.5.1 (26.10.07.01) or newer. Updated FFmpeg to 8.0.1.
+  
+  **Note:** The AMF Linux release will be available shortly after the Radeon Software Adrenalin Edition driver release.
+
+* Version 1.5.0: AMD Radeon Software Adrenalin Edition 25.10.1 (25.20.21.01) or newer. Added 4:4:4/4:2:2 chroma subsampling support for VideoConverter color space conversion and scaling. Samples updated to VS 2022.
 * Version 1.4.36: AMD Radeon Software Adrenalin Edition 25.1.1 (24.30.31.03) or newer. Added B-frame support and picture management options for AV1 encoder. New high quality presets for HEVC and AVC encoders. New SimpleFRC sample app.
 * Version 1.4.35: AMD Radeon Software Adrenalin Edition 24.9.1 (24.20.11.01) or newer. Added multi-HW instance encoder mode. Updated FFmpeg to 7.0. Added split frame encoding.
 * Version 1.4.34: AMD Radeon Software Adrenalin Edition 24.6.1 (24.10.21.01) or newer. Added Linux support for DVR sample. New HEVC header insertion mode. Stable support for RADV drivers for AMF on Linux in VideoConverter/HQScaler/VideoEncoder and experimental for decoder. Added DX11 support for FRC component.

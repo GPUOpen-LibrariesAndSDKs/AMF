@@ -164,8 +164,8 @@ public:
     VideoPresenterVulkan(amf_handle hwnd, amf::AMFContext* pContext, amf_handle display);
     virtual                             ~VideoPresenterVulkan();
 
-    virtual bool                        SupportAllocator() const { return false; }
-    virtual amf::AMF_MEMORY_TYPE        GetMemoryType() const { return amf::AMF_MEMORY_VULKAN; }
+    virtual bool                        SupportAllocator() const override { return false; }
+    virtual amf::AMF_MEMORY_TYPE        GetMemoryType() const override { return amf::AMF_MEMORY_VULKAN; }
 
     virtual AMF_RESULT                  Init(amf_int32 width, amf_int32 height, amf::AMFSurface* pSurface) override;
     virtual AMF_RESULT                  Terminate() override;

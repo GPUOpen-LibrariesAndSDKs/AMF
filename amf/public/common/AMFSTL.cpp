@@ -542,6 +542,26 @@ amf_size AMF_STD_CALL amf::amf_string_ci_rfind(const amf_wstring& left, const am
     return _left.rfind(_right, off);
 }
 //----------------------------------------------------------------------------------------------
+int AMF_STD_CALL amf::amf_fputws(const wchar_t* str, FILE* stream)
+{
+#if defined(_WIN32)
+    // Windows: always use wide character output
+    return fputws(str, stream);
+#else
+    // Linux: detect stream orientation and output accordingly
+    int orientation = fwide(stream, 0);
+    
+    if (orientation >= 0)
+    {
+        // Wide-oriented or unoriented: use fputws
+        return fputws(str, stream);
+    }
+    // Narrow-oriented: convert to UTF-8 and use fputs
+    amf_string utf8String = amf_from_unicode_to_utf8(str);
+    return fputs(utf8String.c_str(), stream);
+#endif
+}
+//----------------------------------------------------------------------------------------------
 amf_int AMF_STD_CALL amf::amf_string_ci_compare(const amf_wstring& left, const amf_wstring& right)
 {
     amf_wstring _left = amf_string_to_lower(left);

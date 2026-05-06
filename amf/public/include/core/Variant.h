@@ -892,14 +892,14 @@ namespace amf
     {
         res = AMF_OK;
         char buff[0xFF];
-        sprintf(buff, "%lf", value);
+        snprintf(buff, sizeof(buff), "%.16f", value);
         return buff;
     }
     static AMF_INLINE AMFVariant::String AMFConvertFloatToString(amf_float value, AMF_RESULT& res)
     {
         res = AMF_OK;
         char buff[0xFF];
-        sprintf(buff, "%f", value);
+        snprintf(buff, sizeof(buff), "%.6f", value);
         return buff;
     }
     static AMF_INLINE AMFVariant::WString AMFConvertDoubleToWString(amf_double value, AMF_RESULT& res)
@@ -1178,28 +1178,28 @@ namespace amf
     {
         res = AMF_OK;
         char buff[0xFF];
-        sprintf(buff, "%f,%f", value.width, value.height);
+        snprintf(buff, sizeof(buff), "%.16f,%.16f", value.width, value.height);
         return buff;
     }
     static AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertFloatPoint2DToString(const AMFFloatPoint2D& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         char buff[0xFF];
-        sprintf(buff, "%f,%f", value.x, value.y);
+        snprintf(buff, sizeof(buff), "%.6f,%.6f", value.x, value.y);
         return buff;
     }
     static AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertFloatPoint3DToString(const AMFFloatPoint3D& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         char buff[0xFF];
-        sprintf(buff, "%f,%f,%f", value.x, value.y, value.z);
+        snprintf(buff, sizeof(buff), "%.6f,%.6f,%.6f", value.x, value.y, value.z);
         return buff;
     }
     static AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertFloatVector4DToString(const AMFFloatVector4D& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         char buff[0xFF];
-        sprintf(buff, "%f,%f,%f,%f", value.x, value.y, value.z, value.w);
+        snprintf(buff, sizeof(buff), "%.6f,%.6f,%.6f,%.6f", value.x, value.y, value.z, value.w);
         return buff;
     }
     static AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertRateToString(const AMFRate& value, AMF_RESULT& res)
@@ -2089,6 +2089,21 @@ namespace amf
         return type == AMF_VARIANT_EMPTY;
     }
     //-------------------------------------------------------------------------------------------------
+    //  These global operators are needed to suppress a C++20 warning about an ambiguous call to operator== even though it has a unique viable function
+    //  MSVC and GCC are able to figure it out, but Clang is being overzealous
+    AMF_INLINE bool operator==(const AMFVariantStruct& left, const AMFVariantStruct& right)
+    {
+        bool ret;
+        AMFVariantCompare(&left, &right, &ret);
+        return ret;
+    }
+    AMF_INLINE bool operator!=(const AMFVariantStruct& left, const AMFVariantStruct& right)
+    {
+        bool ret;
+        AMFVariantCompare(&left, &right, &ret);
+        return !ret;
+    }
+
 #endif // #if defined(__cplusplus)
 
 #if defined(__cplusplus)

@@ -740,6 +740,11 @@ Maximum number of reference frames.
 
 **Description:**
 Maximum number of consecutive B Pictures.
+It is recommended to set this value to `3` if `AMF_VIDEO_ENCODER_AV1_B_PIC_PATTERN` is not `0`, or both Adaptive MiniGOP and PA are enabled.  
+If users specify either `AMF_VIDEO_ENCODER_AV1_B_PIC_PATTERN` or `AMF_VIDEO_ENCODER_AV1_ADAPTIVE_MINIGOP` but do not explicitly set `AMF_VIDEO_ENCODER_AV1_MAX_CONSECUTIVE_BPICTURES`, this property will default to:
+- the value of `AMF_VIDEO_ENCODER_AV1_B_PIC_PATTERN` (if `AMF_VIDEO_ENCODER_AV1_B_PIC_PATTERN` is set), or
+- `3` (if `AMF_VIDEO_ENCODER_AV1_ADAPTIVE_MINIGOP` is set).
+- prioritizes `AMF_VIDEO_ENCODER_AV1_ADAPTIVE_MINIGOP` over `AMF_VIDEO_ENCODER_AV1_B_PIC_PATTERN`
 
 ---
 
@@ -753,7 +758,7 @@ Maximum number of consecutive B Pictures.
 `false`
 
 **Description:**
-Disable/Enable Adaptive MiniGOP, can enable with PA enabled.
+Disable/Enable Adaptive MiniGOP. Requires PA to be enabled with a minimum LOOKAHEAD_BUFFER_DEPTH size of 1.
 
 ---
 

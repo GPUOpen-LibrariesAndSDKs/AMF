@@ -65,7 +65,7 @@ namespace amf
             AMF_INTERFACE_ENTRY(AMFPropertyStorage)
         AMF_END_INTERFACE_MAP
         //-------------------------------------------------------------------------------------------------
-        virtual AMF_RESULT  AMF_STD_CALL SetProperty(const wchar_t* pName, AMFVariantStruct value)
+        virtual AMF_RESULT  AMF_STD_CALL SetProperty(const wchar_t* pName, AMFVariantStruct value) override
         {
             AMF_RETURN_IF_INVALID_POINTER(pName);
 
@@ -75,7 +75,7 @@ namespace amf
             return AMF_OK;
         }
         //-------------------------------------------------------------------------------------------------
-        virtual AMF_RESULT  AMF_STD_CALL GetProperty(const wchar_t* pName, AMFVariantStruct* pValue) const
+        virtual AMF_RESULT  AMF_STD_CALL GetProperty(const wchar_t* pName, AMFVariantStruct* pValue) const override
         {
             AMF_RETURN_IF_INVALID_POINTER(pName);
             AMF_RETURN_IF_INVALID_POINTER(pValue);
@@ -90,18 +90,18 @@ namespace amf
             return AMF_NOT_FOUND;
         }
         //-------------------------------------------------------------------------------------------------
-        virtual bool        AMF_STD_CALL HasProperty(const wchar_t* pName) const
+        virtual bool        AMF_STD_CALL HasProperty(const wchar_t* pName) const override
         {
             AMF_ASSERT(pName != NULL);
             return m_PropertyValues.find(pName) != m_PropertyValues.end();
         }
         //-------------------------------------------------------------------------------------------------
-        virtual amf_size    AMF_STD_CALL GetPropertyCount() const
+        virtual amf_size    AMF_STD_CALL GetPropertyCount() const override
         {
             return m_PropertyValues.size();
         }
         //-------------------------------------------------------------------------------------------------
-        virtual AMF_RESULT  AMF_STD_CALL GetPropertyAt(amf_size index, wchar_t* pName, amf_size nameSize, AMFVariantStruct* pValue) const
+        virtual AMF_RESULT  AMF_STD_CALL GetPropertyAt(amf_size index, wchar_t* pName, amf_size nameSize, AMFVariantStruct* pValue) const override
         {
             AMF_RETURN_IF_INVALID_POINTER(pName);
             AMF_RETURN_IF_INVALID_POINTER(pValue);
@@ -126,13 +126,13 @@ namespace amf
             return AMF_OK;
         }
         //-------------------------------------------------------------------------------------------------
-        virtual AMF_RESULT  AMF_STD_CALL Clear()
+        virtual AMF_RESULT  AMF_STD_CALL Clear() override
         {
             m_PropertyValues.clear();
             return AMF_OK;
         }
         //-------------------------------------------------------------------------------------------------
-        virtual AMF_RESULT  AMF_STD_CALL AddTo(AMFPropertyStorage* pDest, bool overwrite, bool /*deep*/) const
+        virtual AMF_RESULT  AMF_STD_CALL AddTo(AMFPropertyStorage* pDest, bool overwrite, bool /*deep*/) const override
         {
             AMF_RETURN_IF_INVALID_POINTER(pDest);
             AMF_RESULT err = AMF_OK;
@@ -164,7 +164,7 @@ namespace amf
             return AMF_OK;
         }        
         //-------------------------------------------------------------------------------------------------
-        virtual AMF_RESULT  AMF_STD_CALL CopyTo(AMFPropertyStorage* pDest, bool deep) const
+        virtual AMF_RESULT  AMF_STD_CALL CopyTo(AMFPropertyStorage* pDest, bool deep) const override
         {
             AMF_RETURN_IF_INVALID_POINTER(pDest);
             if(pDest != this)
@@ -180,9 +180,9 @@ namespace amf
         //-------------------------------------------------------------------------------------------------
         virtual void        AMF_STD_CALL OnPropertyChanged(const wchar_t* /*name*/) { }
         //-------------------------------------------------------------------------------------------------
-        virtual void        AMF_STD_CALL AddObserver(AMFPropertyStorageObserver* pObserver) { AMFObservableImpl<AMFPropertyStorageObserver>::AddObserver(pObserver); }
+        virtual void        AMF_STD_CALL AddObserver(AMFPropertyStorageObserver* pObserver) override { AMFObservableImpl<AMFPropertyStorageObserver>::AddObserver(pObserver); }
         //-------------------------------------------------------------------------------------------------
-        virtual void        AMF_STD_CALL RemoveObserver(AMFPropertyStorageObserver* pObserver) { AMFObservableImpl<AMFPropertyStorageObserver>::RemoveObserver(pObserver); }
+        virtual void        AMF_STD_CALL RemoveObserver(AMFPropertyStorageObserver* pObserver) override { AMFObservableImpl<AMFPropertyStorageObserver>::RemoveObserver(pObserver); }
         //-------------------------------------------------------------------------------------------------
     protected:
         //-------------------------------------------------------------------------------------------------

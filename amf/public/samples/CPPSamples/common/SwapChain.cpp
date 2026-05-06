@@ -266,7 +266,7 @@ inline void* SwapChain::GetSurfaceNative(amf::AMFSurface* pSurface) const
 
 AMFRect GetClientRect(amf_handle hwnd, amf_handle hDisplay)
 {
-    hDisplay; // Suppress unreferenced formal parameter warning (C4100)
+    (void)hDisplay; // Suppress unreferenced formal parameter warning (C4100)
     AMFRect clientRect = { 0 };
     if (hwnd == nullptr)
     {

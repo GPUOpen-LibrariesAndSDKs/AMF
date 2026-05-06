@@ -77,8 +77,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)..\..\bin\vs2022x$(PlatformArchitecture)$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)..\..\bin\obj\vs2022x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -205,12 +203,12 @@
     <ClInclude Include="..\common\ParametersStorage.h" />
     <ClInclude Include="..\common\Pipeline.h" />
     <ClInclude Include="..\common\PipelineElement.h" />
+    <ClInclude Include="..\common\RenderWindow.h" />
     <ClInclude Include="..\common\SwapChain.h" />
     <ClInclude Include="..\common\SwapChainDX12.h" />
     <ClInclude Include="..\common\SwapChainDXGI.h" />
     <ClInclude Include="..\common\SwapChainVulkan.h" />
     <ClInclude Include="RenderEncodePipeline.h" />
-    <ClInclude Include="RenderWindow.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="VideoRender.h" />
@@ -267,12 +265,12 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\common\Pipeline.cpp" />
+    <ClCompile Include="..\common\RenderWindow.cpp" />
     <ClCompile Include="..\common\SwapChain.cpp" />
     <ClCompile Include="..\common\SwapChainDX12.cpp" />
     <ClCompile Include="..\common\SwapChainDXGI.cpp" />
     <ClCompile Include="..\common\SwapChainVulkan.cpp" />
     <ClCompile Include="RenderEncodePipeline.cpp" />
-    <ClCompile Include="RenderWindow.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

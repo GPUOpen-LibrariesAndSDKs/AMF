@@ -307,7 +307,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Terminate()
     {
         AMFTraceInfo(AMF_FACILITY, L"Submitted %d, Queried %d", (int)m_audioFrameSubmitCount, (int)m_audioFrameQueryCount);
 
-        avcodec_close(m_pCodecContext);
+        avcodec_free_context(&m_pCodecContext);
         av_free(m_pCodecContext);
         m_pCodecContext = NULL;
     }
@@ -385,7 +385,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::Flush()
             AMF_RESULT res = ReInit(0, 0);
             if (res != AMF_OK)
             {
-                avcodec_close(m_pCodecContext);
+                avcodec_free_context(&m_pCodecContext);
                 av_free(m_pCodecContext);
                 m_pCodecContext = NULL;
                 return res;
@@ -832,7 +832,7 @@ AMF_RESULT  AMF_STD_CALL  AMFAudioEncoderFFMPEGImpl::InitializeFrame(AMFAudioBuf
     avFrame.ch_layout = m_pCodecContext->ch_layout;
     avFrame.ch_layout.nb_channels = m_channelCount;
     avFrame.sample_rate = m_sampleRate;
-    avFrame.key_frame = 1;
+    avFrame.flags |= AV_FRAME_FLAG_KEY;
     avFrame.pts = av_rescale_q(pInBuffer->GetPts(), AMF_TIME_BASE_Q, m_pCodecContext->time_base);
 
     // setup the data pointers in the AVFrame

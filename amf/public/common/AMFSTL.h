@@ -94,7 +94,7 @@ namespace amf
         };
         void deallocate(_Ty* const _Ptr, const size_t _Count)
         {
-            _Count;
+            (void)_Count;
             amf_free((void*)_Ptr);
         }
         _Ty* allocate(const size_t _Count, const void* = static_cast<const void*>(0))
@@ -347,6 +347,11 @@ namespace amf
 
     amf_size AMF_STD_CALL amf_string_ci_find(const amf_wstring& left, const amf_wstring& right, amf_size off = 0);
     amf_size AMF_STD_CALL amf_string_ci_rfind(const amf_wstring& left, const amf_wstring& right, amf_size off = amf_wstring::npos);
+
+    //-------------------------------------------------------------------------------------------------
+    // stream I/O helpers
+    //-------------------------------------------------------------------------------------------------
+    int AMF_STD_CALL amf_fputws(const wchar_t* str, FILE* stream);
     //-------------------------------------------------------------------------------------------------
 } // namespace amf
 

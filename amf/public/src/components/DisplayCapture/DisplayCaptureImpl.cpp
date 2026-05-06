@@ -40,6 +40,11 @@
 #include "../../../common/AMFFactory.h"
 #include "../../../common/TraceAdapter.h"
 
+#include "DrawRectsBGRA.h"
+
+static amf::AMF_KERNEL_ID  kernelIDs[AMF_MEMORY_VULKAN + 1];
+
+
 extern "C"
 {
 	// Function called from application code to create the component
@@ -360,14 +365,6 @@ amf_pts AMFDisplayCaptureImpl::GetCurrentPts() const
 	}
 	return result;
 }
-#if defined( _M_AMD64)
-#include "DrawRectsBGRA_64.h"
-#else 
-#include "DrawRectsBGRA_32.h"
-#endif
-//-------------------------------------------------------------------------------------------------
-static amf::AMF_KERNEL_ID  kernelIDs[AMF_MEMORY_VULKAN + 1];
-
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT  AMFDisplayCaptureImpl::InitDrawDirtyRects()
 {

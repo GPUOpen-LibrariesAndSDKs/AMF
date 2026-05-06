@@ -378,8 +378,22 @@ protected:
         amf_bool vui_parameters_present_flag;                    //u(1)
         //vui_parameters()
         AMFH265_vui_parameters_t vui_parameters;
-        amf_bool sps_extension_flag;                             //u(1)
+        amf_bool sps_extension_present_flag;                     //u(1)
+        amf_bool sps_range_extension_flag;                       //u(1)
+        amf_bool sps_multilayer_extension_flag;                  //u(1)
+        amf_bool sps_3d_extension_flag;                          //u(1)
+        amf_bool sps_scc_extension_flag;                         //u(1)
+        amf_uint32 sps_extension_4bits;                          //u(4)
         amf_bool sps_extension_data_flag;                        //u(1)
+        amf_bool transform_skip_rotation_enabled_flag;           //u(1)
+        amf_bool transform_skip_context_enabled_flag;            //u(1)
+        amf_bool implicit_rdpcm_enabled_flag;                    //u(1)
+        amf_bool explicit_rdpcm_enabled_flag;                    //u(1)
+        amf_bool extended_precision_processing_flag;             //u(1)
+        amf_bool intra_smoothing_disabled_flag;                  //u(1)
+        amf_bool high_precision_offsets_enabled_flag;            //u(1)
+        amf_bool persistent_rice_adaptation_enabled_flag;        //u(1)
+        amf_bool cabac_bypass_alignment_enabled_flag;            //u(1)
         //rbsp_trailing_bits( )
         AMFH265_rbsp_trailing_bits_t rbsp_trailing_bits;
 
@@ -439,10 +453,24 @@ protected:
         //scaling_list_data( )
         AMFH265_scaling_list_data_t scaling_list_data;
         amf_bool lists_modification_present_flag;                //u(1)
-        amf_uint32 log2_parallel_merge_level_minus2;              //ue(v)
+        amf_uint32 log2_parallel_merge_level_minus2;             //ue(v)
         amf_bool slice_segment_header_extension_present_flag;    //u(1)
-        amf_bool pps_extension_flag;                             //u(1)
+        amf_bool pps_extension_present_flag;                     //u(1)
+        amf_bool pps_range_extension_flag;                       //u(1)
+        amf_bool pps_multilayer_extension_flag;                  //u(1)
+        amf_bool pps_3d_extension_flag;                          //u(1)
+        amf_bool pps_scc_extension_flag;                         //u(1)
+        amf_uint32 pps_extension_4bits;                          //u(4)
         amf_bool pps_extension_data_flag;                        //u(1)
+        amf_uint32 log2_max_transform_skip_block_size_minus2;    //ue(v)
+        amf_bool cross_component_prediction_enabled_flag;        //u(1)
+        amf_bool chroma_qp_offset_list_enabled_flag;             //u(1)
+        amf_uint32 diff_cu_chroma_qp_offset_depth;               //ue(v)
+        amf_uint32 chroma_qp_offset_list_len_minus1;             //ue(v)
+        amf_int32 cb_qp_offset_list[6];                          //se(v)
+        amf_int32 cr_qp_offset_list[6];                          //se(v)
+        amf_uint32 log2_sao_offset_scale_luma;                   //ue(v)
+        amf_uint32 log2_sao_offset_scale_chroma;                 //ue(v)
         //rbsp_trailing_bits( )
         AMFH265_rbsp_trailing_bits_t rbsp_trailing_bits;
         PpsData(void)
@@ -1120,12 +1148,29 @@ bool HevcParser::SpsData::Parse(amf_uint8 *nalu, size_t size)
         //vui_parameters()
         ParseVUI(&vui_parameters, sps_max_sub_layers_minus1, nalu, size, offset);
     }
-    sps_extension_flag = Parser::getBit(nalu, offset);
-    if( sps_extension_flag )
+    sps_extension_present_flag = Parser::getBit(nalu, offset);
+    if (sps_extension_present_flag)
     {
-        //while( more_rbsp_data( ) )
-            //sps_extension_data_flag u(1)
+        sps_range_extension_flag = Parser::getBit(nalu, offset);
+        sps_multilayer_extension_flag = Parser::getBit(nalu, offset);
+        sps_3d_extension_flag = Parser::getBit(nalu, offset);
+        sps_scc_extension_flag = Parser::getBit(nalu, offset);
+        sps_extension_4bits = Parser::readBits(nalu, offset, 4);
     }
+    if (sps_range_extension_flag)
+    {
+        transform_skip_rotation_enabled_flag = Parser::getBit(nalu, offset);
+        transform_skip_context_enabled_flag = Parser::getBit(nalu, offset);
+        implicit_rdpcm_enabled_flag = Parser::getBit(nalu, offset);
+        explicit_rdpcm_enabled_flag = Parser::getBit(nalu, offset);
+        extended_precision_processing_flag = Parser::getBit(nalu, offset);
+        intra_smoothing_disabled_flag = Parser::getBit(nalu, offset);
+        high_precision_offsets_enabled_flag = Parser::getBit(nalu, offset);
+        persistent_rice_adaptation_enabled_flag = Parser::getBit(nalu, offset);
+        cabac_bypass_alignment_enabled_flag = Parser::getBit(nalu, offset);
+    }
+    //while( more_rbsp_data() )
+        //sps_extension_data_flag = Parser::getBit(nalu, offset);
     return true;
 }
 //-------------------------------------------------------------------------------------------------
@@ -1202,13 +1247,39 @@ bool HevcParser::PpsData::Parse(amf_uint8 *nalu, size_t size)
     lists_modification_present_flag = Parser::getBit(nalu, offset);
     log2_parallel_merge_level_minus2 = Parser::ExpGolomb::readUe(nalu, offset);
     slice_segment_header_extension_present_flag = Parser::getBit(nalu, offset);
-    pps_extension_flag = Parser::getBit(nalu, offset);
-    if (pps_extension_flag)
+    pps_extension_present_flag = Parser::getBit(nalu, offset);
+    if (pps_extension_present_flag)
     {
-        //while( more_rbsp_data( ) )
-            //pps_extension_data_flag u(1)
-        //rbsp_trailing_bits( )
+        pps_range_extension_flag = Parser::getBit(nalu, offset);
+        pps_multilayer_extension_flag = Parser::getBit(nalu, offset);
+        pps_3d_extension_flag = Parser::getBit(nalu, offset);
+        pps_scc_extension_flag = Parser::getBit(nalu, offset);
+        pps_extension_4bits = Parser::readBits(nalu, offset, 4);
     }
+    if (pps_range_extension_flag)
+    {
+        if (transform_skip_enabled_flag)
+        {
+            log2_max_transform_skip_block_size_minus2 = Parser::ExpGolomb::readUe(nalu, offset);
+        }
+        cross_component_prediction_enabled_flag = Parser::getBit(nalu, offset);
+        chroma_qp_offset_list_enabled_flag = Parser::getBit(nalu, offset);
+        if (chroma_qp_offset_list_enabled_flag)
+        {
+            diff_cu_chroma_qp_offset_depth = Parser::ExpGolomb::readUe(nalu, offset);
+            chroma_qp_offset_list_len_minus1 = Parser::ExpGolomb::readUe(nalu, offset);
+            for (amf_uint i = 0; i <= chroma_qp_offset_list_len_minus1; i++)
+            {
+                cb_qp_offset_list[i] = Parser::ExpGolomb::readSe(nalu, offset);
+                cr_qp_offset_list[i] = Parser::ExpGolomb::readSe(nalu, offset);
+            }
+        }
+        log2_sao_offset_scale_luma = Parser::ExpGolomb::readUe(nalu, offset);
+        log2_sao_offset_scale_chroma = Parser::ExpGolomb::readUe(nalu, offset);
+    }
+    //    while( more_rbsp_data( ) )
+    //        pps_extension_data_flag = Parser::getBit(nalu, offset);
+    //    rbsp_trailing_bits( )
     return true;
 }
 //-------------------------------------------------------------------------------------------------

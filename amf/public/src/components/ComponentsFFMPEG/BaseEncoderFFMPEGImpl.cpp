@@ -218,7 +218,7 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::Terminate()
     {
         AMFTraceInfo(AMF_FACILITY, L"Submitted %d, Queried %d", (int)m_videoFrameSubmitCount, (int)m_videoFrameQueryCount);
 
-        avcodec_close(m_pCodecContext);
+        avcodec_free_context(&m_pCodecContext);
         av_free(m_pCodecContext);
         m_pCodecContext = NULL;
     }
@@ -592,15 +592,20 @@ AMF_RESULT AMF_STD_CALL  BaseEncoderFFMPEGImpl::InitializeFrame(AMFSurface* pInS
     AMF_FRAME_TYPE eFrameType = pInSurface->GetFrameType();
     if (eFrameType != AMF_FRAME_PROGRESSIVE)
     {
-        avFrame.interlaced_frame = true;
-        avFrame.top_field_first = ((eFrameType == AMF_FRAME_INTERLEAVED_ODD_FIRST) ? true : false);
+        avFrame.flags |= AV_FRAME_FLAG_INTERLACED;
+        if (eFrameType == AMF_FRAME_INTERLEAVED_ODD_FIRST) {
+            avFrame.flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
+        }
+        else {
+            avFrame.flags &= ~AV_FRAME_FLAG_TOP_FIELD_FIRST;
+        }
     }
 
     avFrame.extended_data = avFrame.data;
     avFrame.format = m_pCodecContext->pix_fmt;
     avFrame.width = m_pCodecContext->width;
     avFrame.height = m_pCodecContext->height;
-    avFrame.key_frame = 1;
+    avFrame.flags |= AV_FRAME_FLAG_KEY;
     avFrame.pts = av_rescale_q(pInSurface->GetPts(), AMF_TIME_BASE_Q, m_pCodecContext->time_base);
     return AMF_OK;
 }

@@ -51,9 +51,9 @@ public:
 		AMF_INTERFACE_ENTRY(AMFCurrentTime)
 	AMF_END_INTERFACE_MAP
 
-	virtual amf_pts AMF_STD_CALL Get();
+	virtual amf_pts AMF_STD_CALL Get() override;
 
-	virtual void AMF_STD_CALL Reset();
+	virtual void AMF_STD_CALL Reset() override;
 
 private:
 	amf_pts									m_timeOfFirstCall;

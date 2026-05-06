@@ -73,22 +73,22 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <TargetName>amf-stitch-$(PlatformArchitecture)</TargetName>
+    <MultiProcFXC>true</MultiProcFXC>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>false</LinkIncremental>
     <TargetName>amf-stitch-$(PlatformArchitecture)</TargetName>
-    <OutDir>$(SolutionDir)..\..\bin\vs2022x$(PlatformArchitecture)$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)..\..\bin\obj\vs2022x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
+    <MultiProcFXC>true</MultiProcFXC>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <TargetName>amf-stitch-$(PlatformArchitecture)</TargetName>
+    <MultiProcFXC>true</MultiProcFXC>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <TargetName>amf-stitch-$(PlatformArchitecture)</TargetName>
-    <OutDir>$(SolutionDir)..\..\bin\vs2022x$(PlatformArchitecture)$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)..\..\bin\obj\vs2022x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
+    <MultiProcFXC>true</MultiProcFXC>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -96,7 +96,7 @@
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>AMF_COMPONENT_VSTITCH_EXPORTS;WIN32;_DEBUG;_WINDOWS;_USRDLL;COMPONENTSTITCH_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(SolutionDir)../../../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(SolutionDir)../../../;$(IntermediateOutputPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
       <OpenMPSupport>true</OpenMPSupport>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -120,7 +120,7 @@
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>AMF_COMPONENT_VSTITCH_EXPORTS;WIN32;_DEBUG;_WINDOWS;_USRDLL;COMPONENTSTITCH_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(SolutionDir)../../../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(SolutionDir)../../../;$(IntermediateOutputPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
       <OpenMPSupport>true</OpenMPSupport>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -148,7 +148,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>AMF_COMPONENT_VSTITCH_EXPORTS;WIN32;NDEBUG;_WINDOWS;_USRDLL;COMPONENTSTITCH_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(SolutionDir)../../../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(SolutionDir)../../../;$(IntermediateOutputPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
       <OpenMPSupport>true</OpenMPSupport>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -174,7 +174,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>AMF_COMPONENT_VSTITCH_EXPORTS;WIN32;NDEBUG;_WINDOWS;_USRDLL;COMPONENTSTITCH_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(SolutionDir)../../../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(SolutionDir)../../../;$(IntermediateOutputPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
       <OpenMPSupport>true</OpenMPSupport>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -269,42 +269,42 @@
   <ItemGroup>
     <CustomBuild Include="..\..\..\src\components\VideoStitch\DirectX11\StitchD3D11.hlsl">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fxc.exe /T ps_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_ps.bin" /E PS  "%(FullPath)"
-fxc.exe /T ps_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_psc.bin" /E PS_Cube  "%(FullPath)"
-fxc.exe /T vs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_vs.bin" /E VS  "%(FullPath)"
-fxc.exe /T gs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_gs.bin" /E GS  "%(FullPath)"
-"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_ps.bin" %(Filename)_ps
-"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_psc.bin" %(Filename)_psc
-"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_vs.bin" %(Filename)_vs
-"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_gs.bin" %(Filename)_gs</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fxc.exe /T ps_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_ps.bin" /E PS  "%(FullPath)"
-fxc.exe /T ps_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_psc.bin" /E PS_Cube  "%(FullPath)"
-fxc.exe /T vs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_vs.bin" /E VS  "%(FullPath)"
-fxc.exe /T gs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_gs.bin" /E GS  "%(FullPath)"
-"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_ps.bin" %(Filename)_ps
-"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_psc.bin" %(Filename)_psc
-"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_vs.bin" %(Filename)_vs
-"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_gs.bin" %(Filename)_gs</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">fxc.exe /T ps_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_ps.bin" /E PS  "%(FullPath)"
-fxc.exe /T ps_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_psc.bin" /E PS_Cube  "%(FullPath)"
-fxc.exe /T vs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_vs.bin" /E VS  "%(FullPath)"
-fxc.exe /T gs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_gs.bin" /E GS  "%(FullPath)"
-"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_ps.bin" %(Filename)_ps
-"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_psc.bin" %(Filename)_psc
-"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_vs.bin" %(Filename)_vs
-"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_gs.bin" %(Filename)_gs</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">fxc.exe /T ps_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_ps.bin" /E PS  "%(FullPath)"
-fxc.exe /T ps_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_psc.bin" /E PS_Cube  "%(FullPath)"
-fxc.exe /T vs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_vs.bin" /E VS  "%(FullPath)"
-fxc.exe /T gs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_gs.bin" /E GS  "%(FullPath)"
-"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_ps.bin" %(Filename)_ps
-"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_psc.bin" %(Filename)_psc
-"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_vs.bin" %(Filename)_vs
-"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "%(RootDir)\%(Directory)\%(Filename)_gs.bin" %(Filename)_gs</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)\%(Directory)\%(Filename)_ps.bin.h;%(RootDir)\%(Directory)\%(Filename)_vs.bin.h</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)\%(Directory)\%(Filename)_ps.bin.h;%(RootDir)\%(Directory)\%(Filename)_vs.bin.h</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)\%(Directory)\%(Filename)_ps.bin.h;%(RootDir)\%(Directory)\%(Filename)_vs.bin.h</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)\%(Directory)\%(Filename)_ps.bin.h;%(RootDir)\%(Directory)\%(Filename)_vs.bin.h</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fxc.exe /T ps_4_0 /Fo "$(IntermediateOutputPath)%(Filename)_ps.bin" /E PS  "%(FullPath)"
+fxc.exe /T ps_4_0 /Fo "$(IntermediateOutputPath)%(Filename)_psc.bin" /E PS_Cube  "%(FullPath)"
+fxc.exe /T vs_4_0 /Fo "$(IntermediateOutputPath)%(Filename)_vs.bin" /E VS  "%(FullPath)"
+fxc.exe /T gs_4_0 /Fo "$(IntermediateOutputPath)%(Filename)_gs.bin" /E GS  "%(FullPath)"
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)_ps.bin" %(Filename)_ps
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)_psc.bin" %(Filename)_psc
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)_vs.bin" %(Filename)_vs
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)_gs.bin" %(Filename)_gs</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fxc.exe /T ps_4_0 /Fo "$(IntermediateOutputPath)%(Filename)_ps.bin" /E PS  "%(FullPath)"
+fxc.exe /T ps_4_0 /Fo "$(IntermediateOutputPath)%(Filename)_psc.bin" /E PS_Cube  "%(FullPath)"
+fxc.exe /T vs_4_0 /Fo "$(IntermediateOutputPath)%(Filename)_vs.bin" /E VS  "%(FullPath)"
+fxc.exe /T gs_4_0 /Fo "$(IntermediateOutputPath)%(Filename)_gs.bin" /E GS  "%(FullPath)"
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)_ps.bin" %(Filename)_ps
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)_psc.bin" %(Filename)_psc
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)_vs.bin" %(Filename)_vs
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)_gs.bin" %(Filename)_gs</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">fxc.exe /T ps_4_0 /Fo "$(IntermediateOutputPath)%(Filename)_ps.bin" /E PS  "%(FullPath)"
+fxc.exe /T ps_4_0 /Fo "$(IntermediateOutputPath)%(Filename)_psc.bin" /E PS_Cube  "%(FullPath)"
+fxc.exe /T vs_4_0 /Fo "$(IntermediateOutputPath)%(Filename)_vs.bin" /E VS  "%(FullPath)"
+fxc.exe /T gs_4_0 /Fo "$(IntermediateOutputPath)%(Filename)_gs.bin" /E GS  "%(FullPath)"
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)_ps.bin" %(Filename)_ps
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)_psc.bin" %(Filename)_psc
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)_vs.bin" %(Filename)_vs
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)_gs.bin" %(Filename)_gs</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">fxc.exe /T ps_4_0 /Fo "$(IntermediateOutputPath)%(Filename)_ps.bin" /E PS  "%(FullPath)"
+fxc.exe /T ps_4_0 /Fo "$(IntermediateOutputPath)%(Filename)_psc.bin" /E PS_Cube  "%(FullPath)"
+fxc.exe /T vs_4_0 /Fo "$(IntermediateOutputPath)%(Filename)_vs.bin" /E VS  "%(FullPath)"
+fxc.exe /T gs_4_0 /Fo "$(IntermediateOutputPath)%(Filename)_gs.bin" /E GS  "%(FullPath)"
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)_ps.bin" %(Filename)_ps
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)_psc.bin" %(Filename)_psc
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)_vs.bin" %(Filename)_vs
+"$(ProjectDir)../../../../../Thirdparty/file_to_header/file_to_header.exe" "$(IntermediateOutputPath)%(Filename)_gs.bin" %(Filename)_gs</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename)_ps.bin.h;$(IntermediateOutputPath)%(Filename)_vs.bin.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename)_ps.bin.h;$(IntermediateOutputPath)%(Filename)_vs.bin.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename)_ps.bin.h;$(IntermediateOutputPath)%(Filename)_vs.bin.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename)_ps.bin.h;$(IntermediateOutputPath)%(Filename)_vs.bin.h</Outputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Building binary resource header for %(Filename)%(Extension)...</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Building binary resource header for %(Filename)%(Extension)...</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building binary resource header for %(Filename)%(Extension)...</Message>
@@ -315,15 +315,15 @@ fxc.exe /T gs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_gs.bin" /E GS  "%(Ful
     <FxCompile Include="..\..\..\src\components\VideoStitch\ProgramsDX11\BuildLUT.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</VariableName>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename)</VariableName>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename)</VariableName>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</VariableName>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
@@ -337,15 +337,15 @@ fxc.exe /T gs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_gs.bin" /E GS  "%(Ful
     <FxCompile Include="..\..\..\src\components\VideoStitch\ProgramsDX11\BuildLUTCenter.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</VariableName>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename)</VariableName>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename)</VariableName>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</VariableName>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
@@ -359,15 +359,15 @@ fxc.exe /T gs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_gs.bin" /E GS  "%(Ful
     <FxCompile Include="..\..\..\src\components\VideoStitch\ProgramsDX11\BuildShifts.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</VariableName>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename)</VariableName>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename)</VariableName>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</VariableName>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
@@ -381,15 +381,15 @@ fxc.exe /T gs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_gs.bin" /E GS  "%(Ful
     <FxCompile Include="..\..\..\src\components\VideoStitch\ProgramsDX11\Color.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</VariableName>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename)</VariableName>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename)</VariableName>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</VariableName>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
@@ -403,15 +403,15 @@ fxc.exe /T gs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_gs.bin" /E GS  "%(Ful
     <FxCompile Include="..\..\..\src\components\VideoStitch\ProgramsDX11\Histogram.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</VariableName>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename)</VariableName>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename)</VariableName>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</VariableName>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
@@ -425,15 +425,15 @@ fxc.exe /T gs_4_0 /Fo "%(RootDir)\%(Directory)\%(Filename)_gs.bin" /E GS  "%(Ful
     <FxCompile Include="..\..\..\src\components\VideoStitch\ProgramsDX11\NV12toRGB.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename)</VariableName>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntermediateOutputPath)%(Filename).cso</ObjectFileOutput>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename)</VariableName>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename)</VariableName>
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)</VariableName>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
-      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RelativeDir)%(Filename)_$(PlatformArchitecture).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntermediateOutputPath)%(Filename).h</HeaderFileOutput>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>

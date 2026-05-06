@@ -179,6 +179,10 @@ public:
             return true;
         }
         m_pDisplay = XOpenDisplay(NULL);
+        if (m_pDisplay == nullptr)
+        {
+            return false;
+        }
         int screen_num = DefaultScreen(m_pDisplay);
 
         Window parentWnd = DefaultRootWindow(m_pDisplay);

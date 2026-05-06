@@ -606,56 +606,61 @@ AMF_RESULT VideoRenderVulkan::UpdateMVP()
 
 AMF_RESULT VideoRenderVulkan::Render(amf::AMFData** ppData)
 {
-    UpdateMVP();
-
-    VkResult res = VK_INCOMPLETE;
+    amf::AMFSurfacePtr pSwapChainSurface;
     AMF_RESULT resAMF = AMF_OK;
 
-    amf_uint32 imageIndex = 0;
-    resAMF = AcquireNextBackBufferIndex(imageIndex);
-    CHECK_AMF_ERROR_RETURN(resAMF, L"AcquireBackBuffer() failed");
-
-    BackBufferVulkan* pBackBuffer = (BackBufferVulkan*)m_pBackBuffers[imageIndex].get();
-
-    VkPipelineStageFlags waitFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-/*
-    AMFTraceInfo(AMF_FACILITY, L"+++++++++++++++vkQueueSubmit(GFX ) Start +++++++++++++");
-    if(pBackBuffer->m_surface.Sync.bSubmitted)
     {
-        AMFTraceInfo(AMF_FACILITY, L"    Wait:   0x%llu", pBackBuffer->m_surface.Sync.hSemaphore);
-    }
-    AMFTraceInfo(AMF_FACILITY, L"    Signal: 0x%llu", pBackBuffer->m_surface.Sync.hSemaphore);
-    AMFTraceInfo(AMF_FACILITY, L"+++++++++++++++vkQueueSubmit(GFX ) End  +++++++++++++");
-*/
+        AMFContext1::AMFVulkanLocker vkLock(SwapChainVulkan::m_pContext1);
+        UpdateMVP();
 
-    VkSubmitInfo submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        VkResult res = VK_INCOMPLETE;
 
-    if(pBackBuffer->m_surface.Sync.hSemaphore != VK_NULL_HANDLE)
-    {
+        amf_uint32 imageIndex = 0;
+        resAMF = AcquireNextBackBufferIndex(imageIndex);
+        CHECK_AMF_ERROR_RETURN(resAMF, L"AcquireBackBuffer() failed");
+
+
+        BackBufferVulkan* pBackBuffer = (BackBufferVulkan*)m_pBackBuffers[imageIndex].get();
+
+        VkPipelineStageFlags waitFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+    /*
+        AMFTraceInfo(AMF_FACILITY, L"+++++++++++++++vkQueueSubmit(GFX ) Start +++++++++++++");
         if(pBackBuffer->m_surface.Sync.bSubmitted)
-        { 
-            submitInfo.waitSemaphoreCount = 1;
-            submitInfo.pWaitSemaphores = &pBackBuffer->m_surface.Sync.hSemaphore;
-            submitInfo.pWaitDstStageMask = &waitFlags;
+        {
+            AMFTraceInfo(AMF_FACILITY, L"    Wait:   0x%llu", pBackBuffer->m_surface.Sync.hSemaphore);
         }
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = &pBackBuffer->m_surface.Sync.hSemaphore;
-        pBackBuffer->m_surface.Sync.bSubmitted = true;
+        AMFTraceInfo(AMF_FACILITY, L"    Signal: 0x%llu", pBackBuffer->m_surface.Sync.hSemaphore);
+        AMFTraceInfo(AMF_FACILITY, L"+++++++++++++++vkQueueSubmit(GFX ) End  +++++++++++++");
+    */
+
+        VkSubmitInfo submitInfo = {};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+        if(pBackBuffer->m_surface.Sync.hSemaphore != VK_NULL_HANDLE)
+        {
+            if(pBackBuffer->m_surface.Sync.bSubmitted)
+            {
+                submitInfo.waitSemaphoreCount = 1;
+                submitInfo.pWaitSemaphores = &pBackBuffer->m_surface.Sync.hSemaphore;
+                submitInfo.pWaitDstStageMask = &waitFlags;
+            }
+            submitInfo.signalSemaphoreCount = 1;
+            submitInfo.pSignalSemaphores = &pBackBuffer->m_surface.Sync.hSemaphore;
+            pBackBuffer->m_surface.Sync.bSubmitted = true;
+        }
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &m_CommandBuffers[imageIndex];
+
+        res = GetVulkan()->vkQueueSubmit(m_hQueuePresent, 1, &submitInfo, NULL);
+        CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkQueueSubmit() failed with error=" << res);
+
+        resAMF = SwapChainVulkan::m_pContext1->CreateSurfaceFromVulkanNative(&pBackBuffer->m_surface, &pSwapChainSurface, NULL);
+        CHECK_AMF_ERROR_RETURN(resAMF, L"CreateSurfaceFromVulkanNative() failed");
+
+        resAMF = pSwapChainSurface->Duplicate(pSwapChainSurface->GetMemoryType(), ppData);
+        CHECK_AMF_ERROR_RETURN(resAMF, L"Duplicate() failed");
     }
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &m_CommandBuffers[imageIndex];
-
-    res = GetVulkan()->vkQueueSubmit(m_hQueuePresent, 1, &submitInfo, NULL);
-    CHECK_RETURN(res == VK_SUCCESS, AMF_FAIL, L"vkQueueSubmit() failed with error=" << res);
-
-    amf::AMFSurfacePtr pSwapChainSurface;
-    resAMF = SwapChainVulkan::m_pContext1->CreateSurfaceFromVulkanNative(&pBackBuffer->m_surface, &pSwapChainSurface, NULL);
-    CHECK_AMF_ERROR_RETURN(resAMF, L"CreateSurfaceFromVulkanNative() failed");
-
-    resAMF = pSwapChainSurface->Duplicate(pSwapChainSurface->GetMemoryType(), ppData);
-    CHECK_AMF_ERROR_RETURN(resAMF, L"Duplicate() failed");
 
     resAMF = Present(true);
     CHECK_AMF_ERROR_RETURN(resAMF, L"Present() failed");

@@ -106,6 +106,14 @@ typedef ptrdiff_t GLintptr;
 typedef size_t GLsizeiptr; // Defined in glx.h on linux
 #endif
 
+#if defined(__clang__) && defined(__ANDROID__)
+//  Clang does not support the GCC __attribute__((visibility("default"))) attribute, however OpenGL headers
+//  supplied with Android NDK use it without a GCC ifdef, causing a benign, but annoying warning when compiled with
+//  Clang, which just ignores the attribute
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wignored-attributes"
+#endif
+
 
 // Core
 typedef AMF_GLAPI GLenum            (AMF_GLAPIENTRY* glGetError_fn)                             (void);
@@ -260,6 +268,15 @@ typedef EGLAPI    EGLImageKHR       (EGLAPIENTRY* eglCreateImageKHR_fn)         
 typedef EGLAPI    EGLBoolean        (EGLAPIENTRY* eglSwapInterval_fn)                           (EGLDisplay dpy, EGLint interval);
 typedef GL_API    void              (GL_APIENTRY* glEGLImageTargetTexture2DOES_fn)              (GLenum target, GLeglImageOES image);
 typedef GL_API    void              (GL_APIENTRY* glReadPixels_fn)                              (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid* pixels);
+
+#if defined(__clang__)
+//  Clang does not support the GCC __attribute__((visibility("default"))) attribute, however OpenGL headers
+//  supplied with Android NDK use it without a GCC ifdef, causing a benign, but annoying warning when compiled with
+//  Clang, which just ignores the attribute
+#pragma clang diagnostic pop
+#endif
+
+
 #elif defined(__linux)
 typedef           void              (GLAPIENTRY* glXDestroyContext_fn)                          (Display* dpy, GLXContext ctx);
 typedef           void              (GLAPIENTRY* glXDestroyWindow_fn)                           (Display* dpy, GLXWindow window);

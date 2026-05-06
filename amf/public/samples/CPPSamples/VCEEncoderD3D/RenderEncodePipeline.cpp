@@ -175,7 +175,7 @@ const wchar_t* RenderEncodePipeline::PARAM_NAME_FULLSCREEN     = L"FULLSCREEN";
 
 const wchar_t* RenderEncodePipeline::PARAM_NAME_QUERY_INST_COUNT = L"QueryInstanceCount";
 const wchar_t* RenderEncodePipeline::PARAM_NAME_SELECT_INSTANCE  = L"UseInstance";
-const wchar_t* RenderEncodePipeline::PARAM_NAME_FRAMERATE        = L"FRAMERATE";
+const wchar_t* RenderEncodePipeline::PARAM_NAME_RENDER_FRAMERATE = L"RenderFrameRate";
 
 
 RenderEncodePipeline::RenderEncodePipeline()
@@ -388,13 +388,11 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
     }
 
 
-    if(bWnd || renderMemoryType == amf::AMF_MEMORY_DX12 || renderMemoryType == amf::AMF_MEMORY_VULKAN 
+    if (bWnd || renderMemoryType == amf::AMF_MEMORY_DX12 || renderMemoryType == amf::AMF_MEMORY_VULKAN 
         || secondaryMemoryType == amf::AMF_MEMORY_OPENGL || renderMemoryType == amf::AMF_MEMORY_OPENGL )
     {
-        if(!m_window.CreateD3Window(width, height, adapterID, bWnd, bFullScreen))
-        {
-            CHECK_RETURN(false, AMF_FAIL, L"CreateD3Window() failed.");
-        }
+        res = m_window.Create3DWindow(width, height, adapterID, bWnd, bFullScreen);
+        CHECK_AMF_ERROR_RETURN(res, L"Create3DWindow() failed.");
         hWnd = m_window.GetHwnd();
         hDisplay = m_window.GetDisplay();
     }
@@ -403,10 +401,8 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
         hWnd = ::GetDesktopWindow();
     }
 #else        
-    if (!m_window.CreateD3Window(width, height, adapterID, bFullScreen))
-    {
-        CHECK_RETURN(false, AMF_FAIL, L"CreateD3Window() failed.");
-    }
+    res = m_window.Create3DWindow(width, height, adapterID, true, bFullScreen);
+    CHECK_AMF_ERROR_RETURN(res, L"Create3DWindow() failed.");
     hWnd = m_window.GetHwnd();
     hDisplay = m_window.GetDisplay();
 #endif
@@ -492,7 +488,7 @@ AMF_RESULT RenderEncodePipeline::Init(ParametersStorage* pParams, int threadID)
 
     res = m_pVideoRender->Init(hWnd, hDisplay, bFullScreen);
 	amf_int fps = 0;
-	pParams->GetParam(RenderEncodePipeline::PARAM_NAME_FRAMERATE, fps);
+	pParams->GetParam(RenderEncodePipeline::PARAM_NAME_RENDER_FRAMERATE, fps);
 	m_pVideoRender->SetRenderFrameRate(fps);
     CHECK_AMF_ERROR_RETURN(res, L"m_pVideoRender->Init() failed");
 

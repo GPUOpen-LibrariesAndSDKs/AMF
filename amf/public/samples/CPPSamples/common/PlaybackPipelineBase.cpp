@@ -666,6 +666,7 @@ AMF_RESULT  PlaybackPipelineBase::InitFRC(amf::AMF_MEMORY_TYPE type)
             case amf::AMF_MEMORY_OPENCL: frcEngineType = FRC_ENGINE_OPENCL; break;
             case amf::AMF_MEMORY_DX11: frcEngineType = FRC_ENGINE_DX11; break;
             case amf::AMF_MEMORY_DX12: frcEngineType = FRC_ENGINE_DX12; break;
+            case amf::AMF_MEMORY_VULKAN: frcEngineType = FRC_ENGINE_VULKAN; break;
             default:
                 frcEngineType = FRC_ENGINE_DX11; break;
             }

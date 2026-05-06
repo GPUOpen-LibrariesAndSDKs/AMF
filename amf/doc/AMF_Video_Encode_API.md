@@ -620,7 +620,7 @@ This command encodes `400` frames through D3D renderer and creates an output fil
 | LOWLATENCY_MODE                    | amf_bool  |
 | FRAMESIZE                          | AMFSize   |
 | ASPECT_RATIO                       | AMFRatio  |
-| MAX_REFRAMES                       | amf_int64 |
+| MAX_NUM_REFRAMES                   | amf_int64 |
 | MAX_CONSECUTIVE_BPICTURES          | amf_int64 |
 | ADAPTIVE_MINIGOP                   | amf_bool  |
 | PRE_ANALYSIS_ENABLE                | amf_bool  |
@@ -802,7 +802,12 @@ Maximum number of reference frames.
 `0`
 
 **Description:**
-Maximum number of consecutive B Pictures. It is suggested to set this value to `3` if `AMF_VIDEO_ENCODER_B_PIC_PATTERN` is not `0` as well as to enable Adaptive MiniGOP and PA.
+Maximum number of consecutive B Pictures.
+It is recommended to set this value to `3` if `AMF_VIDEO_ENCODER_B_PIC_PATTERN` is not `0`, or both Adaptive MiniGOP and PA are enabled.  
+If users specify either `AMF_VIDEO_ENCODER_B_PIC_PATTERN` or `AMF_VIDEO_ENCODER_ADAPTIVE_MINIGOP` but do not explicitly set `AMF_VIDEO_ENCODER_MAX_CONSECUTIVE_BPICTURES`, this property will default to:
+- the value of `AMF_VIDEO_ENCODER_B_PIC_PATTERN` (if `AMF_VIDEO_ENCODER_B_PIC_PATTERN` is set), or
+- `3` (if `AMF_VIDEO_ENCODER_ADAPTIVE_MINIGOP` is set).
+- prioritizes `AMF_VIDEO_ENCODER_ADAPTIVE_MINIGOP` over `AMF_VIDEO_ENCODER_B_PIC_PATTERN`
 
 ---
 
@@ -816,7 +821,7 @@ Maximum number of consecutive B Pictures. It is suggested to set this value to `
 `false`
 
 **Description:**
-Disable/Enable Adaptive MiniGOP, can enable with PA enabled.
+Disable/Enable Adaptive MiniGOP. Requires PA to be enabled with a minimum LOOKAHEAD_BUFFER_DEPTH size of 1.
 
 ---
 

@@ -78,6 +78,7 @@ namespace amf
     };
 #else // #if defined(__cplusplus)
     typedef struct AMFBuffer AMFBuffer;
+    typedef struct AMFBuffer1 AMFBuffer1;
     typedef struct AMFBufferObserver AMFBufferObserver;
 
     typedef struct AMFBufferObserverVtbl
@@ -131,8 +132,30 @@ namespace amf
     typedef AMFInterfacePtr_T<AMFBuffer> AMFBufferPtr;
     //----------------------------------------------------------------------------------------------
 
+
+    //----------------------------------------------------------------------------------------------
+    // AMFBuffer1 interface
+    //----------------------------------------------------------------------------------------------
+    class AMF_NO_VTABLE AMFBuffer1 : public AMFBuffer
+    {
+    public:
+        AMF_DECLARE_IID(0x8051a17d, 0x462d, 0x4f09, 0xb8, 0x42, 0x3c, 0x72, 0xf7, 0xa8, 0x5b, 0x24)
+
+        virtual amf_uint64          AMF_STD_CALL GetOffset() = 0;
+        virtual AMF_RESULT          AMF_STD_CALL SetOffset(amf_uint64 offset) = 0;
+
+        virtual AMF_RESULT          AMF_STD_CALL Map(AMF_MEMORY_CPU_ACCESS flags, void** ppData) = 0; // only READ and WRITE flags are valid
+        virtual AMF_RESULT          AMF_STD_CALL Unmap() = 0;
+    };
+    //----------------------------------------------------------------------------------------------
+    // smart pointer
+    //----------------------------------------------------------------------------------------------
+    typedef AMFInterfacePtr_T<AMFBuffer1> AMFBuffer1Ptr;
+    //----------------------------------------------------------------------------------------------
+
+
 #else // #if defined(__cplusplus)
-        AMF_DECLARE_IID(AMFBuffer, 0xb04b7248, 0xb6f0, 0x4321, 0xb6, 0x91, 0xba, 0xa4, 0x74, 0xf, 0x9f, 0xcb)
+    AMF_DECLARE_IID(AMFBuffer, 0xb04b7248, 0xb6f0, 0x4321, 0xb6, 0x91, 0xba, 0xa4, 0x74, 0xf, 0x9f, 0xcb)
 
     typedef struct AMFBufferVtbl
     {
@@ -185,6 +208,70 @@ namespace amf
     struct AMFBuffer
     {
         const AMFBufferVtbl *pVtbl;
+    };
+
+
+    AMF_DECLARE_IID(AMFBuffer1, 0x8051a17d, 0x462d, 0x4f09, 0xb8, 0x42, 0x3c, 0x72, 0xf7, 0xa8, 0x5b, 0x24)
+
+    typedef struct AMFBuffer1Vtbl
+    {
+        // AMFInterface interface
+        amf_long            (AMF_STD_CALL *Acquire)(AMFBuffer1* pThis);
+        amf_long            (AMF_STD_CALL *Release)(AMFBuffer1* pThis);
+        enum AMF_RESULT     (AMF_STD_CALL *QueryInterface)(AMFBuffer1* pThis, const struct AMFGuid *interfaceID, void** ppInterface);
+
+        // AMFPropertyStorage interface
+        AMF_RESULT          (AMF_STD_CALL *SetProperty)(AMFBuffer1* pThis, const wchar_t* name, AMFVariantStruct value);
+        AMF_RESULT          (AMF_STD_CALL *GetProperty)(AMFBuffer1* pThis, const wchar_t* name, AMFVariantStruct* pValue);
+        amf_bool            (AMF_STD_CALL *HasProperty)(AMFBuffer1* pThis, const wchar_t* name);
+        amf_size            (AMF_STD_CALL *GetPropertyCount)(AMFBuffer1* pThis);
+        AMF_RESULT          (AMF_STD_CALL *GetPropertyAt)(AMFBuffer1* pThis, amf_size index, wchar_t* name, amf_size nameSize, AMFVariantStruct* pValue);
+        AMF_RESULT          (AMF_STD_CALL *Clear)(AMFBuffer1* pThis);
+        AMF_RESULT          (AMF_STD_CALL *AddTo)(AMFBuffer1* pThis, AMFPropertyStorage* pDest, amf_bool overwrite, amf_bool deep);
+        AMF_RESULT          (AMF_STD_CALL *CopyTo)(AMFBuffer1* pThis, AMFPropertyStorage* pDest, amf_bool deep);
+        void                (AMF_STD_CALL *AddObserver)(AMFBuffer1* pThis, AMFPropertyStorageObserver* pObserver);
+        void                (AMF_STD_CALL *RemoveObserver)(AMFBuffer1* pThis, AMFPropertyStorageObserver* pObserver);
+
+        // AMFData interface
+
+        AMF_MEMORY_TYPE     (AMF_STD_CALL *GetMemoryType)(AMFBuffer1* pThis);
+
+        AMF_RESULT          (AMF_STD_CALL *Duplicate)(AMFBuffer1* pThis, AMF_MEMORY_TYPE type, AMFData** ppData);
+        AMF_RESULT          (AMF_STD_CALL *Convert)(AMFBuffer1* pThis, AMF_MEMORY_TYPE type); // optimal interop if possilble. Copy through host memory if needed
+        AMF_RESULT          (AMF_STD_CALL *Interop)(AMFBuffer1* pThis, AMF_MEMORY_TYPE type); // only optimal interop if possilble. No copy through host memory for GPU objects
+
+        AMF_DATA_TYPE       (AMF_STD_CALL *GetDataType)(AMFBuffer1* pThis);
+
+        amf_bool            (AMF_STD_CALL *IsReusable)(AMFBuffer1* pThis);
+
+        void                (AMF_STD_CALL *SetPts)(AMFBuffer1* pThis, amf_pts pts);
+        amf_pts             (AMF_STD_CALL *GetPts)(AMFBuffer1* pThis);
+        void                (AMF_STD_CALL *SetDuration)(AMFBuffer1* pThis, amf_pts duration);
+        amf_pts             (AMF_STD_CALL *GetDuration)(AMFBuffer1* pThis);
+
+        // AMFBuffer interface
+
+        AMF_RESULT          (AMF_STD_CALL *SetSize)(AMFBuffer1* pThis, amf_size newSize);
+        amf_size            (AMF_STD_CALL *GetSize)(AMFBuffer1* pThis);
+        void*               (AMF_STD_CALL *GetNative)(AMFBuffer1* pThis);
+
+        // Observer management
+        void                (AMF_STD_CALL *AddObserver_Buffer)(AMFBuffer1* pThis, AMFBufferObserver* pObserver);
+        void                (AMF_STD_CALL *RemoveObserver_Buffer)(AMFBuffer1* pThis, AMFBufferObserver* pObserver);
+
+        // AMFBuffer1 interface
+
+        amf_uint64          (AMF_STD_CALL *GetOffset)(AMFBuffer1* pThis);
+        AMF_RESULT          (AMF_STD_CALL *SetOffset)(AMFBuffer1* pThis, amf_uint64 offset);
+
+        AMF_RESULT          (AMF_STD_CALL *Map)(AMFBuffer1* pThis, AMF_MEMORY_CPU_ACCESS flags, void** ppData); // only READ and WRITE flags are valid
+        AMF_RESULT          (AMF_STD_CALL *Unmap)(AMFBuffer1* pThis);
+
+    } AMFBuffer1Vtbl;
+
+    struct AMFBuffer1
+    {
+        const AMFBuffer1Vtbl *pVtbl;
     };
 
 #endif // #if defined(__cplusplus)

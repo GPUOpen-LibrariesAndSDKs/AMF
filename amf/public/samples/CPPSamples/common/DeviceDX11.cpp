@@ -35,6 +35,13 @@
 #include <set>
 #include <Dxgi1_3.h>
 
+
+#include <d3dkmthk.h>
+#include <vector>
+#include <algorithm>
+#include <sstream>
+#include <ostream>
+
 #pragma comment(lib, "d3d11.lib")
 
 typedef     HRESULT(WINAPI *CreateDXGIFactory2_Fun)(UINT Flags, REFIID riid, _COM_Outptr_ void **ppFactory);
@@ -56,14 +63,14 @@ ATL::CComPtr<ID3D11Device>      DeviceDX11::GetDevice()
     return m_pD3DDevice;
 }
 
-AMF_RESULT DeviceDX11::Init(amf_uint32 adapterID, bool onlyWithOutputs, bool bCheckForAMD)
+AMF_RESULT DeviceDX11::Init(amf_uint32 adapterID, bool onlyWithOutputs, bool bCheckForAMD, bool bDetectVirtualAdapters)
 {
     HRESULT hr = S_OK;
     // find adapter
     ATL::CComPtr<IDXGIAdapter> pAdapter;
 
 #if !defined(METRO_APP)
-    EnumerateAdapters(onlyWithOutputs, bCheckForAMD);
+    EnumerateAdapters(onlyWithOutputs, bCheckForAMD, bDetectVirtualAdapters);
     CHECK_RETURN(m_adaptersCount > adapterID, AMF_INVALID_ARG, L"Invalid Adapter ID");
 
     //convert logical id to real index
@@ -109,10 +116,7 @@ AMF_RESULT DeviceDX11::Init(amf_uint32 adapterID, bool onlyWithOutputs, bool bCh
 
     m_LUID = desc.AdapterLuid;
 
-    char strDevice[100];
-    _snprintf_s(strDevice, 100, "%X", desc.DeviceId);
-
-    LOG_INFO("DX11 : Chosen Device " << adapterID <<": Device ID: " << strDevice << " [" << desc.Description << "]");
+    LOG_INFO("DX11 : Chosen Device " << adapterID <<": Device ID: " << std::hex << std::uppercase << desc.DeviceId << std::dec << std::nouppercase << " [" << desc.Description << "]");
 
     ATL::CComPtr<IDXGIOutput> pOutput;
     if(SUCCEEDED(pAdapter->EnumOutputs(0, &pOutput)))
@@ -201,7 +205,47 @@ AMF_RESULT DeviceDX11::Terminate()
     return AMF_OK;
 }
 
-void DeviceDX11::EnumerateAdapters(bool onlyWithOutputs, bool bCheckForAMD)
+bool IsValidPCIAddress(UINT bus, UINT device, UINT function)
+{
+    // The PCI specification defines address fields as: 8 bits for bus, 5 for device, and 3 for function.
+    return (bus <= ((1 << 8) - 1)) && (device <= ((1 << 5) - 1)) && (function <= ((1 << 3) - 1));
+}
+
+std::string GetPCIFromLUID(LUID adapterLuid)
+{
+    D3DKMT_OPENADAPTERFROMLUID adapterToBeOpened = {};
+    adapterToBeOpened.AdapterLuid = adapterLuid;
+    std::string pciPath = "";
+
+    if (D3DKMTOpenAdapterFromLuid(&adapterToBeOpened) != 0)
+    {
+        return "";
+    }
+
+    D3DKMT_QUERYADAPTERINFO queryInfo = {};
+    queryInfo.hAdapter = adapterToBeOpened.hAdapter;
+    queryInfo.Type = KMTQAITYPE_ADAPTERADDRESS;
+
+    D3DKMT_ADAPTERADDRESS addressInfo = {};
+    queryInfo.pPrivateDriverData = &addressInfo;
+    queryInfo.PrivateDriverDataSize = sizeof(addressInfo);
+
+    if (D3DKMTQueryAdapterInfo(&queryInfo) == 0)
+    {
+        if (true == IsValidPCIAddress(addressInfo.BusNumber, addressInfo.DeviceNumber, addressInfo.FunctionNumber))
+        {
+            std::ostringstream oss;
+            oss << addressInfo.BusNumber << "," << addressInfo.DeviceNumber << "," << addressInfo.FunctionNumber;
+            pciPath = oss.str();
+        }
+    }
+
+    D3DKMT_CLOSEADAPTER adapterToBeClosed = { adapterToBeOpened.hAdapter };
+    D3DKMTCloseAdapter(&adapterToBeClosed);
+    return pciPath;
+}
+
+void DeviceDX11::EnumerateAdapters(bool onlyWithOutputs, bool bCheckForAMD, bool bDetectVirtualAdapters)
 {
 #if !defined(METRO_APP)
     ATL::CComPtr<IDXGIFactory> pFactory;
@@ -215,35 +259,40 @@ void DeviceDX11::EnumerateAdapters(bool onlyWithOutputs, bool bCheckForAMD)
     LOG_INFO("DX11: List of adapters:");
     UINT count = 0;
     m_adaptersCount = 0;
-    while(true)
+    std::vector<std::string> occured;
+    for(ATL::CComPtr<IDXGIAdapter> pAdapter; pFactory->EnumAdapters(count, &pAdapter) != DXGI_ERROR_NOT_FOUND; pAdapter = nullptr, count++)
     {
-        ATL::CComPtr<IDXGIAdapter> pAdapter;
-        if(pFactory->EnumAdapters(count, &pAdapter) == DXGI_ERROR_NOT_FOUND)
-        {
-            break;
-        }
-
         DXGI_ADAPTER_DESC desc;
         pAdapter->GetDesc(&desc);
 
+        if (false == bDetectVirtualAdapters)
+        {
+            // DX11 may output multiple adapter info for same physical gpu
+            // GetPCIFromLUID returns emptry string if the adapter is virtual.
+            // We filter out virtual adapters, or real adapter that are listed more than once.
+            std::string pciPath = GetPCIFromLUID(desc.AdapterLuid);
+
+            // if pci path is duplicate or invalid don't log this adater.
+            if (true == pciPath.empty() || std::find(occured.begin(), occured.end(), pciPath) != occured.end())
+            {
+                continue;
+            }
+            occured.emplace_back(pciPath);
+        }
+
         if(desc.VendorId != 0x1002 && bCheckForAMD)
         {
-            count++;
             continue;
         }
         ATL::CComPtr<IDXGIOutput> pOutput;
         if(onlyWithOutputs && FAILED(pAdapter->EnumOutputs(0, &pOutput)))
         {
-            count++;
             continue;
         }
-        char strDevice[100];
-        _snprintf_s(strDevice, 100, "%X", desc.DeviceId);
 
-        LOG_INFO("          " << m_adaptersCount << ": Device ID: " << strDevice << " [" << desc.Description << "]");
+        LOG_INFO("          " << m_adaptersCount << ": Device ID: " << std::hex << std::uppercase << desc.DeviceId << std::dec << std::nouppercase << " [" << desc.Description << "]");
         m_adaptersIndexes[m_adaptersCount] = count;
         m_adaptersCount++;
-        count++;
     }
 #endif//#if !defined(METRO_APP)
 

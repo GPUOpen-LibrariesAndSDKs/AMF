@@ -98,17 +98,17 @@ enum AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_ENUM
 #define AMF_PA_QUERY_TIMEOUT                        L"PAQueryTimeout"                       // amf_int64; default = 0 (no wait); timeout for QueryOutput call in ms.
 
 
-#define AMF_PA_SCENE_CHANGE_DETECTION_ENABLE        L"PASceneChangeDetectionEnable"         // bool       (default : True)                                          - Enable Scene Change Detection GPU algorithm
-#define AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY   L"PASceneChangeDetectionSensitivity"	// AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_ENUM (default : Medium)    - Scene Change Detection Sensitivity
-#define AMF_PA_STATIC_SCENE_DETECTION_ENABLE        L"PAStaticSceneDetectionEnable"         // bool       (default : False)                                         - Enable Skip Detection GPU algorithm
-#define AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY   L"PAStaticSceneDetectionSensitivity"	// AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_ENUM (default : High)      - Allowable absolute difference between pixels (sample counts)
-#define AMF_PA_FRAME_SAD_ENABLE                     L"PAFrameSadEnable"	                    // bool       (default : True)                                          - Enable Frame SAD algorithm
-#define AMF_PA_ACTIVITY_TYPE                        L"PAActivityType"                       // AMF_PA_ACTIVITY_TYPE_ENUM (default : Calculate on Y)                 - Block activity calculation mode
-#define AMF_PA_LTR_ENABLE                           L"PALongTermReferenceEnable"            // bool       (default : False)                                         - Enable Automatic Long Term Reference frame management
-#define AMF_PA_LOOKAHEAD_BUFFER_DEPTH               L"PALookAheadBufferDepth"               // amf_uint64 (default : 0)           Values: [0, MAX_LOOKAHEAD_DEPTH]  - PA lookahead buffer size
-#define AMF_PA_PAQ_MODE                             L"PAPerceptualAQMode"                   // AMF_PA_PAQ_MODE_ENUM     (default : AMF_PA_PAQ_MODE_NONE)            - Perceptual AQ mode
-#define AMF_PA_TAQ_MODE                             L"PATemporalAQMode"                     // AMF_PA_TAQ_MODE_ENUM (default: AMF_PA_TAQ_MODE_NONE)                 - Temporal AQ mode
-#define AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE       L"PAHighMotionQualityBoostMode"         // AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_ENUM (default: None)           - High motion quality boost mode
+#define AMF_PA_SCENE_CHANGE_DETECTION_ENABLE        L"PASceneChangeDetectionEnable"         // bool       (default : True)                                                      - Enable Scene Change Detection GPU algorithm
+#define AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY   L"PASceneChangeDetectionSensitivity"	// AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_ENUM (default : Medium)            - Scene Change Detection Sensitivity
+#define AMF_PA_STATIC_SCENE_DETECTION_ENABLE        L"PAStaticSceneDetectionEnable"         // bool       (default : False)                                                     - Enable Skip Detection GPU algorithm
+#define AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY   L"PAStaticSceneDetectionSensitivity"	// AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_ENUM (default : High)              - Allowable absolute difference between pixels (sample counts)
+#define AMF_PA_FRAME_SAD_ENABLE                     L"PAFrameSadEnable"	                    // bool       (default : True)                                                      - Enable Frame SAD algorithm
+#define AMF_PA_ACTIVITY_TYPE                        L"PAActivityType"                       // AMF_PA_ACTIVITY_TYPE_ENUM (default : Calculate on Y)                             - Block activity calculation mode
+#define AMF_PA_LTR_ENABLE                           L"PALongTermReferenceEnable"            // bool       (default : False)                                                     - Enable Automatic Long Term Reference frame management
+#define AMF_PA_LOOKAHEAD_BUFFER_DEPTH               L"PALookAheadBufferDepth"               // amf_uint64 (default : depends on USAGE)      Values: [0, MAX_LOOKAHEAD_DEPTH]    - PA lookahead buffer size
+#define AMF_PA_PAQ_MODE                             L"PAPerceptualAQMode"                   // AMF_PA_PAQ_MODE_ENUM     (default : AMF_PA_PAQ_MODE_NONE)                        - Perceptual AQ mode
+#define AMF_PA_TAQ_MODE                             L"PATemporalAQMode"                     // AMF_PA_TAQ_MODE_ENUM (default: AMF_PA_TAQ_MODE_NONE)                             - Temporal AQ mode
+#define AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE       L"PAHighMotionQualityBoostMode"         // AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_ENUM (default: None)                       - High motion quality boost mode
 
 ///////////////////////////////////////////
 // the following properties are available
@@ -117,20 +117,20 @@ enum AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_ENUM
 // will fail
 
 
-#define AMF_PA_INITIAL_QP_AFTER_SCENE_CHANGE        L"PAInitialQPAfterSceneChange"          // amf_uint64 (default : 0)           Values: [0, 51]                   - Base QP to be used immediately after scene change. If this value is not set, PA will choose a proper QP value
-#define AMF_PA_MAX_QP_BEFORE_FORCE_SKIP             L"PAMaxQPBeforeForceSkip"               // amf_uint64 (default : 35)          Values: [0, 51]                   - When a static scene is detected, a skip frame is inserted only if the previous encoded frame average QP <= this value
+#define AMF_PA_INITIAL_QP_AFTER_SCENE_CHANGE        L"PAInitialQPAfterSceneChange"          // amf_uint64 (default : 0)                     Values: [0, 51]                     - Base QP to be used immediately after scene change. If this value is not set, PA will choose a proper QP value
+#define AMF_PA_MAX_QP_BEFORE_FORCE_SKIP             L"PAMaxQPBeforeForceSkip"               // amf_uint64 (default : 35)                    Values: [0, 51]                     - When a static scene is detected, a skip frame is inserted only if the previous encoded frame average QP <= this value
 
 
-#define AMF_PA_CAQ_STRENGTH                         L"PACAQStrength"                        // AMF_PA_CAQ_STRENGTH_ENUM (default : Medium)                          - Content Adaptive Quantization (CAQ) strength
+#define AMF_PA_CAQ_STRENGTH                         L"PACAQStrength"                        // AMF_PA_CAQ_STRENGTH_ENUM (default : Medium)                                      - Content Adaptive Quantization (CAQ) strength
 
 
 
 
 //////////////////////////////////////////////////
 // properties set by PA on output buffer interface in standalone mode
-#define AMF_PA_ACTIVITY_MAP                         L"PAActivityMap"                        // AMFInterface* -> AMFSurface*;       Values: int32                    - When PA is standalone, there will be a 2D Activity map generated for each frame
-#define AMF_PA_SCENE_CHANGE_DETECT                  L"PASceneChangeDetect"                  // bool                                                                 - True/False - available if AMF_PA_SCENE_CHANGE_DETECTION_ENABLE was set to True when PA is standalone
-#define AMF_PA_STATIC_SCENE_DETECT                  L"PAStaticSceneDetect"                  // bool                                                                 - True/False - available if AMF_PA_STATIC_SCENE_DETECTION_ENABLE was set to True when PA is standalone
+#define AMF_PA_ACTIVITY_MAP                         L"PAActivityMap"                        // AMFInterface* -> AMFSurface*;                Values: int32                       - When PA is standalone, there will be a 2D Activity map generated for each frame
+#define AMF_PA_SCENE_CHANGE_DETECT                  L"PASceneChangeDetect"                  // bool                                                                             - True/False - available if AMF_PA_SCENE_CHANGE_DETECTION_ENABLE was set to True when PA is standalone
+#define AMF_PA_STATIC_SCENE_DETECT                  L"PAStaticSceneDetect"                  // bool                                                                             - True/False - available if AMF_PA_STATIC_SCENE_DETECTION_ENABLE was set to True when PA is standalone
 
 
 #endif //#ifndef AMFPreAnalysis_h

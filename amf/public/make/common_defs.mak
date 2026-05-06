@@ -240,4 +240,4 @@ else
   ffmpeg_platform=lnx
 endif
 
-ffmpeg_dir = $(amf_root)/../Thirdparty/ffmpeg/ffmpeg/ffmpeg-7.0/$(ffmpeg_platform)$(host_bits)/release
+ffmpeg_dir = $(amf_root)/../Thirdparty/ffmpeg/ffmpeg/ffmpeg-8.0.1/$(ffmpeg_platform)$(host_bits)/release

@@ -56,9 +56,9 @@ src_files = \
     $(samples_common_dir)/Pipeline.cpp \
     $(samples_common_dir)/SwapChain.cpp \
     $(samples_common_dir)/SwapChainVulkan.cpp \
+    $(samples_common_dir)/RenderWindow.cpp \
     $(sample_path)/VCEEncoderD3D.cpp \
     $(sample_path)/RenderEncodePipeline.cpp \
-    $(sample_path)/RenderWindow.cpp \
     $(sample_path)/VideoRender.cpp \
     $(sample_path)/VideoRenderHost.cpp \
     $(sample_path)/VideoRenderVulkan.cpp \

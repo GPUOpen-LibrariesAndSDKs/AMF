@@ -62,7 +62,7 @@ enum AMF_VIDEO_CONVERTER_TONEMAPPING_ENUM
 
 
 
-#define AMF_VIDEO_CONVERTER_OUTPUT_FORMAT                   L"OutputFormat"             // Values : AMF_SURFACE_NV12 or AMF_SURFACE_BGRA or AMF_SURFACE_YUV420P
+#define AMF_VIDEO_CONVERTER_OUTPUT_FORMAT                   L"OutputFormat"             // Values : AMF_SURFACE_ formats (NV12, BGRA, ARGB, RGBA, YUV420P, YV12, YUY2, UYVY, AYUV, P010, Y210, Y410, R10G10B10A2, P012, P016, Y416, RGBA_F16)
 #define AMF_VIDEO_CONVERTER_MEMORY_TYPE                     L"MemoryType"               // Values : AMF_MEMORY_DX11 or AMF_MEMORY_DX9 or AMF_MEMORY_UNKNOWN (get from input type)
 #define AMF_VIDEO_CONVERTER_COMPUTE_DEVICE                  L"ComputeDevice"            // Values : AMF_MEMORY_COMPUTE_FOR_DX9 enumeration
 

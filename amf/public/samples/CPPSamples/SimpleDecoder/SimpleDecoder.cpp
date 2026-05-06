@@ -65,8 +65,8 @@ static amf_int32 frameCount                 = 500; // -1 means entire file
 static amf_int32 submitted = 0;
 
 // The memory transfer from DX9 to HOST and writing a raw file is longer than decode time. To measure decode time correctly disable convert and write here:
-//static bool bWriteToFile = false;
-static bool bWriteToFile = true;
+static bool bWriteToFile = false;
+//static bool bWriteToFile = true;
 
 class DecPollingThread : public PollingThread
 {
@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
         wprintf(L"AMF Failed to initialize");
         return 1;
     }
-    g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_DEBUG_OUTPUT, AMF_TRACE_TRACE);
+    //g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_DEBUG_OUTPUT, AMF_TRACE_TRACE);
     ::amf_increase_timer_precision();
 
     amf::AMFContextPtr      context;
@@ -215,6 +215,7 @@ int main(int argc, char* argv[])
 
         if(res == AMF_NEED_MORE_INPUT)
         {
+            bNeedNewInput = true;
 			// do nothing
         }
         else if(res == AMF_INPUT_FULL || res == AMF_DECODER_NO_FREE_SURFACES || res == AMF_REPEAT)
@@ -224,7 +225,7 @@ int main(int argc, char* argv[])
         }
         else
         { // submission succeeded. read new buffer from parser
-			submitted++;
+            submitted++;
 			bNeedNewInput = true;
         }
     }

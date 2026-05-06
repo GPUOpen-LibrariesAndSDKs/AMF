@@ -213,20 +213,21 @@ AMF_RESULT SwapChainVulkan::TerminateSwapChain()
     return AMF_OK;
 }
 
-AMF_RESULT SwapChainVulkan::CreateSwapChain(amf_int32 width, amf_int32 height, amf_bool fullscreen, AMF_SURFACE_FORMAT format)
+AMF_RESULT SwapChainVulkan::CreateSwapChain(amf_int32 /*width*/, amf_int32 /*height*/, amf_bool /*fullscreen*/, AMF_SURFACE_FORMAT format)
 {
-    fullscreen;
-    width;
-    height;
+    AMFContext1::AMFVulkanLocker vkLock(m_pContext1);
 
     AMF_RETURN_IF_FALSE(m_pVulkanDevice != nullptr, AMF_NOT_INITIALIZED, L"CreateSwapChain() - m_pVulkanDevice is not initialized");
     AMF_RETURN_IF_FALSE(m_pVulkanDevice->hDevice != nullptr, AMF_NOT_INITIALIZED, L"CreateSwapChain() - m_pVulkanDevice->hDevice is not initialized");
     AMF_RETURN_IF_FALSE(m_hSurfaceKHR != NULL, AMF_NOT_INITIALIZED, L"CreateSwapChain() - m_hSurfaceKHR is not initialized");
 
+    VkResult vkres = GetVulkan()->vkDeviceWaitIdle(m_pVulkanDevice->hDevice);
+    ASSERT_RETURN_IF_VK_FAILED(vkres, AMF_VULKAN_FAILED, L"CreateSwapChain() - vkDeviceWaitIdle() failed");
+
     // Get image count
     VkSurfaceCapabilitiesKHR surfaceCapabilities = {};
-    VkResult vkres = GetVulkan()->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_pVulkanDevice->hPhysicalDevice, m_hSurfaceKHR, &surfaceCapabilities);
-    ASSERT_RETURN_IF_VK_FAILED(vkres, AMF_VULKAN_FAILED, L"CreateSurface() - vkGetPhysicalDeviceSurfaceCapabilitiesKHR() failed");
+    vkres = GetVulkan()->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_pVulkanDevice->hPhysicalDevice, m_hSurfaceKHR, &surfaceCapabilities);
+    ASSERT_RETURN_IF_VK_FAILED(vkres, AMF_VULKAN_FAILED, L"CreateSwapChain() - vkGetPhysicalDeviceSurfaceCapabilitiesKHR() failed");
 
     amf_uint32 minImageCount = surfaceCapabilities.minImageCount + 1;
     if (surfaceCapabilities.maxImageCount > 0 && minImageCount > surfaceCapabilities.maxImageCount)
@@ -692,6 +693,7 @@ AMF_RESULT SwapChainVulkan::CreateFrameBuffers()
 
 AMF_RESULT SwapChainVulkan::Resize(amf_int32 width, amf_int32 height, amf_bool fullscreen, AMF_SURFACE_FORMAT format)
 {
+    AMFContext1::AMFVulkanLocker vkLock(m_pContext1);
     AMF_RETURN_IF_FALSE(m_pVulkanDevice != nullptr, AMF_NOT_INITIALIZED, L"ResizeSwapChain() - m_pVulkanDevice is not initialized");
 
     if (m_size.width == width && m_size.height == height && m_format == format)
@@ -701,14 +703,6 @@ AMF_RESULT SwapChainVulkan::Resize(amf_int32 width, amf_int32 height, amf_bool f
 
     AMF_RESULT res = TerminateSwapChain();
     AMF_RETURN_IF_FAILED(res, L"ResizeSwapchain() - TerminateSwapChain() failed");
-
-    VkResult vkres = VK_SUCCESS;
-    {
-        AMFContext1::AMFVulkanLocker vkLock(m_pContext1);
-
-        vkres = GetVulkan()->vkDeviceWaitIdle(m_pVulkanDevice->hDevice);
-    }
-    ASSERT_RETURN_IF_VK_FAILED(vkres, AMF_VULKAN_FAILED, L"ResizeSwapChain() - vkDeviceWaitIdle() failed");
 
     res = CreateSwapChain(width, height, fullscreen, format);
     AMF_RETURN_IF_FAILED(res, L"ResizeSwapchain() - CreateSwapChain() failed");
@@ -759,6 +753,8 @@ VkFormat SwapChainVulkan::GetSupportedVkFormat(AMF_SURFACE_FORMAT format)
     case AMF_SURFACE_RGBA:     return VK_FORMAT_R8G8B8A8_UNORM;
     case AMF_SURFACE_RGBA_F16: return VK_FORMAT_R16G16B16A16_SFLOAT;
     case AMF_SURFACE_R10G10B10A2: return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+    default:
+        break;
     }
 
     return VK_FORMAT_UNDEFINED;
@@ -780,8 +776,9 @@ AMF_RESULT SwapChainVulkan::AcquireNextBackBufferIndex(amf_uint& index)
     // and pass it back to the caller here for it to be reused.
     if (m_droppedBuffers.empty())
     {
+        AMFContext1::AMFVulkanLocker vkLock(m_pContext1);
         VkResult vkres = GetVulkan()->vkAcquireNextImageKHR(m_pVulkanDevice->hDevice, m_hSwapChain, UINT32_MAX, m_Semaphores.front(), VK_NULL_HANDLE, &imageIndex);
-        AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS || vkres == VK_SUBOPTIMAL_KHR || vkres == VK_ERROR_OUT_OF_DATE_KHR, AMF_VULKAN_FAILED, L"AcquireBackBuffer() - vkAcquireNextImageKHR() failed");
+        AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS || vkres == VK_SUBOPTIMAL_KHR || vkres == VK_ERROR_OUT_OF_DATE_KHR, AMF_VULKAN_FAILED, L"AcquireBackBuffer() - vkAcquireNextImageKHR() failed vkres=%d", (int)vkres);
         if (vkres == VK_ERROR_OUT_OF_DATE_KHR)
         {
             return AMF_RESOLUTION_UPDATED;
@@ -808,6 +805,7 @@ AMF_RESULT SwapChainVulkan::AcquireNextBackBufferIndex(amf_uint& index)
 
 AMF_RESULT SwapChainVulkan::Present(amf_bool waitForVSync)
 {
+    AMFContext1::AMFVulkanLocker vkLock(m_pContext1);
     AMF_RETURN_IF_FALSE(m_pVulkanDevice != nullptr, AMF_NOT_INITIALIZED, L"Present() - m_pVulkanDevice is not initialized");
     AMF_RETURN_IF_FALSE(m_pVulkanDevice->hDevice != nullptr, AMF_NOT_INITIALIZED, L"Present() - m_pVulkanDevice->hDevice is not initialized");
     AMF_RETURN_IF_FALSE(m_hQueuePresent != nullptr, AMF_NOT_INITIALIZED, L"Present() - m_hQueuePresent is not initialized");
@@ -866,7 +864,7 @@ AMF_RESULT SwapChainVulkan::Present(amf_bool waitForVSync)
         m_acquiredBuffers.pop_front();
     }
 
-    AMF_RETURN_IF_FALSE((vkres == VK_SUCCESS|| vkres == VK_SUBOPTIMAL_KHR), AMF_VULKAN_FAILED, L"Present() - vkQueuePresentKHR() failed");
+    AMF_RETURN_IF_FALSE((vkres == VK_SUCCESS|| vkres == VK_SUBOPTIMAL_KHR), AMF_VULKAN_FAILED, L"Present() - vkQueuePresentKHR() failed: vkres=%d", (int)vkres);
     AMF_RETURN_IF_FALSE((swapchainRes == VK_SUCCESS || swapchainRes == VK_SUBOPTIMAL_KHR), AMF_VULKAN_FAILED, L"Present() - vkQueuePresentKHR() swapchain present failed");
 
     m_lastPresentedImageIndex = index;
@@ -874,7 +872,6 @@ AMF_RESULT SwapChainVulkan::Present(amf_bool waitForVSync)
     //vkDeviceWaitIdle(m_pVulkanDevice->hDevice);
     if (waitForVSync)
     {
-        AMFContext1::AMFVulkanLocker vkLock(m_pContext1);
         GetVulkan()->vkQueueWaitIdle(m_hQueuePresent);
     }
     return AMF_OK;
@@ -1230,7 +1227,6 @@ AMF_RESULT VulkanContext::TransitionSurface(CommandBufferVulkan* pBuffer, amf::A
     default:barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT; break;
     }
 
-    barrier.dstAccessMask = 0;
     switch (barrier.newLayout)
     {
     case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
@@ -1253,6 +1249,9 @@ AMF_RESULT VulkanContext::TransitionSurface(CommandBufferVulkan* pBuffer, amf::A
             barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
         }
         barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        break;
+    default:
+        barrier.dstAccessMask = 0;
         break;
     }
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -1633,6 +1632,11 @@ AMF_RESULT           SwapChainVulkan::UpdateColorSpace()
     case VK_COLOR_SPACE_DISPLAY_NATIVE_AMD:
         m_colorSpace.transfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE2084;
         m_colorSpace.primaries = AMF_COLOR_PRIMARIES_CCCS;
+        break;
+    default:
+        m_colorSpace.transfer = AMF_COLOR_TRANSFER_CHARACTERISTIC_LINEAR;
+        m_colorSpace.primaries = AMF_COLOR_PRIMARIES_BT709;
+        AMFTraceWarning(AMF_FACILITY, L"Unsupported color space %d in m_surfaceFormat.colorSpace, defaulted to AMF_COLOR_TRANSFER_CHARACTERISTIC_LINEAR and AMF_COLOR_PRIMARIES_BT709", m_surfaceFormat.colorSpace);
         break;
     }
     if (hdrMode && GetFormat() == amf::AMF_SURFACE_RGBA_F16) // Used with RGBA_F16 HDR

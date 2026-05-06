@@ -175,6 +175,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
     s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_CODEC, AMFVideoEncoderVCE_AVC);
     RegisterEncoderParamsAVC(s_pPipeline);
+    RegisterEncoderParamsHEVC(s_pPipeline);
+    RegisterEncoderParamsAV1(s_pPipeline);
 
     s_pPipeline->SetParamDescription(DisplayDvrPipeline::PARAM_NAME_ENABLE_PRE_ANALYSIS, ParamEncoderStatic, L"Enable PA (true, false default =  false)", ParamConverterBoolean);
 
@@ -197,6 +199,45 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
         {
             s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_MULTI_MONITOR, true);
         }
+        // reinit codec params
+        amf_wstring codec = AMFVideoEncoderVCE_AVC;
+        s_pPipeline->GetParamWString(DisplayDvrPipeline::PARAM_NAME_CODEC, codec);
+        s_pPipeline->Clear();
+        s_pPipeline->RegisterParams();
+
+        s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_ADAPTERID, kDefaultGPUIdx);
+        s_pPipeline->SetParamAsString(DisplayDvrPipeline::PARAM_NAME_MONITORID, L"0");
+
+        if (codec == amf_wstring(AMFVideoEncoderVCE_AVC))
+        {
+            RegisterEncoderParamsAVC(s_pPipeline);
+            s_pPipeline->SetParam(AMF_VIDEO_ENCODER_QUALITY_PRESET, AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED);
+        }
+        else if (codec == amf_wstring(AMFVideoEncoder_HEVC))
+        {
+            RegisterEncoderParamsHEVC(s_pPipeline);
+            s_pPipeline->SetParam(AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET, AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED);
+        }
+        else if (codec == amf_wstring(AMFVideoEncoder_AV1))
+        {
+            RegisterEncoderParamsAV1(s_pPipeline);
+            s_pPipeline->SetParam(AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET, AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_SPEED);
+        }
+        else
+        {
+            LOG_ERROR(L"Invalid codec ID");
+            return -1;
+        }
+#if defined(_WIN32)
+        if (!parseCmdLineParameters(s_pPipeline))
+#else
+        if (!parseCmdLineParameters(s_pPipeline, argc, argv))
+#endif
+        {
+            LOG_INFO(L"Invalid paramerterss");
+            return -1;
+        }
+
 
         //-------------------------------------------------------------------------------------------------
         // initialize dialog UI

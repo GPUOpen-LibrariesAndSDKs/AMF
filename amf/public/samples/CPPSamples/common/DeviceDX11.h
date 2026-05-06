@@ -38,6 +38,12 @@
 #include "public/include/core/Result.h"
 
 
+// Checks if a PCI address is in correct format: 8 bits for bus, 5 for device, and 3 for function.
+bool IsValidPCIAddress(UINT bus, UINT device, UINT function);
+
+// Returns empty string if adapter's PCI address is invalid or can't get pci address via LUID.
+// This allows us to distinguish virtual adapter against real adapters.
+std::string GetPCIFromLUID(LUID adapterLuid);
 
 
 class DeviceDX11
@@ -46,14 +52,14 @@ public:
     DeviceDX11();
     virtual ~DeviceDX11();
 
-    AMF_RESULT Init(amf_uint32 adapterID, bool onlyWithOutputs = false, bool bCheckForAMD = true);
+    AMF_RESULT Init(amf_uint32 adapterID, bool onlyWithOutputs = false, bool bCheckForAMD = true, bool bDetectVirtualAdapters = false);
     AMF_RESULT Terminate();
 
     ATL::CComPtr<ID3D11Device>      GetDevice();
     std::wstring GetDisplayDeviceName() { return m_displayDeviceName; }
     LUID        GetLuid() { return m_LUID; }
 private:
-    void EnumerateAdapters(bool onlyWithOutputs, bool bCheckForAMD = true);
+    void EnumerateAdapters(bool onlyWithOutputs, bool bCheckForAMD, bool bDetectVirtualAdapters);
 
     ATL::CComPtr<ID3D11Device>          m_pD3DDevice;
 

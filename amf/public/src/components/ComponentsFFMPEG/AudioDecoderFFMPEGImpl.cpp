@@ -189,9 +189,14 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT /*fo
         //       property holds it in the end, however it is 
         //       possible someone changes the property at 
         //       which point the extra data would go away...
+        // 
+        //       For decoding, the array must be allocated with the av_malloc() family of functions;
+        //       allocated size must be at least AV_INPUT_BUFFER_PADDING_SIZE bytes
+        //       After being set, the array is owned by the codec and freed in avcodec_free_context().
         m_pExtraData = AMFBufferPtr(val.pInterface);
-        m_pCodecContext->extradata = (uint8_t*) m_pExtraData->GetNative();
-        m_pCodecContext->extradata_size = (int) m_pExtraData->GetSize();
+        m_pCodecContext->extradata = (uint8_t*)av_malloc(m_pExtraData->GetSize() + AV_INPUT_BUFFER_PADDING_SIZE);
+        memcpy(m_pCodecContext->extradata, m_pExtraData->GetNative(), m_pExtraData->GetSize());
+        m_pCodecContext->extradata_size = (int)m_pExtraData->GetSize();
     }
 
     // figure out the surface format conversion
@@ -294,7 +299,7 @@ AMF_RESULT AMF_STD_CALL  AMFAudioDecoderFFMPEGImpl::Terminate()
     {
         AMFTraceInfo(AMF_FACILITY, L"Submitted %d, Queried %d", (int)m_audioFrameSubmitCount, (int)m_audioFrameQueryCount);
 
-        avcodec_close(m_pCodecContext);
+        avcodec_free_context(&m_pCodecContext);
         av_free(m_pCodecContext);
         m_pCodecContext = NULL;
     }

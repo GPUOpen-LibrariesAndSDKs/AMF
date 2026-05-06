@@ -76,8 +76,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)..\..\bin\vs2022x$(PlatformArchitecture)$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)..\..\bin\obj\vs2022x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>

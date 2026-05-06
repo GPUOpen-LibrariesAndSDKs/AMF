@@ -539,6 +539,7 @@ amf::AMF_SURFACE_FORMAT AMF_STD_CALL amf::GetAMFSurfaceFormat(AVPixelFormat eFor
     case AV_PIX_FMT_YUV420P16:      return AMF_SURFACE_P016;
     case AV_PIX_FMT_YUV422P10LE:    return AMF_SURFACE_Y210;
     case AV_PIX_FMT_YUV444P10LE:    return AMF_SURFACE_Y416;
+    case AV_PIX_FMT_YUV444P12LE:    return AMF_SURFACE_Y416;
     case AV_PIX_FMT_YUYV422:        return AMF_SURFACE_YUY2;
     case AV_PIX_FMT_UYVY422:        return AMF_SURFACE_UYVY;
     case AV_PIX_FMT_GBRAP16:        return AMF_SURFACE_RGBA_F16;

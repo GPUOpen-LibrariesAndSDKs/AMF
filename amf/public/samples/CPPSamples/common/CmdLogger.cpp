@@ -31,8 +31,11 @@
 //
 //#include "stdafx.h"
 #include "CmdLogger.h"
+#include "public/common/AMFSTL.h"
 #include <iomanip>
 #include <iostream>
+#include <locale>
+#include <codecvt>
 
 #ifdef _WIN32
 
@@ -86,19 +89,22 @@ void ChangeTextColor(AMFLogLevel level) {
   \033[01;36m - light cyan
   \033[01;37m - white
   */
+  const wchar_t* color_code = nullptr;
   switch (level) {
     case AMFLogLevelInfo:
-      wprintf(COL_RESET);  // default
+      color_code = COL_RESET;  // default
       break;
     case AMFLogLevelSuccess:
-      wprintf(L"\033[22;32m");  // green
+      color_code = L"\033[22;32m";  // green
       break;
     case AMFLogLevelError:
-      wprintf(L"\033[01;36m");  // light cyan
+      color_code = L"\033[01;36m";  // light cyan
       break;
     default:
-      break;
+      return;
   }
+  
+  amf::amf_fputws(color_code, stdout);
 }
 #else
 void ChangeTextColor(AMFLogLevel level) {}
@@ -137,7 +143,7 @@ void WriteLog(const wchar_t* message, AMFLogLevel level) {
 
   amf::AMFLock lock(&s_std_out_cs);
   ChangeTextColor(level);
-  wprintf(message);
+  amf::amf_fputws(message, stdout);
   ChangeTextColor(AMFLogLevelDefault);
 #endif
 }

@@ -439,7 +439,7 @@ AMF_RESULT RegisterEncoderParamsAVC(ParametersStorage* pParams)
     pParams->SetParamDescription(AMF_PA_PAQ_MODE, ParamEncoderDynamic, L"PAQ Mode (NONE, CAQ, default = NONE)", ParamConverterPAQMode);
     pParams->SetParamDescription(AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE, ParamEncoderDynamic, L"High Motion Quality Boost Mode (NONE, AUTO, default = NONE)", ParamConverterHighMotionQualityBoostMode);
 
-    pParams->SetParamDescription(AMF_PA_LOOKAHEAD_BUFFER_DEPTH, ParamEncoderDynamic, L"PA Buffer size (integer 0 - MAX_LOOKAHEAD_DEPTH, default = 0)", ParamConverterInt64);
+    pParams->SetParamDescription(AMF_PA_LOOKAHEAD_BUFFER_DEPTH, ParamEncoderDynamic, L"PA Buffer size (integer 0 - MAX_LOOKAHEAD_DEPTH, default = depends on USAGE)", ParamConverterInt64);
     pParams->SetParamDescription(AMF_PA_TAQ_MODE, ParamEncoderDynamic, L"TAQ Mode (NONE, 1, 2, default = NONE)", ParamConverterTAQModeAVC);
 
     return AMF_OK;

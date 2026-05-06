@@ -33,6 +33,7 @@
 #include "AudioPresenterWin.h"
 #include "AudioPresenterLinux.h"
 #include "VideoPresenter.h"
+#include "public/include/core/VulkanAMF.h"
 
 PlaybackPipeline::PlaybackPipeline()
     : m_hwnd(NULL), m_hDisplay(NULL)
@@ -91,6 +92,7 @@ PlaybackPipeline::InitContext(amf::AMF_MEMORY_TYPE type)
         }
     case amf::AMF_MEMORY_VULKAN:
         {
+            m_pContext->SetProperty(AMF_CONTEXT_VULKAN_USE_TIMELINE_SEMAPHORES, true);
             const AMF_RESULT res = amf::AMFContext1Ptr(m_pContext)->InitVulkan(NULL);
             CHECK_AMF_ERROR_RETURN(res, "Init Vulkan");
             m_bVideoPresenterDirectConnect = true;

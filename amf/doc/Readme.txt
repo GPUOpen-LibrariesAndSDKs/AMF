@@ -27,8 +27,11 @@
 // THE SOFTWARE.
 //
 
+1.5.2.0 (06.05.2026) version
+--------------------------
+   - Updated FFmpeg to 8.0.1
 
-1.5.0.0 (29.10.2025) version
+1.5.0.0 (09.10.2025) version
 --------------------------
    - Added 4:4:4/4:2:2 chroma subsampling support for VideoConverter color space conversion and scaling
    - Samples updated to VS 2022

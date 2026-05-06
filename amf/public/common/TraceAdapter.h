@@ -469,6 +469,7 @@ inline bool AMFSucceeded(AMF_RESULT result) { return result == AMF_OK || result 
 */
 amf_wstring AMF_CDECL_CALL  AMFFormatResult(AMF_RESULT result);
 
+#if defined(WIN32)
 /**
 *******************************************************************************
 *   AMFHResultSucceded
@@ -487,6 +488,7 @@ inline bool AMFHResultSucceded(HRESULT result) { return SUCCEEDED(result); }
 *******************************************************************************
 */
 inline amf_wstring AMFFormatHResult(HRESULT result)  { return amf::amf_string_format(L"COM failed, HR = 0x%0X:", result); }
+#endif
 
 /**
 *******************************************************************************
@@ -580,6 +582,7 @@ inline amf_wstring AMFFormatVkResult(int result) { return amf::amf_string_format
 #define ASSERT_RETURN_IF_CL_FAILED(exp, /*optional format, args,*/...) AMF_BASE_RETURN(exp, int, amf::AMFOpenCLSucceeded, amf::AMFFormatOpenCLError, AMF_TRACE_ERROR, AMF_FACILITY, AMF_OPENCL_FAILED, L###exp, ##__VA_ARGS__)
 #define AMF_RETURN_IF_CL_FAILED(exp, /*optional format, args,*/...) AMF_BASE_RETURN(exp, int, amf::AMFOpenCLSucceeded, amf::AMFFormatOpenCLError, AMF_TRACE_ERROR, AMF_FACILITY, AMF_OPENCL_FAILED, L###exp, ##__VA_ARGS__)
 
+#if defined(WIN32)
 /**
 *******************************************************************************
 *   ASSERT_RETURN_IF_HR_FAILED
@@ -591,6 +594,7 @@ inline amf_wstring AMFFormatVkResult(int result) { return amf::amf_string_format
 *******************************************************************************
 */
 #define ASSERT_RETURN_IF_HR_FAILED(exp, reterr, /*optional format, args,*/...) AMF_BASE_RETURN(exp, HRESULT, amf::AMFHResultSucceded, amf::AMFFormatHResult, AMF_TRACE_ERROR, AMF_FACILITY, reterr, L###exp, ##__VA_ARGS__)
+#endif
 
 /**
 *******************************************************************************

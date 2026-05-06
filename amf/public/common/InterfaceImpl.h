@@ -42,7 +42,7 @@
 namespace amf
 {
     #define AMF_BEGIN_INTERFACE_MAP  \
-        virtual AMF_RESULT AMF_STD_CALL QueryInterface(const amf::AMFGuid & interfaceID, void** ppInterface) \
+        virtual AMF_RESULT AMF_STD_CALL QueryInterface(const amf::AMFGuid & interfaceID, void** ppInterface) override \
         {  \
             AMF_RESULT err = AMF_NO_INTERFACE; \
 
@@ -149,11 +149,11 @@ namespace amf
         {}
         AMFInterfaceImpl()
         {}
-        virtual amf_long AMF_STD_CALL Acquire()
+        virtual amf_long AMF_STD_CALL Acquire() override
         {
             return AMFInterfaceBase::AcquireInternal();
         }
-        virtual amf_long AMF_STD_CALL Release()
+        virtual amf_long AMF_STD_CALL Release() override
         {
             return AMFInterfaceBase::ReleaseInternal();
         }
@@ -190,11 +190,11 @@ namespace amf
         {}
         AMFInterfaceMultiImpl()
         {}
-        virtual amf_long AMF_STD_CALL Acquire()
+        virtual amf_long AMF_STD_CALL Acquire() override
         {
             return AMFInterfaceBase::AcquireInternal();
         }
-        virtual amf_long AMF_STD_CALL Release()
+        virtual amf_long AMF_STD_CALL Release() override
         {
             return AMFInterfaceBase::ReleaseInternal();
         }

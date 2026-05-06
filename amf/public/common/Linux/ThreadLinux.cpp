@@ -59,6 +59,7 @@
 #include <dlfcn.h>
 #include <sys/time.h>
 #include <fstream>
+#include <fcntl.h>
 
 #if !defined(__APPLE__)
 #include <malloc.h>
@@ -110,15 +111,25 @@ amf_uint32 AMF_STD_CALL get_current_thread_id()
 //----------------------------------------------------------------------------------------
 // threading
 //----------------------------------------------------------------------------------------
+#ifdef __clang__
+//  Clang issues a performance warning since there's no guarantee that a pointer passed here points to a
+//  naturally aligned value, in that case atomic functions would be much slower, albeit still safe
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Watomic-alignment"
+#endif
+
 amf_long AMF_STD_CALL amf_atomic_inc(amf_long* X)
 {
-    return __sync_add_and_fetch(X, 1);
+    return __atomic_add_fetch(X, 1, __ATOMIC_SEQ_CST);
 }
 //----------------------------------------------------------------------------------------
 amf_long AMF_STD_CALL amf_atomic_dec(amf_long* X)
 {
-    return __sync_sub_and_fetch(X, 1);
+    return __atomic_sub_fetch(X, 1, __ATOMIC_SEQ_CST);
 }
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 //----------------------------------------------------------------------------------------
 amf_handle AMF_STD_CALL amf_create_critical_section()
 {
@@ -473,19 +484,44 @@ bool AMF_STD_CALL amf_release_mutex(amf_handle hmutex)
     return pthread_mutex_unlock(mutex) == 0;
 }
 
+//We use our own struct here because we need to keep track of what
+//type of semaphore this is (named or unnamed)
+struct amf_linux_semaphore {
+    sem_t* s;
+    bool isNamed = false;
+};
 //----------------------------------------------------------------------------------------
-amf_handle AMF_STD_CALL amf_create_semaphore(amf_long iInitCount, amf_long iMaxCount, const wchar_t* /*pName*/)
+amf_handle AMF_STD_CALL amf_create_semaphore(amf_long iInitCount, amf_long iMaxCount, const wchar_t* pName)
 {
     if(iMaxCount == 0 || iInitCount > iMaxCount)
     {
         return NULL;
     }
 
-    sem_t* semaphore = new sem_t;
-    if(sem_init(semaphore, 0, iInitCount) != 0)
+    amf_linux_semaphore* semaphore = new amf_linux_semaphore;
+    if ((pName != nullptr) && (*pName != L'\0'))
     {
-        delete semaphore;
-        return NULL;
+        semaphore->isNamed = true;
+        const amf_string name = amf_from_unicode_to_utf8(amf_wstring(pName));
+        // iMaxCount is not supported by POSIX semaphores
+        semaphore->s = sem_open(name.c_str(), O_CREAT, S_IRUSR | S_IWUSR, iInitCount);
+        if (semaphore->s == SEM_FAILED)
+        {
+            perror("Couldn't create named semaphore.");
+            delete semaphore;
+            return NULL;
+        }
+    }
+    else
+    {
+        semaphore->s = new sem_t;
+        // iMaxCount is not supported by POSIX semaphores
+        if(sem_init(semaphore->s, 0, iInitCount) != 0)
+        {
+            delete semaphore->s;
+            delete semaphore;
+            return NULL;
+        }
     }
     return (amf_handle)semaphore;
 }
@@ -497,8 +533,16 @@ bool AMF_STD_CALL amf_delete_semaphore(amf_handle hsemaphore)
         return false;
     }
     bool ret = true;
-    sem_t* semaphore = (sem_t*)hsemaphore;
-    ret = (0==sem_destroy(semaphore)) ? 1:0;
+    amf_linux_semaphore* semaphore = (amf_linux_semaphore*)hsemaphore;
+    if (semaphore->isNamed == true)
+    {
+        ret = (sem_close(semaphore->s) == 0);
+    }
+    else
+    {
+        ret = (sem_destroy(semaphore->s) == 0);
+        delete semaphore->s;
+    }
     delete semaphore;
     return ret;
 }
@@ -526,18 +570,18 @@ bool AMF_STD_CALL amf_wait_for_semaphore(amf_handle hsemaphore, amf_ulong timeou
         wait_time.tv_nsec -= 1000000000;
     }
 
-    sem_t* semaphore = (sem_t*)hsemaphore;
+    amf_linux_semaphore* semaphore = (amf_linux_semaphore*)hsemaphore;
     if(timeout != AMF_INFINITE)
     {
     #if defined(__APPLE__)
-        return sem_timedwait1 (semaphore, &wait_time) == 0; // errno=ETIMEDOU
+        return sem_timedwait1 (semaphore->s, &wait_time) == 0; // errno=ETIMEDOU
     #else
-        return sem_timedwait (semaphore, &wait_time) == 0; // errno=ETIMEDOUT
+        return sem_timedwait (semaphore->s, &wait_time) == 0; // errno=ETIMEDOUT
     #endif
     }
     else
     {
-        return sem_wait(semaphore) == 0;
+        return sem_wait(semaphore->s) == 0;
     }
 }
 //----------------------------------------------------------------------------------------
@@ -547,18 +591,18 @@ bool AMF_STD_CALL amf_release_semaphore(amf_handle hsemaphore, amf_long iCount, 
     {
         return false;
     }
-    sem_t* semaphore = (sem_t*)hsemaphore;
+    amf_linux_semaphore* semaphore = (amf_linux_semaphore*)hsemaphore;
 
     if(iOldCount != NULL)
     {
         int iTmp = 0;
-        sem_getvalue(semaphore, &iTmp);
+        sem_getvalue(semaphore->s, &iTmp);
         *iOldCount = iTmp;
     }
 
     for(int i = 0; i < iCount; i++)
     {
-        sem_post(semaphore); 
+        sem_post(semaphore->s); 
     }
     return true;
 }
@@ -645,11 +689,16 @@ void AMF_STD_CALL amf_virtual_free(void* ptr)
 amf_handle AMF_STD_CALL amf_load_library(const wchar_t* filename)
 {
     void *ret = dlopen(amf_from_unicode_to_multibyte(filename).c_str(), RTLD_NOW | RTLD_GLOBAL);
-    if(ret ==0 )
+#ifdef _DEBUG
+    if (ret ==0 )
     {
         const char *err = dlerror();
-        int a=1;
+        amf_string errmsg = "amf_load_library: dlopen failed:";
+        errmsg += err;
+        errmsg += '\n';
+        amf_debug_trace(amf_from_multibyte_to_unicode(errmsg).c_str());
     }
+#endif
     return ret;
 }
 
@@ -665,12 +714,16 @@ amf_handle AMF_STD_CALL amf_load_library1(const wchar_t* filename, bool bGlobal)
         ret = dlopen(amf_from_unicode_to_multibyte(filename).c_str(), RTLD_NOW | RTLD_LOCAL| RTLD_DEEPBIND);
 #endif
     }
-    
+#ifdef _DEBUG    
     if(ret == 0)
     {
         const char *err = dlerror();
-        int a=1;
+        amf_string errmsg = "amf_load_library1: dlopen failed:";
+        errmsg += err;
+        errmsg += '\n';
+        amf_debug_trace(amf_from_multibyte_to_unicode(errmsg).c_str());
     }
+#endif
     return ret;
 }
 

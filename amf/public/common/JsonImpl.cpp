@@ -269,7 +269,7 @@ void amf::JSONParserImpl::ValueImpl::SetValueAsUInt64(uint64_t val)
 void amf::JSONParserImpl::ValueImpl::SetValueAsDouble(double val)
 {
     char buf[100];
-    sprintf(buf, "%.16lf", val);
+    snprintf(buf, sizeof(buf), "%.16lf", val);
     m_Value = buf;
     if (m_Value.compare("-nan(ind)") == 0)
     {

@@ -58,7 +58,7 @@ enum  AMF_HQ_SCALER_ALGORITHM_ENUM
 
 #define AMF_HQ_SCALER_OUTPUT_SIZE       L"HQSOutputSize"            // AMFSize                                                                         - output scaling width/hieight
 
-#define AMF_HQ_SCALER_KEEP_ASPECT_RATIO  L"KeepAspectRatio"         // bool (default=false) Keep aspect ratio if scaling. 
+#define AMF_HQ_SCALER_KEEP_ASPECT_RATIO  L"KeepAspectRatio"         // bool (default=true) Keep aspect ratio if scaling. 
 #define AMF_HQ_SCALER_FILL               L"Fill"                    // bool (default=false) fill area out of ROI. 
 #define AMF_HQ_SCALER_FILL_COLOR         L"FillColor"               // AMFColor 
 #define AMF_HQ_SCALER_FROM_SRGB          L"FromSRGB"                   //  bool (default=true) Convert to SRGB. 

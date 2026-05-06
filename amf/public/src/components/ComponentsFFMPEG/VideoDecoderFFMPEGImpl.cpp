@@ -134,8 +134,13 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::Init(AMF_SURFACE_FORMAT form
         //       property holds it in the end, however it is 
         //       possible someone changes the property at 
         //       which point the extra data would go away...
+        // 
+        //       For decoding, the array must be allocated with the av_malloc() family of functions;
+        //       allocated size must be at least AV_INPUT_BUFFER_PADDING_SIZE bytes
+        //       After being set, the array is owned by the codec and freed in avcodec_free_context().
         m_pExtraData = AMFBufferPtr(val.pInterface);
-        m_pCodecContext->extradata = (uint8_t*) m_pExtraData->GetNative();
+        m_pCodecContext->extradata = (uint8_t*)av_malloc(m_pExtraData->GetSize() + AV_INPUT_BUFFER_PADDING_SIZE);
+        memcpy(m_pCodecContext->extradata, m_pExtraData->GetNative(), m_pExtraData->GetSize());
         m_pCodecContext->extradata_size = (int) m_pExtraData->GetSize();
     }
 
@@ -244,7 +249,7 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::Terminate()
     {
         AMFTraceInfo(AMF_FACILITY, L"Submitted %d, Queried %d", (int)m_videoFrameSubmitCount, (int)m_videoFrameQueryCount);
 
-        avcodec_close(m_pCodecContext);
+        avcodec_free_context(&m_pCodecContext);
         av_free(m_pCodecContext);
         m_pCodecContext = nullptr;
     }
@@ -550,9 +555,9 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
 
     // determine and set the frame type coming out
     AMF_FRAME_TYPE eFrameType = AMF_FRAME_PROGRESSIVE;
-    if (picture.interlaced_frame)
+    if ((picture.flags & AV_FRAME_FLAG_INTERLACED) != 0)
     {
-        eFrameType = picture.top_field_first ? AMF_FRAME_INTERLEAVED_EVEN_FIRST : AMF_FRAME_INTERLEAVED_ODD_FIRST;
+        eFrameType = ((picture.flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) !=0) ? AMF_FRAME_INTERLEAVED_EVEN_FIRST : AMF_FRAME_INTERLEAVED_ODD_FIRST;
         // unsupported???
         //AMF_FRAME_FIELD_SINGLE_EVEN                = 3,
         //AMF_FRAME_FIELD_SINGLE_ODD                = 4,
@@ -589,7 +594,7 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::QueryOutput(AMFData** ppData
         CopyFrameYUV422(pPlaneY, picture);
         bIsPlanar = false;
     }
-    else if (picture.format == AV_PIX_FMT_YUV444P10LE)  //YUV444
+    else if (picture.format == AV_PIX_FMT_YUV444P10LE || picture.format == AV_PIX_FMT_YUV444P12LE)  //YUV444
     {
         CopyFrameYUV444(pPlaneY, picture);
         bIsPlanar = false;
@@ -999,8 +1004,8 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::CopyFrameThreaded(AMFPlane* 
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::CopyFrameYUV422(AMFPlane* pPlane, const AVFrame& picture)
 {
-    AMF_RETURN_IF_INVALID_POINTER(pPlane, L"CopyFrameYUV444() - pPlane is NULL");
-
+    // Copy Planar YUV422P10LE to Y210
+    AMF_RETURN_IF_INVALID_POINTER(pPlane, L"CopyFrameYUV422() - pPlane is NULL");
 
     amf_uint16 *pTmpMemY210 = static_cast<amf_uint16*>(pPlane->GetNative());
     const amf_uint16 *pTmpMemInY  = (const amf_uint16*)(picture.data[0]);
@@ -1010,12 +1015,12 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::CopyFrameYUV422(AMFPlane* pP
     const amf_size    uWidth      = pPlane->GetWidth() / 2;  //YUYV
     for (amf_size y = 0; y < linesToCopy; y++)
     {
-        for (amf_size x = 0; x < uWidth; x++)  //UYVY
+        for (amf_size x = 0; x < uWidth; x++) 
         {
-            pTmpMemY210[4 * x + 0] = (pTmpMemInV[x] << 6) & 0xFFC0;        //U
-            pTmpMemY210[4 * x + 1] = (pTmpMemInY[2 * x] << 6) & 0xFFC0;    //Y
-            pTmpMemY210[4 * x + 2] = (pTmpMemInU[x] << 6) & 0xFFC0;        //V
-            pTmpMemY210[4 * x + 3] = (pTmpMemInY[2 * x + 1] << 6) & 0xFFC0;//Y
+            pTmpMemY210[4 * x + 0] = (pTmpMemInY[2 * x + 1] << 6) & 0xFFC0; //Y
+            pTmpMemY210[4 * x + 1] = (pTmpMemInV[x] << 6) & 0xFFC0;         //V
+            pTmpMemY210[4 * x + 2] = (pTmpMemInY[2 * x] << 6) & 0xFFC0;     //Y
+            pTmpMemY210[4 * x + 3] = (pTmpMemInU[x] << 6) & 0xFFC0;         //U
         }
         pTmpMemInY  += picture.linesize[0] / sizeof(amf_uint16);
         pTmpMemInU  += picture.linesize[1] / sizeof(amf_uint16);
@@ -1028,8 +1033,9 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::CopyFrameYUV422(AMFPlane* pP
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::CopyFrameYUV444(AMFPlane* pPlane, const AVFrame& picture)
 {
+    // Copy planar YUV444P10LE/YUV444P12LE to packed 444
     AMF_RETURN_IF_INVALID_POINTER(pPlane, L"CopyFrameYUV444() - pPlane is NULL");
-
+    amf_int shift = picture.format == AV_PIX_FMT_YUV444P12LE ? 4 : 6;
 
     amf_uint16 *pTmpMemYUVA = static_cast<amf_uint16*>(pPlane->GetNative());
     const amf_uint16 *pTmpMemInY  = (const amf_uint16*)(picture.data[0]);
@@ -1041,10 +1047,10 @@ AMF_RESULT AMF_STD_CALL  AMFVideoDecoderFFMPEGImpl::CopyFrameYUV444(AMFPlane* pP
     {
         for (amf_size x = 0; x < uWidth; x++)
         {
-            pTmpMemYUVA[4 * x + 0] = pTmpMemInU[x] << 6;
-            pTmpMemYUVA[4 * x + 1] = pTmpMemInY[x] << 6;
-            pTmpMemYUVA[4 * x + 2] = pTmpMemInV[x] << 6;
-            pTmpMemYUVA[4 * x + 3] = 65535;
+            pTmpMemYUVA[4 * x + 0] = pTmpMemInU[x] << shift; //U
+            pTmpMemYUVA[4 * x + 1] = pTmpMemInY[x] << shift; //Y
+            pTmpMemYUVA[4 * x + 2] = pTmpMemInV[x] << shift; //V
+            pTmpMemYUVA[4 * x + 3] = 65535;                  //A
         }
         pTmpMemInY += picture.linesize[0] / sizeof(amf_uint16);
         pTmpMemInU += picture.linesize[1] / sizeof(amf_uint16);

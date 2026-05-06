@@ -68,8 +68,14 @@
 #include <string>
 #include <iomanip>
 
+#ifdef _WIN32
+#define AMF_64_CHAR_HEX_FMT L"%I64X"
+#else
+#define AMF_64_CHAR_HEX_FMT L"%I64llX"
+#endif
 
 static const wchar_t*  PARAM_NAME_CAPABILITY = L"CAPABILITY";
+static const wchar_t*  PARAM_NAME_VM = L"VM";
 
 enum CAPABILITY_ENUM
 {
@@ -622,6 +628,7 @@ int main(int argc, char* argv[])
 {
     ParametersStorage params;
     params.SetParamDescription(PARAM_NAME_CAPABILITY, ParamCommon, L"Capability: DX9, DX11, DX12, Vulkan, ALL", NULL);
+    params.SetParamDescription(PARAM_NAME_VM, ParamCommon, L"VM: True, False", NULL);
 
 #if defined(_WIN32)
     if (!parseCmdLineParameters(&params))
@@ -667,6 +674,24 @@ int main(int argc, char* argv[])
         wprintf(L"Invalid capability requested!");
     }
 
+    std::wstring isRunningOnVM = L"false";
+    bool bIsRunningOnVM = false;
+    params.GetParamWString(PARAM_NAME_VM, isRunningOnVM);
+    std::transform(isRunningOnVM.begin(), isRunningOnVM.end(), isRunningOnVM.begin(), toUpperWchar);
+    if (L"FALSE" == isRunningOnVM || L"0" == isRunningOnVM)
+    {
+        bIsRunningOnVM = false;
+    }
+    else if (L"TRUE" == isRunningOnVM || L"1" == isRunningOnVM)
+    {
+        bIsRunningOnVM = true;
+    }
+    else
+    {
+        wprintf(L"Invalid VM mode was set! Options: -VM True");
+    }
+
+
 
     bool result = false;
     AMF_RESULT  res = g_AMFFactory.Init();
@@ -675,8 +700,8 @@ int main(int argc, char* argv[])
         wprintf(L"AMF Failed to initialize");
         return 1;
     }
-    wprintf(L"AMF version (header):  %I64X\n", AMF_FULL_VERSION);
-    wprintf(L"AMF version (runtime): %I64X\n", g_AMFFactory.AMFQueryVersion());
+    wprintf(L"AMF version (header):  " AMF_64_CHAR_HEX_FMT "\n", AMF_FULL_VERSION);
+    wprintf(L"AMF version (runtime): " AMF_64_CHAR_HEX_FMT "\n", g_AMFFactory.AMFQueryVersion());
 
     g_AMFFactory.GetDebug()->AssertsEnable(false);
 
@@ -730,7 +755,7 @@ int main(int argc, char* argv[])
                         ((mode == CAPABILITY_DX11) || (mode == CAPABILITY_ALL)))
                     {
                         DeviceDX11  deviceDX11;
-                        if (deviceDX11.Init(deviceIdx) == AMF_OK)
+                        if (deviceDX11.Init(deviceIdx, false, false, bIsRunningOnVM) == AMF_OK)
                         {
                             deviceInit = (pContext->InitDX11(deviceDX11.GetDevice()) == AMF_OK);
                         }

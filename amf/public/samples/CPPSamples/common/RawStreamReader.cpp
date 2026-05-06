@@ -43,7 +43,7 @@
 //    return sum >= L'0' && sum <= L'9';
 //}
 
-static bool PicGetStride(amf::AMF_SURFACE_FORMAT eFormat, amf_int32 width, amf_int32& stride)
+bool AMF_STD_CALL PicGetStride(amf::AMF_SURFACE_FORMAT eFormat, amf_int32 width, amf_int32& stride)
 {
     stride = 0;
     switch(eFormat)
@@ -100,7 +100,7 @@ static bool PicGetStride(amf::AMF_SURFACE_FORMAT eFormat, amf_int32 width, amf_i
     return true;
 }
 
-static bool PicGetFrameSize(amf::AMF_SURFACE_FORMAT format, amf_int32 width, amf_int32 height, int& size)
+bool AMF_STD_CALL PicGetFrameSize(amf::AMF_SURFACE_FORMAT format, amf_int32 width, amf_int32 height, int& size)
 {
     size = 0;
     amf_int32 stride;
@@ -197,6 +197,7 @@ RawStreamReader::RawStreamReader()
     m_stride(0), 
     m_framesCount(0),
     m_framesCountRead(0),
+    m_streamFramesCount(0),
     m_frame()
 {
 }
@@ -206,7 +207,7 @@ RawStreamReader::~RawStreamReader()
     Terminate();
 }
 
-AMF_RESULT RawStreamReader::Init(ParametersStorage* pParams, amf::AMFContext* pContext)
+AMF_RESULT RawStreamReader::Init(ParametersStorage* pParams, amf::AMFContext* pContext, bool enableRepeat)
 {
     AMF_RESULT res = AMF_OK;
     m_pContext = pContext;
@@ -370,10 +371,18 @@ AMF_RESULT RawStreamReader::Init(ParametersStorage* pParams, amf::AMFContext* pC
     }
     amf_int64 size = 0;
     m_pDataStream->GetSize(&size);
-    m_framesCount = static_cast<int>(size / frameSize);
-    if(frames)
+    m_streamFramesCount = static_cast<int>(size / frameSize);
+    if (frames == 0) 
     {
-        m_framesCount = AMF_MIN(frames, m_framesCount);
+        m_framesCount = m_streamFramesCount;
+    } 
+    else if (enableRepeat) 
+    {
+        m_framesCount = frames;
+    } 
+    else 
+    {
+        m_framesCount = AMF_MIN(frames, m_streamFramesCount);
     }
     return AMF_OK;
 }
@@ -440,6 +449,10 @@ AMF_RESULT RawStreamReader::QueryOutput(amf::AMFData** ppData)
 
 AMF_RESULT RawStreamReader::ReadNextFrame(int dstStride, int /* dstHeight */, int valignment, unsigned char* pDstBits)
 {
+    if (m_framesCountRead > 0 && (m_framesCountRead % m_streamFramesCount) == 0)
+    {
+        m_pDataStream->Seek(amf::AMF_SEEK_BEGIN, 0, NULL);
+    }
     if(m_framesCountRead == m_framesCount)
     {
         return AMF_EOF;

@@ -56,7 +56,7 @@
 #include "../common/DeviceVulkan.h"
 
 #include "VideoRender.h"
-#include "RenderWindow.h"
+#include "public/samples/CPPSamples/common/RenderWindow.h"
 
 class RenderEncodePipeline : public Pipeline
 {
@@ -79,7 +79,7 @@ public:
 
 	static const wchar_t* PARAM_NAME_QUERY_INST_COUNT;
 	static const wchar_t* PARAM_NAME_SELECT_INSTANCE;
-	static const wchar_t* PARAM_NAME_FRAMERATE;
+	static const wchar_t* PARAM_NAME_RENDER_FRAMERATE;
     AMF_RESULT Init(ParametersStorage* pParams, int threadID = -1);
     void Terminate();
 

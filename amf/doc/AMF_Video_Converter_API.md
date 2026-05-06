@@ -20,13 +20,13 @@ Windows™, Visual Studio and DirectX are trademark of Microsoft Corp.
 
 ### Copyright Notice
 
-© 2014-2022 Advanced Micro Devices, Inc. All rights reserved
+© 2014-2025 Advanced Micro Devices, Inc. All rights reserved
 
 Notice Regarding Standards.  AMD does not provide a license or sublicense to any Intellectual Property Rights relating to any standards, including but not limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4; AVC/H.264; HEVC/H.265; AAC decode/FFMPEG; AAC encode/FFMPEG; VC-1; and MP3 (collectively, the “Media Technologies”). For clarity, you will pay any royalties due for such third party technologies, which may include the Media Technologies that are owed as a result of AMD providing the Software to you.
 
 ### MIT license
 
-Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2022-2025 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -58,7 +58,7 @@ This document provides a complete description of the AMD Advanced Media Framewor
 
 ## 2 AMF Video Converter Component
 
-The Video Converter accepts input frames stored in `AMFSurface` objects wrapping DirectX 9 surfaces, DirectX 11 textures, OpenGL or OpenCL surfaces. The output is placed in `AMFSurface` objects wrapping DirectX 9 surfaces, DirectX 11 textures, OpenGL or OpenCL surfaces, depending on the component configuration.
+The Video Converter accepts input frames stored in `AMFSurface` objects wrapping DirectX 9 surfaces, DirectX 11 textures, DirectX 12 textures, Vulkan surfaces, OpenGL or OpenCL surfaces. The output is placed in `AMFSurface` objects wrapping DirectX 9 surfaces, DirectX 11 textures, DirectX 12 textures, Vulkan surfaces, OpenGL or OpenCL surfaces, depending on the component configuration.
 
 Include `public/include/components/VideoConverter.h`
 
@@ -71,6 +71,8 @@ The AMF Video Converter component should be initialized using the following sequ
    2. DirectX 9
    3. OpenGL
    4. OpenCL
+   5. DirectX 12
+   6. Vulkan
 2. Configure the Converter component by setting the necessary properties using the `AMFPropertyStorage::SetProperty` method on the converter object.
 3. Call the `AMFComponent::Init` method of the converter object.
 
@@ -90,6 +92,8 @@ The `format`, `width` and `height` parameters of the `AMFComponent::Init` method
 | SCALE                                | amf_int64       |
 | FORCE_OUTPUT_SURFACE_SIZE            | amf_bool        |
 | COLOR_PROFILE                        | amf_int64       |
+| COMPUTE_DEVICE                       | amf_int64       |
+| INPUT_TONEMAPPING                    | amf_int64       |
 
 <p align="center">
 Table 1. AMF Video Converter parameters which configure input and output
@@ -101,13 +105,21 @@ Table 1. AMF Video Converter parameters which configure input and output
 `AMF_VIDEO_CONVERTER_OUTPUT_FORMAT`
 
 **Values:**
-`AMF_SURFACE_UNKNOWN`, `AMF_SURFACE_NV12`, `AMF_SURFACE_BGRA`, `AMF_SURFACE_YUV420P` (progressive only)
+**8-bit formats:** `AMF_SURFACE_NV12`, `AMF_SURFACE_BGRA`, `AMF_SURFACE_ARGB`, `AMF_SURFACE_RGBA`, `AMF_SURFACE_YUV420P` (progressive only), `AMF_SURFACE_YV12`, `AMF_SURFACE_YUY2`, `AMF_SURFACE_UYVY`, `AMF_SURFACE_AYUV`
+
+**10-bit formats:** `AMF_SURFACE_P010`, `AMF_SURFACE_Y210`, `AMF_SURFACE_Y410`, `AMF_SURFACE_R10G10B10A2`
+
+**12-bit formats:** `AMF_SURFACE_P012`
+
+**16-bit formats:** `AMF_SURFACE_P016`, `AMF_SURFACE_Y416`, `AMF_SURFACE_RGBA_F16`
+
+**Other:** `AMF_SURFACE_UNKNOWN`
 
 **Default Value:**
 `AMF_SURFACE_UNKNOWN`
 
 **Description:**
-Specifies the output color format/space.
+Specifies the output color format/space. Support is hardware dependent.
 
 ---
 
@@ -115,7 +127,7 @@ Specifies the output color format/space.
 `AMF_VIDEO_CONVERTER_MEMORY_TYPE`
 
 **Values:**
-`AMF_MEMORY_DX11`, `AMF_MEMORY_DX9`, `AMF_MEMORY_UNKNOWN` (retain the same memory type as input (no interop))
+`AMF_MEMORY_DX11`, `AMF_MEMORY_DX9`, `AMF_MEMORY_DX12`, `AMF_MEMORY_VULKAN`, `AMF_MEMORY_UNKNOWN` (retain the same memory type as input (no interop))
 
 **Default Value:**
 `AMF_MEMORY_UNKNOWN`
@@ -241,6 +253,41 @@ Instructs the Converter component to use the dimensions of the output surface as
 
 **Description:**
 Sets the color profile for color space conversion.
+
+---
+
+**Name:**
+`AMF_VIDEO_CONVERTER_COMPUTE_DEVICE`
+
+**Values:**
+`AMF_MEMORY_TYPE` (device type)
+
+**Default Value:**
+`AMF_MEMORY_UNKNOWN` (auto)
+
+**Description:**
+Specifies the compute device type to use for video conversion.
+
+---
+
+**Name:**
+`AMF_VIDEO_CONVERTER_INPUT_TONEMAPPING`
+
+**Values:**
+`AMF_VIDEO_CONVERTER_TONEMAPPING_ENUM`:
+  - `AMF_VIDEO_CONVERTER_TONEMAPPING_UNDEFINED` – Undefined/unspecified tone mapping
+  - `AMF_VIDEO_CONVERTER_TONEMAPPING_COPY` – Copy without tone mapping
+  - `AMF_VIDEO_CONVERTER_TONEMAPPING_AMD` – AMD proprietary tone mapping algorithm
+  - `AMF_VIDEO_CONVERTER_TONEMAPPING_LINEAR` – Linear tone mapping
+  - `AMF_VIDEO_CONVERTER_TONEMAPPING_GAMMA` – Gamma-based tone mapping
+  - `AMF_VIDEO_CONVERTER_TONEMAPPING_REINHARD` – Reinhard tone mapping
+  - `AMF_VIDEO_CONVERTER_TONEMAPPING_2390` – ITU-R BT.2390 tone mapping
+
+**Default Value:**
+`AMF_VIDEO_CONVERTER_TONEMAPPING_UNDEFINED`
+
+**Description:**
+Specifies the tone mapping algorithm to apply to HDR input content when converting to SDR output formats.
 
 ---
 
