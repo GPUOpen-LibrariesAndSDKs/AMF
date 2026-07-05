@@ -538,7 +538,7 @@ Enables full screen.
 `false`
 
 **Description:**
-If the flag is set, the number of independent VCE instances will be quried and printed.
+If the flag is set, the number of independent VCE instances will be queried and printed.
 
 ---
 

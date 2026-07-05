@@ -559,7 +559,7 @@ Full screen.
 `false`
 
 **Description:**
-If the flag is set, the number of independent VCE instances will be quried and printed.
+If the flag is set, the number of independent VCE instances will be queried and printed.
 
 ---
 
@@ -2368,7 +2368,7 @@ Current total requested throughput for encoder in MB (16 x 16 pixels).
 
 
 **Description:**
-Timeout supported for QueryOutout call.
+Timeout supported for QueryOutput call.
 
 ---
 

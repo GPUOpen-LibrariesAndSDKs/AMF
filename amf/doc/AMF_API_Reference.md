@@ -91,7 +91,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## 1 Introduction
 
-AMF SDK is intended to assist Independent Software Vendors (ISV) in development of multimedia applications using AMD GPU and APU devices when the use of Microsoft Media Foundation Framework is undesireable.
+AMF SDK is intended to assist Independent Software Vendors (ISV) in development of multimedia applications using AMD GPU and APU devices when the use of Microsoft Media Foundation Framework is undesirable.
 
 AMF is a light-weight, portable multimedia framework that abstracts away most of the platform and API-specific details and allows for easy implementation of multimedia applications using a variety of technologies, such as DirectX 9, DirectX 11, DirectX 11.1, DirectX 12, Vulkan, OpenGL, OpenCL, and facilitates an efficient interop between them.
 
@@ -290,7 +290,7 @@ Create an AMF component.
 | pContext [in]     | A pointer to the [`AMFContext`](#241-amfcontext) interface                                 |
 | id [in]           | The identifier of the component being requested                                              |
 | ppComponent [out] | The address of a pointer variable that receives a pointer to the interface. The reference counter is incremented by 1 before being placed in `ppInterface`. Do not call `Acquire()` on `ppInterface` unless the pointer is being copied to another variable. Call `Release()` before the pointer is destroyed.|
-| **Return Value**  | `AMF_OK` if the component has been successfully instatiated, otherwise `AMF_NOT_SUPPORTED`|
+| **Return Value**  | `AMF_OK` if the component has been successfully instantiated, otherwise `AMF_NOT_SUPPORTED`|
 
 ---
 
@@ -4221,7 +4221,7 @@ Submit a kernel for execution.
 | dimension [in]    | The number of dimensions used to specify the global work-items and work-items in the work-group. `dimension` must be greater than zero and less than or equal to three. |
 | globalOffset [in] | Must currently be a `NULL` value. In a future revision of AMF Compute, `globalOffset` can be used to specify an array of unsigned values that describe the offset used to calculate the global ID of a work-item instead of having the global IDs always start at offset (0, 0,... 0).|
 | globalSize [in]   | Points to an array of unsigned values that describe the number of global work-items in `dimensions` dimensions that will execute the kernel function.                   |
-| localSize [in]    | `localSize` will be used to determine how to break the global work-items specified by `globalSize` into appropriate work-group instances. If `localSize` is specified, the values specified in `globalSize[0],...globalSize[dimension - 1]` must be evenly divisable by the corresponding values specified in `localSize[0],...localSize[dimension - 1]`.|
+| localSize [in]    | `localSize` will be used to determine how to break the global work-items specified by `globalSize` into appropriate work-group instances. If `localSize` is specified, the values specified in `globalSize[0],...globalSize[dimension - 1]` must be evenly divisible by the corresponding values specified in `localSize[0],...localSize[dimension - 1]`.|
 | **Return Value**  | <p>`AMF_OK` on success</p><p>`AMF_FAIL` on failure` </p><p>`AMF_INVALID_ARG` when any of the arguments is invalid</p>                                                   |
 
 ---
@@ -4432,7 +4432,7 @@ When draining has been initiated (see `AMFComponent::Drain` for more detail) and
 
 `AMF_RESULT  AMF_STD_CALL Drain();`
 
-Drain all submitted input samples. Draining is used to clear the output queue witout loosing any samples that have already been produced by the `AMFComponent` object. Draining forces the object to produce output even when the object would normally require more input before output is produced. `Drain` is typically called at the end of the stream.
+Drain all submitted input samples. Draining is used to clear the output queue without loosing any samples that have already been produced by the `AMFComponent` object. Draining forces the object to produce output even when the object would normally require more input before output is produced. `Drain` is typically called at the end of the stream.
 
 Client code should stop submitting new input samples to the component after `Drain` has been called and until all available output samples have been retrieved, which is indicated by the `AMF_EOF` being returned by `QueryOutput`.
 

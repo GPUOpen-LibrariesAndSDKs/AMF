@@ -66,7 +66,7 @@ The AMF VQ Enhancer component should be initialized using the following sequence
 2. Configure the VQ Enhancer component by setting the necessary properties using the `AMFPropertyStorage::SetProperty` method on the VQ Enhancer object.
 3. Call the `VideoEnhancer::Init` method of the video HQ Scaler object.
 
-The details on compoment setup can be found from the document `AMF_API_Reference.pdf`
+The details on component setup can be found from the document `AMF_API_Reference.pdf`
 
 ### 2.2 Configuring the VQ Enhancer
 
@@ -108,7 +108,7 @@ Table 1. AMF VQ Enhancer properties of the output stream
 `AMF_MEMORY_DX11`
 
 **Description:**
-Specifies the memory type of output surfaces (surfaces are allocated internally by the VQ Enhancer component). The ouput surface type can be different from input surface and this enables sharing a resource with another API using interop. For example, DX11 output can be interoped to OCL, processed in OCL and output will be DX11.
+Specifies the memory type of output surfaces (surfaces are allocated internally by the VQ Enhancer component). The output surface type can be different from input surface and this enables sharing a resource with another API using interop. For example, DX11 output can be interoped to OCL, processed in OCL and output will be DX11.
 
 ---
 
