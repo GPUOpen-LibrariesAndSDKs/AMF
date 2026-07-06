@@ -409,7 +409,7 @@ AMF_RESULT SetEncoderDefaults(ParametersStorage* pParams, amf::AMFComponent* enc
 
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, ::AMFConstructSize(widthIn, heightIn));
         AMF_RETURN_IF_FAILED(res, L"SetProperty(AMF_VIDEO_ENCODER_FRAMESIZE, %dx%d) failed", widthIn, heightIn);
-        res = encoder->SetProperty(AMF_VIDEO_ENCODER_LOWLATENCY_MODE, true);
+        res = encoder->SetProperty(AMF_VIDEO_ENCODER_LOWLATENCY_MODE, false);
         AMF_RETURN_IF_FAILED(res, L"encoder->SetProperty(AMF_VIDEO_ENCODER_LOWLATENCY_MODE, true) failed");
 
         res = encoder->SetProperty(AMF_VIDEO_ENCODER_QUERY_TIMEOUT, 50); //ms
@@ -861,6 +861,7 @@ int main(int argc, char* argv[])
                 surfaceIn = NULL;
                 submitted++;
             }
+            amf_sleep(16);
         }
 
         // drain encoder; input queue can be full
