@@ -1,0 +1,130 @@
+#!/bin/bash
+set -e
+
+build_ffmpeg=true
+build_redist=true
+
+build_type=$1
+bitness=$2
+toolchain=$3
+
+if [[ -z "$build_type" || -z "$bitness" || -z "$toolchain" ]]; then
+    echo "Usage: ./ffmpeg-build-win <debug|release> <32|64> <mingw|msvc>"
+    exit 1
+fi
+
+fldr_build=$PWD/build
+fldr_redist=$PWD/redist
+
+if [[ -z "$FFMPEG_VERSION" ]]; then
+    FFMPEG_VERSION=$(find . -maxdepth 1 -type d -name "ffmpeg-[0-9]*" \
+    | sed 's|^\./ffmpeg-||' \
+    | sort -V \
+    | tail -n 1)
+fi
+
+if [[ -z "$FFMPEG_VERSION" ]]; then
+    echo "ERROR: FFmpeg source folder not found"
+    exit 1
+fi
+
+fldr_src_ffmpeg=$PWD/ffmpeg-$FFMPEG_VERSION
+
+if [[ ! -d "$fldr_src_ffmpeg" ]]; then
+    echo "ERROR: FFmpeg source folder not found: $fldr_src_ffmpeg"
+    exit 1
+fi
+
+if [[ "$bitness" = "32" ]]; then
+   bld_arch=x86
+   lib_arch=X86
+   flg_output=win32
+else
+   bld_arch=x86_64
+   lib_arch=X64
+   flg_output=x64
+fi
+
+if [[ "$toolchain" == "msvc" ]]; then
+    fftoolchain=--toolchain=msvc
+    extracflags="--extra-cflags=-Zi"
+    extralinkflags="--extra-ldflags=-DEBUG"
+    fldr_toolchain=msvc
+else
+    fftoolchain=
+    extralinkflags="--extra-ldflags=-static-libgcc"
+    fldr_toolchain=mingw
+    extracflags=
+fi
+
+if [[ "$build_type" == "release" ]]; then
+   debug_flags=--disable-debug
+else
+   debug_flags=
+   if [[ "$toolchain" == "msvc" ]]; then
+      debug_flags=--disable-debug
+   fi
+fi
+
+fld_build_full_path=$fldr_build/ffmpeg-$fldr_toolchain-$flg_output/$build_type
+fld_redist_full_path=$fldr_redist/ffmpeg-$fldr_toolchain-$flg_output/$build_type
+
+echo build_type=$build_type
+echo bitness=$bitness
+echo lib_arch=$lib_arch
+echo FFMPEG_VERSION=$FFMPEG_VERSION
+echo fldr_src_ffmpeg=$fldr_src_ffmpeg
+echo fldr_build=$fldr_build
+echo debug_flags=$debug_flags
+echo fftoolchain=$fftoolchain
+echo extracflags=$extracflags
+echo extralinkflags=$extralinkflags
+echo fld_build_full_path=$fld_build_full_path
+echo fld_redist_full_path=$fld_redist_full_path
+
+if [[ "$build_ffmpeg" = "true" ]]; then
+
+    mkdir -p "$fld_build_full_path"
+    cd "$fld_build_full_path"
+
+    make clean || true
+
+    "$fldr_src_ffmpeg/configure" \
+        $fftoolchain \
+        --arch=$bld_arch \
+        --enable-shared \
+        --enable-w32threads \
+        --enable-version3 \
+        --enable-openssl \
+        --enable-zlib \
+        --enable-libaom \
+        --enable-d3d11va \
+        --enable-dxva2 \
+        --enable-hwaccel=av1_d3d11va \
+        --enable-hwaccel=av1_d3d11va2 \
+        --enable-hwaccel=av1_dxva2 \
+        $debug_flags \
+        $extracflags \
+        $extralinkflags \
+        --logfile=log.txt
+
+    make --debug=a
+fi
+
+if [[ "$build_redist" = "true" ]]; then
+    fldr_include=$fld_redist_full_path/include
+    fldr_lib=$fld_redist_full_path/lib
+    fldr_bin=$fld_redist_full_path/bin
+
+    mkdir -p "$fldr_include" "$fldr_lib" "$fldr_bin"
+
+    cd "$fldr_src_ffmpeg"
+    find ./ -type f -name "*.h" -exec cp --parents {} "$fldr_include" \;
+
+    cd "$fld_build_full_path"
+    find ./ -name "*.dll" -type f -exec cp {} "$fldr_bin" \;
+    find ./ -name "*.exe" -type f -exec cp {} "$fldr_bin" \;
+    find ./ -name "*.pdb" -type f -exec cp {} "$fldr_bin" \;
+    find ./ -name "*.lib" -type f -exec cp {} "$fldr_lib" \;
+    find ./ -type f -name "*.h" -exec cp --parents {} "$fldr_include" \;
+fi
