@@ -107,6 +107,9 @@ public:
 
     // Pre Analysis
     static const wchar_t* PARAM_NAME_ENABLE_PRE_ANALYSIS;
+    // Misc
+    static const wchar_t* PARAM_NAME_ENABLE_LOWLATENCY;
+    static const wchar_t* PARAM_NAME_EMBED_CURSOR;
 
 #if !defined(METRO_APP)
     AMF_RESULT Init();
@@ -127,6 +130,7 @@ public:
 
     // Pipeline format can change
     AMF_RESULT SwitchConverterFormat(amf_int32 index, amf::AMF_SURFACE_FORMAT format);
+    AMF_RESULT SwitchEncoderResolution(amf_int32 index, amf_int32 width, amf_int32 height);
     AMF_RESULT GetMonitorIDs(std::vector<amf_uint32> &monitorIDs);
     AMF_RESULT SetMonitorIDs(const std::vector<amf_uint32>& monitorIDs);
 
@@ -201,5 +205,5 @@ private:
     mutable amf::AMFCriticalSection m_sync;
 
     bool                            m_useOpenCLConverter;
-
+    bool                            m_lowLatency;
 };

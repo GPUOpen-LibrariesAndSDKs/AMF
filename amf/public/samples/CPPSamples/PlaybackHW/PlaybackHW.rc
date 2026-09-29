@@ -67,6 +67,13 @@ BEGIN
             MENUITEM "FSR\tCtrl+R",                 ID_HQSCALER_FSR
         END
         MENUITEM SEPARATOR
+        POPUP "Acceleration Type"
+        BEGIN
+            MENUITEM "Default",                     ID_ACCELERATION_DEFAULT
+            MENUITEM "Compute",                     ID_ACCELERATION_COMPUTE
+            MENUITEM "VPE Preferred",               ID_ACCELERATION_VPE_PREFERRED
+        END
+        MENUITEM SEPARATOR
         MENUITEM "FRC",                         ID_OPTIONS_FRC
         MENUITEM SEPARATOR
         MENUITEM "Fullscreen\tCtrl+F",          ID_OPTIONS_FULLSCREEN
@@ -245,4 +252,3 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
-

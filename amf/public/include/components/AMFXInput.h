@@ -117,12 +117,51 @@ namespace amf
         virtual AMF_RESULT          AMF_STD_CALL GetState(AMFXInputState *pState) const = 0;
         virtual AMF_RESULT          AMF_STD_CALL Terminate() = 0;
     };
+
     typedef amf::AMFInterfacePtr_T<AMFXInputController> AMFXInputControllerPtr;
-#endif
     //----------------------------------------------------------------------------------------------
+#else
+    //----------------------------------------------------------------------------------------------
+    typedef struct AMFXInputCallback AMFXInputCallback;
+
+    typedef struct AMFXInputCallbackVtbl
+    {
+        void (AMF_STD_CALL *OnHaptic)(AMFXInputCallback* pThis, amf_int32 id, const AMFXInputHaptic* pHaptic);
+    } AMFXInputCallbackVtbl;
+
+    struct AMFXInputCallback
+    {
+        const AMFXInputCallbackVtbl *pVtbl;
+    };
+    //----------------------------------------------------------------------------------------------
+    AMF_DECLARE_IID(AMFXInputController, 0xbcaaaf0e, 0x6766, 0x46ac, 0xb1, 0xf1, 0x31, 0x5d, 0xca, 0x71, 0xe3, 0x4d)
+    typedef struct AMFXInputController AMFXInputController;
+
+    typedef struct AMFXInputControllerVtbl
+    {
+        // AMFInterface interface
+        amf_long        (AMF_STD_CALL *Acquire)(AMFXInputController* pThis);
+        amf_long        (AMF_STD_CALL *Release)(AMFXInputController* pThis);
+        AMF_RESULT      (AMF_STD_CALL *QueryInterface)(AMFXInputController* pThis, const struct AMFGuid* interfaceID, void** ppInterface);
+
+        // AMFXInputController interface
+        amf_int32       (AMF_STD_CALL *GetControllerID)(AMFXInputController* pThis);
+        AMF_RESULT      (AMF_STD_CALL *SetCallback)(AMFXInputController* pThis, AMFXInputCallback* pCallback);
+
+        AMF_RESULT      (AMF_STD_CALL *SetState)(AMFXInputController* pThis, const AMFXInputState* pState);
+        AMF_RESULT      (AMF_STD_CALL *GetState)(AMFXInputController* pThis, AMFXInputState* pState);
+        AMF_RESULT      (AMF_STD_CALL *Terminate)(AMFXInputController* pThis);
+
+    } AMFXInputControllerVtbl;
+
+    struct AMFXInputController
+    {
+        const AMFXInputControllerVtbl *pVtbl;
+    };
 #endif
 #if defined(__cplusplus)
-}
+    }
+#endif
 
 #define AMF_XINPUT_CREATE_CONTROLLER_FUNCTION_NAME             "AMFXInputCreateController"
 

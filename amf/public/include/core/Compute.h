@@ -138,8 +138,23 @@ namespace amf
         amf_long            (AMF_STD_CALL *Release)(AMFComputeKernel* pThis);
         enum AMF_RESULT     (AMF_STD_CALL *QueryInterface)(AMFComputeKernel* pThis, const struct AMFGuid *interfaceID, void** ppInterface);
 
-        // AMFComputeKernel interface 
+        // AMFComputeKernel interface
+        void*               (AMF_STD_CALL *GetNative)(AMFComputeKernel* pThis);
+        const wchar_t*      (AMF_STD_CALL *GetIDName)(AMFComputeKernel* pThis);
+        AMF_RESULT          (AMF_STD_CALL *SetArgPlaneNative)(AMFComputeKernel* pThis, amf_size index, void* pPlane, AMF_ARGUMENT_ACCESS_TYPE eAccess);
+        AMF_RESULT          (AMF_STD_CALL *SetArgBufferNative)(AMFComputeKernel* pThis, amf_size index, void* pBuffer, AMF_ARGUMENT_ACCESS_TYPE eAccess);
 
+        AMF_RESULT          (AMF_STD_CALL *SetArgPlane)(AMFComputeKernel* pThis, amf_size index, AMFPlane* pPlane, AMF_ARGUMENT_ACCESS_TYPE eAccess);
+        AMF_RESULT          (AMF_STD_CALL *SetArgBuffer)(AMFComputeKernel* pThis, amf_size index, AMFBuffer* pBuffer, AMF_ARGUMENT_ACCESS_TYPE eAccess);
+
+        AMF_RESULT          (AMF_STD_CALL *SetArgInt32)(AMFComputeKernel* pThis, amf_size index, amf_int32 data);
+        AMF_RESULT          (AMF_STD_CALL *SetArgInt64)(AMFComputeKernel* pThis, amf_size index, amf_int64 data);
+        AMF_RESULT          (AMF_STD_CALL *SetArgFloat)(AMFComputeKernel* pThis, amf_size index, amf_float data);
+        AMF_RESULT          (AMF_STD_CALL *SetArgBlob)(AMFComputeKernel* pThis, amf_size index, amf_size dataSize, const void* pData);
+
+        AMF_RESULT          (AMF_STD_CALL *GetCompileWorkgroupSize)(AMFComputeKernel* pThis, amf_size workgroupSize[3]);
+
+        AMF_RESULT          (AMF_STD_CALL *Enqueue)(AMFComputeKernel* pThis, amf_size dimension, amf_size globalOffset[3], amf_size globalSize[3], amf_size localSize[3]);
     } AMFComputeKernelVtbl;
 
     struct AMFComputeKernel

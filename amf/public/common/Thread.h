@@ -451,8 +451,8 @@ namespace amf
             bool bValue = true;
             while(bValue)
             {
-                amf_ulong ulID;
-                T item;
+                amf_ulong ulID = 0;
+                T item = {};
                 bValue = InternalGet(ulID, item);
             }
         }
@@ -512,7 +512,7 @@ namespace amf
             {
                 {
                     AMFLock lock(&m_mutexInProcess);
-                    inT inData;
+                    inT inData {};
                     amf_ulong ulID = 0;
                     bool callProcess = true;
                     if(m_pInQueue != NULL)
@@ -530,7 +530,7 @@ namespace amf
                     }
                     if(!bStop && callProcess)
                     {
-                        outT outData;
+                        outT outData {};
                         bool validOutput = Process(ulID, inData, outData);
                         if(StopRequested())
                         {

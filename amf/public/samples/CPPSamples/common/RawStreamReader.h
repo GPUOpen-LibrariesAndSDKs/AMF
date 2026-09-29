@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -57,7 +57,7 @@ public:
     virtual amf_double              GetPosition()               { return static_cast<amf_double>(m_framesCountRead)/m_framesCount; }
 
 
-    static void  ParseRawFileFormat(const std::wstring path, amf_int32 &width, amf_int32 &height, amf::AMF_SURFACE_FORMAT& format);
+    static void  ParseRawFileFormat(const std::wstring& path, amf_int32 &width, amf_int32 &height, amf::AMF_SURFACE_FORMAT& format);
     void RestartReader();
 
 private:
@@ -70,7 +70,7 @@ private:
 
     amf::AMFContextPtr      m_pContext;
     amf::AMFDataStreamPtr   m_pDataStream;
-    
+
     amf::AMF_SURFACE_FORMAT m_format;
     amf::AMF_MEMORY_TYPE    m_memoryType;
 
@@ -78,7 +78,7 @@ private:
     amf_int32               m_height;
     amf_int32               m_stride;
 
-    amf_int32               m_roi_x; 
+    amf_int32               m_roi_x;
     amf_int32               m_roi_y;
     amf_int32               m_roi_width;
     amf_int32               m_roi_height;
@@ -90,9 +90,9 @@ private:
 
     AMFByteArray            m_frame;
 
-	amf::AMFDataStreamPtr   m_pSearchCenterMapStream;   
-	amf::AMF_SURFACE_FORMAT m_searchCenterMapformat;    
-	amf_int32               m_searchCenterMapSize;     
+	amf::AMFDataStreamPtr   m_pSearchCenterMapStream;
+	amf::AMF_SURFACE_FORMAT m_searchCenterMapformat;
+	amf_int32               m_searchCenterMapSize;
 	amf_int32               m_searchCenterMapWidth;
 	amf_int32               m_searchCenterMapHeight;
 	amf_int32               m_searchCenterMapStride;

@@ -50,6 +50,7 @@ const wchar_t* PlaybackPipelineBase::PARAM_NAME_LOWLATENCY = L"LOWLATENCY";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_FULLSCREEN = L"FULLSCREEN";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_SW_DECODER = L"swdecoder";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_HQ_SCALER = L"HQSCALER";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_HQ_SCALER2 = L"HQSCALER2";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_PIP = L"PIP";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_PIP_ZOOM_FACTOR = L"PIPZOOMFACTOR";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_PIP_FOCUS_X = L"PIPFOCUSX";
@@ -69,7 +70,37 @@ const wchar_t* PlaybackPipelineBase::PARAM_NAME_EXCLUSIVE_FULLSCREEN = L"EXCLUSI
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_FRC_PROFILE = L"FRCPROFILE";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_FRC_MV_SEARCH_MODE = L"FRCPERFORMANCE";
 const wchar_t* PlaybackPipelineBase::PARAM_NAME_FRC_RGB = L"FRCRGB";
+const wchar_t* PlaybackPipelineBase::PARAM_NAME_ACCELERATION_TYPE = L"ACCELERATIONTYPE";
 
+
+AMF_RESULT ParamConverterSideBySide(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    Combiner::AMF_SIDE_BY_SIDE_MODE_ENUM    paramValue;
+    std::wstring uppValue = toUpper(value);
+    if ((uppValue == L"NONE") || (uppValue == L"FALSE") || (uppValue == L"0"))
+    {
+        paramValue = Combiner::AMF_SIDE_BY_SIDE_NONE;
+    }
+    else if ((uppValue == L"LEFT_RIGHT") || (uppValue == L"1"))
+    {
+        paramValue = Combiner::AMF_SIDE_BY_SIDE_LEFT_RIGHT;
+    }
+    else if ((uppValue == L"LEFT_LEFT") || (uppValue == L"2"))
+    {
+        paramValue = Combiner::AMF_SIDE_BY_SIDE_LEFT_LEFT;
+    }
+    else if ((uppValue == L"RIGHT_RIGHT") || (uppValue == L"3"))
+    {
+        paramValue = Combiner::AMF_SIDE_BY_SIDE_RIGHT_RIGHT;
+    }
+    else
+    {
+        LOG_ERROR(L"AMF_SIDE_BY_SIDE_MODE_ENUM hasn't \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
 PlaybackPipelineBase::PlaybackPipelineBase() :
     m_iVideoWidth(0),
     m_iVideoHeight(0),
@@ -78,7 +109,9 @@ PlaybackPipelineBase::PlaybackPipelineBase() :
     m_bURL(false),
     m_eDecoderFormat(amf::AMF_SURFACE_NV12),
     m_bCPUDecoder(false),
-    m_bEnableSideBySide(false)
+    m_eSideBySideMode(Combiner::AMF_SIDE_BY_SIDE_NONE),
+    m_propertySizeName(L""),
+    m_propertyRectName(L"")
 {
     g_AMFFactory.Init();
     SetParamDescription(PARAM_NAME_INPUT, ParamCommon,  L"Input file name", NULL);
@@ -93,11 +126,12 @@ PlaybackPipelineBase::PlaybackPipelineBase() :
     SetParamDescription(PARAM_NAME_FULLSCREEN, ParamCommon, L"Specifies fullscreen mode, true, false, default false", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_SW_DECODER, ParamCommon, L"Forces sw decoder, true, false, default false", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_HQ_SCALER, ParamCommon,  L"Use HQ Scaler (OFF, Bilinear, Bicubic, VideoSR1.0, POINT, VideoSR1.1, default = OFF)", ParamConverterHQScalerAlgorithm);
+    SetParamDescription(PARAM_NAME_HQ_SCALER2, ParamCommon, L"Use HQ Scaler2 for side by side (OFF, Bilinear, Bicubic, VideoSR1.0, POINT, VideoSR1.1, default = OFF)", ParamConverterHQScalerAlgorithm);
     SetParamDescription(PARAM_NAME_PIP, ParamCommon, L"Specifies Picture in Picture mode, true, false, default false", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_PIP_ZOOM_FACTOR, ParamCommon, L"Specifies magnification ratio of PIP image, int, default 8", ParamConverterDouble);
     SetParamDescription(PARAM_NAME_PIP_FOCUS_X, ParamCommon, L"H position of foreground image, int, default 0", ParamConverterInt64);
     SetParamDescription(PARAM_NAME_PIP_FOCUS_Y, ParamCommon, L"V position of foreground image, int, default 0", ParamConverterInt64);
-    SetParamDescription(PARAM_NAME_SIDE_BY_SIDE, ParamCommon, L"Specifies Side-by-Side mode, true, false, default false", ParamConverterBoolean);
+    SetParamDescription(PARAM_NAME_SIDE_BY_SIDE, ParamCommon, L"Specifies Side-by-Side mode, false|none, left_right, left_left, right_right, default false|none", ParamConverterSideBySide);
     SetParamDescription(PARAM_NAME_HQ_SCALER_RGB, ParamCommon, L"Force RGB scaling, true, false, default false", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_HQ_SCALER_RATIO, ParamCommon, L"Scaling Ratio (1.3x, 1.5x, 1.7x, 2.0x), default 2.0x", ParamConverterRatio);
     SetParamDescription(PARAM_NAME_ENABLE_AUDIO, ParamCommon, L"Enables audio playback, boolean, default = true", ParamConverterBoolean);
@@ -111,6 +145,7 @@ PlaybackPipelineBase::PlaybackPipelineBase() :
     SetParamDescription(PARAM_NAME_FRC_PROFILE, ParamCommon, L"FRC Profile,  default High", ParamConverterFRCProfile);
     SetParamDescription(PARAM_NAME_FRC_MV_SEARCH_MODE, ParamCommon, L"FRC Performance,  (NATIVE, PERFORMANCE) default = NATIVE", ParamConverterFRCPerformance);
     SetParamDescription(PARAM_NAME_FRC_RGB, ParamCommon, L"Run FRC in RGB or YUV node, true, false, default = false", ParamConverterBoolean);
+    SetParamDescription(PARAM_NAME_ACCELERATION_TYPE, ParamCommon, L"Video Converter Acceleration Type (DEFAULT, COMPUTE, VPE_PREFERRED), default = DEFAULT", ParamConverterAccelerationType);
 
     SetParam(PARAM_NAME_LISTEN_FOR_CONNECTION, false);
     SetParam(PARAM_NAME_FULLSCREEN, false);
@@ -125,6 +160,7 @@ PlaybackPipelineBase::PlaybackPipelineBase() :
     SetParam(PARAM_NAME_ENABLE_AUDIO, true);
     SetParam(PARAM_NAME_HQSCALER_SHARPNESS, 0.75);
     SetParam(PARAM_NAME_FRAME_RATE, 0);
+    SetParam(PARAM_NAME_ACCELERATION_TYPE, AMF_VIDEO_CONVERTER_ACCELERATION_DEFAULT);
 #if defined(_WIN32)
     SetParam(PlaybackPipelineBase::PARAM_NAME_PRESENTER, amf::AMF_MEMORY_DX11);
 #elif defined(__linux)
@@ -299,6 +335,15 @@ AMF_RESULT PlaybackPipelineBase::Init()
         }
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Adjustg dependent parameters 
+    amf_int64 sideBySideMode = 0;
+    GetParam(PARAM_NAME_SIDE_BY_SIDE, sideBySideMode);
+    
+    if (sideBySideMode != Combiner::AMF_SIDE_BY_SIDE_NONE)
+    {
+        SetParam(PARAM_NAME_HQ_SCALER_RGB, true);
+    }
     //---------------------------------------------------------------------------------------------
     // Init context and devices
     res = InitContext(presenterEngine);
@@ -548,23 +593,23 @@ AMF_RESULT  PlaybackPipelineBase::ConnectScaler()
             }
             if (m_pCombiner == NULL)
             {
-                m_pCombiner = CombinerPtr(new Combiner(m_pContext));
+                m_pCombiner = CombinerPtr(new Combiner(m_pContext, m_eSideBySideMode));
             }
 
             if (m_pSplitter != NULL && m_pCombiner != NULL)
             {
                 PipelineElementPtr upstreamConnector = GetLastElement();
 
+                PipelineElementPtr hqScalerElement0(new AMFComponentElement(m_pHQScaler2));
                 PipelineElementPtr hqScalerElement1(new AMFComponentElement(m_pScaler));
-                PipelineElementPtr hqScalerElement2(new AMFComponentElement(m_pHQScaler2));
 
                 Connect(m_pSplitter, 0, upstreamConnector, 0, 4);
 
-                Connect(hqScalerElement1, 0, m_pSplitter, 0, 2);
-                Connect(hqScalerElement2, 0, m_pSplitter, 1, 2);
+                Connect(hqScalerElement0, 0, m_pSplitter, 0, 2);
+                Connect(hqScalerElement1, 0, m_pSplitter, 1, 2);
 
-                Connect(m_pCombiner, 0, hqScalerElement1, 0, 4);
-                Connect(m_pCombiner, 1, hqScalerElement2, 0, 4);
+                Connect(m_pCombiner, 0, hqScalerElement0, 0, 4);
+                Connect(m_pCombiner, 1, hqScalerElement1, 0, 4);
                 res = AMF_OK;
             }
         }
@@ -634,10 +679,19 @@ AMF_RESULT PlaybackPipelineBase::InitVideoPipeline(amf_uint32 /* iVideoStreamInd
         bAllocator = (hqScalerMode != -1); // no allocator non HQ scaler is setup by calling app
 
     }
+    if (m_eSideBySideMode != Combiner::AMF_SIDE_BY_SIDE_NONE)
+    {
+        bAllocator = false;
+    }
     // connect presenter
-
-    m_pVideoPresenter->SetProcessor(m_pVideoConverter, m_pScaler, bAllocator);
-
+    if (m_eSideBySideMode == Combiner::AMF_SIDE_BY_SIDE_NONE)
+    {
+        m_pVideoPresenter->SetProcessor(m_pFRC ? nullptr : m_pVideoConverter, m_pFRC ? nullptr : m_pScaler, m_propertySizeName.c_str(), m_propertyRectName.c_str(), bAllocator);
+    }
+    else
+    { 
+        m_pVideoPresenter->SetProcessor(bForceScalingRGB == true ? nullptr : m_pVideoConverter, nullptr, AMF_VIDEO_CONVERTER_OUTPUT_SIZE, AMF_VIDEO_CONVERTER_OUTPUT_RECT, bAllocator);
+    }
     if(m_bVideoPresenterDirectConnect)
     {
         Connect(m_pVideoPresenter, 4, CT_ThreadPoll); // if back buffers are used in multithreading the video memory changes every Present() call so pointer returned by GetBackBuffer() points to wrong memory
@@ -753,10 +807,19 @@ AMF_RESULT  PlaybackPipelineBase::InitColorConverter()
         m_pVideoConverter->SetProperty(AMF_VIDEO_CONVERTER_MEMORY_TYPE, m_pVideoPresenter->GetMemoryType());
         m_pVideoConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, m_pVideoPresenter->GetInputFormat());
 
+        amf_int64 accelerationType = AMF_VIDEO_CONVERTER_ACCELERATION_DEFAULT;
+        (void)GetParam(PARAM_NAME_ACCELERATION_TYPE, accelerationType);
+        res = m_pVideoConverter->SetProperty(AMF_VIDEO_CONVERTER_ACCELERATION_TYPE, accelerationType);
+        LOG_AMF_ERROR(res, L"m_pVideoConverter->SetProperty(AMF_VIDEO_CONVERTER_ACCELERATION_TYPE) failed");
+
         res = m_pVideoConverter->Init(m_eDecoderFormat, m_iVideoWidth, m_iVideoHeight);
         CHECK_AMF_ERROR_RETURN(res, L"m_pVideoConverter->Init() failed");
 
-
+        if(m_pScaler == nullptr)
+        { 
+            m_propertySizeName = AMF_VIDEO_CONVERTER_OUTPUT_SIZE;
+            m_propertyRectName = AMF_VIDEO_CONVERTER_OUTPUT_RECT;
+        }
         // set-up the processor for presenter - if we use HQ scaler,
         // we need to set it, otherwise it will be CSC
 
@@ -775,67 +838,78 @@ AMF_RESULT  PlaybackPipelineBase::InitColorConverter()
     return res;
 
 }
+
 AMF_RESULT  PlaybackPipelineBase::InitVideoProcessor()
 {
-    // check if we need to create the HQ scaler
     AMF_RESULT res = AMF_OK;
     amf_int64  hqScalerMode = -1;
 
     GetParam(PARAM_NAME_HQ_SCALER, hqScalerMode);
-
     if (hqScalerMode != -1)
     {
-        res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFHQScaler, &m_pScaler);
-        CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFHQScaler << L") failed");
-
-        AMFRatio scalingRatio = { 0, 0 };
-        GetParam(PARAM_NAME_HQ_SCALER_RATIO, scalingRatio);
-
-        amf_int32 oVideoWidth = m_iVideoWidth * scalingRatio.num / scalingRatio.den;
-        amf_int32 oVideoHeight = m_iVideoHeight * scalingRatio.num / scalingRatio.den;
-
-        amf_double fHQScalerSharpness = 0;
-        GetParam(PARAM_NAME_HQSCALER_SHARPNESS, fHQScalerSharpness);
-
-        amf_int64 oFrameRate = 0;
-        GetParam(PARAM_NAME_FRAME_RATE, oFrameRate);
-
-        m_pScaler->SetProperty(AMF_HQ_SCALER_OUTPUT_SIZE, ::AMFConstructSize(oVideoWidth, oVideoHeight));
-        m_pScaler->SetProperty(AMF_HQ_SCALER_ENGINE_TYPE, m_pVideoPresenter->GetMemoryType());
-        m_pScaler->SetProperty(AMF_HQ_SCALER_ALGORITHM, hqScalerMode);
-        m_pScaler->SetProperty(AMF_HQ_SCALER_SHARPNESS, fHQScalerSharpness);
-        m_pScaler->SetProperty(AMF_HQ_SCALER_FRAME_RATE, oFrameRate);
-
-        /*
-        // If enabled side-by-side, create a separate HQ Scaler
-        if (m_bEnableSideBySide)
+        res = InitVideoScaler(hqScalerMode, &m_pScaler, m_propertySizeName, m_propertyRectName);
+        CHECK_AMF_ERROR_RETURN(res, L"InitVideoProcessor() failed");
+    
+        if (m_eSideBySideMode != Combiner::AMF_SIDE_BY_SIDE_NONE)
         {
-            res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFHQScaler, &m_pHQScaler2);
-            CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFHQScaler << L") failed");
+            amf_int64  hqScalerMode2 = -1;
 
-            m_pHQScaler2->SetProperty(AMF_HQ_SCALER_OUTPUT_SIZE, ::AMFConstructSize(m_iVideoWidth, m_iVideoHeight));
-            m_pHQScaler2->SetProperty(AMF_HQ_SCALER_ENGINE_TYPE, m_pVideoPresenter->GetMemoryType());
-            m_pHQScaler2->SetProperty(AMF_HQ_SCALER_ALGORITHM, AMF_HQ_SCALER_ALGORITHM_BILINEAR);
-
-            res = m_pHQScaler2->Init(m_pVideoPresenter->GetInputFormat(), m_iVideoWidth, m_iVideoHeight);
-            CHECK_AMF_ERROR_RETURN(res, L"m_pHQScaler2->Init() failed");
+            GetParam(PARAM_NAME_HQ_SCALER2, hqScalerMode2);
+            if (hqScalerMode2 == -1)
+            {
+                hqScalerMode2 = AMF_HQ_SCALER_ALGORITHM_BICUBIC;
+            }
+            std::wstring propertySizeName, propertyRectName;
+            res = InitVideoScaler(hqScalerMode2, &m_pHQScaler2, propertySizeName, propertyRectName);
+            CHECK_AMF_ERROR_RETURN(res, L"InitVideoProcessor() failed");
         }
-        */
+    }
+    return AMF_OK;
+}
 
-        // initialize scaler
-        bool bForceScalingRGB = false;
-        GetParam(PARAM_NAME_HQ_SCALER_RGB, bForceScalingRGB);
+AMF_RESULT  PlaybackPipelineBase::InitVideoScaler(amf_int64 mode, amf::AMFComponent** ppScaler, std::wstring& propertySizeName, std::wstring& propertyRectName)
+{
+    CHECK_RETURN(mode >= 0, AMF_INVALID_ARG, L"Invalid mode");
+    // check if we need to create the HQ scaler
+    AMF_RESULT res = AMF_OK;
 
-        bool bYUVInput = (m_eDecoderFormat == amf::AMF_SURFACE_NV12) || (m_eDecoderFormat == amf::AMF_SURFACE_P010) || (m_eDecoderFormat == amf::AMF_SURFACE_P012) || (m_eDecoderFormat == amf::AMF_SURFACE_P016);
-        if (bYUVInput == false)
-        {
-            bForceScalingRGB = true;
-        }
+    res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFHQScaler, ppScaler);
+    CHECK_AMF_ERROR_RETURN(res, L"g_AMFFactory.GetFactory()->CreateComponent(" << AMFHQScaler << L") failed");
 
-        res = m_pScaler->Init(bForceScalingRGB ? m_pVideoPresenter->GetInputFormat() : m_eDecoderFormat, m_iVideoWidth, m_iVideoHeight);
-        CHECK_AMF_ERROR_RETURN(res, L"m_pScaler->Init() failed with err=%d");
+    AMFRatio scalingRatio = { 0, 0 };
+    GetParam(PARAM_NAME_HQ_SCALER_RATIO, scalingRatio);
+
+    amf_int32 oVideoWidth = m_iVideoWidth * scalingRatio.num / scalingRatio.den;
+    amf_int32 oVideoHeight = m_iVideoHeight * scalingRatio.num / scalingRatio.den;
+
+    amf_double fHQScalerSharpness = 0;
+    GetParam(PARAM_NAME_HQSCALER_SHARPNESS, fHQScalerSharpness);
+
+    amf_int64 oFrameRate = 0;
+    GetParam(PARAM_NAME_FRAME_RATE, oFrameRate);
+
+    (*ppScaler)->SetProperty(AMF_HQ_SCALER_OUTPUT_SIZE, ::AMFConstructSize(oVideoWidth, oVideoHeight));
+    (*ppScaler)->SetProperty(AMF_HQ_SCALER_ENGINE_TYPE, m_pVideoPresenter->GetMemoryType());
+    (*ppScaler)->SetProperty(AMF_HQ_SCALER_ALGORITHM, mode);
+    (*ppScaler)->SetProperty(AMF_HQ_SCALER_SHARPNESS, fHQScalerSharpness);
+    (*ppScaler)->SetProperty(AMF_HQ_SCALER_FRAME_RATE, oFrameRate);
+    
+    // initialize scaler
+    bool bForceScalingRGB = false;
+    GetParam(PARAM_NAME_HQ_SCALER_RGB, bForceScalingRGB);
+
+    bool bYUVInput = (m_eDecoderFormat == amf::AMF_SURFACE_NV12) || (m_eDecoderFormat == amf::AMF_SURFACE_P010) || (m_eDecoderFormat == amf::AMF_SURFACE_P012) || (m_eDecoderFormat == amf::AMF_SURFACE_P016);
+    if (bYUVInput == false)
+    {
+        bForceScalingRGB = true;
     }
 
+    res = (*ppScaler)->Init(bForceScalingRGB ? m_pVideoPresenter->GetInputFormat() : m_eDecoderFormat, m_iVideoWidth, m_iVideoHeight);
+    CHECK_AMF_ERROR_RETURN(res, L"m_pScaler->Init() failed with err=%d");
+
+    propertySizeName = AMF_HQ_SCALER_OUTPUT_SIZE;
+    propertyRectName = L"";
+ 
     return res;
 }
 
@@ -1253,6 +1327,12 @@ void PlaybackPipelineBase::OnParamChanged(const wchar_t* name)
         }
     }
 
+    //check if VideoConverter Acceleration type will need to be re-created in the pipeline
+    if (std::wstring(name) == std::wstring(PARAM_NAME_ACCELERATION_TYPE))
+    {
+        ReInit();
+    }
+
     if (m_pVideoPresenter != nullptr)
     {
         if (std::wstring(name) == std::wstring(PARAM_NAME_FULLSCREEN))
@@ -1307,9 +1387,9 @@ void PlaybackPipelineBase::OnParamChanged(const wchar_t* name)
         }
         else if (std::wstring(name) == std::wstring(PARAM_NAME_SIDE_BY_SIDE))
         {
-            bool bEnableSideBySide = false;
-            GetParam(PARAM_NAME_SIDE_BY_SIDE, bEnableSideBySide);
-            m_bEnableSideBySide = bEnableSideBySide;
+            amf_int64 sideBySideMode = Combiner::AMF_SIDE_BY_SIDE_NONE;
+            GetParam(PARAM_NAME_SIDE_BY_SIDE, sideBySideMode);
+            m_eSideBySideMode = (Combiner::AMF_SIDE_BY_SIDE_MODE_ENUM)sideBySideMode;
         }
         else if (std::wstring(name) == std::wstring(PARAM_NAME_HQ_SCALER_RATIO))
         {
@@ -1589,7 +1669,9 @@ AMF_RESULT  PlaybackPipelineBase::InitVideo(amf::AMFOutput* pOutput, amf::AMF_ME
     GetParam(PARAM_NAME_PIP, bEnablePIP);
     m_pVideoPresenter->SetEnablePIP(bEnablePIP);
 
-    GetParam(PARAM_NAME_SIDE_BY_SIDE, m_bEnableSideBySide);
+    amf_int64 sideBySideMode = 0;
+    GetParam(PARAM_NAME_SIDE_BY_SIDE, sideBySideMode);
+    m_eSideBySideMode = (Combiner::AMF_SIDE_BY_SIDE_MODE_ENUM)sideBySideMode;
 
     if (m_eDecoderFormat == amf::AMF_SURFACE_P010 ||
         m_eDecoderFormat == amf::AMF_SURFACE_P012 ||
@@ -1608,12 +1690,12 @@ AMF_RESULT  PlaybackPipelineBase::InitVideo(amf::AMFOutput* pOutput, amf::AMF_ME
     res = InitFRC(presenterEngine);
     CHECK_AMF_ERROR_RETURN(res, L"InitFRC() failed");
 
+
     res = InitVideoProcessor();
     CHECK_AMF_ERROR_RETURN(res, L"InitVideoProcessor() failed");
 
     res = InitColorConverter();
     CHECK_AMF_ERROR_RETURN(res, L"InitColorConverter() failed");
-
 
     return AMF_OK;
 }

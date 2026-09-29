@@ -405,6 +405,16 @@ void UpdateMenuItems()
     s_pPipeline->GetParam(PlaybackPipeline::PARAM_NAME_FRC_MODE, frcModeType);
     CheckMenuItem(hMenu, ID_OPTIONS_FRC, MF_BYCOMMAND | (frcModeType != FRC_OFF ? MF_CHECKED : MF_UNCHECKED));
     EnableMenuItem(hMenu, ID_OPTIONS_FRC, MF_BYCOMMAND | (currState == PipelineStateRunning ? MF_DISABLED : MF_ENABLED));
+
+    amf_int64 accelerationType = AMF_VIDEO_CONVERTER_ACCELERATION_DEFAULT;
+    s_pPipeline->GetParam(PlaybackPipeline::PARAM_NAME_ACCELERATION_TYPE, accelerationType);
+    CheckMenuItem(hMenu, ID_ACCELERATION_DEFAULT,       MF_BYCOMMAND | (accelerationType == AMF_VIDEO_CONVERTER_ACCELERATION_DEFAULT      ? MF_CHECKED : MF_UNCHECKED));
+    CheckMenuItem(hMenu, ID_ACCELERATION_COMPUTE,       MF_BYCOMMAND | (accelerationType == AMF_VIDEO_CONVERTER_ACCELERATION_COMPUTE      ? MF_CHECKED : MF_UNCHECKED));
+    CheckMenuItem(hMenu, ID_ACCELERATION_VPE_PREFERRED, MF_BYCOMMAND | (accelerationType == AMF_VIDEO_CONVERTER_ACCELERATION_VPE_PREFERRED ? MF_CHECKED : MF_UNCHECKED));
+
+    EnableMenuItem(hMenu, ID_ACCELERATION_DEFAULT,       MF_BYCOMMAND | (currState == PipelineStateRunning ? MF_DISABLED : MF_ENABLED));
+    EnableMenuItem(hMenu, ID_ACCELERATION_COMPUTE,       MF_BYCOMMAND | (currState == PipelineStateRunning ? MF_DISABLED : MF_ENABLED));
+    EnableMenuItem(hMenu, ID_ACCELERATION_VPE_PREFERRED, MF_BYCOMMAND | (currState == PipelineStateRunning ? MF_DISABLED : MF_ENABLED));
 }
 
 //
@@ -540,6 +550,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             UpdateMenuItems();
             break;
         }
+        case ID_ACCELERATION_DEFAULT :
+            s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_ACCELERATION_TYPE, AMF_VIDEO_CONVERTER_ACCELERATION_DEFAULT);
+            UpdateMenuItems();
+            break;
+        case ID_ACCELERATION_COMPUTE:
+            s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_ACCELERATION_TYPE, AMF_VIDEO_CONVERTER_ACCELERATION_COMPUTE);
+            UpdateMenuItems();
+            break;
+        case ID_ACCELERATION_VPE_PREFERRED:
+            s_pPipeline->SetParam(PlaybackPipeline::PARAM_NAME_ACCELERATION_TYPE, AMF_VIDEO_CONVERTER_ACCELERATION_VPE_PREFERRED);
+            UpdateMenuItems();
+            break;
         default:
             return DefWindowProc(hWnd, message, wParam, lParam);
         }

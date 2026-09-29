@@ -156,76 +156,100 @@ static AMF_RESULT ParamConverterProfileLevelAV1(const std::wstring& value, amf::
 {
     AMF_VIDEO_ENCODER_AV1_LEVEL_ENUM paramValue;
     std::wstring uppValue = toUpper(value);
-    if (uppValue == L"2.0" || uppValue == L"20" || uppValue == L"2" || uppValue == L"0") {
+    if (uppValue == L"2.0" || uppValue == L"20" || uppValue == L"2" || uppValue == L"0")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_2_0;
     }
-    else if (uppValue == L"2.1" || uppValue == L"21" || uppValue == L"1") {
+    else if (uppValue == L"2.1" || uppValue == L"21" || uppValue == L"1")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_2_1;
     }
-    else if (uppValue == L"2.2" || uppValue == L"22" || uppValue == L"2") {
+    else if (uppValue == L"2.2" || uppValue == L"22" || uppValue == L"2")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_2_2;
     }
-    else if (uppValue == L"2.3" || uppValue == L"23" || uppValue == L"3") {
+    else if (uppValue == L"2.3" || uppValue == L"23" || uppValue == L"3")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_2_3;
     }
-    else if (uppValue == L"3.0" || uppValue == L"30" || uppValue == L"3" || uppValue == L"4") {
+    else if (uppValue == L"3.0" || uppValue == L"30" || uppValue == L"3" || uppValue == L"4")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_3_0;
     }
-    else if (uppValue == L"3.1" || uppValue == L"31" || uppValue == L"5") {
+    else if (uppValue == L"3.1" || uppValue == L"31" || uppValue == L"5")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_3_1;
     }
-    else if (uppValue == L"3.2" || uppValue == L"31" || uppValue == L"6") {
+    else if (uppValue == L"3.2" || uppValue == L"32" || uppValue == L"6")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_3_2;
     }
-    else if (uppValue == L"3.3" || uppValue == L"31" || uppValue == L"7") {
+    else if (uppValue == L"3.3" || uppValue == L"33" || uppValue == L"7")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_3_3;
     }
-    else if (uppValue == L"4.0" || uppValue == L"40" || uppValue == L"4" || uppValue == L"8") {
+    else if (uppValue == L"4.0" || uppValue == L"40" || uppValue == L"4" || uppValue == L"8")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_4_0;
     }
-    else if (uppValue == L"4.1" || uppValue == L"41" || uppValue == L"9") {
+    else if (uppValue == L"4.1" || uppValue == L"41" || uppValue == L"9")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_4_1;
     }
-    else if (uppValue == L"4.2" || uppValue == L"42" || uppValue == L"10") {
+    else if (uppValue == L"4.2" || uppValue == L"42" || uppValue == L"10")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_4_2;
     }
-    else if (uppValue == L"4.3" || uppValue == L"42" || uppValue == L"11") {
+    else if (uppValue == L"4.3" || uppValue == L"43" || uppValue == L"11")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_4_3;
     }
-    else if (uppValue == L"5.0" || uppValue == L"50" || uppValue == L"5" || uppValue == L"12") {
+    else if (uppValue == L"5.0" || uppValue == L"50" || uppValue == L"5" || uppValue == L"12")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_5_0;
     }
-    else if (uppValue == L"5.1" || uppValue == L"51" || uppValue == L"13") {
+    else if (uppValue == L"5.1" || uppValue == L"51" || uppValue == L"13")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_5_1;
     }
-    else if (uppValue == L"5.2" || uppValue == L"52" || uppValue == L"14") {
+    else if (uppValue == L"5.2" || uppValue == L"52" || uppValue == L"14")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_5_2;
     }
-    else if (uppValue == L"5.3" || uppValue == L"53" || uppValue == L"15") {
+    else if (uppValue == L"5.3" || uppValue == L"53" || uppValue == L"15")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_5_3;
     }
-    else if (uppValue == L"6.0" || uppValue == L"60" || uppValue == L"6" || uppValue == L"16") {
+    else if (uppValue == L"6.0" || uppValue == L"60" || uppValue == L"6" || uppValue == L"16")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_6_0;
     }
-    else if (uppValue == L"6.1" || uppValue == L"61" || uppValue == L"17") {
+    else if (uppValue == L"6.1" || uppValue == L"61" || uppValue == L"17")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_6_1;
     }
-    else if (uppValue == L"6.2" || uppValue == L"62" || uppValue == L"18") {
+    else if (uppValue == L"6.2" || uppValue == L"62" || uppValue == L"18")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_6_2;
     }
-    else if (uppValue == L"6.3" || uppValue == L"63" || uppValue == L"19") {
+    else if (uppValue == L"6.3" || uppValue == L"63" || uppValue == L"19")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_6_3;
     }
-    else if (uppValue == L"7.0" || uppValue == L"70" || uppValue == L"7" || uppValue == L"20") {
+    else if (uppValue == L"7.0" || uppValue == L"70" || uppValue == L"7" || uppValue == L"20")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_7_0;
     }
-    else if (uppValue == L"7.1" || uppValue == L"71" || uppValue == L"21") {
+    else if (uppValue == L"7.1" || uppValue == L"71" || uppValue == L"21")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_7_1;
     }
-    else if (uppValue == L"7.2" || uppValue == L"72" || uppValue == L"22") {
+    else if (uppValue == L"7.2" || uppValue == L"72" || uppValue == L"22")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_7_2;
     }
-    else if (uppValue == L"7.3" || uppValue == L"73" || uppValue == L"23") {
+    else if (uppValue == L"7.3" || uppValue == L"73" || uppValue == L"23")
+    {
         paramValue = AMF_VIDEO_ENCODER_AV1_LEVEL_7_3;
     }
     else {

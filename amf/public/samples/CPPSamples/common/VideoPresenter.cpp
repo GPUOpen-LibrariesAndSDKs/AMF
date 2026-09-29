@@ -110,7 +110,7 @@ VideoPresenter::VideoPresenter(amf_handle hwnd, AMFContext* pContext, amf_handle
     m_resizeSwapChain(false),
 
     m_pProcessor(nullptr),
-    m_pHQScaler(nullptr),
+    m_pScaler(nullptr),
     m_renderToBackBuffer(false),
 
     m_viewOffsetX(0),
@@ -224,7 +224,7 @@ AMF_RESULT VideoPresenter::Terminate()
     AMFLock lock(&m_cs);
 
     Reset();
-    SetProcessor(NULL, NULL, true);
+    SetProcessor(nullptr, nullptr, nullptr, nullptr, true);
     if (m_pSwapChain != nullptr)
     {
         m_pSwapChain->Terminate();
@@ -772,7 +772,7 @@ AMF_RESULT VideoPresenter::ResizeRenderView(const RenderViewSizeInfo& newRenderV
     return AMF_OK;
 }
 
-AMF_RESULT VideoPresenter::SetProcessor(AMFComponent *processor, AMFComponent* pHQScaler, bool bAllocator)
+AMF_RESULT VideoPresenter::SetProcessor(AMFComponent *processor, AMFComponent* pScaler, const wchar_t* propertySizeName, const wchar_t* propertyRectName, bool bAllocator)
 {
     AMFLock lock(&m_cs);
     if(m_pProcessor != nullptr)
@@ -780,17 +780,27 @@ AMF_RESULT VideoPresenter::SetProcessor(AMFComponent *processor, AMFComponent* p
         m_pProcessor->SetOutputDataAllocatorCB(nullptr);
     }
 
-    if (m_pHQScaler != nullptr)
+    if (m_pScaler != nullptr)
     {
-        m_pHQScaler->SetOutputDataAllocatorCB(nullptr);
+        m_pScaler->SetOutputDataAllocatorCB(nullptr);
+    }
+    m_propertySizeName.clear();
+    if(propertySizeName != nullptr)
+    { 
+        m_propertySizeName = propertySizeName;
+    }
+    m_propertyRectName.clear();
+    if (propertyRectName != nullptr)
+    {
+        m_propertyRectName = propertyRectName;
     }
 
     m_pProcessor = processor;
-    m_pHQScaler = pHQScaler;
+    m_pScaler = pScaler;
 
     if (SupportAllocator() && bAllocator)
     {
-        AMFComponent* pAllocatorUser = (m_pHQScaler != nullptr) ? m_pHQScaler : m_pProcessor;
+        AMFComponent* pAllocatorUser = (m_pScaler != nullptr) ? m_pScaler : m_pProcessor;
         if (pAllocatorUser != nullptr)
         {
             pAllocatorUser->SetOutputDataAllocatorCB(this);
@@ -807,8 +817,7 @@ void VideoPresenter::UpdateProcessor()
 {
     SwapChain::ColorSpace colorSpace = {};
     AMFHDRMetadata hdrMetaData = {};
-    amf::AMFComponentPtr     pProcessor;
-    amf::AMFComponentPtr     pHQScaler;
+    amf::AMFComponentPtr     pScaler;
     bool                    bSwapChain = m_pSwapChain != nullptr;
     AMFBufferPtr             pHDRMetaDataBuffer;
     AMFSize outputSize = {};
@@ -818,7 +827,7 @@ void VideoPresenter::UpdateProcessor()
     {
         AMFLock lock(&m_cs);
 
-        if (m_pSwapChain != nullptr && (m_pProcessor != nullptr || m_pHQScaler != nullptr))
+        if (m_pSwapChain != nullptr && (m_pProcessor != nullptr || m_pScaler != nullptr))
         {
             // check and set color space and HDR support
             AMF_RESULT res = m_pSwapChain->GetColorSpace(colorSpace);
@@ -846,54 +855,41 @@ void VideoPresenter::UpdateProcessor()
                 memcpy(pData, &hdrMetaData, sizeof(AMFHDRMetadata));
             }
         }
-        pProcessor = m_pProcessor;
-        pHQScaler = m_pHQScaler;
+        pScaler = m_pScaler == nullptr ? m_pProcessor : m_pScaler;
 
         rectClient = GetClientRect(m_hwnd, m_hDisplay);
+        ScaleAndCenterRect(SizeToRect(m_inputFrameSize), rectClient, 0, outputRect);
         if (m_renderToBackBuffer == true)
         {
-            ScaleAndCenterRect(SizeToRect(m_inputFrameSize), rectClient, 0, outputRect);
             outputSize = RectToSize(rectClient);
         }
         else
         {
-            outputSize = m_inputFrameSize;
-            outputRect = SizeToRect(outputSize);
+            outputSize = RectToSize(outputRect);
         }
 
     }
-    if (pProcessor != nullptr && pHQScaler == nullptr)
+    if (pScaler != nullptr)
     {
-
-        // what we want to do here is check for the properties if they exist
-        // as the HQ scaler has different property names than CSC
-        const AMFPropertyInfo* pParamInfo = nullptr;
-        if ((pProcessor->GetPropertyInfo(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, &pParamInfo) == AMF_OK) && pParamInfo)
+        
+        if (!m_propertyRectName.empty())
         {
-            pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, outputSize);
-            pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_RECT, outputRect);
+            pScaler->SetProperty(m_propertyRectName.c_str(), outputRect);
         }
-    }
-
-    if (pHQScaler != NULL)
-    {
-        const AMFPropertyInfo* pParamInfo = nullptr;
-        if ((pHQScaler->GetPropertyInfo(AMF_HQ_SCALER_OUTPUT_SIZE, &pParamInfo) == AMF_OK) && pParamInfo)
+        if (!m_propertySizeName.empty())
         {
-
-            pHQScaler->SetProperty(AMF_HQ_SCALER_OUTPUT_SIZE, ::AMFConstructSize(rectClient.Width(), rectClient.Height()));
+            pScaler->SetProperty(m_propertySizeName.c_str(), outputSize);
         }
     }
 
-    if (pProcessor == nullptr || bSwapChain == false)
+    if (m_pProcessor != nullptr && bSwapChain)
     {
-        return;
+        m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_TRANSFER_CHARACTERISTIC, colorSpace.transfer);
+        m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_COLOR_PRIMARIES, colorSpace.primaries);
+        m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_COLOR_RANGE, colorSpace.range);
+        m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_HDR_METADATA, pHDRMetaDataBuffer);
     }
 
-    m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_TRANSFER_CHARACTERISTIC, colorSpace.transfer);
-    m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_COLOR_PRIMARIES, colorSpace.primaries);
-    m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_COLOR_RANGE, colorSpace.range);
-    m_pProcessor->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_HDR_METADATA, pHDRMetaDataBuffer);
 }
 
 AMF_RESULT AMF_STD_CALL VideoPresenter::AllocSurface(AMF_MEMORY_TYPE /*type*/, AMF_SURFACE_FORMAT /*format*/, amf_int32 /*width*/,

@@ -362,26 +362,41 @@ amf_string AMF_STD_CALL amf::amf_from_string_to_hex_string(const amf_string& str
     char buf[10];
     for(int i = 0; i < (int)str.length(); i++)
     {
-        sprintf(buf, "%02X", (unsigned char)str[i]);
+        snprintf(buf, sizeof(buf) / sizeof(buf[0]), "%02X", (unsigned char)str[i]);
         ret += buf;
     }
 
     return ret;
 }
 //----------------------------------------------------------------------------------------
+static amf_int amf_hex_nibble_value(char c)
+{
+    if ('0' <= c && c <= '9') return c - '0';
+    if ('A' <= c && c <= 'F') return c - 'A' + 10;
+    if ('a' <= c && c <= 'f') return c - 'a' + 10;
+    return -1;
+}
+//----------------------------------------------------------------------------------------
 amf_string AMF_STD_CALL amf::amf_from_hex_string_to_string(const amf_string& str)
 {
-    amf_string ret;
-    char buf[3] = {
-        0, 0, 0
-    };
-    for(int i = 0; i < (int)str.length(); i += 2)
+    if (str.length() % 2 != 0)
     {
-        buf[0] = str[i];
-        buf[1] = str[i + 1];
-        int tmp = 0;
-        sscanf(buf, "%2X", &tmp);
-        ret += (char)tmp;
+        return "";
+    }
+    
+    amf_string ret;
+    ret.reserve(str.length() / 2);
+
+    for (int i = 0; i < (int)str.length(); i += 2)
+    {
+        amf_int high = amf_hex_nibble_value(str[i]);
+        amf_int low = amf_hex_nibble_value(str[i + 1]);
+        if (high == -1 || low == -1)
+        {
+            return "";
+        }
+        unsigned char byte = static_cast<unsigned char>((high << 4) | low);
+        ret += byte;
     }
     return ret;
 }

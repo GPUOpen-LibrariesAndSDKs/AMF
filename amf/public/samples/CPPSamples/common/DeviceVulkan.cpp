@@ -202,7 +202,9 @@ AMF_RESULT DeviceVulkan::CreateInstance()
 #elif defined(__ANDROID__)
         VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
 #elif defined(__linux)
+#if defined(VK_USE_PLATFORM_XLIB_KHR)
         VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
+#endif
 #endif
     };
 

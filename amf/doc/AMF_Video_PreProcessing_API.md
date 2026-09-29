@@ -36,16 +36,22 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ### Contents
 
-1. [Introduction](#1-introduction)
-   - [1.1 Scope](#11-scope)
-   - [1.2 Overview](#12-overview)
-   - [1.3 Supported Hardware](#13-supported-hardware)
-   - [1.4 Disclaimer](#14-disclaimer)
-2. [AMF Pre-Processing](#2-amf-pre-processing)
-   - [2.1 Input / Output Format](#21-input--output-format)
-   - [2.2 Properties](#22-properties)
-   - [2.3 Sample Application](#23-sample-application)
-3. [Annex A: Glossary of Acronyms](#4-annex-a-glossary-of-acronyms)
+- [Advanced Media Framework – Pre-Processing Component](#advanced-media-framework--pre-processing-component)
+      - [Programming Guide](#programming-guide)
+    - [Disclaimer](#disclaimer)
+    - [Copyright Notice](#copyright-notice)
+    - [MIT license](#mit-license)
+    - [Contents](#contents)
+  - [1 Introduction](#1-introduction)
+    - [1.1 Scope](#11-scope)
+    - [1.2 Overview](#12-overview)
+    - [1.3 Supported Hardware](#13-supported-hardware)
+    - [1.4 Disclaimer](#14-disclaimer)
+  - [2 AMF Pre-Processing](#2-amf-pre-processing)
+    - [2.1 Input / Output Format](#21-input--output-format)
+    - [2.2 Properties](#22-properties)
+    - [2.3 Sample Application](#23-sample-application)
+  - [3 Annex A: Glossary of Acronyms](#3-annex-a-glossary-of-acronyms)
 
 
 ## 1 Introduction
@@ -69,9 +75,9 @@ The current AMF Pre-Processing component is in its beta release. Existing featur
 
 ## 2 AMF Pre-Processing
 
-In the current release, the Pre-Processing component includes a JND based edge-adaptive denoising filter that helps the encoder to achieve better coding efficiency. This filter aims at removing bit-expensive high frequency details that are deemed not important for the human visual system. There are two controls for this filter: strength and sensitivity. “Strength” controls the filtering strength (how much picture details will be removed), while “sensitivity” controls the edge detection sensitivity (what regions will be filtered, as regions detected as edges will not be filtered).
+In the current release, the Pre-Processing component includes a JND based edge-adaptive denoising filter that helps the encoder to achieve better coding efficiency. This filter aims at removing bit-expensive high frequency details that are deemed not important for the human visual system. There are two controls for this filter: strength and sensitivity. “Strength” controls the filtering strength (how much picture details will be removed), while “sensitivity” controls the edge detection sensitivity (what regions will be filtered, as regions detected as edges will not be filtered). Optionally, the adaptive filter mode (`AMF_PP_ADAPTIVE_FILTER_ENABLE`) can automatically adjust strength and sensitivity based on the target bitrate and frame rate, matching the downstream encoder configuration.
 
-The AMF Pre-processing component runs on DX11 and OpenCL kernels. Since the Pre-Processing filter in the AMF Pre-Processing component currently accepts the NV12 format, the AMF Converter can be used to convert images to the compatible NV12 format before being submitted into to the Pre-Processing component.
+The AMF Pre-processing component runs on DX11 and OpenCL kernels. Since the Pre-Processing filter in the AMF Pre-Processing component currently accepts the NV12 format, the AMF Converter can be used to convert images to the compatible NV12 format before being submitted to the Pre-Processing component.
 
 ### 2.1 Input / Output Format
 
@@ -86,9 +92,12 @@ Table 1 provides the detailed description of the available parameters for AMF Pr
 | AMF_PP_ENGINE_TYPE                 | AMF_MEMORY_TYPE |
 | AMF_PP_ADAPTIVE_FILTER_STRENGTH    | amf_int64       |
 | AMF_PP_ADAPTIVE_FILTER_SENSITIVITY | amf_int64       |
+| AMF_PP_ADAPTIVE_FILTER_ENABLE      | amf_bool        |
+| AMF_PP_TARGET_BITRATE              | amf_int64       |
+| AMF_PP_FRAME_RATE                  | AMFRate         |
 
 <p align="center">
-Table 2. AMF PA properties in standalone mode
+Table 1. AMF Pre-Processing properties
 </p>
 
 ---
@@ -135,17 +144,59 @@ Sensitivity to edges. The higher the value, the more likely edges will be detect
 
 ---
 
+**Name:**
+`AMF_PP_ADAPTIVE_FILTER_ENABLE`
+
+**Values:**
+`true`, `false`
+
+**Default Value:**
+`false`
+
+**Description:**
+Enables or disables adaptive filter mode. When disabled, filter strength and sensitivity are controlled by `AMF_PP_ADAPTIVE_FILTER_STRENGTH` and `AMF_PP_ADAPTIVE_FILTER_SENSITIVITY`. When enabled, the filter derives strength and sensitivity from the target bitrate and frame rate so that lower bitrates receive stronger filtering and higher bitrates preserve more detail. Set `AMF_PP_TARGET_BITRATE` and `AMF_PP_FRAME_RATE` to match the encoder.
+
+---
+
+**Name:**
+`AMF_PP_TARGET_BITRATE`
+
+**Values:**
+`1000000` - `60000000` (1 Mbps - 60 Mbps)
+
+**Default Value:**
+`2000000`
+
+**Description:**
+Target bitrate in bits per second for the adaptive filter when `AMF_PP_ADAPTIVE_FILTER_ENABLE` is true. Should match the encoder's target bitrate. Has no effect when adaptive filtering is disabled.
+
+---
+
+**Name:**
+`AMF_PP_FRAME_RATE`
+
+**Values:**
+`AMFRate` (numerator/denominator). For example, `AMFConstructRate(30, 1)` for 30 fps. Denominator must be non-zero.
+
+**Default Value:**
+`30/1` (30 fps)
+
+**Description:**
+Frame rate for the adaptive filter when `AMF_PP_ADAPTIVE_FILTER_ENABLE` is true. Should match the encoder's frame rate. Combined with `AMF_PP_TARGET_BITRATE`, determines bits per frame and filter strength. Has no effect when adaptive filtering is disabled.
+
+---
+
 ### 2.3 Sample Application
 
 The TranscodeHW sample application in the SDK package can be used to illustrate how to enable the AMF Pre-Processing filter. When the Pre-Processing filter is enabled using
 
-`-EnablePreEncoderFilter true`
+`-EnablePreEncodeFilter true`
 
 TranscodeHW will filter the decoded raw images before submitting them to the encoder. Below is an example cmd line enabling the Pre-Processing filter:
 
 `TranscodeHW.exe -input input.mp4  -output output.mp4 -width 1920 -height 1080 -usage transcoding -qualitypreset quality -targetBitrate 5000000 -frames 1000 -engine dx11 -EnablePreEncodeFilter true -PPEngineType opencl -PPAdaptiveFilterStrength 4 -PPAdaptiveFilterSensitivity 6`
 
-## 4 Annex A: Glossary of Acronyms
+## 3 Annex A: Glossary of Acronyms
 
 | Acronym | Definition               |
 | ------- | :----------------------- |

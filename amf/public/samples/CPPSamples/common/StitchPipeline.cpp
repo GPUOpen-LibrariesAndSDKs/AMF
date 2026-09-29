@@ -117,11 +117,11 @@ void StitchPipeline::ToggleOutputMode()
     {
         if(value == AMF_VIDEO_STITCH_OUTPUT_MODE_CUBEMAP)
         {
-            m_pVideoPresenter ->SetProcessor(nullptr, nullptr, true);
+            m_pVideoPresenter ->SetProcessor(nullptr, nullptr, L"", L"", true);
         }
         else
         {
-            m_pVideoPresenter ->SetProcessor(m_pStitch, nullptr, true);
+            m_pVideoPresenter ->SetProcessor(m_pStitch, nullptr, L"", L"", true);
         }
 
         m_pVideoPresenter->SetRenderToBackBuffer(value != AMF_VIDEO_STITCH_OUTPUT_MODE_CUBEMAP);

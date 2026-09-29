@@ -102,6 +102,8 @@ VulkanImportTable::VulkanImportTable() :
     vkWaitForFences(nullptr),
     vkCreateSemaphore(nullptr),
     vkDestroySemaphore(nullptr),
+    vkGetSemaphoreCounterValue(nullptr),
+    vkWaitSemaphores(nullptr),
     vkCreateEvent(nullptr),
     vkDestroyEvent(nullptr),
     vkGetEventStatus(nullptr),
@@ -303,6 +305,8 @@ AMF_RESULT VulkanImportTable::LoadFunctionsTable()
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkWaitForFences);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkCreateSemaphore);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkDestroySemaphore);
+    GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetSemaphoreCounterValue);
+    GET_DLL_ENTRYPOINT(m_hVulkanDll, vkWaitSemaphores);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkCreateEvent);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkDestroyEvent);
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkGetEventStatus);
@@ -431,11 +435,11 @@ AMF_RESULT VulkanImportTable::LoadInstanceFunctionsTableExt(VkInstance instance,
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT VulkanImportTable::LoadDeviceFunctionsTableExt(VkDevice device)
 {
-    GET_DEVICE_ENTRYPOINT(device, vkCreateSwapchainKHR);
-    GET_DEVICE_ENTRYPOINT(device, vkDestroySwapchainKHR);
-    GET_DEVICE_ENTRYPOINT(device, vkGetSwapchainImagesKHR);
-    GET_DEVICE_ENTRYPOINT(device, vkAcquireNextImageKHR);
-    GET_DEVICE_ENTRYPOINT(device, vkQueuePresentKHR);
+    GET_DEVICE_ENTRYPOINT_NORETURN(device, vkCreateSwapchainKHR);
+    GET_DEVICE_ENTRYPOINT_NORETURN(device, vkDestroySwapchainKHR);
+    GET_DEVICE_ENTRYPOINT_NORETURN(device, vkGetSwapchainImagesKHR);
+    GET_DEVICE_ENTRYPOINT_NORETURN(device, vkAcquireNextImageKHR);
+    GET_DEVICE_ENTRYPOINT_NORETURN(device, vkQueuePresentKHR);
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
     GET_DLL_ENTRYPOINT(m_hVulkanDll, vkCreateWin32SurfaceKHR);
 #endif

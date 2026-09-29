@@ -155,8 +155,19 @@ AMF_RESULT VideoPresenterDX11::CopySurface(AMFSurface* pSurface)
 
     AMFPlane* pPlane = pSurface->GetPlane(AMF_PLANE_PACKED);
 
-    D3D11_TEXTURE2D_DESC srcDesc;
+    D3D11_TEXTURE2D_DESC srcDesc = {};
     pDXSurface->GetDesc(&srcDesc);
+
+    if (m_pCopyTexture_L != nullptr)
+    {
+        D3D11_TEXTURE2D_DESC dstDesc = {};
+        m_pCopyTexture_L->GetDesc(&dstDesc);
+        if ((srcDesc.Width != dstDesc.Width) || (srcDesc.Height != dstDesc.Height))
+        {
+            m_pCopyTexture_L = nullptr;
+            m_pCopyTexture_R = nullptr;
+        }
+    }
 
     // Create textures if not available
     if(m_pCopyTexture_L == nullptr)

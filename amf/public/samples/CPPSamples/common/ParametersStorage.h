@@ -67,7 +67,9 @@ AMF_RESULT ParamConverterCodec(const std::wstring& value, amf::AMFVariant& value
 AMF_RESULT ParamConverterColorProfile(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterTransferCharacteristic(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterColorPrimaries(const std::wstring& value, amf::AMFVariant& valueOut);
+AMF_RESULT ParamConverterColorMatrixCoefficients(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterColorRange(const std::wstring& value, amf::AMFVariant& valueOut);
+AMF_RESULT ParamConverterRotate(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterToneMapping(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterHQScalerAlgorithm(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterHighMotionQualityBoostMode(const std::wstring& value, amf::AMFVariant& valueOut);
@@ -81,6 +83,7 @@ AMF_RESULT ParamConverterFRCMode(const std::wstring& value, amf::AMFVariant& val
 AMF_RESULT ParamConverterFRCSnapshotMode(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterFRCPerformance(const std::wstring& value, amf::AMFVariant& valueOut);
 AMF_RESULT ParamConverterFRCProfile(const std::wstring& value, amf::AMFVariant& valueOut);
+AMF_RESULT ParamConverterAccelerationType(const std::wstring& value, amf::AMFVariant& valueOut);
 
 std::wstring AddIndexToPath(const std::wstring& path, amf_int32 index);
 

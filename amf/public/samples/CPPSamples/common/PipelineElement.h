@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -89,8 +89,8 @@ public:
 //        LOG_DEBUG(L"Stream Writer: written frames:" << m_framesWritten << L"\n");
     }
 
-    virtual amf_int32 GetInputSlotCount() const { return 1; }
-    virtual amf_int32 GetOutputSlotCount() const { return 0; }
+    virtual amf_int32 GetInputSlotCount() const override { return 1; }
+    virtual amf_int32 GetOutputSlotCount() const override { return 0; }
 
     virtual AMF_RESULT SubmitInput(amf::AMFData* pData)
     {
@@ -160,7 +160,8 @@ public:
 //        LOG_DEBUG(L"Stream Writer: written frames:" << m_framesWritten << L"\n");
     }
 
-    virtual amf_int32 GetOutputSlotCount() const { return 0; }
+    virtual amf_int32 GetInputSlotCount() const override { return 1; }
+    virtual amf_int32 GetOutputSlotCount() const override { return 0; }
 
     virtual AMF_RESULT SubmitInput(amf::AMFData* pData)
     {
@@ -211,7 +212,8 @@ public:
     {
     }
 
-    virtual amf_int32 GetOutputSlotCount() const { return 0; }
+    virtual amf_int32 GetInputSlotCount() const override { return 1; }
+    virtual amf_int32 GetOutputSlotCount() const override { return 0; }
 
     virtual AMF_RESULT SubmitInput(amf::AMFData* pData)
     {
@@ -254,10 +256,10 @@ public:
     virtual ~Splitter()
     {
     }
-    virtual amf_int32 GetInputSlotCount() const { return 1; }
-    virtual amf_int32 GetOutputSlotCount() const { return m_iOutputCount; }
-    virtual AMF_RESULT SubmitInput(amf::AMFData* pData) 
-    { 
+    virtual amf_int32 GetInputSlotCount() const override { return 1; }
+    virtual amf_int32 GetOutputSlotCount() const override { return m_iOutputCount; }
+    virtual AMF_RESULT SubmitInput(amf::AMFData* pData)
+    {
         amf::AMFLock lock(&m_cs);
         if(m_bFrozen)
         {
@@ -273,9 +275,9 @@ public:
         data.slots.resize(m_iOutputCount, false); // set all slots to false
         m_Queue.push_back(data);
 
-        return AMF_OK; 
+        return AMF_OK;
     }
-    virtual AMF_RESULT QueryOutput(amf::AMFData** ppData, amf_int32 slot) 
+    virtual AMF_RESULT QueryOutput(amf::AMFData** ppData, amf_int32 slot)
     {
         amf::AMFLock lock(&m_cs);
         if(m_bFrozen)
@@ -357,27 +359,45 @@ typedef std::shared_ptr<Splitter> SplitterPtr;
 class Combiner : public PipelineElement
 {
 public:
-    Combiner(amf::AMFContextPtr context)
+    enum AMF_SIDE_BY_SIDE_MODE_ENUM
+    {
+        AMF_SIDE_BY_SIDE_NONE = 0,
+        AMF_SIDE_BY_SIDE_LEFT_RIGHT = 1,
+        AMF_SIDE_BY_SIDE_LEFT_LEFT = 2,
+        AMF_SIDE_BY_SIDE_RIGHT_RIGHT = 3,
+    };
+
+    Combiner(amf::AMFContextPtr context, AMF_SIDE_BY_SIDE_MODE_ENUM mode)
         : m_pContext(context)
-        , m_pData()
         , m_bEof(false)
+        , m_eMode(mode)
     {
     }
     virtual ~Combiner()
     {
     }
-    virtual amf_int32 GetInputSlotCount() const { return 2; }
-    virtual amf_int32 GetOutputSlotCount() const { return 1; }
-    virtual AMF_RESULT SubmitInput(amf::AMFData* pData)
+    virtual amf_int32 GetInputSlotCount() const override { return 2; }
+    virtual amf_int32 GetOutputSlotCount() const override { return 1; }
+    //virtual AMF_RESULT SubmitInput(amf::AMFData* pData)
+    virtual AMF_RESULT SubmitInput(amf::AMFData* pData, amf_int32 slot)
     {
         amf::AMFLock lock(&m_cs);
         if (m_bFrozen)
         {
             return AMF_INPUT_FULL;
         }
-
-        m_pData = pData;
-
+        if((slot  == 0 && m_pData0 != nullptr) || (slot == 1 && m_pData1 != nullptr))
+        {
+            return AMF_INPUT_FULL;
+        }
+        if (slot == 0 )
+        {
+            m_pData0 = amf::AMFSurfacePtr(pData);
+        }
+        if (slot == 1)
+        {
+            m_pData1 = amf::AMFSurfacePtr(pData);
+        }
         return AMF_OK;
     }
     virtual AMF_RESULT QueryOutput(amf::AMFData** ppData, amf_int32 slot)
@@ -387,40 +407,43 @@ public:
         {
             return AMF_EOF;
         }
-        if (m_pData == NULL)
+        if (m_pData0 == nullptr || m_pData1 == nullptr)
         {
-            return AMF_INVALID_ARG;
+            return AMF_OK;
         }
         if (m_bFrozen)
         {
             return AMF_OK;
         }
 
-        if (slot >= 2)
+        if (slot >= 1)
         {
             LOG_ERROR(L"Bad slot=" << slot);
             return AMF_INVALID_ARG;
         }
 
         AMF_RESULT result = AMF_OK;
-        amf::AMFSurfacePtr pInSurface(m_pData);
         amf::AMFSurfacePtr  pOutSurface;
-        result = AllocOutputSurface(pInSurface, &pOutSurface);
+        result = AllocOutputSurface(m_pData0, &pOutSurface);
 
         if (result != AMF_OK)
         {
             return result;
         }
 
-        result = Combine(slot, pInSurface, pOutSurface);
-
+        result = Combine(0, m_pData0, pOutSurface);
         if (result != AMF_OK)
         {
             return result;
         }
-
-        pOutSurface->Acquire();
-        *ppData = pOutSurface;
+        result = Combine(1, m_pData1, pOutSurface);
+        if (result != AMF_OK)
+        {
+            return result;
+        }
+        m_pData0 = nullptr;
+        m_pData1 = nullptr;
+        *ppData = pOutSurface.Detach();
 
         return AMF_OK;
     }
@@ -455,12 +478,12 @@ private:
         {
             return result;
         }
-
         pSurface->SetPts(pts);
         pSurface->SetDuration(duration);
         pSurface->SetFrameType(type);
-        *ppSurface = pSurface.Detach();
+        pInSurface->CopyTo(pSurface, false);
 
+        *ppSurface = pSurface.Detach();
         return AMF_OK;
     }
 
@@ -470,26 +493,60 @@ private:
         amf_int32 inHeight = pSrcSurface->GetPlaneAt(0)->GetHeight();
 
         // TODO: Adjust split ratio on keyboard shortcuts.
-        double split = 0.40;
+        double split = 0.50;
 
         amf_int32 dstX = static_cast<amf_int32>((double)inWidth * (split));
         amf_int32 dstWidth = inWidth - dstX;
 
         AMF_RESULT res = AMF_OK;
 
-        if (iSlot == 0) {
-            res = pSrcSurface->CopySurfaceRegion(pDstSurface, 0, 0, 0, 0, static_cast<amf_int32>(inWidth * (split)), inHeight);
-        } else {
-            res = pSrcSurface->CopySurfaceRegion(pDstSurface, dstX, 0, 0, 0, dstWidth, inHeight);
-        }
+        switch (m_eMode)
+        {
+        case AMF_SIDE_BY_SIDE_NONE:
+        break;
+        case AMF_SIDE_BY_SIDE_LEFT_RIGHT:
+            if (iSlot == 0)
+            {
+                res = pSrcSurface->CopySurfaceRegion(pDstSurface, 0, 0, 0, 0, dstX, inHeight);
+            }
+            else
+            {
+                res = pSrcSurface->CopySurfaceRegion(pDstSurface, dstX, 0, dstX, 0, dstWidth, inHeight);
+            }
 
+        break;
+        case AMF_SIDE_BY_SIDE_LEFT_LEFT:
+            if (iSlot == 0)
+            {
+                res = pSrcSurface->CopySurfaceRegion(pDstSurface, 0, 0, 0, 0, dstX, inHeight);
+            }
+            else
+            {
+                res = pSrcSurface->CopySurfaceRegion(pDstSurface, dstX, 0, 0, 0, dstWidth, inHeight);
+            }
+
+        break;
+        case AMF_SIDE_BY_SIDE_RIGHT_RIGHT:
+            if (iSlot == 1)
+            {
+                res = pSrcSurface->CopySurfaceRegion(pDstSurface, 0, 0, 0, 0, dstX, inHeight);
+            }
+            else
+            {
+                res = pSrcSurface->CopySurfaceRegion(pDstSurface, dstX, 0, 0, 0, dstWidth, inHeight);
+            }
+            break;
+
+        }
         return res;
     }
 
 protected:
     amf::AMFContextPtr  m_pContext;
-    amf::AMFDataPtr     m_pData;
+    amf::AMFSurfacePtr  m_pData0;
+    amf::AMFSurfacePtr  m_pData1;
     bool                m_bEof;
+    AMF_SIDE_BY_SIDE_MODE_ENUM m_eMode;
 };
 //-------------------------------------------------------------------------------------------------
 typedef std::shared_ptr<Combiner> CombinerPtr;
@@ -499,10 +556,10 @@ class AMFComponentElement : public PipelineElement
 public:
     AMFComponentElement(amf::AMFComponent *pComponent) : m_pComponent(pComponent){}
     virtual ~AMFComponentElement(){}
-    virtual amf_int32 GetInputSlotCount() const { return 1; }
-    virtual amf_int32 GetOutputSlotCount() const { return 1; }
+    virtual amf_int32 GetInputSlotCount() const override { return 1; }
+    virtual amf_int32 GetOutputSlotCount() const override { return 1; }
 
-    virtual AMF_RESULT SubmitInput(amf::AMFData* pData) 
+    virtual AMF_RESULT SubmitInput(amf::AMFData* pData)
     {
         if(m_bFrozen)
         {
@@ -522,7 +579,7 @@ public:
                 return AMF_INPUT_FULL;
             }
         }
-        return res; 
+        return res;
     }
     virtual AMF_RESULT ReSubmitInput()
     {
@@ -565,11 +622,11 @@ public:
     }
     virtual AMF_RESULT Drain(amf_int32 /*inputSlot*/)
     {
-        return m_pComponent->Drain(); 
+        return m_pComponent->Drain();
     }
     virtual AMF_RESULT Flush()
     {
-        return m_pComponent->Flush(); 
+        return m_pComponent->Flush();
     }
 
 protected:
@@ -592,8 +649,8 @@ public:
         m_bEof.resize(slots, false);
     }
     virtual ~AMFComponentExElement(){}
-    virtual amf_int32 GetInputSlotCount() const { return m_pComponent->GetInputCount(); }
-    virtual amf_int32 GetOutputSlotCount() const { return m_pComponent->GetOutputCount(); }
+    virtual amf_int32 GetInputSlotCount() const override { return m_pComponent->GetInputCount(); }
+    virtual amf_int32 GetOutputSlotCount() const override { return m_pComponent->GetOutputCount(); }
 
     virtual AMF_RESULT SubmitInput(amf::AMFData* pData, amf_int32 slot)
     {
@@ -604,14 +661,14 @@ public:
 
         amf::AMFInputPtr pInput;
         if(m_pComponent->GetInputCount() > 0)
-        { 
+        {
             m_pComponent->GetInput(slot, &pInput);
             if(pInput == NULL)
             {
                 return AMF_INVALID_ARG;
             }
         }
-        AMF_RESULT res = AMF_OK;  
+        AMF_RESULT res = AMF_OK;
         if(pData == NULL) // EOF
         {
             res = m_pComponent->Drain();
@@ -623,11 +680,11 @@ public:
         else
         {
             if(pInput != NULL)
-            { 
+            {
                 res = pInput->SubmitInput(pData);
             }
-            else 
-            { 
+            else
+            {
                 res = m_pComponent->SubmitInput(pData);
             }
             if(res == AMF_DECODER_NO_FREE_SURFACES)
@@ -636,7 +693,7 @@ public:
             }
 
         }
-        return res; 
+        return res;
     }
     virtual AMF_RESULT ReSubmitInput(amf_int32 slot)
     {
@@ -670,8 +727,8 @@ public:
         return res;
     }
 
-    virtual AMF_RESULT QueryOutput(amf::AMFData** ppData, amf_int32 slot) 
-    { 
+    virtual AMF_RESULT QueryOutput(amf::AMFData** ppData, amf_int32 slot)
+    {
         if(m_bFrozen)
         {
             return AMF_OK;
@@ -679,7 +736,7 @@ public:
 
         amf::AMFOutputPtr pOutput;
         if(m_pComponent->GetOutputCount() > 0)
-        { 
+        {
             m_pComponent->GetOutput(slot, &pOutput);
             if(pOutput == NULL)
             {
@@ -689,11 +746,11 @@ public:
         AMF_RESULT res = AMF_OK;
         amf::AMFDataPtr data;
         if(pOutput != NULL)
-        { 
+        {
             res = pOutput->QueryOutput(&data);
         }
         else
-        { 
+        {
             res = m_pComponent->QueryOutput(&data);
         }
 
@@ -711,17 +768,17 @@ public:
         }
         return res;
     }
-    virtual AMF_RESULT Drain(amf_int32 inputSlot) 
+    virtual AMF_RESULT Drain(amf_int32 inputSlot)
     {
         m_bEof[inputSlot] = true;
         if(OnEof() == AMF_EOF)
-        { 
-            return m_pComponent->Drain(); 
+        {
+            return m_pComponent->Drain();
         }
         return AMF_OK;
     }
-    virtual AMF_RESULT OnEof() 
-    { 
+    virtual AMF_RESULT OnEof()
+    {
         for(std::vector<bool>::iterator it = m_bEof.begin(); it != m_bEof.end(); it++)
         {
             if(!(*it))
@@ -729,11 +786,11 @@ public:
                 return AMF_OK;
             }
         }
-        return AMF_EOF; 
+        return AMF_EOF;
     }
     virtual AMF_RESULT Flush()
     {
-        return m_pComponent->Flush(); 
+        return m_pComponent->Flush();
     }
 
 protected:

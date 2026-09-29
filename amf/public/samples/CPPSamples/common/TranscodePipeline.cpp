@@ -1130,6 +1130,29 @@ AMF_RESULT  TranscodePipeline::InitVideoProcessor(amf::AMF_MEMORY_TYPE presenter
     m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_FORMAT, m_eEncoderFormat);
     m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_OUTPUT_SIZE, AMFConstructSize(outWidth, outHeight));
 
+    // pass rotation flag from container to converter
+    if (m_pDemuxer != nullptr)
+    {
+        amf_int32 outputs = m_pDemuxer->GetOutputCount();
+        for (amf_int32 output = 0; output < outputs; output++)
+        {
+            amf::AMFOutputPtr pOutput;
+            res = m_pDemuxer->GetOutput(output, &pOutput);
+            CHECK_AMF_ERROR_RETURN(res, L"m_pDemuxer->GetOutput() failed");
+
+            amf_int64 eStreamType = AMF_STREAM_UNKNOWN;
+            pOutput->GetProperty(AMF_STREAM_TYPE, &eStreamType);
+
+            if (eStreamType == AMF_STREAM_VIDEO)
+            {
+                amf_int64 rotation = AMF_VIDEO_CONVERTER_ROTATE_NONE;
+                pOutput->GetProperty(AMF_STREAM_VIDEO_ROTATION, &rotation);
+                m_pConverter->SetProperty(AMF_VIDEO_CONVERTER_ROTATE, rotation);
+                break;
+            }
+        }
+    }
+
     m_pConverter->Init(m_eDecoderFormat, inWidth, inHeight);
 
     return AMF_OK;
@@ -1175,7 +1198,8 @@ AMF_RESULT  TranscodePipeline::InitPreProcessFilter(ParametersStorage* pParams)
     return AMF_OK;
 }
 
-AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamReaderPtr pRawReader, amf::AMFOutput* pOutput, amf::AMF_MEMORY_TYPE presenterEngine, amf_handle hwnd, amf_handle display, ParametersStorage* pParams, amf::AMF_SURFACE_FORMAT format)
+AMF_RESULT  TranscodePipeline::InitVideo(BitStreamParserPtr pParser, RawStreamReaderPtr pRawReader, amf::AMFOutput* pOutput,
+    amf::AMF_MEMORY_TYPE presenterEngine, amf_handle hwnd, amf_handle display, ParametersStorage* pParams, amf::AMF_SURFACE_FORMAT format)
 {
     bool decodeAsAnnexBStream = false; // switches between Annex B and AVCC types of decode input.
 

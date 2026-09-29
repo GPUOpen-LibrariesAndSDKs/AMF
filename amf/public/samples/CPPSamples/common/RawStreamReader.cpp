@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 // Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -111,7 +111,7 @@ bool AMF_STD_CALL PicGetFrameSize(amf::AMF_SURFACE_FORMAT format, amf_int32 widt
 
     switch (format)
     {
-        case amf::AMF_SURFACE_YUV420P: 
+        case amf::AMF_SURFACE_YUV420P:
         case amf::AMF_SURFACE_YV12:
         case amf::AMF_SURFACE_NV12:
         case amf::AMF_SURFACE_P010:
@@ -164,27 +164,27 @@ static void PlaneCopy(const amf_uint8 *src, amf_int32 srcStride, amf_int32 srcHe
 static void NV12PicCopy(const amf_uint8 *src, amf_int32 srcStride, amf_int32 srcHeight, amf_uint8 *dst, amf_int32 dstStride, amf_int32 dstHeight)
 {
     // Y- plane
-    PlaneCopy(src, srcStride, srcHeight, dst, dstStride, dstHeight); 
+    PlaneCopy(src, srcStride, srcHeight, dst, dstStride, dstHeight);
     // UV - plane
     amf_int32 srcYSize = srcHeight * srcStride;
     amf_int32 dstYSize = dstHeight * dstStride;
-    PlaneCopy(src + srcYSize, srcStride, srcHeight / 2, dst + dstYSize, dstStride, dstHeight / 2); 
+    PlaneCopy(src + srcYSize, srcStride, srcHeight / 2, dst + dstYSize, dstStride, dstHeight / 2);
 }
 
 static void YUV420PicCopy(const amf_uint8 *src, amf_int32 srcStride, amf_int32 srcHeight, amf_uint8 *dst, amf_int32 dstStride, amf_int32 dstHeight)
 {
     // Y- plane
-    PlaneCopy(src, srcStride, srcHeight, dst, dstStride, dstHeight); 
+    PlaneCopy(src, srcStride, srcHeight, dst, dstStride, dstHeight);
     // U - plane
     amf_int32 srcYSize = srcHeight * srcStride;
     amf_int32 dstYSize = dstHeight * dstStride;
 
-    PlaneCopy(src + srcYSize, srcStride / 2, srcHeight / 2, dst + dstYSize, dstStride / 2, dstHeight / 2); 
+    PlaneCopy(src + srcYSize, srcStride / 2, srcHeight / 2, dst + dstYSize, dstStride / 2, dstHeight / 2);
 
     amf_int32 srcUSize = srcHeight/2 * srcStride/2;
     amf_int32 dstUSize = dstHeight/2 * dstStride/2;
 
-    PlaneCopy(src + srcYSize + srcUSize, srcStride / 2, srcHeight / 2, dst + dstYSize + dstUSize, dstStride / 2, dstHeight / 2); 
+    PlaneCopy(src + srcYSize + srcUSize, srcStride / 2, srcHeight / 2, dst + dstYSize + dstUSize, dstStride / 2, dstHeight / 2);
 }
 
 
@@ -192,9 +192,9 @@ RawStreamReader::RawStreamReader()
     :m_pDataStream(),
     m_format(amf::AMF_SURFACE_UNKNOWN),
     m_memoryType(amf::AMF_MEMORY_UNKNOWN),
-    m_width(0), 
-    m_height(0), 
-    m_stride(0), 
+    m_width(0),
+    m_height(0),
+    m_stride(0),
     m_framesCount(0),
     m_framesCountRead(0),
     m_streamFramesCount(0),
@@ -258,7 +258,7 @@ AMF_RESULT RawStreamReader::Init(ParametersStorage* pParams, amf::AMFContext* pC
   	amf_int64 formatEnum = 0;
 	pParams->GetParam(PARAM_NAME_INPUT_FORMAT, formatEnum);
 	inputFormat = static_cast <amf::AMF_SURFACE_FORMAT> (formatEnum);
-	
+
     amf_int frames = 0;
     pParams->GetParam(PARAM_NAME_INPUT_FRAMES, frames);
 
@@ -295,7 +295,7 @@ AMF_RESULT RawStreamReader::Init(ParametersStorage* pParams, amf::AMFContext* pC
         ParseRawFileFormat(path, m_width, m_height, m_format);
     }
 
-    m_roi_x = roi_x; 
+    m_roi_x = roi_x;
     m_roi_y = roi_y;
     m_roi_width = roi_width;
     m_roi_height = roi_height;
@@ -372,15 +372,15 @@ AMF_RESULT RawStreamReader::Init(ParametersStorage* pParams, amf::AMFContext* pC
     amf_int64 size = 0;
     m_pDataStream->GetSize(&size);
     m_streamFramesCount = static_cast<int>(size / frameSize);
-    if (frames == 0) 
+    if (frames == 0)
     {
         m_framesCount = m_streamFramesCount;
-    } 
-    else if (enableRepeat) 
+    }
+    else if (enableRepeat)
     {
         m_framesCount = frames;
-    } 
-    else 
+    }
+    else
     {
         m_framesCount = AMF_MIN(frames, m_streamFramesCount);
     }
@@ -518,7 +518,7 @@ AMF_RESULT RawStreamReader::ReadNextSearchCenterMap(int dstStride, int /* dstHei
 	return AMF_OK;
 }
 //----------------------------------------------------------------------------------------------
-void RawStreamReader::ParseRawFileFormat(const std::wstring path, amf_int32 &width, amf_int32 &height, amf::AMF_SURFACE_FORMAT& format)
+void RawStreamReader::ParseRawFileFormat(const std::wstring& path, amf_int32 &width, amf_int32 &height, amf::AMF_SURFACE_FORMAT& format)
 {
     // we read only undefined values before
     if (width == 0 || height == 0 || format == amf::AMF_SURFACE_UNKNOWN)

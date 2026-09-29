@@ -306,12 +306,14 @@ AMF_RESULT SwapChainVulkan::CreateSwapChain(amf_int32 /*width*/, amf_int32 /*hei
     swapChainCreateInfo.pNext = nullptr;
 
     // Create swap chain
+    AMF_RETURN_IF_FALSE(GetVulkan()->vkCreateSwapchainKHR != nullptr, AMF_VULKAN_FAILED, L"CreateSwapChain() - vkCreateSwapchainKHR() is not available");
     vkres = GetVulkan()->vkCreateSwapchainKHR(m_pVulkanDevice->hDevice, &swapChainCreateInfo, nullptr, &m_hSwapChain);
     ASSERT_RETURN_IF_VK_FAILED(vkres, AMF_VULKAN_FAILED, L"CreateSwapChain() - vkCreateSwapchainKHR() failed");
 
     // The old swapchain becomes retired now so we can delete it
     if (hOldSwapChain != NULL)
     {
+        AMF_RETURN_IF_FALSE(GetVulkan()->vkDestroySwapchainKHR != nullptr, AMF_VULKAN_FAILED, L"CreateSwapChain() - vkDestroySwapchainKHR() is not available");
         GetVulkan()->vkDestroySwapchainKHR(m_pVulkanDevice->hDevice, hOldSwapChain, nullptr);
         hOldSwapChain = NULL;
     }
@@ -777,6 +779,8 @@ AMF_RESULT SwapChainVulkan::AcquireNextBackBufferIndex(amf_uint& index)
     if (m_droppedBuffers.empty())
     {
         AMFContext1::AMFVulkanLocker vkLock(m_pContext1);
+        AMF_RETURN_IF_FALSE(GetVulkan()->vkAcquireNextImageKHR != nullptr, AMF_VULKAN_FAILED, L"AcquireBackBuffer() - vkAcquireNextImageKHR() is not available");
+
         VkResult vkres = GetVulkan()->vkAcquireNextImageKHR(m_pVulkanDevice->hDevice, m_hSwapChain, UINT32_MAX, m_Semaphores.front(), VK_NULL_HANDLE, &imageIndex);
         AMF_RETURN_IF_FALSE(vkres == VK_SUCCESS || vkres == VK_SUBOPTIMAL_KHR || vkres == VK_ERROR_OUT_OF_DATE_KHR, AMF_VULKAN_FAILED, L"AcquireBackBuffer() - vkAcquireNextImageKHR() failed vkres=%d", (int)vkres);
         if (vkres == VK_ERROR_OUT_OF_DATE_KHR)
@@ -848,6 +852,7 @@ AMF_RESULT SwapChainVulkan::Present(amf_bool waitForVSync)
     VkResult swapchainRes = VK_SUCCESS;
     presentInfo.pResults = &swapchainRes;
 
+    AMF_RETURN_IF_FALSE(GetVulkan()->vkQueuePresentKHR != nullptr, AMF_VULKAN_FAILED, L"Present() - vkQueuePresentKHR() is not available");
     VkResult vkres = GetVulkan()->vkQueuePresentKHR(m_hQueuePresent, &presentInfo);
 
     if (vkres == VK_ERROR_OUT_OF_HOST_MEMORY || vkres == VK_ERROR_OUT_OF_DEVICE_MEMORY || vkres == VK_ERROR_DEVICE_LOST)

@@ -9,7 +9,7 @@
 // 
 // MIT license 
 // 
-// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2026 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -39,6 +39,9 @@
 #include "Surface.h"
 #include "Compute.h"
 #include "ComputeFactory.h"
+
+#define AMF_SURFACE_MAX_PLANES                     4 
+#define AMF_CONTEXT_DISABLE_PLACED_RESOURCES       L"DisablePlacedResources"  // amf_bool, default false; Disable creation of placed resources and create committed resources
 
 #if defined(__cplusplus)
 namespace amf
@@ -162,6 +165,10 @@ namespace amf
     //----------------------------------------------------------------------------------------------
     typedef AMFInterfacePtr_T<AMFContext1> AMFContext1Ptr;
 
+    //----------------------------------------------------------------------------------------------
+    // AMFContext2 interface
+    //----------------------------------------------------------------------------------------------
+
     class AMF_NO_VTABLE AMFContext2 : public AMFContext1
     {
     public:
@@ -178,6 +185,79 @@ namespace amf
         class AMFDX12Locker;
     };
     typedef AMFInterfacePtr_T<AMFContext2> AMFContext2Ptr;
+
+    //----------------------------------------------------------------------------------------------
+    // AMFSurface synchronization structure
+    //----------------------------------------------------------------------------------------------
+    typedef struct AMFSharedFenceResource
+    {
+        void* pNext;                                        // reserved for extensions
+#if defined(_WIN32)
+        amf_handle  hFence;
+#else
+        amf_int32   hFence;
+#endif
+        amf_uint64  fenceValue;
+
+        amf_bool    bFenceSubmitted;                        // if true - wait for hFence. ignored if timeline. Vulkan usage only.
+        amf_bool    bFenceTimeline;                         // if true - this is a timeline semaphore or counter. In DX, this should be always true. 
+        amf_bool    bFenceNTHandle;                         // The shared semaphore/fence handle is NT handle.
+    } AMFSharedFenceResource;
+
+    //----------------------------------------------------------------------------------------------
+    // AMFSurface share handle struct
+    //----------------------------------------------------------------------------------------------
+
+    typedef struct AMFSharedSurfaceResource
+    {
+        void* pNext;                                        // reserved for extensions
+        amf_bool bCloseSurface;                             // whether call close handle for legacy method e.g. DX11 GetSharedHandle
+        amf_bool bUserControl;                              // whether call close handle in destructor
+#if defined(_WIN32)
+        amf_handle hPlanes[AMF_SURFACE_MAX_PLANES];         // for multi-planar with separate texture allocations 
+        amf_handle hHeap[AMF_SURFACE_MAX_PLANES];           // DX12 usage only when AMF_CONTEXT_DISABLE_PLACED_RESOURCES set to false
+#else
+        amf_int32  hPlanes[AMF_SURFACE_MAX_PLANES];
+        amf_int32  hHeap[AMF_SURFACE_MAX_PLANES];
+#endif
+        AMFSize     planeSize[AMF_SURFACE_MAX_PLANES];      // Surface Resolution for each plane
+
+        // rowPitch is currently only used in Vulkan memory in linear allocation, representing plane row pitch in bytes
+        // If the handle is extracted from AMF Vulkan surface, rowPitch should be filled automatically.
+        // Can be extracted from vkGetImageSubresourceLayout
+        //need to be set from Vulkan handle, other memories(DX) are not required.
+        amf_uint64  rowPitch[AMF_SURFACE_MAX_PLANES];
+
+        AMF_SURFACE_FORMAT  eSourceFormat;                  // pixel format of source surface
+        AMF_SURFACE_USAGE  eSourceUsage;                    // AMF usage of source surface
+        AMF_MEMORY_CPU_ACCESS  eSourceAccess;               // CPU access of source surface
+        
+        // due to lack of HW support, substitute DXGI/Vulkan formats may be used in AMF surface creation, These are the following AMF formats:
+        // AMF_SURFACE_Y210, AMF_SURFACE_Y216, AMF_SURFACE_Y410, AMF_SURFACE_Y416
+        // this flag indicates whether the emulated format was used in AMF.
+        amf_bool    bEmulatedFormat;                        // if true - substitute format was used
+
+        AMFSharedFenceResource Sync[AMF_SURFACE_MAX_PLANES];
+
+    } AMFSharedSurfaceResource;
+
+    //----------------------------------------------------------------------------------------------
+    // AMFContext3 interface
+    //----------------------------------------------------------------------------------------------
+
+    class AMF_NO_VTABLE AMFContext3 : public AMFContext2
+    {
+    public:
+        AMF_DECLARE_IID(0x8c926813, 0x206a, 0x47a5, 0xa9, 0x3, 0x2c, 0x36, 0x36, 0x6d, 0x6, 0xb7);
+
+        virtual AMF_RESULT          AMF_STD_CALL CreateSharedResourceFromSurface(AMFSurface* src, AMFSharedSurfaceResource* pResource) = 0;
+        virtual AMF_RESULT          AMF_STD_CALL CreateSurfaceFromSharedResource(AMF_MEMORY_TYPE type, const AMFSharedSurfaceResource* pResource, AMFSurface** ppSurface) = 0;
+    };
+    //----------------------------------------------------------------------------------------------
+    // smart pointer
+    //----------------------------------------------------------------------------------------------
+    typedef AMFInterfacePtr_T<AMFContext3> AMFContext3Ptr;
+
 #else
     typedef struct AMFContext AMFContext;
     AMF_DECLARE_IID(AMFContext, 0xa76a13f0, 0xd80e, 0x4fcc, 0xb5, 0x8, 0x65, 0xd0, 0xb5, 0x2e, 0xd9, 0xee)
@@ -385,7 +465,7 @@ namespace amf
     };
 
     typedef struct AMFContext2 AMFContext2;
-    AMF_DECLARE_IID(AMFContext2, 0x726241d3, 0xbd46, 0x4e90, 0x99, 0x68, 0x93, 0xe0, 0x7e, 0xa2, 0x98, 0x4d)
+    AMF_DECLARE_IID(AMFContext2, 0xd9e9f868, 0x6220, 0x44c6, 0xa2, 0x2f, 0x7c, 0xd6, 0xda, 0xc6, 0x86, 0x46)
 
         typedef struct AMFContext2Vtbl
     {

@@ -402,10 +402,15 @@ amf_handle AMF_CDECL_CALL amf_load_library(const wchar_t* filename)
 #if defined(METRO_APP)
     return LoadPackagedLibrary(filename, 0);
 #else
-	return ::LoadLibraryExW(filename, NULL, LOAD_LIBRARY_SEARCH_USER_DIRS |
+    amf_handle hRet = ::LoadLibraryExW(filename, NULL, LOAD_LIBRARY_SEARCH_USER_DIRS |
 		LOAD_LIBRARY_SEARCH_APPLICATION_DIR |
 		LOAD_LIBRARY_SEARCH_DEFAULT_DIRS |
 		LOAD_LIBRARY_SEARCH_SYSTEM32);
+        if (hRet == 0)
+        {
+            hRet = ::LoadLibraryExW(filename, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        }
+    return hRet;
 #endif
 }
 //----------------------------------------------------------------------------------------

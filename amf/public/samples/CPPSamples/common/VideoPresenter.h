@@ -147,7 +147,7 @@ public:
 
     // Backbuffers/Processor
     virtual amf_bool                    SupportAllocator() const                            { return false; }
-    virtual AMF_RESULT                  SetProcessor(amf::AMFComponent* pProcessor, amf::AMFComponent* pHQScaler, bool bAllocator);
+    virtual AMF_RESULT                  SetProcessor(amf::AMFComponent* pProcessor, amf::AMFComponent* pScaler, const wchar_t *propertySizeName, const wchar_t* propertyRectName, bool bAllocator);
     virtual void                        SetRenderToBackBuffer(amf_bool renderToBackBuffer)  { amf::AMFLock lock(&m_cs); m_renderToBackBuffer = renderToBackBuffer; }
 
     // amf::AMFDataAllocatorCB interface
@@ -325,7 +325,9 @@ protected:
 
     // Processor
     amf::AMFComponentPtr                m_pProcessor;
-    amf::AMFComponentPtr                m_pHQScaler;
+    amf::AMFComponentPtr                m_pScaler;
+    std::wstring                        m_propertySizeName;
+    std::wstring                        m_propertyRectName;
     amf_bool                            m_renderToBackBuffer;
     amf::amf_set<amf::AMFSurface*>      m_pTrackSurfaces;
     amf_bool                            m_resizing;

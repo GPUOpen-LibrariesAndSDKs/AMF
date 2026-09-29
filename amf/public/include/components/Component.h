@@ -161,14 +161,21 @@ namespace amf
         void                (AMF_STD_CALL *RemoveObserver)(AMFComponent* pThis, AMFPropertyStorageObserver* pObserver);
 
         // AMFPropertyStorageEx interface
-
         amf_size            (AMF_STD_CALL *GetPropertiesInfoCount)(AMFComponent* pThis);
+        // The AMF runtime is compiled with MSVC on Windows. MSVC places overloaded virtual methods into the vtable in reverse declaration order.
+        // Therefore, on Windows, the order of these function pointers must be reversed to reflect the vtable layout of their corresponding methods in the AMF runtime.
+        // On Linux, in the AMF runtime, overloaded virtual methods are placed into the vtable in the order of declaration.
+        // Therefore, on Linux, these function pointers do not have their order reversed.
+#if defined(_WIN32)
+        AMF_RESULT          (AMF_STD_CALL *GetPropertyInfo)(AMFComponent* pThis, const wchar_t* name, const AMFPropertyInfo** ppInfo);
+        AMF_RESULT          (AMF_STD_CALL *GetPropertyInfoAt)(AMFComponent* pThis, amf_size index, const AMFPropertyInfo** ppInfo);
+#else
         AMF_RESULT          (AMF_STD_CALL *GetPropertyInfoAt)(AMFComponent* pThis, amf_size index, const AMFPropertyInfo** ppInfo);
         AMF_RESULT          (AMF_STD_CALL *GetPropertyInfo)(AMFComponent* pThis, const wchar_t* name, const AMFPropertyInfo** ppInfo);
+#endif
         AMF_RESULT          (AMF_STD_CALL *ValidateProperty)(AMFComponent* pThis, const wchar_t* name, AMFVariantStruct value, AMFVariantStruct* pOutValidated);
 
         // AMFComponent interface
-
         AMF_RESULT  (AMF_STD_CALL *Init)(AMFComponent* pThis, AMF_SURFACE_FORMAT format,amf_int32 width,amf_int32 height);
         AMF_RESULT  (AMF_STD_CALL *ReInit)(AMFComponent* pThis, amf_int32 width,amf_int32 height);
         AMF_RESULT  (AMF_STD_CALL *Terminate)(AMFComponent* pThis);
@@ -229,10 +236,18 @@ namespace amf
         void                (AMF_STD_CALL *RemoveObserver)(AMFInput* pThis, AMFPropertyStorageObserver* pObserver);
 
         // AMFPropertyStorageEx interface
-
         amf_size            (AMF_STD_CALL *GetPropertiesInfoCount)(AMFInput* pThis);
+        // The AMF runtime is compiled with MSVC on Windows. MSVC places overloaded virtual methods into the vtable in reverse declaration order.
+        // Therefore, on Windows, the order of these function pointers must be reversed to reflect the vtable layout of their corresponding methods in the AMF runtime.
+        // On Linux, in the AMF runtime, overloaded virtual methods are placed into the vtable in the order of declaration.
+        // Therefore, on Linux, these function pointers do not have their order reversed.
+#if defined(_WIN32)
+        AMF_RESULT          (AMF_STD_CALL *GetPropertyInfo)(AMFInput* pThis, const wchar_t* name, const AMFPropertyInfo** ppInfo);
+        AMF_RESULT          (AMF_STD_CALL *GetPropertyInfoAt)(AMFInput* pThis, amf_size index, const AMFPropertyInfo** ppInfo);
+#else
         AMF_RESULT          (AMF_STD_CALL *GetPropertyInfoAt)(AMFInput* pThis, amf_size index, const AMFPropertyInfo** ppInfo);
         AMF_RESULT          (AMF_STD_CALL *GetPropertyInfo)(AMFInput* pThis, const wchar_t* name, const AMFPropertyInfo** ppInfo);
+#endif
         AMF_RESULT          (AMF_STD_CALL *ValidateProperty)(AMFInput* pThis, const wchar_t* name, AMFVariantStruct value, AMFVariantStruct* pOutValidated);
 
         // AMFInput interface
@@ -285,10 +300,18 @@ namespace amf
         void                (AMF_STD_CALL *RemoveObserver)(AMFOutput* pThis, AMFPropertyStorageObserver* pObserver);
 
         // AMFPropertyStorageEx interface
-
         amf_size            (AMF_STD_CALL *GetPropertiesInfoCount)(AMFOutput* pThis);
+        // The AMF runtime is compiled with MSVC on Windows. MSVC places overloaded virtual methods into the vtable in reverse declaration order.
+        // Therefore, on Windows, the order of these function pointers must be reversed to reflect the vtable layout of their corresponding methods in the AMF runtime.
+        // On Linux, in the AMF runtime, overloaded virtual methods are placed into the vtable in the order of declaration.
+        // Therefore, on Linux, these function pointers do not have their order reversed.
+#if defined(_WIN32)
+        AMF_RESULT          (AMF_STD_CALL *GetPropertyInfo)(AMFOutput* pThis, const wchar_t* name, const AMFPropertyInfo** ppInfo);
+        AMF_RESULT          (AMF_STD_CALL *GetPropertyInfoAt)(AMFOutput* pThis, amf_size index, const AMFPropertyInfo** ppInfo);
+#else
         AMF_RESULT          (AMF_STD_CALL *GetPropertyInfoAt)(AMFOutput* pThis, amf_size index, const AMFPropertyInfo** ppInfo);
         AMF_RESULT          (AMF_STD_CALL *GetPropertyInfo)(AMFOutput* pThis, const wchar_t* name, const AMFPropertyInfo** ppInfo);
+#endif
         AMF_RESULT          (AMF_STD_CALL *ValidateProperty)(AMFOutput* pThis, const wchar_t* name, AMFVariantStruct value, AMFVariantStruct* pOutValidated);
 
         // AMFOutput interface
@@ -346,14 +369,21 @@ namespace amf
         void                (AMF_STD_CALL *RemoveObserver)(AMFComponentEx* pThis, AMFPropertyStorageObserver* pObserver);
 
         // AMFPropertyStorageEx interface
-
         amf_size            (AMF_STD_CALL *GetPropertiesInfoCount)(AMFComponentEx* pThis);
+        // The AMF runtime is compiled with MSVC on Windows. MSVC places overloaded virtual methods into the vtable in reverse declaration order.
+        // Therefore, on Windows, the order of these function pointers must be reversed to reflect the vtable layout of their corresponding methods in the AMF runtime.
+        // On Linux, in the AMF runtime, overloaded virtual methods are placed into the vtable in the order of declaration.
+        // Therefore, on Linux, these function pointers do not have their order reversed.
+#if defined(_WIN32)
+        AMF_RESULT          (AMF_STD_CALL *GetPropertyInfo)(AMFComponentEx* pThis, const wchar_t* name, const AMFPropertyInfo** ppInfo);
+        AMF_RESULT          (AMF_STD_CALL *GetPropertyInfoAt)(AMFComponentEx* pThis, amf_size index, const AMFPropertyInfo** ppInfo);
+#else
         AMF_RESULT          (AMF_STD_CALL *GetPropertyInfoAt)(AMFComponentEx* pThis, amf_size index, const AMFPropertyInfo** ppInfo);
         AMF_RESULT          (AMF_STD_CALL *GetPropertyInfo)(AMFComponentEx* pThis, const wchar_t* name, const AMFPropertyInfo** ppInfo);
+#endif
         AMF_RESULT          (AMF_STD_CALL *ValidateProperty)(AMFComponentEx* pThis, const wchar_t* name, AMFVariantStruct value, AMFVariantStruct* pOutValidated);
 
         // AMFComponent interface
-
         AMF_RESULT  (AMF_STD_CALL *Init)(AMFComponentEx* pThis, AMF_SURFACE_FORMAT format,amf_int32 width,amf_int32 height);
         AMF_RESULT  (AMF_STD_CALL *ReInit)(AMFComponentEx* pThis, amf_int32 width,amf_int32 height);
         AMF_RESULT  (AMF_STD_CALL *Terminate)(AMFComponentEx* pThis);
@@ -369,7 +399,6 @@ namespace amf
         AMF_RESULT  (AMF_STD_CALL *Optimize)(AMFComponentEx* pThis, AMFComponentOptimizationCallback* pCallback);
 
         // AMFComponentEx interface
-
         amf_int32   (AMF_STD_CALL *GetInputCount)(AMFComponentEx* pThis);
         amf_int32   (AMF_STD_CALL *GetOutputCount)(AMFComponentEx* pThis);
 
@@ -398,7 +427,7 @@ typedef enum AMF_STREAM_TYPE_ENUM
     AMF_STREAM_DATA                 = 3,
 } AMF_STREAM_TYPE_ENUM;
 
-typedef enum AMF_STREAM_CODEC_ID_ENUM     // matched codecs from VideoDecoxcderUVD.h
+typedef enum AMF_STREAM_CODEC_ID_ENUM     // matched codecs from VideoDecoderUVD.h
 {
     AMF_STREAM_CODEC_ID_UNKNOWN     = 0,
     AMF_STREAM_CODEC_ID_MPEG2       = 1,  // AMFVideoDecoderUVD_MPEG2      
@@ -430,6 +459,7 @@ typedef enum AMF_STREAM_CODEC_ID_ENUM     // matched codecs from VideoDecoxcderU
 #define AMF_STREAM_VIDEO_FRAME_RATE         L"VideoFrameRate"       // AMFRate; default = (30,1) - video frame rate
 #define AMF_STREAM_VIDEO_FRAME_SIZE         L"VideoFrameSize"       // AMFSize; default = (1920,1080) - video frame rate
 #define AMF_STREAM_VIDEO_SURFACE_POOL       L"VideoSurfacePool"     // amf_int64; default = 5, number of allocated output surfaces
+#define AMF_STREAM_VIDEO_ROTATION           L"VideoRotation"        // amf_int64(AMF_VIDEO_CONVERTER_ROTATE_ENUM); default = AMF_VIDEO_CONVERTER_ROTATE_NONE;
 //TODO support interlaced frames
 
 // audio stream properties

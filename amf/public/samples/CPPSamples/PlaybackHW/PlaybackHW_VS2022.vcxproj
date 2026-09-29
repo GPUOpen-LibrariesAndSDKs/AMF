@@ -92,7 +92,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(VK_SDK_PATH)\include;$(IntermediateOutputPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(VK_SDK_PATH)\include;$(IntermediateOutputPath);$(SolutionDir)..\..\..\Thirdparty\microsoft\DirectX-Headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <SDLCheck>true</SDLCheck>
@@ -107,6 +107,9 @@
       <AdditionalLibraryDirectories>$(VK_SDK_PATH)\lib32;$(SolutionDir)..\..\lib\vs2022x$(PlatformArchitecture)$(Configuration)\;</AdditionalLibraryDirectories>
       <AdditionalDependencies>opengl32.lib;DXGI.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Manifest>
+      <EnableDpiAwareness>true</EnableDpiAwareness>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -114,7 +117,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(VK_SDK_PATH)\include;$(IntermediateOutputPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(VK_SDK_PATH)\include;$(IntermediateOutputPath);$(SolutionDir)..\..\..\Thirdparty\microsoft\DirectX-Headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -131,6 +134,9 @@
       <AdditionalDependencies>opengl32.lib;DXGI.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImportLibrary>$(SolutionDir)..\..\bin\lib\vs2022x$(PlatformArchitecture)$(Configuration)\$(TargetName).lib</ImportLibrary>
     </Link>
+    <Manifest>
+      <EnableDpiAwareness>true</EnableDpiAwareness>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -140,7 +146,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(VK_SDK_PATH)\include;$(IntermediateOutputPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(VK_SDK_PATH)\include;$(IntermediateOutputPath);$(SolutionDir)..\..\..\Thirdparty\microsoft\DirectX-Headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <SDLCheck>true</SDLCheck>
@@ -156,6 +162,9 @@
       <AdditionalLibraryDirectories>;$(VK_SDK_PATH)\lib32;$(SolutionDir)..\..\lib\vs2022x$(PlatformArchitecture)$(Configuration)\;</AdditionalLibraryDirectories>
       <AdditionalDependencies>opengl32.lib;DXGI.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Manifest>
+      <EnableDpiAwareness>true</EnableDpiAwareness>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -165,7 +174,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(VK_SDK_PATH)\include;$(IntermediateOutputPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../;$(VK_SDK_PATH)\include;$(IntermediateOutputPath);$(SolutionDir)..\..\..\Thirdparty\microsoft\DirectX-Headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <SDLCheck>true</SDLCheck>
@@ -181,6 +190,9 @@
       <AdditionalLibraryDirectories>$(VK_SDK_PATH)\lib;$(SolutionDir)..\..\lib\vs2022x$(PlatformArchitecture)$(Configuration)\;</AdditionalLibraryDirectories>
       <AdditionalDependencies>opengl32.lib;DXGI.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Manifest>
+      <EnableDpiAwareness>true</EnableDpiAwareness>
+    </Manifest>
   </ItemDefinitionGroup>
   <Import Project="..\..\..\..\public\props\AMF_Presenter_Vulkan_Shader.props" />
   <Import Project="..\..\..\..\public\props\AMF_Presenter_DX_Shader.props" />

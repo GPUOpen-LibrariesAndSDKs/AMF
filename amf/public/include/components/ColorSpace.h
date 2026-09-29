@@ -168,13 +168,14 @@ typedef enum AMF_COLOR_RANGE_ENUM
 } AMF_COLOR_RANGE_ENUM;
 
 
-// these properties can be set on input or outout surface
+// these properties can be set on input or output surface
 // IDs are the same as in decoder properties
 // can be used to dynamically pass color data between components:
 // Decoder, Capture, Encoder. Presenter etc.
-#define AMF_VIDEO_COLOR_TRANSFER_CHARACTERISTIC         L"ColorTransferChar"    // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 Section 7.2 See ColorSpace.h for enum 
-#define AMF_VIDEO_COLOR_PRIMARIES                       L"ColorPrimaries"       // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 Section 7.1 See ColorSpace.h for enum 
-#define AMF_VIDEO_COLOR_RANGE                           L"ColorRange"           // amf_int64(AMF_COLOR_RANGE_ENUM) default = AMF_COLOR_RANGE_UNDEFINED
-#define AMF_VIDEO_COLOR_HDR_METADATA                    L"HdrMetadata"          // AMFBuffer containing AMFHDRMetadata; default NULL
+#define AMF_VIDEO_COLOR_TRANSFER_CHARACTERISTIC         L"ColorTransferChar" // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013 Section 7.2 See ColorSpace.h for enum 
+#define AMF_VIDEO_COLOR_PRIMARIES                       L"ColorPrimaries"    // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013 Section 7.1 See ColorSpace.h for enum 
+#define AMF_VIDEO_COLOR_MATRIX_COEFF                    L"ColorMatrixCoeff"  // amf_int64(AMF_COLOR_MATRIX_COEFFICIENTS_ENUM); default = AMF_COLOR_MATRIX_COEFF_UNKNOWN
+#define AMF_VIDEO_COLOR_RANGE                           L"ColorRange"        // amf_int64(AMF_COLOR_RANGE_ENUM) default = AMF_COLOR_RANGE_UNDEFINED
+#define AMF_VIDEO_COLOR_HDR_METADATA                    L"HdrMetadata"       // AMFBuffer containing AMFHDRMetadata; default NULL
 
 #endif //#ifndef AMF_ColorSpace_h

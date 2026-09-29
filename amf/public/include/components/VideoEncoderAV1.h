@@ -194,6 +194,7 @@ enum AMF_VIDEO_ENCODER_AV1_OUTPUT_BUFFER_TYPE_ENUM
 #define AMF_VIDEO_ENCODER_AV1_ENCODER_INSTANCE_INDEX                L"Av1EncoderInstanceIndex"          // amf_int64; default = 0; selected HW instance idx. The number of instances is queried by using AMF_VIDEO_ENCODER_AV1_CAP_NUM_OF_HW_INSTANCES
 #define AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE                 L"Av1EncodingLatencyMode"           // amf_int64(AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE_ENUM); default = depends on USAGE; The encoding latency mode.
 #define AMF_VIDEO_ENCODER_AV1_QUERY_TIMEOUT                         L"Av1QueryTimeout"                  // amf_int64; default = 0 (no wait); timeout for QueryOutput call in ms.
+#define AMF_VIDEO_ENCODER_AV1_MEMORY_TYPE                           L"Av1EngineType"                    // amf_int64(AMF_MEMORY_TYPE); default = AMF_MEMORY_UNKNOWN - auto - forces DX9 or DX11, DX12, Vulkan usage for encoder
 
 // Usage Settings
 #define AMF_VIDEO_ENCODER_AV1_USAGE                                 L"Av1Usage"                         // amf_int64(AMF_VIDEO_ENCODER_AV1_USAGE_ENUM); default = N/A; Encoder usage. fully configures parameter set.

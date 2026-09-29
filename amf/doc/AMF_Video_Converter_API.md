@@ -20,13 +20,13 @@ Windows™, Visual Studio and DirectX are trademark of Microsoft Corp.
 
 ### Copyright Notice
 
-© 2014-2025 Advanced Micro Devices, Inc. All rights reserved
+© 2014-2026 Advanced Micro Devices, Inc. All rights reserved
 
 Notice Regarding Standards.  AMD does not provide a license or sublicense to any Intellectual Property Rights relating to any standards, including but not limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4; AVC/H.264; HEVC/H.265; AAC decode/FFMPEG; AAC encode/FFMPEG; VC-1; and MP3 (collectively, the “Media Technologies”). For clarity, you will pay any royalties due for such third party technologies, which may include the Media Technologies that are owed as a result of AMD providing the Software to you.
 
 ### MIT license
 
-Copyright (c) 2022-2025 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2022-2026 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -88,12 +88,14 @@ The `format`, `width` and `height` parameters of the `AMFComponent::Init` method
 | OUTPUT_RECT                          | AMFRect         |
 | KEEP_ASPECT_RATIO                    | amf_bool        |
 | FILL                                 | amf_bool        |
-| FILL_COLOR                           | amf_bool        |
+| FILL_COLOR                           | AMFColor        |
+| ROTATE                               | amf_int64       |
 | SCALE                                | amf_int64       |
 | FORCE_OUTPUT_SURFACE_SIZE            | amf_bool        |
 | COLOR_PROFILE                        | amf_int64       |
 | COMPUTE_DEVICE                       | amf_int64       |
 | INPUT_TONEMAPPING                    | amf_int64       |
+| ACCELERATION_TYPE                    | amf_int64       |
 
 <p align="center">
 Table 1. AMF Video Converter parameters which configure input and output
@@ -197,13 +199,27 @@ Specifies whether the output image outside the region of interest, which does no
 `AMF_VIDEO_CONVERTER_FILL_COLOR`
 
 **Values:**
-`true`, `false`
+`AMFColor`
 
 **Default Value:**
-`false`
+Not set
 
 **Description:**
 Fill color specified as `AMFColor` to fill the area outside the output rectangle. Applicable only when the `AMF_VIDEO_CONVERTER_FILL` property is set to `true`.
+
+---
+
+**Name:**
+`AMF_VIDEO_CONVERTER_ROTATE`
+
+**Values:**
+`AMF_VIDEO_CONVERTER_ROTATE_ENUM`: `AMF_VIDEO_CONVERTER_ROTATE_NONE`, `AMF_VIDEO_CONVERTER_ROTATE_90`, `AMF_VIDEO_CONVERTER_ROTATE_180`, `AMF_VIDEO_CONVERTER_ROTATE_270`
+
+**Default Value:**
+`AMF_VIDEO_CONVERTER_ROTATE_NONE`
+
+**Description:**
+Apply clockwise rotation in 90-degree steps as specified by enum.
 
 ---
 
@@ -291,16 +307,47 @@ Specifies the tone mapping algorithm to apply to HDR input content when converti
 
 ---
 
+**Name:**
+`AMF_VIDEO_CONVERTER_ACCELERATION_TYPE`
+
+**Values:**
+`AMF_VIDEO_CONVERTER_ACCELERATION_ENUM`:
+  - `AMF_VIDEO_CONVERTER_ACCELERATION_DEFAULT` – Auto-select
+  - `AMF_VIDEO_CONVERTER_ACCELERATION_COMPUTE` – Use the compute path
+  - `AMF_VIDEO_CONVERTER_ACCELERATION_VPE_PREFERRED` – Use the Video Processing Engine (VPE) hardware path, falling back to the compute path if VPE is unavailable or the configuration is unsupported
+
+**Default Value:**
+`AMF_VIDEO_CONVERTER_ACCELERATION_DEFAULT`
+
+**Description:**
+Selects the acceleration type used for conversion.
+
+> **Note:** The VPE hardware path requires the input surface to be shareable. Surfaces allocated by AMF (e.g. via `AMFContext::AllocSurface`) are shareable by default and need no special handling. This restriction only applies to surfaces attached from an application-owned native resource (e.g. `AMFContext::CreateSurfaceFromDX11Native`); such a native resource must itself be shareable (for example, a DX11 texture created with `D3D11_RESOURCE_MISC_SHARED`, or a Vulkan image created with external memory). If an attached input surface is not shareable, VPE is unavailable for that conversion and, when `AMF_VIDEO_CONVERTER_ACCELERATION_VPE_PREFERRED` is set, the Converter falls back to the compute path.
+
+---
+**Name:**
+`AMF_VIDEO_CONVERTER_CAP_VPE_AVAILABILITY`
+
+**Values:**
+`amf_bool`
+
+**Description:**
+Read-only capability exposed through the `AMFCaps` interface. `true` if the Video Processing Engine (VPE) is available on the current device.
+
+---
+
 The `COLOR_PROFILE` parameter can fully describe a surface in SDR use case. For HDR use case the `TRANSFER_CHARACTERISTIC`, `COLOR_PRIMARIES` and `NOMINAL_RANGE` parameters describe the surface.
 
 | Name (prefix "AMF_VIDEO_CONVERTER_") | Type         |
 | :----------------------------------- | :----------- |
 | INPUT_TRANSFER_CHARACTERISTIC        | amf_int64    |
 | INPUT_COLOR_PRIMARIES                | amf_int64    |
+| INPUT_COLOR_MATRIX_COEFF             | amf_int64    |
 | INPUT_COLOR_RANGE                    | amf_int64    |
 | INPUT_HDR_METADATA                   | AMFBufferPtr |
 | OUTPUT_TRANSFER_CHARACTERISTIC       | amf_int64    |
 | OUTPUT_COLOR_PRIMARIES               | amf_int64    |
+| OUTPUT_COLOR_MATRIX_COEFF            | amf_int64    |
 | OUTPUT_COLOR_RANGE                   | amf_int64    |
 | OUTPUT_HDR_METADATA                  | AMFBufferPtr |
 | USE_DECODER_HDR_METADATA             | amf_bool     |
@@ -336,6 +383,20 @@ Characteristic transfer function of the input surface used to perform the mappin
 
 **Description:**
 Color space primaries for the input surface which are the maximum red, green, and blue value permitted within the color space. Used (alongside `TRANSFER_CHARACTERISTIC` and `NOMINAL_RANGE` parameters) to describe surface in HDR use case.
+
+---
+
+**Name:**
+`AMF_VIDEO_CONVERTER_INPUT_COLOR_MATRIX_COEFF`
+
+**Values:**
+`AMF_COLOR_MATRIX_COEFFICIENTS_ENUM`: `AMF_COLOR_MATRIX_COEFF_UNKNOWN`, `AMF_COLOR_MATRIX_COEFF_GBR`, `AMF_COLOR_MATRIX_COEFF_BT_709`, `AMF_COLOR_MATRIX_COEFF_UNSPECIFIED`, `AMF_COLOR_MATRIX_COEFF_RESERVED`, `AMF_COLOR_MATRIX_COEFF_FCC`, `AMF_COLOR_MATRIX_COEFF_BT_470_B_G`, `AMF_COLOR_MATRIX_COEFF_BT_601`, `AMF_COLOR_MATRIX_COEFF_SMPTE_240`, `AMF_COLOR_MATRIX_COEFF_SMPTE_YCGCO`, `AMF_COLOR_MATRIX_COEFF_BT_2020_NCL`, `AMF_COLOR_MATRIX_COEFF_BT_2020_CL`, `AMF_COLOR_MATRIX_COEFF_SMPTE_2085`, `AMF_COLOR_MATRIX_COEFF_CHROMAT_NCL`, `AMF_COLOR_MATRIX_COEFF_CHROMAT_CL`, `AMF_COLOR_MATRIX_COEFF_ICTCP`
+
+**Default Value:**
+`AMF_COLOR_MATRIX_COEFF_UNKNOWN`
+
+**Description:**
+Matrix coefficients used to derive luma and chroma signals from the input surface's RGB (or YCC) primaries.
 
 ---
 
@@ -392,6 +453,20 @@ Characteristic transfer function of the input surface used to perform the mappin
 
 **Description:**
 Color space primaries for the input surface which are the maximum red, green, and blue value permitted within the color space. Used (alongside `TRANSFER_CHARACTERISTIC` and `NOMINAL_RANGE` parameters) to describe surface in HDR use case.
+
+---
+
+**Name:**
+`AMF_VIDEO_CONVERTER_OUTPUT_COLOR_MATRIX_COEFF`
+
+**Values:**
+`AMF_COLOR_MATRIX_COEFFICIENTS_ENUM`: `AMF_COLOR_MATRIX_COEFF_UNKNOWN`, `AMF_COLOR_MATRIX_COEFF_GBR`, `AMF_COLOR_MATRIX_COEFF_BT_709`, `AMF_COLOR_MATRIX_COEFF_UNSPECIFIED`, `AMF_COLOR_MATRIX_COEFF_RESERVED`, `AMF_COLOR_MATRIX_COEFF_FCC`, `AMF_COLOR_MATRIX_COEFF_BT_470_B_G`, `AMF_COLOR_MATRIX_COEFF_BT_601`, `AMF_COLOR_MATRIX_COEFF_SMPTE_240`, `AMF_COLOR_MATRIX_COEFF_SMPTE_YCGCO`, `AMF_COLOR_MATRIX_COEFF_BT_2020_NCL`, `AMF_COLOR_MATRIX_COEFF_BT_2020_CL`, `AMF_COLOR_MATRIX_COEFF_SMPTE_2085`, `AMF_COLOR_MATRIX_COEFF_CHROMAT_NCL`, `AMF_COLOR_MATRIX_COEFF_CHROMAT_CL`, `AMF_COLOR_MATRIX_COEFF_ICTCP`
+
+**Default Value:**
+`AMF_COLOR_MATRIX_COEFF_UNKNOWN`
+
+**Description:**
+Matrix coefficients used to derive luma and chroma signals from the output surface's RGB (or YCC) primaries.
 
 ---
 

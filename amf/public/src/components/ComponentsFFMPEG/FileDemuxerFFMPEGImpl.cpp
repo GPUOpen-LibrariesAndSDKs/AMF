@@ -52,6 +52,7 @@ extern "C"
 #include <float.h>
 
 #include "public/include/components/VideoDecoderUVD.h"
+#include "public/include/components/VideoConverter.h"
 #include "public/include/core/Context.h"
 #include "public/include/core/Trace.h"
 #include "public/common/TraceAdapter.h"
@@ -126,6 +127,15 @@ const AMFEnumDescriptionEntry AMF_STREAM_TYPE_ENUM_DESCRIPTION[] =
     {AMF_STREAM_AUDIO,     L"Audio"},
     {AMF_STREAM_DATA,      L"Data"},
     { AMF_STREAM_UNKNOWN   , 0 }  // This is end of description mark
+};
+
+const AMFEnumDescriptionEntry AMF_STREAM_ROTATION_ENUM_DESCRIPTION[] =
+{
+    {AMF_VIDEO_CONVERTER_ROTATE_NONE,       L"None"},
+    {AMF_VIDEO_CONVERTER_ROTATE_90,         L"90"},
+    {AMF_VIDEO_CONVERTER_ROTATE_180,        L"180"},
+    {AMF_VIDEO_CONVERTER_ROTATE_270,        L"270"},
+    {AMF_SURFACE_UNKNOWN,                   0}  // This is end of description mark
 };
 
 
@@ -345,8 +355,9 @@ AMFFileDemuxerFFMPEGImpl::AMFVideoOutputDemuxerImpl::AMFVideoOutputDemuxerImpl(A
         AMFPropertyInfoRate(AMF_STREAM_VIDEO_FRAME_RATE, L"Frame Rate", ist->r_frame_rate.num, ist->r_frame_rate.den, false),
         AMFPropertyInfoSize(AMF_STREAM_VIDEO_FRAME_SIZE, L"Frame Size", frame, AMFConstructSize(0, 0), AMFConstructSize(INT_MAX, INT_MAX), false),
         AMFPropertyInfoEnum(AMF_STREAM_VIDEO_FORMAT, L"Surface Format", surfaceFormat, AMF_OUTPUT_FORMATS_ENUM, false),
+        AMFPropertyInfoEnum(AMF_STREAM_VIDEO_ROTATION, L"Video rotation", AMF_VIDEO_CONVERTER_ROTATE_NONE, AMF_STREAM_ROTATION_ENUM_DESCRIPTION, false),
         AMFPropertyInfoDouble(FFMPEG_DEMUXER_VIDEO_PIXEL_ASPECT_RATIO, L"Pixel Aspect Ratio", pixelAspectRatio, 0, DBL_MAX, false),
-        AMFPropertyInfoInt64(FFMPEG_DEMUXER_VIDEO_CODEC,    L"FFMPEG codec", ist->codecpar->codec_id, AV_CODEC_ID_NONE, AV_CODEC_ID_WRAPPED_AVFRAME, false),
+        AMFPropertyInfoInt64(FFMPEG_DEMUXER_VIDEO_CODEC, L"FFMPEG codec", ist->codecpar->codec_id, AV_CODEC_ID_NONE, AV_CODEC_ID_WRAPPED_AVFRAME, false),
     AMFPrimitivePropertyInfoMapEnd
 
     SetProperty(AMF_STREAM_CODEC_ID, GetAMFVideoFormat(AVCodecID(codecID)));
@@ -357,6 +368,29 @@ AMFFileDemuxerFFMPEGImpl::AMFVideoOutputDemuxerImpl::AMFVideoOutputDemuxerImpl(A
     SetProperty(FFMPEG_DEMUXER_VIDEO_PIXEL_ASPECT_RATIO, pixelAspectRatio);
     SetProperty(FFMPEG_DEMUXER_VIDEO_CODEC, ist->codecpar->codec_id);
     AMFPropertyStorage::SetProperty(AMF_STREAM_EXTRA_DATA, spBuffer);
+
+    const AVPacketSideData* displayMatrix = av_packet_side_data_get(ist->codecpar->coded_side_data, ist->codecpar->nb_coded_side_data, AV_PKT_DATA_DISPLAYMATRIX);
+    amf_int32 rotation = 0;
+    if (displayMatrix != nullptr && displayMatrix->size >= 9 * sizeof(amf_int32))
+    {
+        amf_double angle = av_display_rotation_get((const amf_int32*)displayMatrix->data); // counterclockwise angle in degrees
+
+        // map to AMF rotation enum
+        rotation = (amf_int32)round(-angle);
+        rotation = ((rotation % 360) + 360) % 360;
+
+        AMF_VIDEO_CONVERTER_ROTATE_ENUM amfRotation = AMF_VIDEO_CONVERTER_ROTATE_NONE;
+        switch (rotation)
+        {
+            case 90:  amfRotation = AMF_VIDEO_CONVERTER_ROTATE_90;   break;
+            case 180: amfRotation = AMF_VIDEO_CONVERTER_ROTATE_180;  break;
+            case 270: amfRotation = AMF_VIDEO_CONVERTER_ROTATE_270;  break;
+
+            default:  amfRotation = AMF_VIDEO_CONVERTER_ROTATE_NONE; break;
+        }
+
+        SetProperty(AMF_STREAM_VIDEO_ROTATION, amfRotation);
+    }
 }
 
 
@@ -1717,13 +1751,13 @@ amf_int32               AMFFileDemuxerFFMPEGImpl::FromFFmpegToOutputIndex(amf_in
     return -1;
 }
 //-------------------------------------------------------------------------------------------------
-amf_int32               AMFFileDemuxerFFMPEGImpl::FromOutputToFFmpegIndex(amf_int32 indexOutput)
-{
-    if (indexOutput < amf_int32(m_OutputStreams.size()))
-    {
-        return m_OutputStreams[indexOutput]->m_iIndexFFmpeg;
-    }
-    return -1;
-}
+//amf_int32               AMFFileDemuxerFFMPEGImpl::FromOutputToFFmpegIndex(amf_int32 indexOutput)
+//{
+//    if (indexOutput < amf_int32(m_OutputStreams.size()))
+//    {
+//        return m_OutputStreams[indexOutput]->m_iIndexFFmpeg;
+//    }
+//    return -1;
+//}
 //-------------------------------------------------------------------------------------------------
 

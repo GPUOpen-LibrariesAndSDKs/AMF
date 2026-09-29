@@ -930,7 +930,7 @@ Sets the peak bitrate.
    - Transcoding: `AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR`
    - Ultra low latency: `AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_LATENCY_CONSTRAINED_VBR`
    - Low latency: `AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR`
-   - Webcam: `AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR`
+   - Webcam: `AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_CONSTANT_QP`
    - HQ: `AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR`
    - HQLL: `AMF_VIDEO_ENCODER_HEVC_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR`
 
@@ -947,7 +947,7 @@ Selects the rate control method:
 Remarks:
    - When SVC encoding is enabled, some rate-control parameters can be configured differently for a particular SVC-layer. An SVC-layer is denoted by an index pair `[SVC-Temporal Layer index][SVC-Quality Layer index]`. E.g. The bitrate may be configured differently for SVC-layers `[0][0]` and `[1][0]`.
    - We restrict all SVC layers to have the same Rate Control method.
-   - QVBR, HQVBR and HQCBR are only supported if PreAnalysis is enabled.
+   - QVBR, HQVBR, and HQCBR require Pre-Analysis to be enabled. Due to this dependency, these rate-control modes are currently supported only for 8-bit color bit depth and are not supported with 10-bit color depth.
    - QVBR, HQVBR and HQCBR target improving subjective quality with the possible loss of objective quality (PSNR or VMAF).
 
 ---
@@ -973,13 +973,8 @@ Remarks: Only available for QVBR rate control method.
 **Values:**
 `true`, `false`
 
-**Default Value associated with usages:**
-   - Transcoding: `false`
-   - Ultra low latency: `true`
-   - Low latency: `true`
-   - Webcam: `true`
-   - HQ: `false`
-   - HQLL: `false`
+**Default Value:**
+`false`
 
 **Description:**
 Enables skip frame for rate control.
@@ -1095,7 +1090,7 @@ Frame rate numerator/denominator.
    - Transcoding: `20` mbits
    - Ultra low latency: `735` kbits
    - Low latency: `4` mbits
-   - Webcam: `2` mbits
+   - Webcam: `20` mbits
    - HQ: `40` mbits
    - HQLL: `10` mbits
 
@@ -1263,7 +1258,7 @@ Sets the headers insertion mode.
    - Transcoding: `240`
    - Ultra low latency: `300`
    - Low latency: `300`
-   - Webcam: `240`
+   - Webcam: `0`
    - HQ: `240`
    - HQLL: `240`
 
@@ -1353,7 +1348,7 @@ Table 7. Encoder miscellaneous parameters
    - Transcoding: `AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_BALANCED`
    - Ultra low latency: `AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED`
    - Low latency: `AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED`
-   - Webcam: `AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_QUALITY`
+   - Webcam: `AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED`
    - HQ: `AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_QUALITY`
    - HQLL: `AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_QUALITY`
 

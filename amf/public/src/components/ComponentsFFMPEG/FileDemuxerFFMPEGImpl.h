@@ -50,6 +50,7 @@ extern "C"
     #include "libavformat/avformat.h"
     #include "libavcodec/avcodec.h"
     #include "libavformat/url.h"
+    #include "libavutil/display.h"
 
 #if defined(_MSC_VER)
 #pragma warning(pop)
@@ -218,12 +219,12 @@ namespace amf
         amf_vector<AMFOutputDemuxerImplPtr>  m_OutputStreams;
 
         amf_int32               FromFFmpegToOutputIndex(amf_int32 indexFFmpeg);
-        amf_int32               FromOutputToFFmpegIndex(amf_int32 indexOutput);
+//      amf_int32               FromOutputToFFmpegIndex(amf_int32 indexOutput);
 
         // member variables from AMFDemuxerFFMPEG
         AVFormatContext*        m_pInputContext;
         amf_wstring             m_Url;
-//        bool                    m_bSyncAV;
+//      bool                    m_bSyncAV;
 
         amf_int64               m_iPacketCount;
 

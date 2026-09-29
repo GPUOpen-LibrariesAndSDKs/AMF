@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+set -e
+
+FFMPEG_RELEASES_URL="https://ffmpeg.org/releases"
+
+FFMPEG_VERSION=""
+DEFAULT_FFMPEG_VERSION=""
+FFMPEG_RELEASES=""
+
+version_sort()
+{
+    sort -V
+}
+
+fetch_ffmpeg_releases()
+{
+    FFMPEG_RELEASES="$(
+        wget -q -O - "$FFMPEG_RELEASES_URL/" |
+            grep -oE 'ffmpeg-[0-9]+(\.[0-9]+)+\.tar\.bz2' |
+            sed -E 's/^ffmpeg-//; s/\.tar\.bz2$//' |
+            sort -Vu |
+            tail -n 5
+    )"
+
+    if [ -z "$FFMPEG_RELEASES" ]; then
+        echo "ERROR: Failed to fetch FFmpeg releases"
+        exit 1
+    fi
+
+    DEFAULT_FFMPEG_VERSION="$(printf '%s\n' "$FFMPEG_RELEASES" | tail -n 1)"
+
+    if [ -z "$DEFAULT_FFMPEG_VERSION" ]; then
+        echo "ERROR: Failed to detect latest FFmpeg release"
+        exit 1
+    fi
+}
+
+print_available_ffmpeg_releases()
+{
+    echo
+    echo "Available FFmpeg releases:"
+
+    while read -r version; do
+        if [ "$version" = "$DEFAULT_FFMPEG_VERSION" ]; then
+            echo "  $version [Latest]"
+        else
+            echo "  $version"
+        fi
+    done <<< "$FFMPEG_RELEASES"
+}
+
+select_ffmpeg_version()
+{
+    local input_version="$1"
+
+    # Version is set manually at the top of the script.
+    # Do not fetch or parse the FFmpeg releases page.
+    if [ -n "$FFMPEG_VERSION" ]; then
+        if ! [[ "$FFMPEG_VERSION" =~ ^[0-9]+(\.[0-9]+)+$ ]]; then
+            echo
+            echo "ERROR: Invalid FFMPEG_VERSION format: '$FFMPEG_VERSION'"
+            echo "Expected format: X.Y or X.Y.Z, for example 8.1.2"
+            exit 1
+        fi
+
+        echo
+        echo "Using manually configured FFmpeg version: $FFMPEG_VERSION"
+        return
+    fi
+
+    fetch_ffmpeg_releases
+    print_available_ffmpeg_releases
+
+    echo
+    echo "Default FFmpeg version: $DEFAULT_FFMPEG_VERSION"
+    echo
+
+    if [ -z "$input_version" ]; then
+        read -r -p "Enter FFmpeg version in format X.Y.Z. Press Enter for default $DEFAULT_FFMPEG_VERSION: " input_version
+    fi
+
+    if [ -z "$input_version" ]; then
+        FFMPEG_VERSION="$DEFAULT_FFMPEG_VERSION"
+        echo
+        echo "Selected FFmpeg $FFMPEG_VERSION"
+        return
+    fi
+
+    if ! [[ "$input_version" =~ ^[0-9]+(\.[0-9]+)+$ ]]; then
+        echo
+        echo "ERROR: Invalid FFmpeg version format: '$input_version'"
+        echo "Expected format: X.Y or X.Y.Z, for example $DEFAULT_FFMPEG_VERSION"
+        exit 1
+    fi
+
+    if printf '%s\n' "$FFMPEG_RELEASES" | grep -Fxq "$input_version"; then
+        FFMPEG_VERSION="$input_version"
+        echo
+        echo "Selected FFmpeg $FFMPEG_VERSION"
+        return
+    fi
+
+    echo
+    echo "ERROR: FFmpeg version $input_version was not found on the official releases page."
+    echo
+    echo "Available versions:"
+    printf '%s\n' "$FFMPEG_RELEASES" | sed 's/^/  /'
+    exit 1
+}
+
+download_extract()
+{
+    local archive_name="$1"
+    local download_url="$2"
+    local archive_type="$3"
+    local src_dir="$4"
+
+    if [ ! -e "$archive_name" ]; then
+        wget -nc -O "$archive_name" "$download_url" --no-check-certificate
+    else
+        echo "Archive already exists: $archive_name"
+    fi
+
+    if [ ! -d "$src_dir" ]; then
+        bsdtar -xv"$archive_type"f "$archive_name"
+    else
+        echo "Source directory already exists: $src_dir"
+    fi
+}
+
+main()
+{
+    select_ffmpeg_version "${1:-}"
+
+    echo
+    echo "Using FFmpeg version: $FFMPEG_VERSION"
+
+    download_extract \
+        "ffmpeg-${FFMPEG_VERSION}.tar.bz2" \
+        "${FFMPEG_RELEASES_URL}/ffmpeg-${FFMPEG_VERSION}.tar.bz2" \
+        "j" \
+        "ffmpeg-${FFMPEG_VERSION}"
+
+    echo
+    echo "Done"
+    echo "FFmpeg source: ffmpeg-${FFMPEG_VERSION}"
+}
+
+main "$@"

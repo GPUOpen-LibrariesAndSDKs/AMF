@@ -60,7 +60,21 @@ enum AMF_VIDEO_CONVERTER_TONEMAPPING_ENUM
     AMF_VIDEO_CONVERTER_TONEMAPPING_2390 = 5,
 };
 
+typedef enum AMF_VIDEO_CONVERTER_ROTATE_ENUM
+{
+    AMF_VIDEO_CONVERTER_ROTATE_NONE = 0,
+    AMF_VIDEO_CONVERTER_ROTATE_90   = 1,
+    AMF_VIDEO_CONVERTER_ROTATE_180  = 2,
+    AMF_VIDEO_CONVERTER_ROTATE_270  = 3
+} AMF_VIDEO_CONVERTER_ROTATE_ENUM;
 
+// ACCELERATION_TYPE selection
+enum AMF_VIDEO_CONVERTER_ACCELERATION_ENUM
+{
+    AMF_VIDEO_CONVERTER_ACCELERATION_DEFAULT = 0,        // Auto-select
+    AMF_VIDEO_CONVERTER_ACCELERATION_COMPUTE = 1,        // Compute path
+    AMF_VIDEO_CONVERTER_ACCELERATION_VPE_PREFERRED = 2,  // Use VPE with fallback to compute if VPE unavailable or unsupported configuration
+};
 
 #define AMF_VIDEO_CONVERTER_OUTPUT_FORMAT                   L"OutputFormat"             // Values : AMF_SURFACE_ formats (NV12, BGRA, ARGB, RGBA, YUV420P, YV12, YUY2, UYVY, AYUV, P010, Y210, Y410, R10G10B10A2, P012, P016, Y416, RGBA_F16)
 #define AMF_VIDEO_CONVERTER_MEMORY_TYPE                     L"MemoryType"               // Values : AMF_MEMORY_DX11 or AMF_MEMORY_DX9 or AMF_MEMORY_UNKNOWN (get from input type)
@@ -68,12 +82,14 @@ enum AMF_VIDEO_CONVERTER_TONEMAPPING_ENUM
 
 #define AMF_VIDEO_CONVERTER_OUTPUT_SIZE                     L"OutputSize"               // AMFSize  (default=0,0) width in pixels. default means no scaling
 #define AMF_VIDEO_CONVERTER_OUTPUT_RECT                     L"OutputRect"               // AMFRect  (default=0, 0, 0, 0) rectangle in pixels. default means no rect
-#define AMF_VIDEO_CONVERTER_SCALE                           L"ScaleType"            // amf_int64(AMF_VIDEO_CONVERTER_SCALE_ENUM); default = AMF_VIDEO_CONVERTER_SCALE_BILINEAR
-#define AMF_VIDEO_CONVERTER_FORCE_OUTPUT_SURFACE_SIZE       L"ForceOutputSurfaceSize" // bool (default=false) Force output size from output surface 
+#define AMF_VIDEO_CONVERTER_SCALE                           L"ScaleType"                // amf_int64(AMF_VIDEO_CONVERTER_SCALE_ENUM); default = AMF_VIDEO_CONVERTER_SCALE_BILINEAR
+#define AMF_VIDEO_CONVERTER_FORCE_OUTPUT_SURFACE_SIZE       L"ForceOutputSurfaceSize"   // bool (default=false) Force output size from output surface 
 
 #define AMF_VIDEO_CONVERTER_KEEP_ASPECT_RATIO               L"KeepAspectRatio"          // bool (default=false) Keep aspect ratio if scaling. 
 #define AMF_VIDEO_CONVERTER_FILL                            L"Fill"                     // bool (default=false) fill area out of ROI. 
 #define AMF_VIDEO_CONVERTER_FILL_COLOR                      L"FillColor"                // AMFColor 
+
+#define AMF_VIDEO_CONVERTER_ROTATE                          L"Rotate"                   // amf_int64(AMF_VIDEO_CONVERTER_ROTATE_ENUM); default = AMF_VIDEO_CONVERTER_ROTATE_NONE; Apply clockwise rotation in 90-degree steps as specified by enum
 
 //-------------------------------------------------------------------------------------------------
 // SDR color conversion
@@ -91,19 +107,21 @@ enum AMF_VIDEO_CONVERTER_TONEMAPPING_ENUM
 
 // these properties can be set on converter component to configure input and output 
 // these properties overwrite properties set on surface - see below
-#define AMF_VIDEO_CONVERTER_INPUT_TRANSFER_CHARACTERISTIC   L"InputTransferChar"    // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013   7.2 See ColorSpace.h for enum 
-#define AMF_VIDEO_CONVERTER_INPUT_COLOR_PRIMARIES           L"InputColorPrimaries"  // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013   7.1 See ColorSpace.h for enum 
-#define AMF_VIDEO_CONVERTER_INPUT_COLOR_RANGE               L"InputColorRange"      // amf_int64(AMF_COLOR_RANGE_ENUM) default = AMF_COLOR_RANGE_UNDEFINED
-#define AMF_VIDEO_CONVERTER_INPUT_HDR_METADATA              L"InputHdrMetadata"     // AMFBuffer containing AMFHDRMetadata; default NULL
-#define AMF_VIDEO_CONVERTER_INPUT_TONEMAPPING               L"InputTonemapping"   // amf_int64(AMF_VIDEO_CONVERTER_TONEMAPPING_ENUM) default = AMF_VIDEO_CONVERTER_TONEMAPPING_UNDEFINED
+#define AMF_VIDEO_CONVERTER_INPUT_TRANSFER_CHARACTERISTIC  L"InputTransferChar"        // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013   7.2 See ColorSpace.h for enum 
+#define AMF_VIDEO_CONVERTER_INPUT_COLOR_PRIMARIES          L"InputColorPrimaries"      // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013   7.1 See ColorSpace.h for enum 
+#define AMF_VIDEO_CONVERTER_INPUT_COLOR_MATRIX_COEFF       L"InputColorMatrixCoeff"    // amf_int64(AMF_COLOR_MATRIX_COEFFICIENTS_ENUM); default = AMF_COLOR_MATRIX_COEFF_UNKNOWN
+#define AMF_VIDEO_CONVERTER_INPUT_COLOR_RANGE              L"InputColorRange"          // amf_int64(AMF_COLOR_RANGE_ENUM) default = AMF_COLOR_RANGE_UNDEFINED
+#define AMF_VIDEO_CONVERTER_INPUT_HDR_METADATA             L"InputHdrMetadata"         // AMFBuffer containing AMFHDRMetadata; default NULL
+#define AMF_VIDEO_CONVERTER_INPUT_TONEMAPPING              L"InputTonemapping"         // amf_int64(AMF_VIDEO_CONVERTER_TONEMAPPING_ENUM) default = AMF_VIDEO_CONVERTER_TONEMAPPING_UNDEFINED
 
-#define AMF_VIDEO_CONVERTER_OUTPUT_TRANSFER_CHARACTERISTIC  L"OutputTransferChar"   // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013   7.2 See ColorSpace.h for enum 
-#define AMF_VIDEO_CONVERTER_OUTPUT_COLOR_PRIMARIES          L"OutputColorPrimaries" // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013   7.1 See ColorSpace.h for enum 
-#define AMF_VIDEO_CONVERTER_OUTPUT_COLOR_RANGE              L"OutputColorRange"     // amf_int64(AMF_COLOR_RANGE_ENUM) default = AMF_COLOR_RANGE_UNDEFINED
-#define AMF_VIDEO_CONVERTER_OUTPUT_HDR_METADATA             L"OutputHdrMetadata"    // AMFBuffer containing AMFHDRMetadata; default NULL
-#define AMF_VIDEO_CONVERTER_OUTPUT_TONEMAPPING              L"OutputTonemapping"  // amf_int64(AMF_VIDEO_CONVERTER_TONEMAPPING_ENUM) DEPRECATED - use AMF_VIDEO_CONVERTER_INPUT_TONEMAPPING
+#define AMF_VIDEO_CONVERTER_OUTPUT_TRANSFER_CHARACTERISTIC L"OutputTransferChar"       // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013   7.2 See ColorSpace.h for enum 
+#define AMF_VIDEO_CONVERTER_OUTPUT_COLOR_PRIMARIES         L"OutputColorPrimaries"     // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013   7.1 See ColorSpace.h for enum 
+#define AMF_VIDEO_CONVERTER_OUTPUT_COLOR_MATRIX_COEFF      L"OutputColorMatrixCoeff"   // amf_int64(AMF_COLOR_MATRIX_COEFFICIENTS_ENUM); default = AMF_COLOR_MATRIX_COEFF_UNKNOWN
+#define AMF_VIDEO_CONVERTER_OUTPUT_COLOR_RANGE             L"OutputColorRange"         // amf_int64(AMF_COLOR_RANGE_ENUM) default = AMF_COLOR_RANGE_UNDEFINED
+#define AMF_VIDEO_CONVERTER_OUTPUT_HDR_METADATA            L"OutputHdrMetadata"        // AMFBuffer containing AMFHDRMetadata; default NULL
+#define AMF_VIDEO_CONVERTER_OUTPUT_TONEMAPPING             L"OutputTonemapping"        // amf_int64(AMF_VIDEO_CONVERTER_TONEMAPPING_ENUM) DEPRECATED - use AMF_VIDEO_CONVERTER_INPUT_TONEMAPPING
 
-// these properties can be set on input or outout surface See ColorSpace.h
+// these properties can be set on input or output surface See ColorSpace.h
 // the same as decoder properties set on input surface - see below
 //#define AMF_VIDEO_COLOR_TRANSFER_CHARACTERISTIC         L"ColorTransferChar"      // amf_int64(AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM); default = AMF_COLOR_TRANSFER_CHARACTERISTIC_UNDEFINED, ISO/IEC 23001-8_2013   7.2 See ColorSpace.h for enum 
 //#define AMF_VIDEO_COLOR_PRIMARIES                       L"ColorPrimaries"         // amf_int64(AMF_COLOR_PRIMARIES_ENUM); default = AMF_COLOR_PRIMARIES_UNDEFINED, ISO/IEC 23001-8_2013   7.1 See ColorSpace.h for enum 
@@ -118,5 +136,14 @@ enum AMF_VIDEO_CONVERTER_TONEMAPPING_ENUM
 
 #define AMF_VIDEO_CONVERTER_USE_DECODER_HDR_METADATA    L"UseDecoderHDRMetadata" // bool (default=true) enables use of decoder / surface input color properties above
 
+//-------------------------------------------------------------------------------------------------
+// ACCELERATION_TYPE selection
+//-------------------------------------------------------------------------------------------------
+#define AMF_VIDEO_CONVERTER_ACCELERATION_TYPE           L"AccelerationType"      // amf_int64(AMF_VIDEO_CONVERTER_ACCELERATION_ENUM); default = AMF_VIDEO_CONVERTER_ACCELERATION_DEFAULT
+
+// AMF_VIDEO_CONVERTER_ACCELERATION_TYPE can be set on the converter component to select the acceleration type used for conversion.
+
+// Capabilities - exposed in AMFCaps interface
+#define AMF_VIDEO_CONVERTER_CAP_VPE_AVAILABILITY        L"VPEAvailability"       // amf_bool - true if Video Processing Engine is available
 
 #endif //#ifndef AMF_VideoConverter_h

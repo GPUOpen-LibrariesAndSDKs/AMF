@@ -77,6 +77,7 @@ typedef enum AMF_DISPLAYCAPTURE_MODE_ENUM
 #define AMF_DISPLAYCAPTURE_ENABLE_DIRTY_RECTS       L"EnableDirtyRects"         // amf_bool, default = false, enable dirty rectangles attached to output as AMF_DISPLAYCAPTURE_DIRTY_RECTS
 #define AMF_DISPLAYCAPTURE_DRAW_DIRTY_RECTS         L"DrawDirtyRects"           // amf_bool, default = false, copies capture output and draws dirty rectangles with red - for debugging only
 #define AMF_DISPLAYCAPTURE_ROTATION                 L"Rotation"                 // amf_int64(AMF_ROTATION_ENUM); default = AMF_ROTATION_NONE, monitor rotation state
+#define AMF_DISPLAYCAPTURE_EMBED_CURSOR             L"EmbedCursor"              // amf_bool, default = false, embed cursor into output AMF surface
 
 // Properties that can be set on output AMFSurface
 #define AMF_DISPLAYCAPTURE_DIRTY_RECTS              L"DirtyRects"               // AMFInterface*(AMFBuffer*) - array of AMFRect(s)

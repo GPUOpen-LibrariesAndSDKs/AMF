@@ -2,17 +2,107 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
+  
+  <!-- Project-level properties -->
   <PropertyGroup>
+	<CharacterSet>Unicode</CharacterSet>
+	
     <OutDir>$(SolutionDir)..\..\bin\vs2022x$(PlatformArchitecture)$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\..\bin\obj\vs2022x$(PlatformArchitecture)$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
+  
+  <!-- Notice we no longer need 
+		<WholeProgramOptimization>true</WholeProgramOptimization> under <ClCompile> or 
+		<LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration> under <Link> 
+	—- the project-level property handles both. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  
   <ItemDefinitionGroup>
+	<!-- Compiler settings -->
     <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <SupportJustMyCode>false</SupportJustMyCode>
+
+	  <!-- /W4 /WX -->
+      <WarningLevel>Level4</WarningLevel>
+      <TreatWarningAsError>true</TreatWarningAsError>
+
+	  <!-- /Zi -->
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
+
+	  <!-- /EHa -->
+      <ExceptionHandling>Async</ExceptionHandling>
+
+	  <!-- /MP -->
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+
+	  <!-- /sdl -->
+      <SDLCheck>true</SDLCheck>
+
+	  <!-- /GR- -->
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+
+	  <!-- /std:c++20- -->
+      <LanguageStandard>stdcpp20</LanguageStandard>
+
+	  <!-- /GS (Enable Security Check) - on by default in VS2022 -->
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+	  
+	  <!-- /guard:cf (Enable Control Flow Guard): instrument indirect calls -->
+	  <ControlFlowGuard>Guard</ControlFlowGuard>
     </ClCompile>
+
+	<!-- Linker settings -->
     <Link>
       <ImportLibrary>$(SolutionDir)..\..\bin\lib\vs2022x$(PlatformArchitecture)$(Configuration)\$(TargetName).lib</ImportLibrary>
+
+      <!-- Disable incremental linking -->
+      <LinkIncremental>false</LinkIncremental>	  
+
+	  <!-- /GUARD:CF (Enable Guard Checks):  emit CFG metadata in the final binary -->
+	  <ControlFlowGuard>Guard</ControlFlowGuard>
+	  
+	  <!-- Security mitigations - on by default in VS2022 -->
+      <!-- 	<DataExecutionPrevention>true</DataExecutionPrevention>	-->
+      <!--  <RandomizedBaseAddress>true</RandomizedBaseAddress>	-->
+      <!--  <HighEntropyVA>true</HighEntropyVA>	-->
+  
     </Link>
   </ItemDefinitionGroup>
+
+
+  <!-- Release only -->
+  <ItemDefinitionGroup Condition="'$(Configuration)' == 'Release'">
+	<!-- Compiler settings -->
+    <ClCompile>
+	  <!-- /GL -->
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+	  
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+
+      <!-- /O2 (Maximum Optimization (Favor Speed))	-->
+      <Optimization>MaxSpeed</Optimization>	  
+	  
+      <!-- /Gy (Using /O2 (MaxSpeed) - already included : not included automatically if /Ox (Full))  -->
+	  <FunctionLevelLinking>true</FunctionLevelLinking>
+    </ClCompile>
+	
+	<!-- Linker settings -->
+    <Link>
+	  <!-- LTCG - Use Incremental Link Time Code Generation (saves link time on subsequent builds) -->
+      <LinkTimeCodeGeneration>UseFastLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+
+	  <!-- Yes (/OPT:REF)- -->
+      <OptimizeReferences>true</OptimizeReferences>
+
+	  <!-- Yes (/OPT:ICF)- -->
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+    </Link>
+  </ItemDefinitionGroup>
+
+
   <ItemGroup />
 </Project>

@@ -1,6 +1,7 @@
 // Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
+
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -24,18 +25,18 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE
+1 TEXTINCLUDE 
 BEGIN
     "resource.h\0"
 END
 
-2 TEXTINCLUDE
+2 TEXTINCLUDE 
 BEGIN
     "#include ""winres.h""\r\n"
     "\0"
 END
 
-3 TEXTINCLUDE
+3 TEXTINCLUDE 
 BEGIN
     "\r\n"
     "\0"
@@ -78,12 +79,14 @@ BEGIN
     END
     POPUP "Capture Component"
     BEGIN
+        MENUITEM "Low Latency",                 ID_CAPTURECOMPONENT_LOWLATENCY
         MENUITEM SEPARATOR
     END
     POPUP "Processing"
     BEGIN
         MENUITEM SEPARATOR
-        MENUITEM "Pre-Analysis",               ID_PRE_ANALYSIS
+        MENUITEM "Pre-Analysis",                ID_PRE_ANALYSIS
+        MENUITEM "Embed Cursor",                ID_PROCESSING_EMBEDCURSOR
     END
     POPUP "&Help"
     BEGIN

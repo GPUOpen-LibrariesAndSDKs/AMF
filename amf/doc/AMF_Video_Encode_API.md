@@ -1062,7 +1062,7 @@ Sets the peak bitrate.
    - Transcoding: `AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_PCVBR`
    - Ultra low latency: `AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_LCVBR`
    - Low latency: `AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_PCVBR`
-   - Webcam: `AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_PCVBR`
+   - Webcam: `AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CONSTANT_QP`
    - HQ: `AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_QVBR`/ `AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_PCVBR`
    - HQLL: `AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CBR`
 
@@ -1091,7 +1091,7 @@ Remarks:
 `true` (`on`), `false` (`off`)
 
 **Default Value:**
-Depends on `USAGE`
+`false`
 
 **Description:**
 Enables skip frame for rate control.
@@ -1210,7 +1210,7 @@ Frame rate numerator.
    - Transcoding: `20` mbits
    - Ultra low latency: `735` kbits
    - Low latency: `4` mbits
-   - Webcam: `2` mbits
+   - Webcam: `20` mbits
    - HQ: `40` mbits
    - HQLL: `10` mbits
 
@@ -1409,7 +1409,7 @@ Sets the headers insertion spacing.
    - Transcoding: `240`
    - Ultra low latency: `240`
    - Low latency: `240`
-   - Webcam: `30`
+   - Webcam: `0`
    - HQ: `240`
    - HQLL: `120`
 
@@ -1615,7 +1615,7 @@ Selects progressive or interlaced scan.
    - Transcoding: `AMF_VIDEO_ENCODER_QUALITY_PRESET_BALANCED`
    - Ultra low latency: `AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED`
    - Low latency: `AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED`
-   - Webcam: `AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED`
+   - Webcam: `AMF_VIDEO_ENCODER_QUALITY_PRESET_QUALITY`
    - HQ: `AMF_VIDEO_ENCODER_QUALITY_PRESET_QUALITY`
    - HQLL: `AMF_VIDEO_ENCODER_QUALITY_PRESET_QUALITY`
 

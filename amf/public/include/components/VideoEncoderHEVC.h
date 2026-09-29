@@ -248,7 +248,7 @@ enum AMF_VIDEO_ENCODER_HEVC_OUTPUT_BUFFER_TYPE_ENUM
 
 // misc
 #define AMF_VIDEO_ENCODER_HEVC_QUERY_TIMEOUT                        L"HevcQueryTimeout"             // amf_int64; default = 0 (no wait); timeout for QueryOutput call in ms.
-#define AMF_VIDEO_ENCODER_HEVC_MEMORY_TYPE                          L"HevcEncoderMemoryType"        // amf_int64(AMF_MEMORY_TYPE) , default is AMF_MEMORY_UNKNOWN, Values : AMF_MEMORY_DX11, AMF_MEMORY_DX9, AMF_MEMORY_UNKNOWN (auto)
+#define AMF_VIDEO_ENCODER_HEVC_MEMORY_TYPE							L"HevcEngineType"               // amf_int64(AMF_MEMORY_TYPE); default = AMF_MEMORY_UNKNOWN - auto - forces DX9 or DX11, DX12, Vulkan usage for encoder
 #define AMF_VIDEO_ENCODER_HEVC_ENABLE_SMART_ACCESS_VIDEO            L"HevcEnableEncoderSmartAccessVideo"         // amf_bool; default = false; true = enables smart access video feature
 #define AMF_VIDEO_ENCODER_HEVC_INPUT_QUEUE_SIZE                     L"HevcInputQueueSize"           // amf_int64; default 16; Set amf input queue size
 

@@ -103,8 +103,17 @@ namespace amf
         // AMFPropertyStorageEx interface
 
         amf_size            (AMF_STD_CALL *GetPropertiesInfoCount)(AMFCaptureDevice* pThis);
+        // The AMF runtime is compiled with MSVC on Windows. MSVC places overloaded virtual methods into the vtable in reverse declaration order.
+        // Therefore, on Windows, the order of these function pointers must be reversed to reflect the vtable layout of their corresponding methods in the AMF runtime.
+        // On Linux, in the AMF runtime, overloaded virtual methods are placed into the vtable in the order of declaration.
+        // Therefore, on Linux, these function pointers do not have their order reversed.
+#if defined(_WIN32)
+        AMF_RESULT          (AMF_STD_CALL *GetPropertyInfo)(AMFCaptureDevice* pThis, const wchar_t* name, const AMFPropertyInfo** ppInfo);
+        AMF_RESULT          (AMF_STD_CALL *GetPropertyInfoAt)(AMFCaptureDevice* pThis, amf_size index, const AMFPropertyInfo** ppInfo);
+#else
         AMF_RESULT          (AMF_STD_CALL *GetPropertyInfoAt)(AMFCaptureDevice* pThis, amf_size index, const AMFPropertyInfo** ppInfo);
         AMF_RESULT          (AMF_STD_CALL *GetPropertyInfo)(AMFCaptureDevice* pThis, const wchar_t* name, const AMFPropertyInfo** ppInfo);
+#endif
         AMF_RESULT          (AMF_STD_CALL *ValidateProperty)(AMFCaptureDevice* pThis, const wchar_t* name, AMFVariantStruct value, AMFVariantStruct* pOutValidated);
 
         // AMFComponent interface

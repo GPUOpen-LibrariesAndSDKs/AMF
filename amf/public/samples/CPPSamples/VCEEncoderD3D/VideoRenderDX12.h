@@ -37,7 +37,7 @@
 #include "../common/SwapChainDX12.h"
 #include <atlbase.h>
 #include <d3d11.h>
-#include "public/samples/CPPSamples/common/d3dx12.h"
+#include "d3dx12.h"
 #include <dxgi1_4.h>
 
 struct BufferDX12

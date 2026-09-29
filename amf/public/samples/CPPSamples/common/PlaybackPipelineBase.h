@@ -73,6 +73,7 @@ public:
     static const wchar_t* PARAM_NAME_FULLSCREEN;
     static const wchar_t* PARAM_NAME_SW_DECODER;
     static const wchar_t* PARAM_NAME_HQ_SCALER;
+    static const wchar_t* PARAM_NAME_HQ_SCALER2;
     static const wchar_t* PARAM_NAME_PIP;
     static const wchar_t* PARAM_NAME_PIP_ZOOM_FACTOR;
     static const wchar_t* PARAM_NAME_PIP_FOCUS_X;
@@ -92,6 +93,7 @@ public:
     static const wchar_t* PARAM_NAME_FRC_PROFILE;
     static const wchar_t* PARAM_NAME_FRC_MV_SEARCH_MODE;
     static const wchar_t* PARAM_NAME_FRC_RGB;
+    static const wchar_t* PARAM_NAME_ACCELERATION_TYPE;
 
     virtual AMF_RESULT Play();
     virtual AMF_RESULT Pause();
@@ -127,6 +129,7 @@ protected:
 
     virtual void        OnParamChanged(const wchar_t* name);
     virtual AMF_RESULT  InitVideoProcessor();
+    virtual AMF_RESULT  InitVideoScaler(amf_int64 mode, amf::AMFComponent** ppScaler, std::wstring& propertySizeName, std::wstring& propertyRectName);
     virtual AMF_RESULT  InitVideoDecoder(const wchar_t *pDecoderID, amf_int64 codecID, amf::AMF_SURFACE_FORMAT surfaceFormat, amf_int64 bitrate, AMFRate frameRate, amf::AMFBuffer* pExtraData);
     virtual AMF_RESULT  InitAudio(amf::AMFOutput* pOutput);
     virtual AMF_RESULT  InitVideo(amf::AMFOutput* pOutput, amf::AMF_MEMORY_TYPE presenterEngine);
@@ -149,6 +152,9 @@ protected:
     amf::AMFComponentPtr    m_pVideoConverter;
     amf::AMFComponentPtr    m_pHQScaler2;
     amf::AMFComponentPtr    m_pScaler;
+    std::wstring            m_propertySizeName;
+    std::wstring            m_propertyRectName;
+
     amf::AMFComponentPtr    m_pFRC;
     VideoPresenterPtr       m_pVideoPresenter;
     SplitterPtr             m_pSplitter;
@@ -167,5 +173,6 @@ protected:
     bool                    m_bURL;
     amf::AMF_SURFACE_FORMAT m_eDecoderFormat;
     bool                    m_bCPUDecoder;
-    bool                    m_bEnableSideBySide;
+
+    Combiner::AMF_SIDE_BY_SIDE_MODE_ENUM  m_eSideBySideMode;
 };

@@ -45,7 +45,7 @@ AMFFactoryHelper g_AMFFactory;
     #pragma clang diagnostic pop
 #endif
 
-#ifdef AMF_CORE_STATIC
+#if defined(AMF_CORE_STATIC) || defined(AMF_RUNTIME) || defined(AMF_LITE)
 extern "C"
 {
     extern AMF_CORE_LINK AMF_RESULT AMF_CDECL_CALL AMFInit(amf_uint64 version, amf::AMFFactory **ppFactory);
@@ -71,8 +71,15 @@ AMFFactoryHelper::~AMFFactoryHelper()
 AMF_RESULT AMFFactoryHelper::Init(const wchar_t* dllName)
 {
     (void)dllName;
+#if defined(AMF_CORE_STATIC) || defined(AMF_RUNTIME) || defined(AMF_LITE)
+    AMF_RESULT res = AMFInit(AMF_FULL_VERSION, &m_pFactory);
+    if (res != AMF_OK)
+    {
+        return res;
+    }
+    m_AMFRuntimeVersion = AMF_FULL_VERSION;
+#else
 
-#ifndef AMF_CORE_STATIC
     if (m_hDLLHandle != NULL)
     {
         amf_atomic_inc(&m_iRefCount);
@@ -116,13 +123,6 @@ AMF_RESULT AMFFactoryHelper::Init(const wchar_t* dllName)
     {
         return res;
     }
-#else
-    AMF_RESULT res = AMFInit(AMF_FULL_VERSION, &m_pFactory);
-    if (res != AMF_OK)
-    {
-        return res;
-    }
-    m_AMFRuntimeVersion = AMF_FULL_VERSION;
 #endif
     m_pFactory->GetTrace(&m_pTrace);
     m_pFactory->GetDebug(&m_pDebug);

@@ -529,7 +529,7 @@ AMF_RESULT AMF_STD_CALL  AMFFileMuxerFFMPEGImpl::AllocateContext()
             if (AMF_OK == GetProperty(FFMPEG_MUXER_VIDEO_ROTATION, &rotation))
             {
                 char rotateVal[128] = { 0 };
-                sprintf(rotateVal, "%d", (int)rotation);
+                snprintf(rotateVal, sizeof(rotateVal) / sizeof(rotateVal[0]), "%d", (int)rotation);
                 av_dict_set(&ist->metadata, "rotate", rotateVal, 0);
             }
         }

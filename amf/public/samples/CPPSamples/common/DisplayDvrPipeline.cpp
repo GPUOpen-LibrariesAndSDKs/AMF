@@ -62,6 +62,8 @@ const wchar_t* DisplayDvrPipeline::PARAM_NAME_OPENCL_CONVERTER    = L"OPENCLCONV
 const wchar_t* DisplayDvrPipeline::PARAM_NAME_CAPTURE_COMPONENT   = L"CAPTURECOMPONENT";
 
 const wchar_t* DisplayDvrPipeline::PARAM_NAME_ENABLE_PRE_ANALYSIS = L"PREANALYSIS";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_ENABLE_LOWLATENCY   = L"LOWLATENCY";
+const wchar_t* DisplayDvrPipeline::PARAM_NAME_EMBED_CURSOR        = L"EMBEDCURSOR";
 
 const unsigned kFFMPEG_AAC_CODEC_ID = 0x15002;
 
@@ -158,10 +160,18 @@ namespace
             , m_pConverterInterceptor(converterInterceptor)
             , AMFComponentElement(pComponent)
             , m_pDisplayDvrPipeline(pDisplayDvrPipeline)
+            , m_iLastWidth(0)
+            , m_iLastHeight(0)
         {
             amf_int64 eCurrentFormat = amf::AMF_SURFACE_UNKNOWN;
             pComponent->GetProperty(AMF_DISPLAYCAPTURE_FORMAT, &eCurrentFormat);
             m_eLastFormat = (amf::AMF_SURFACE_FORMAT) eCurrentFormat;
+
+            AMFSize resolution = {};
+            pComponent->GetProperty(AMF_DISPLAYCAPTURE_RESOLUTION, &resolution);
+            m_iLastWidth = resolution.width;
+            m_iLastHeight = resolution.height;
+
         }
 
         virtual ~AMFComponentElementDisplayCaptureInterceptor()
@@ -182,14 +192,28 @@ namespace
                 AMF_RESULT res2 = AMF_OK;
 
                 amf::AMF_SURFACE_FORMAT format = pSurfPtr->GetFormat();
+                amf_int32 width = pSurfPtr->GetPlaneAt(0)->GetWidth();
+                amf_int32 height = pSurfPtr->GetPlaneAt(0)->GetHeight();
                 // Was there a format switch?
                 if (format != m_eLastFormat)
-                {
-                    m_pConverterInterceptor->SetBlock(true);
-                    res2 = m_pDisplayDvrPipeline->SwitchConverterFormat(m_iIndex, format);
-                    m_pConverterInterceptor->SetBlock(false);
-                    CHECK_AMF_ERROR_RETURN(res2, "m_pDisplayDvrPipeline->SwitchConverterFormat() failed");
+                {   
+                    if(m_pConverterInterceptor != nullptr)
+                    { 
+                        m_pConverterInterceptor->SetBlock(true);
+                        res = m_pDisplayDvrPipeline->SwitchConverterFormat(m_iIndex, format);
+                        m_pConverterInterceptor->SetBlock(false);
+                        CHECK_AMF_ERROR_RETURN(res2, "m_pDisplayDvrPipeline->SwitchConverterFormat() failed");
+                    }
                     m_eLastFormat = format;
+                }
+                if(m_pConverterInterceptor == nullptr && (m_iLastWidth != width || m_iLastHeight != height))
+                {
+                    if(m_iLastWidth != 0 && m_iLastHeight != 0)
+                    {
+                        m_pDisplayDvrPipeline->SwitchEncoderResolution(m_iIndex, width, height);
+                    }
+                    m_iLastWidth = width;
+                    m_iLastHeight = height;
                 }
             }
             return res;
@@ -200,10 +224,9 @@ namespace
         amf::AMF_SURFACE_FORMAT                     m_eLastFormat;
         amf_int32                                   m_iIndex;
         AMFComponentElementConverterInterceptor*    m_pConverterInterceptor;
-
+        amf_int32                                   m_iLastWidth;
+        amf_int32                                   m_iLastHeight;
     };
-
-
 }
 
 // PipelineElementEncoder implementation
@@ -287,6 +310,7 @@ DisplayDvrPipeline::DisplayDvrPipeline()
     , m_outAudioStreamMuxerIndex(-1)
     , m_useOpenCLConverter(false)
     , m_engineMemoryType(amf::AMF_MEMORY_UNKNOWN)
+    , m_lowLatency(false)
 {
     RegisterParams();
 }
@@ -309,6 +333,9 @@ void DisplayDvrPipeline::RegisterParams()
     SetParamDescription(PARAM_NAME_VIDEO_WIDTH, ParamCommon, L"Video width (number, default = 1920)", NULL);
     SetParamDescription(PARAM_NAME_OPENCL_CONVERTER, ParamCommon, L"Use OpenCL Converter (bool, default = false)", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_CAPTURE_COMPONENT, ParamCommon, L"Display capture component (AMD DX11/DX12 or DD)", NULL);
+    SetParamDescription(PARAM_NAME_ENABLE_LOWLATENCY, ParamCommon, L"Low Latency mode (bool, default = false)", ParamConverterBoolean);
+    SetParamDescription(PARAM_NAME_EMBED_CURSOR, ParamCommon, L"Embed Cursor (bool, default = false)", ParamConverterBoolean);
+    
 
     // to demo frame-specific properties - will be applied to each N-th frame (force IDR)
     SetParam(AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, amf_int64(AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR));
@@ -338,6 +365,8 @@ AMF_RESULT DisplayDvrPipeline::InitContext(const std::wstring& /*engineStr*/, am
 
     // Check to see if we need to initialize OpenCL
     GetParam(PARAM_NAME_OPENCL_CONVERTER, m_useOpenCLConverter);
+
+    GetParam(PARAM_NAME_ENABLE_LOWLATENCY, m_lowLatency);
 
     switch (engineMemoryType)
     {
@@ -408,6 +437,16 @@ AMF_RESULT DisplayDvrPipeline::InitVideo(amf_uint32 monitorID, amf::AMF_MEMORY_T
         // Default capture type selects memory type by checking context->GetXXDevice()!=nullptr
         res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFDisplayCapture, &pDisplayCapture);
         CHECK_AMF_ERROR_RETURN(res, L"AMFCreateComponent(" << L"CreateComponent()" << L") failed");
+
+#if defined(_WIN32)
+        bool bEmbedCursor = false;
+        GetParam(PARAM_NAME_EMBED_CURSOR, bEmbedCursor);
+        if(bEmbedCursor)
+        { 
+            pDisplayCapture->SetProperty(AMF_DISPLAYCAPTURE_EMBED_CURSOR, bEmbedCursor);
+        }
+#endif
+
     }
 #if defined(_WIN32)
     else if (captureComp == L"DD")
@@ -429,7 +468,7 @@ AMF_RESULT DisplayDvrPipeline::InitVideo(amf_uint32 monitorID, amf::AMF_MEMORY_T
     CHECK_AMF_ERROR_RETURN(res, L"Failed to set Dvr component current time interface");
     res = pDisplayCapture->SetProperty(AMF_DISPLAYCAPTURE_FRAMERATE, AMFConstructRate(kFrameRate, 1));
     CHECK_AMF_ERROR_RETURN(res, L"Failed to set Dvr component frame rate");
-
+        
     res = pDisplayCapture->Init(amf::AMF_SURFACE_UNKNOWN, 0, 0);
     CHECK_AMF_ERROR_RETURN(res, L"Failed to make Dvr component");
 
@@ -517,29 +556,49 @@ AMF_RESULT DisplayDvrPipeline::InitVideo(amf_uint32 monitorID, amf::AMF_MEMORY_T
     // Setup PA before call to initialize encoder
     const wchar_t *maxThroughputPropName        = AMF_VIDEO_ENCODER_CAP_MAX_THROUGHPUT;
     const wchar_t *requestedThroughputPropName  = AMF_VIDEO_ENCODER_CAP_REQUESTED_THROUGHPUT;
+    const wchar_t *colorConversionType = AMF_VIDEO_ENCODER_CAP_COLOR_CONVERSION;
     bool enablePA = false;
     GetParam(PARAM_NAME_ENABLE_PRE_ANALYSIS, enablePA);
 
     if (m_szEncoderID == AMFVideoEncoderVCE_AVC)
     {
-        pEncoder->SetProperty(AMF_VIDEO_ENCODER_PRE_ANALYSIS_ENABLE, enablePA);
+        if(enablePA)
+        { 
+            pEncoder->SetProperty(AMF_VIDEO_ENCODER_PRE_ANALYSIS_ENABLE, enablePA);
+        }
         maxThroughputPropName = AMF_VIDEO_ENCODER_CAP_MAX_THROUGHPUT;
         requestedThroughputPropName = AMF_VIDEO_ENCODER_CAP_REQUESTED_THROUGHPUT;
+        colorConversionType = AMF_VIDEO_ENCODER_CAP_COLOR_CONVERSION;
     }
     else if (m_szEncoderID == AMFVideoEncoder_HEVC)
     {
-        pEncoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_PRE_ANALYSIS_ENABLE, enablePA);
+        if (enablePA)
+        {
+            pEncoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_PRE_ANALYSIS_ENABLE, enablePA);
+        }
         maxThroughputPropName = AMF_VIDEO_ENCODER_HEVC_CAP_MAX_THROUGHPUT;
         requestedThroughputPropName = AMF_VIDEO_ENCODER_HEVC_CAP_REQUESTED_THROUGHPUT;
+        colorConversionType = AMF_VIDEO_ENCODER_HEVC_CAP_COLOR_CONVERSION;
     }
     else if (m_szEncoderID == AMFVideoEncoder_AV1)
     {
-        pEncoder->SetProperty(AMF_VIDEO_ENCODER_AV1_PRE_ANALYSIS_ENABLE, enablePA);
+        if (enablePA)
+        {
+            pEncoder->SetProperty(AMF_VIDEO_ENCODER_AV1_PRE_ANALYSIS_ENABLE, enablePA);
+        }
         maxThroughputPropName = AMF_VIDEO_ENCODER_AV1_CAP_MAX_THROUGHPUT;
         requestedThroughputPropName = AMF_VIDEO_ENCODER_AV1_CAP_REQUESTED_THROUGHPUT;
+        colorConversionType = AMF_VIDEO_ENCODER_AV1_CAP_COLOR_CONVERSION;
     }
 
     amf_int64 bFrames = 3;
+    if (m_lowLatency)
+    {
+        enablePA = false;
+        bFrames = 0;
+        videoWidth = resolution.width;
+        videoHeight = resolution.height;
+    }
     if (enablePA)
     {
         pEncoder->SetProperty(AMF_PA_ENGINE_TYPE, amf::AMF_MEMORY_OPENCL);
@@ -604,7 +663,21 @@ AMF_RESULT DisplayDvrPipeline::InitVideo(amf_uint32 monitorID, amf::AMF_MEMORY_T
         pEncoder->SetProperty(AMF_VIDEO_ENCODER_ADAPTIVE_MINIGOP, false);
     }
 
-    res = pEncoder->Init(amf::AMF_SURFACE_NV12, videoWidth, videoHeight);
+    // check for EFC
+    amf::AMF_SURFACE_FORMAT eEncoderformat = amf::AMF_SURFACE_NV12;
+    if (m_lowLatency)
+    {
+        amf_int64 hwAccel = 0;
+        pCaps->GetProperty(colorConversionType, &hwAccel);
+        if (hwAccel == AMF_ACCEL_HARDWARE)
+        {
+            eEncoderformat = (amf::AMF_SURFACE_FORMAT)eCurrentFormat;
+            m_pConverter.pop_back();
+            m_pConverter.push_back(nullptr);
+        }
+    }
+
+    res = pEncoder->Init(eEncoderformat, videoWidth, videoHeight);
     CHECK_AMF_ERROR_RETURN(res, L"m_pEncoder->Init() failed");
 
 //    PushParamsToPropertyStorage(this, ParamEncoderDynamic, m_pEncoder);
@@ -947,11 +1020,19 @@ AMF_RESULT DisplayDvrPipeline::ConnectPipeline()
         PipelineElementPtr pPipelineElementVideoEncoder = PipelineElementPtr(new PipelineElementEncoder(m_pEncoder[i], this, frameParameterFreq, dynamicParameterFreq));
         PipelineElementPtr pPipelineElementMuxer = PipelineElementPtr(new AMFComponentExElement(m_pMuxer[i]));
 
-        AMFComponentElementConverterInterceptor* interceptorConverter = new AMFComponentElementConverterInterceptor(this, m_pConverter[i]);
-        AMFComponentElementDisplayCaptureInterceptor* interseptorCapture = new AMFComponentElementDisplayCaptureInterceptor((amf_int32)i, interceptorConverter, this, m_pDisplayCapture[i]);
+        if (m_pConverter[i] != nullptr)
+        {
+            AMFComponentElementConverterInterceptor* interceptorConverter = new AMFComponentElementConverterInterceptor(this, m_pConverter[i]);
+            AMFComponentElementDisplayCaptureInterceptor* interseptorCapture = new AMFComponentElementDisplayCaptureInterceptor((amf_int32)i, interceptorConverter, this, m_pDisplayCapture[i]);
+            Connect(PipelineElementPtr(interseptorCapture), 1, CT_Direct);
+            Connect(PipelineElementPtr(interceptorConverter), 0, CT_Direct);
+        }
+        else
+        {
+            AMFComponentElementDisplayCaptureInterceptor* interseptorCapture = new AMFComponentElementDisplayCaptureInterceptor((amf_int32)i, nullptr, this, m_pDisplayCapture[i]);
+            Connect(PipelineElementPtr(interseptorCapture), 1, CT_Direct);
+        }
 
-        Connect(PipelineElementPtr(interseptorCapture), 1, CT_Direct);
-        Connect(PipelineElementPtr(interceptorConverter), 0, CT_Direct);
         Connect(pPipelineElementVideoEncoder, 0, CT_Direct);
         Connect(pPipelineElementMuxer, m_outVideoStreamMuxerIndex, pPipelineElementVideoEncoder, 0, 10, CT_ThreadQueue);
 
@@ -1012,20 +1093,25 @@ AMF_RESULT DisplayDvrPipeline::Stop()
 
     for (size_t i = 0; i != m_pConverter.size(); i++)
     {
-        m_pConverter[i]->Terminate();
+        if(m_pConverter[i] != nullptr)
+        { 
+            m_pConverter[i]->Terminate();
+        }
     }
     m_pConverter.clear();
+
+    for (size_t i = 0; i != m_pEncoder.size(); i++)
+    {
+        m_pEncoder[i]->Terminate();
+    }
+    m_pEncoder.clear();
 
     for (size_t i = 0; i != m_pDisplayCapture.size(); i++)
     {
         m_pDisplayCapture[i]->Terminate();
     }
     m_pDisplayCapture.clear();
-    for (size_t i = 0; i != m_pEncoder.size(); i++)
-    {
-        m_pEncoder[i]->Terminate();
-    }
-    m_pEncoder.clear();
+
     for (size_t i = 0; i != m_pMuxer.size(); i++)
     {
         m_pMuxer[i]->Terminate();
@@ -1086,6 +1172,13 @@ AMF_RESULT DisplayDvrPipeline::SwitchConverterFormat(amf_int32 index, amf::AMF_S
     m_pConverter[index]->Init(format, videoWidth, videoHeight);
     //
     return  AMF_OK;
+}
+//-------------------------------------------------------------------------------------------------
+AMF_RESULT DisplayDvrPipeline::SwitchEncoderResolution(amf_int32 index, amf_int32 width, amf_int32 height)
+{
+    amf::AMFLock lock(&m_sync);
+    m_pEncoder[index]->ReInit(width, height);
+    return AMF_OK;
 }
 //-------------------------------------------------------------------------------------------------
 AMF_RESULT DisplayDvrPipeline::GetMonitorIDs(std::vector<amf_uint32>& monitorIDs)

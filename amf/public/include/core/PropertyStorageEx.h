@@ -79,6 +79,17 @@ namespace amf
 
     typedef struct AMFPropertyInfo
     {
+        // Previously, AMFPropertyInfo declared a virtual destructor. This placed a vtable pointer at offset 0, 
+        // shifting all other fields by the size of this pointer. This destructor was removed by default.
+        // To retain ABI compatibility, a dummy pointer is prepended to the AMFPropertyInfo definition, occupying
+        // the space previously taken by the vtable pointer. This pointer is intended to never be read or written.
+        // Without it, fields would be read from the incorrect offset.
+        // 
+        // To opt into the previous behavior, the macro 'AMF_PROPERTYINFO_USE_VIRTUAL_DESTRUCTOR' can be defined 
+        // as a project-wide flag.
+#if !defined(AMF_PROPERTYINFO_USE_VIRTUAL_DESTRUCTOR) || !defined(__cplusplus)
+        void*                           reserved;
+#endif
         const wchar_t*                  name;
         const wchar_t*                  desc;
         AMF_VARIANT_TYPE                type;
@@ -92,27 +103,30 @@ namespace amf
 
 #if defined(__cplusplus)
         AMFPropertyInfo() :
-            name(NULL),
-            desc(NULL),
+#if !defined(AMF_PROPERTYINFO_USE_VIRTUAL_DESTRUCTOR)
+            reserved(nullptr),
+#endif
+            name(nullptr),
+            desc(nullptr),
             type(),
             contentType(),
             defaultValue(),
             minValue(),
             maxValue(),
             accessType(AMF_PROPERTY_ACCESS_FULL),
-            pEnumDescription(NULL)
+            pEnumDescription(nullptr)
         {}
-        AMFPropertyInfo(const AMFPropertyInfo& propery) : name(propery.name),
-            desc(propery.desc),
-            type(propery.type),
-            contentType(propery.contentType),
-            defaultValue(propery.defaultValue),
-            minValue(propery.minValue),
-            maxValue(propery.maxValue),
-            accessType(propery.accessType),
-            pEnumDescription(propery.pEnumDescription)
-        {}
+
+#if defined(AMF_PROPERTYINFO_USE_VIRTUAL_DESTRUCTOR)
+        AMFPropertyInfo(const AMFPropertyInfo& property) = default;
+        AMFPropertyInfo& operator=(const AMFPropertyInfo& property) = default;
+
+        // The AMFPropertyInfo virtual destructor was removed by default. To remain
+        // backwards compatible with code that relies upon this virtual destructor,
+        // the 'AMF_PROPERTYINFO_USE_VIRTUAL_DESTRUCTOR' macro can be defined as a project-wide flag,
+        // which will add the virtual destructor back into the AMFPropertyInfo definition.
         virtual ~AMFPropertyInfo(){}
+#endif
 
         amf_bool AMF_STD_CALL AllowedRead() const
         {
@@ -127,20 +141,7 @@ namespace amf
             return (accessType & AMF_PROPERTY_ACCESS_WRITE_RUNTIME) != 0;
         }
 
-        AMFPropertyInfo& operator=(const AMFPropertyInfo& propery)
-        {
-            name = propery.name;
-            desc = propery.desc;
-            type = propery.type;
-            contentType = propery.contentType;
-            defaultValue = propery.defaultValue;
-            minValue = propery.minValue;
-            maxValue = propery.maxValue;
-            accessType = propery.accessType;
-            pEnumDescription = propery.pEnumDescription;
 
-            return *this;
-        }
 #endif // #if defined(__cplusplus)
     } AMFPropertyInfo;
     //----------------------------------------------------------------------------------------------
@@ -153,8 +154,17 @@ namespace amf
         AMF_DECLARE_IID(0x16b8958d, 0xe943, 0x4a33, 0xa3, 0x5a, 0x88, 0x5a, 0xd8, 0x28, 0xf2, 0x67)
 
         virtual amf_size            AMF_STD_CALL GetPropertiesInfoCount() const = 0;
+
+        // The AMF runtime is compiled with MSVC on Windows. MSVC places overloaded virtual methods into the vtable in reverse declaration order.
+        // Therefore, the declaration order of these overloads is reversed for callers on Windows that use compilers that do not use the MSVC ABI.
+        // Otherwise, calls to these overloads could map to the wrong method within the AMF runtime.
+#if defined(_MSC_VER) || !defined(_WIN32)
         virtual AMF_RESULT          AMF_STD_CALL GetPropertyInfo(amf_size index, const AMFPropertyInfo** ppInfo) const = 0;
         virtual AMF_RESULT          AMF_STD_CALL GetPropertyInfo(const wchar_t* name, const AMFPropertyInfo** ppInfo) const = 0;
+#else
+        virtual AMF_RESULT          AMF_STD_CALL GetPropertyInfo(const wchar_t* name, const AMFPropertyInfo** ppInfo) const = 0;
+        virtual AMF_RESULT          AMF_STD_CALL GetPropertyInfo(amf_size index, const AMFPropertyInfo** ppInfo) const = 0;
+#endif
         virtual AMF_RESULT          AMF_STD_CALL ValidateProperty(const wchar_t* name, AMFVariantStruct value, AMFVariantStruct* pOutValidated) const = 0;
     };
     //----------------------------------------------------------------------------------------------
@@ -185,10 +195,18 @@ namespace amf
         void                (AMF_STD_CALL *RemoveObserver)(AMFPropertyStorageEx* pThis, AMFPropertyStorageObserver* pObserver);
 
         // AMFPropertyStorageEx interface
-
         amf_size            (AMF_STD_CALL *GetPropertiesInfoCount)(AMFPropertyStorageEx* pThis);
+        // The AMF runtime is compiled with MSVC on Windows. MSVC places overloaded virtual methods into the vtable in reverse declaration order.
+        // Therefore, on Windows, the order of these function pointers must be reversed to reflect the vtable layout of their corresponding methods in the AMF runtime.
+        // On Linux, in the AMF runtime, overloaded virtual methods are placed into the vtable in the order of declaration.
+        // Therefore, on Linux, these function pointers do not have their order reversed.
+#if defined(_WIN32)
+        AMF_RESULT          (AMF_STD_CALL *GetPropertyInfo)(AMFPropertyStorageEx* pThis, const wchar_t* name, const AMFPropertyInfo** ppInfo);
+        AMF_RESULT          (AMF_STD_CALL *GetPropertyInfoAt)(AMFPropertyStorageEx* pThis, amf_size index, const AMFPropertyInfo** ppInfo);
+#else
         AMF_RESULT          (AMF_STD_CALL *GetPropertyInfoAt)(AMFPropertyStorageEx* pThis, amf_size index, const AMFPropertyInfo** ppInfo);
         AMF_RESULT          (AMF_STD_CALL *GetPropertyInfo)(AMFPropertyStorageEx* pThis, const wchar_t* name, const AMFPropertyInfo** ppInfo);
+#endif
         AMF_RESULT          (AMF_STD_CALL *ValidateProperty)(AMFPropertyStorageEx* pThis, const wchar_t* name, AMFVariantStruct value, AMFVariantStruct* pOutValidated);
 
     } AMFPropertyStorageExVtbl;

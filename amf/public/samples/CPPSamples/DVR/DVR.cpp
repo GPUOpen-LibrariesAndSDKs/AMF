@@ -416,10 +416,8 @@ void PopulateMenus(HMENU hMenu)
         // Remove placeholder separators (needed because GetSubMenu returns NULL if menu is initially empty)
         HMENU  hDevices           = GetSubMenu(hMenu, 1);
         HMENU  hCaptureSources    = GetSubMenu(hMenu, 2);
-        HMENU  hCaptureComponents = GetSubMenu(hMenu, 3);
         RemoveMenu(hDevices, 0, MF_BYPOSITION);
         RemoveMenu(hCaptureSources, 0, MF_BYPOSITION);
-        RemoveMenu(hCaptureComponents, 0, MF_BYPOSITION);
 
         // Place default checkmarks at first item in each menu
         UpdateMenuItems();
@@ -480,17 +478,17 @@ void  PopulateComponentsMenu(HMENU hMenu)
 {
     HMENU  hCaptureComponents = GetSubMenu(hMenu, 3);
 
-    if (AppendMenu(hCaptureComponents, MF_BYPOSITION, ID_CAPTURE_COMPONENT_START, L"AMD DX11 DirectCapture") == false)
+    if (AppendMenu(hCaptureComponents, MF_ENABLED, ID_CAPTURE_COMPONENT_START, L"AMD DX11 DirectCapture") == false)
     {
         LOG_ERROR(L"Could not insert AMD DX11 capture component menu item.");
         return;
     }
-    if (AppendMenu(hCaptureComponents, MF_BYPOSITION, ID_CAPTURE_COMPONENT_START + 1, L"AMD DX12 DirectCapture") == false)
+    if (AppendMenu(hCaptureComponents, MF_ENABLED, ID_CAPTURE_COMPONENT_START + 1, L"AMD DX12 DirectCapture") == false)
     {
         LOG_ERROR(L"Could not insert AMD DX12 capture component menu item.");
         return;
     }
-    if (AppendMenu(hCaptureComponents, MF_BYPOSITION, ID_CAPTURE_COMPONENT_START + 2, L"Desktop Duplication") == false)
+    if (AppendMenu(hCaptureComponents, MF_ENABLED, ID_CAPTURE_COMPONENT_START + 2, L"Desktop Duplication") == false)
     {
         LOG_ERROR(L"Could not insert DD capture component menu item.");
     }
@@ -524,6 +522,14 @@ void UpdateMenuItems()
     {
         CheckMenuItem(hDevices, ID_DEVICE_START + i, MF_BYCOMMAND | (i == iSelectedDevice ? MF_CHECKED : MF_UNCHECKED));
     }
+
+    bool bLowLatency = false;
+    s_pPipeline->GetParam(DisplayDvrPipeline::PARAM_NAME_ENABLE_LOWLATENCY, bLowLatency);
+    CheckMenuItem(hMenu, ID_CAPTURECOMPONENT_LOWLATENCY, MF_BYCOMMAND | (bLowLatency ? MF_CHECKED : MF_UNCHECKED));
+    
+    bool bEmbedCursor = false;
+    s_pPipeline->GetParam(DisplayDvrPipeline::PARAM_NAME_EMBED_CURSOR, bEmbedCursor);
+    CheckMenuItem(hMenu, ID_PROCESSING_EMBEDCURSOR, MF_BYCOMMAND | (bEmbedCursor ? MF_CHECKED : MF_UNCHECKED));
 
     HMENU  hCaptureSources = GetSubMenu(hMenu, 2);
     for (amf_uint32 i = 0; i < (amf_uint32)s_vDisplays.size(); ++i)
@@ -563,6 +569,7 @@ void UpdateMenuItems()
     {
         CheckMenuItem(hCaptureComponents, ID_CAPTURE_COMPONENT_START, MF_BYCOMMAND | MF_CHECKED);
     }
+
 
 }
 
@@ -690,8 +697,23 @@ INT_PTR CALLBACK DialogProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM /*lPa
             enablePA = !enablePA;
             s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_ENABLE_PRE_ANALYSIS, enablePA);
 
-            HMENU  hMenu = GetMenu(g_hDlg);
-            CheckMenuItem(hMenu, ID_PRE_ANALYSIS, MF_BYCOMMAND | (enablePA ? MF_CHECKED : MF_UNCHECKED));
+            UpdateMenuItems();
+        }
+        else if (wmId == ID_CAPTURECOMPONENT_LOWLATENCY)
+        {
+            bool bLowLatency = false;
+            s_pPipeline->GetParam(DisplayDvrPipeline::PARAM_NAME_ENABLE_LOWLATENCY, bLowLatency);
+            bLowLatency = !bLowLatency;
+            s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_ENABLE_LOWLATENCY, bLowLatency);
+
+            UpdateMenuItems();
+        }
+        else if (wmId == ID_PROCESSING_EMBEDCURSOR)
+        {
+            bool bEmbedCursor = false;
+            s_pPipeline->GetParam(DisplayDvrPipeline::PARAM_NAME_EMBED_CURSOR, bEmbedCursor);
+            bEmbedCursor = !bEmbedCursor;
+            s_pPipeline->SetParam(DisplayDvrPipeline::PARAM_NAME_EMBED_CURSOR, bEmbedCursor);
 
             UpdateMenuItems();
         }

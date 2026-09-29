@@ -176,8 +176,10 @@ cxx_flags = \
    -fexceptions \
    -fno-rtti \
    -fvisibility=hidden \
-   -fPIC \
-   -v 
+   -fPIC
+# NOTE: -v flag was removed to reduce size of build logs in Jenkins.
+# -v makes GCC print full toolchain info for every source file (27k lines).
+# If required, add -v temporarily to this script or use it when building locally.
 
 ifdef AMF_STDCXX_STATIC
     cxx_flags += -static-libgcc -static-libstdc++
@@ -240,4 +242,4 @@ else
   ffmpeg_platform=lnx
 endif
 
-ffmpeg_dir = $(amf_root)/../Thirdparty/ffmpeg/ffmpeg/ffmpeg-8.0.1/$(ffmpeg_platform)$(host_bits)/release
+ffmpeg_dir = $(amf_root)/../Thirdparty/ffmpeg/ffmpeg/ffmpeg-8.1.2/$(ffmpeg_platform)$(host_bits)/release

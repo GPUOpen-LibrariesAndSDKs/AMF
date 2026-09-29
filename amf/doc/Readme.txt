@@ -27,6 +27,15 @@
 // THE SOFTWARE.
 //
 
+
+1.5.3.0 (29.09.2026) version
+--------------------------
+   - Added color matrix support for VideoConverter and VideoDecoder
+   - Added initial VPE support for VideoConverter
+   - Added cursor embedding support for DirectCapture
+   - Added rotation support for VideoConverter
+   - Updated FFmpeg to 8.1.2
+
 1.5.2.0 (06.05.2026) version
 --------------------------
    - Updated FFmpeg to 8.0.1

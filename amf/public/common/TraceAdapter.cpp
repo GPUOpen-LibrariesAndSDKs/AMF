@@ -49,27 +49,36 @@ extern "C"
 #endif
 
 //------------------------------------------------------------------------------------------------
+static AMFTrace* s_pTraceCustom = NULL;
+#if defined(AMF_CORE_STATIC) || defined(AMF_RUNTIME) || defined(AMF_LITE)
 static AMFTrace *s_pTrace = NULL;
+#endif
 //------------------------------------------------------------------------------------------------
 static AMFTrace *GetTrace()
 {
+    if (s_pTraceCustom != nullptr)
+    {
+        return s_pTraceCustom;
+    }
+#if defined(AMF_CORE_STATIC) || defined(AMF_RUNTIME) || defined(AMF_LITE)
     if (s_pTrace == NULL)
     {
-#if defined(AMF_CORE_STATIC) || defined(AMF_RUNTIME) || defined(AMF_LITE)
         AMFFactory *pFactory = NULL;
         AMFInit(AMF_FULL_VERSION, &pFactory);
         pFactory->GetTrace(&s_pTrace);
-#else
-        s_pTrace = g_AMFFactory.GetTrace();
-        if (s_pTrace == nullptr) 
-        {
-            g_AMFFactory.Init(); // last resort, should not happen
-            s_pTrace = g_AMFFactory.GetTrace();
-            g_AMFFactory.Terminate();
-        }
-#endif
     }
     return s_pTrace;
+
+#else
+    AMFTrace* pTrace = g_AMFFactory.GetTrace();
+    if (pTrace == nullptr) 
+    {
+        g_AMFFactory.Init(); // last resort, should not happen
+        pTrace = g_AMFFactory.GetTrace();
+        g_AMFFactory.Terminate();
+    }
+    return pTrace;
+#endif
 }
 //------------------------------------------------------------------------------------------------
 static AMFDebug *s_pDebug = NULL;
@@ -103,7 +112,7 @@ AMF_RESULT AMF_CDECL_CALL amf::AMFSetCustomDebugger(AMFDebug *pDebugger)
 //------------------------------------------------------------------------------------------------
 AMF_RESULT AMF_CDECL_CALL amf::AMFSetCustomTracer(AMFTrace *pTracer)
 {
-    s_pTrace = pTracer;
+    s_pTraceCustom = pTracer;
     return AMF_OK;
 }
 //------------------------------------------------------------------------------------------------

@@ -21,7 +21,7 @@ AMF is a light-weight, portable multimedia framework that abstracts away most of
     * Visual Studio&reg; 2022
 * Linux
     * RHEL 9.8 / 10.2
-    * Ubuntu 24.04.4 / 26.04.0
+    * Ubuntu 24.04.4 / 26.04.1
     * SLED/SLES 15.7 / 16
 * Driver and AMF component installation instructions are available on the [Wiki page](https://github.com/GPUOpen-LibrariesAndSDKs/AMF/wiki).
     
@@ -41,21 +41,22 @@ AMF is a light-weight, portable multimedia framework that abstracts away most of
 
 ### Version History
 * AMF SDK is backward compatible with all previous driver versions.
-* Version 1.5.2: AMD Radeon Software Adrenalin Edition 26.5.1 (26.10.07.01) or newer. Updated FFmpeg to 8.0.1.
+* Version 1.5.3: AMD Software: Adrenalin Edition 26.9.2 (26.20.15.02) or newer. Added color matrix support for VideoConverter and VideoDecoder. Added initial VPE support for VideoConverter. Added cursor embedding support for DirectCapture. Added rotation support for VideoConverter. Updated FFmpeg to 8.1.2.
   
-  **Note:** The AMF Linux release will be available shortly after the Radeon Software Adrenalin Edition driver release.
+  **Note:** Rotation is currently available when VPE is not enabled.
 
-* Version 1.5.0: AMD Radeon Software Adrenalin Edition 25.10.1 (25.20.21.01) or newer. Added 4:4:4/4:2:2 chroma subsampling support for VideoConverter color space conversion and scaling. Samples updated to VS 2022.
-* Version 1.4.36: AMD Radeon Software Adrenalin Edition 25.1.1 (24.30.31.03) or newer. Added B-frame support and picture management options for AV1 encoder. New high quality presets for HEVC and AVC encoders. New SimpleFRC sample app.
-* Version 1.4.35: AMD Radeon Software Adrenalin Edition 24.9.1 (24.20.11.01) or newer. Added multi-HW instance encoder mode. Updated FFmpeg to 7.0. Added split frame encoding.
-* Version 1.4.34: AMD Radeon Software Adrenalin Edition 24.6.1 (24.10.21.01) or newer. Added Linux support for DVR sample. New HEVC header insertion mode. Stable support for RADV drivers for AMF on Linux in VideoConverter/HQScaler/VideoEncoder and experimental for decoder. Added DX11 support for FRC component.
-* Version 1.4.33: AMD Radeon Software Adrenalin Edition 24.1.1 (23.40.02) or newer. Added native DX12 support for encoding and PreAnalysis. Switched to public Vulkan Khronos extensions for decoder. AMF on Linux can now be used with AMD Pro Vulkan, and experimentally with RADV drivers.
-* Version 1.4.32: AMD Radeon Software Adrenalin Edition 23.12.1 (23.30.13.01) or newer. Added new FRC component and API doc. Added new VQEnhancer doc. Improved presenters. Updated FFmpeg to 6.0.
-* Version 1.4.30: AMD Radeon Software Adrenalin Edition 23.5.2 (23.10.01.45) or newer. Added AMF wrappers for AVC / HEVC / AV1 FFmpeg software encoders, frame in -> slice / tile output support for AVC / HEVC / AV1 encoders, and multi-monitor support for DVR. Updated FFmpeg to 5.1.2.
-* Version 1.4.29: AMD Radeon Software Adrenalin Edition 23.1.2 (22.40.01.34) or newer. Added SmartAccess Video for AVC / HEVC / AV1. New options for VQEnhancer and AV1 encoder components. Switched to Markdown based API docs which enable easier open source developer contributions.
-* Version 1.4.28: AMD Radeon Software Adrenalin Edition 22.12.1 (22.40.00.24) or newer. Added AV1 encoding support and 12-bit AV1 decoding. New VQEnhancer component. New AVC / HEVC encoder rate control methods.
-* Version 1.4.26: AMD Radeon Software Adrenalin Edition 22.7.1 (22.20.15.01) or newer. Added new PAQ, TAQ, and high motion quality boost modes for PreAnalysis. New HQScaler sharpness, low latency decoder and temporal SVC encoder options. 
-* Version 1.4.24: AMD Radeon Software Adrenalin Edition 22.3.1 (21.50.02.01) or newer. Added new AMD Direct Capture mode, new HQScaler feature(Bilinear/Bicubic/FSR), new Vulkan HEVC encoder on Navi family, improvements on H264 Vulkan encoding.
+* Version 1.5.2: AMD Software: Adrenalin Edition 26.5.1 (26.10.07.01) or newer. Updated FFmpeg to 8.0.1.
+* Version 1.5.0: AMD Software: Adrenalin Edition 25.10.1 (25.20.21.01) or newer. Added 4:4:4/4:2:2 chroma subsampling support for VideoConverter color space conversion and scaling. Samples updated to VS 2022.
+* Version 1.4.36: AMD Software: Adrenalin Edition 25.1.1 (24.30.31.03) or newer. Added B-frame support and picture management options for AV1 encoder. New high quality presets for HEVC and AVC encoders. New SimpleFRC sample app.
+* Version 1.4.35: AMD Software: Adrenalin Edition 24.9.1 (24.20.11.01) or newer. Added multi-HW instance encoder mode. Updated FFmpeg to 7.0. Added split frame encoding.
+* Version 1.4.34: AMD Software: Adrenalin Edition 24.6.1 (24.10.21.01) or newer. Added Linux support for DVR sample. New HEVC header insertion mode. Stable support for RADV drivers for AMF on Linux in VideoConverter/HQScaler/VideoEncoder and experimental for decoder. Added DX11 support for FRC component.
+* Version 1.4.33: AMD Software: Adrenalin Edition 24.1.1 (23.40.02) or newer. Added native DX12 support for encoding and PreAnalysis. Switched to public Vulkan Khronos extensions for decoder. AMF on Linux can now be used with AMD Pro Vulkan, and experimentally with RADV drivers.
+* Version 1.4.32: AMD Software: Adrenalin Edition 23.12.1 (23.30.13.01) or newer. Added new FRC component and API doc. Added new VQEnhancer doc. Improved presenters. Updated FFmpeg to 6.0.
+* Version 1.4.30: AMD Software: Adrenalin Edition 23.5.2 (23.10.01.45) or newer. Added AMF wrappers for AVC / HEVC / AV1 FFmpeg software encoders, frame in -> slice / tile output support for AVC / HEVC / AV1 encoders, and multi-monitor support for DVR. Updated FFmpeg to 5.1.2.
+* Version 1.4.29: AMD Software: Adrenalin Edition 23.1.2 (22.40.01.34) or newer. Added SmartAccess Video for AVC / HEVC / AV1. New options for VQEnhancer and AV1 encoder components. Switched to Markdown based API docs which enable easier open source developer contributions.
+* Version 1.4.28: AMD Software: Adrenalin Edition 22.12.1 (22.40.00.24) or newer. Added AV1 encoding support and 12-bit AV1 decoding. New VQEnhancer component. New AVC / HEVC encoder rate control methods.
+* Version 1.4.26: AMD Software: Adrenalin Edition 22.7.1 (22.20.15.01) or newer. Added new PAQ, TAQ, and high motion quality boost modes for PreAnalysis. New HQScaler sharpness, low latency decoder and temporal SVC encoder options. 
+* Version 1.4.24: AMD Software: Adrenalin Edition 22.3.1 (21.50.02.01) or newer. Added new AMD Direct Capture mode, new HQScaler feature(Bilinear/Bicubic/FSR), new Vulkan HEVC encoder on Navi family, improvements on H264 Vulkan encoding.
 * Version 1.4.23: AMD Radeon Software Adrenalin Edition 21.12.1 (21.40.11.03) or newer. Added new Auto LTR encoder mode, additional encoder usage presets and encoder statistics/feedback.
 * Version 1.4.21: AMD Radeon Software Adrenalin Edition 21.10.1 (21.30.25.01) or newer. Added PSNR/SSIM score feedback, new QVBR rate control mode and LTR mode for encoders, added HDR support for HEVC encoder and color converter, new EncoderLatency sample app.
 * Version 1.4.18: AMD Radeon Software Adrenalin Edition 20.11.2 or newer. Added Pre-Encode filter within Pre-Processing component in 1.4.18.

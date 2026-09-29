@@ -387,7 +387,7 @@ AMF_RESULT ParamConverterFormat(const std::wstring& value, amf::AMFVariant& valu
         paramValue = amf::AMF_SURFACE_Y216;
     }
     else {
-        LOG_ERROR(L"AMF_SURFACE_FORMAT hasn't \"" << value << L"\" value.");
+        LOG_ERROR(L"AMF_SURFACE_FORMAT does not contain a \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
     }
     valueOut = amf_int64(paramValue);
@@ -412,7 +412,7 @@ AMF_RESULT ParamConverterColorProfile(const std::wstring& value, amf::AMFVariant
     } else if (uppValue == L"FULL_2020" || uppValue == L"8") {
         paramValue = AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_2020;
     } else {
-        LOG_ERROR(L"AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM hasn't \"" << value << L"\" value.");
+        LOG_ERROR(L"AMF_VIDEO_CONVERTER_COLOR_PROFILE_ENUM does not contain a \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
     }
     valueOut = amf_int64(paramValue);
@@ -460,7 +460,7 @@ AMF_RESULT ParamConverterTransferCharacteristic(const std::wstring& value, amf::
 	} else if (uppValue == L"ARIB_STD_B67" || uppValue == L"18") {
 		paramValue = AMF_COLOR_TRANSFER_CHARACTERISTIC_ARIB_STD_B67;
 	} else {
-		LOG_ERROR(L"AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM hasn't \"" << value << L"\" value.");
+		LOG_ERROR(L"AMF_COLOR_TRANSFER_CHARACTERISTIC_ENUM does not contain a \"" << value << L"\" value.");
 		return AMF_INVALID_ARG;
 	}
 	valueOut = amf_int64(paramValue);
@@ -514,11 +514,70 @@ AMF_RESULT ParamConverterColorPrimaries(const std::wstring& value, amf::AMFVaria
 		paramValue = AMF_COLOR_PRIMARIES_CCCS;
 	}
 	else {
-		LOG_ERROR(L"AMF_COLOR_PRIMARIES_ENUM hasn't \"" << value << L"\" value.");
+		LOG_ERROR(L"AMF_COLOR_PRIMARIES_ENUM does not contain a \"" << value << L"\" value.");
 		return AMF_INVALID_ARG;
 	}
 	valueOut = amf_int64(paramValue);
 	return AMF_OK;
+}
+
+AMF_RESULT ParamConverterColorMatrixCoefficients(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_COLOR_MATRIX_COEFFICIENTS_ENUM paramValue = AMF_COLOR_MATRIX_COEFF_UNKNOWN;
+    std::wstring uppValue = toUpper(value);
+
+    if (uppValue == L"GBR" || uppValue == L"0") {
+        paramValue = AMF_COLOR_MATRIX_COEFF_GBR;
+    }
+    else if (uppValue == L"BT709" || uppValue == L"1") {
+        paramValue = AMF_COLOR_MATRIX_COEFF_BT_709;
+    }
+    else if (uppValue == L"UNSPECIFIED" || uppValue == L"2") {
+        paramValue = AMF_COLOR_MATRIX_COEFF_UNSPECIFIED;
+    }
+    else if (uppValue == L"RESERVED" || uppValue == L"3") {
+        paramValue = AMF_COLOR_MATRIX_COEFF_RESERVED;
+    }
+    else if (uppValue == L"FCC" || uppValue == L"4") {
+        paramValue = AMF_COLOR_MATRIX_COEFF_FCC;
+    }
+    else if (uppValue == L"BT470BG" || uppValue == L"5") {
+        paramValue = AMF_COLOR_MATRIX_COEFF_BT_470_B_G;
+    }
+    else if (uppValue == L"BT601" || uppValue == L"6") {
+        paramValue = AMF_COLOR_MATRIX_COEFF_BT_601;
+    }
+    else if (uppValue == L"SMPTE240M" || uppValue == L"7") {
+        paramValue = AMF_COLOR_MATRIX_COEFF_SMPTE_240;
+    }
+    else if (uppValue == L"YCGCO" || uppValue == L"8") {
+        paramValue = AMF_COLOR_MATRIX_COEFF_SMPTE_YCGCO;
+    }
+    else if (uppValue == L"BT2020_NCL" || uppValue == L"9") {
+        paramValue = AMF_COLOR_MATRIX_COEFF_BT_2020_NCL;
+    }
+    else if (uppValue == L"BT2020_CL" || uppValue == L"10") {
+        paramValue = AMF_COLOR_MATRIX_COEFF_BT_2020_CL;
+    }
+    else if (uppValue == L"SMPTE2085" || uppValue == L"11") {
+        paramValue = AMF_COLOR_MATRIX_COEFF_SMPTE_2085;
+    }
+    else if (uppValue == L"CHROMAT_NCL" || uppValue == L"12") {
+        paramValue = AMF_COLOR_MATRIX_COEFF_CHROMAT_NCL;
+    }
+    else if (uppValue == L"CHROMAT_CL" || uppValue == L"13") {
+        paramValue = AMF_COLOR_MATRIX_COEFF_CHROMAT_CL;
+    }
+    else if (uppValue == L"ICTCP" || uppValue == L"14") {
+        paramValue = AMF_COLOR_MATRIX_COEFF_ICTCP;
+    }
+    else {
+        LOG_ERROR(L"AMF_COLOR_MATRIX_COEFFICIENTS_ENUM does not contain a \"" << value << L"\" value.");
+        return AMF_INVALID_ARG;
+    }
+
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
 }
 
 AMF_RESULT ParamConverterColorRange(const std::wstring& value, amf::AMFVariant& valueOut)
@@ -532,7 +591,35 @@ AMF_RESULT ParamConverterColorRange(const std::wstring& value, amf::AMFVariant& 
 		paramValue = AMF_COLOR_RANGE_FULL;
 	}
 	else {
-		LOG_ERROR(L"AMF_COLOR_RANGE_ENUM hasn't \"" << value << L"\" value.");
+		LOG_ERROR(L"AMF_COLOR_RANGE_ENUM does not contain a \"" << value << L"\" value.");
+		return AMF_INVALID_ARG;
+	}
+	valueOut = amf_int64(paramValue);
+	return AMF_OK;
+}
+
+AMF_RESULT ParamConverterRotate(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_VIDEO_CONVERTER_ROTATE_ENUM paramValue = AMF_VIDEO_CONVERTER_ROTATE_NONE;
+	if (value == L"0")
+    {
+		paramValue = AMF_VIDEO_CONVERTER_ROTATE_NONE;
+	}
+	else if (value == L"90" || value == L"1")
+    {
+		paramValue = AMF_VIDEO_CONVERTER_ROTATE_90;
+	}
+	else if (value == L"180" || value == L"2")
+    {
+		paramValue = AMF_VIDEO_CONVERTER_ROTATE_180;
+	}
+	else if (value == L"270" || value == L"3")
+    {
+		paramValue = AMF_VIDEO_CONVERTER_ROTATE_270;
+	}
+	else
+    {
+		LOG_ERROR(L"AMF_VIDEO_CONVERTER_ROTATE_ENUM does not contain a \"" << value << L"\" value.");
 		return AMF_INVALID_ARG;
 	}
 	valueOut = amf_int64(paramValue);
@@ -556,7 +643,7 @@ AMF_RESULT ParamConverterToneMapping(const std::wstring& value, amf::AMFVariant&
     } else if (uppValue == L"2390" || uppValue == L"5") {
         paramValue = AMF_VIDEO_CONVERTER_TONEMAPPING_2390;
     } else {
-        LOG_ERROR(L"AMF_VIDEO_CONVERTER_TONEMAPPING_ENUM hasn't \"" << value << L"\" value.");
+        LOG_ERROR(L"AMF_VIDEO_CONVERTER_TONEMAPPING_ENUM does not contain a \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
     }
     valueOut = amf_int64(paramValue);
@@ -575,7 +662,7 @@ AMF_RESULT ParamConverterBoolean(const std::wstring& value, amf::AMFVariant& val
         } else if(uppValue == L"FALSE" || uppValue == L"0") {
             paramValue =  false;
         } else {
-            LOG_ERROR(L"BOOLEAN hasn't \"" << value << L"\" value.");
+            LOG_ERROR(L"BOOLEAN does not contain a \"" << value << L"\" value.");
             return AMF_INVALID_ARG;
         }
     }
@@ -746,7 +833,7 @@ AMF_RESULT ParamConverterHighMotionQualityBoostMode(const std::wstring& value, a
     }
     else
     {
-        LOG_ERROR(L"AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_ENUM hasn't \"" << value << L"\" value.");
+        LOG_ERROR(L"AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_ENUM does not contain a \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
     }
     valueOut = amf_int64(paramValue);
@@ -769,7 +856,7 @@ AMF_RESULT ParamConverterSceneChange(const std::wstring& value, amf::AMFVariant&
         paramValue = AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_HIGH;
     }
     else {
-        LOG_ERROR(L"AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_ENUM hasn't \"" << value << L"\" value.");
+        LOG_ERROR(L"AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_ENUM does not contain a \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
     }
     valueOut = amf_int64(paramValue);
@@ -792,7 +879,7 @@ AMF_RESULT ParamConverterStaticScene(const std::wstring& value, amf::AMFVariant&
         paramValue = AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_HIGH;
     }
     else {
-        LOG_ERROR(L"AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_ENUM hasn't \"" << value << L"\" value.");
+        LOG_ERROR(L"AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_ENUM does not contain a \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
     }
     valueOut = amf_int64(paramValue);
@@ -812,7 +899,7 @@ AMF_RESULT ParamConverterActivityType(const std::wstring& value, amf::AMFVariant
         paramValue = AMF_PA_ACTIVITY_YUV;
     }
     else {
-        LOG_ERROR(L"AMF_PA_ACTIVITY_TYPE_ENUM hasn't \"" << value << L"\" value.");
+        LOG_ERROR(L"AMF_PA_ACTIVITY_TYPE_ENUM does not contain a \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
     }
     valueOut = amf_int64(paramValue);
@@ -835,7 +922,7 @@ AMF_RESULT ParamConverterCAQStrength(const std::wstring& value, amf::AMFVariant&
         paramValue = AMF_PA_CAQ_STRENGTH_HIGH;
     }
     else {
-        LOG_ERROR(L"AMF_PA_CAQ_STRENGTH_ENUM hasn't \"" << value << L"\" value.");
+        LOG_ERROR(L"AMF_PA_CAQ_STRENGTH_ENUM does not contain a \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
     }
     valueOut = amf_int64(paramValue);
@@ -855,7 +942,7 @@ AMF_RESULT ParamConverterPAQMode(const std::wstring& value, amf::AMFVariant& val
         paramValue = AMF_PA_PAQ_MODE_CAQ;
     }
     else {
-        LOG_ERROR(L"AMF_PA_PAQ_MODE_ENUM hasn't \"" << value << L"\" value.");
+        LOG_ERROR(L"AMF_PA_PAQ_MODE_ENUM does not contain a \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
     }
     valueOut = amf_int64(paramValue);
@@ -887,7 +974,7 @@ AMF_RESULT ParamConverterFRCEngine(const std::wstring& value, amf::AMFVariant& v
         paramValue = FRC_ENGINE_VULKAN;
     }
     else {
-        LOG_ERROR(L"AMF_FRC_ENGINE hasn't \"" << value << L"\" value.");
+        LOG_ERROR(L"AMF_FRC_ENGINE does not contain a \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
     }
     valueOut = amf_int64(paramValue);
@@ -915,7 +1002,7 @@ AMF_RESULT ParamConverterFRCMode(const std::wstring& value, amf::AMFVariant& val
         paramValue = FRC_x2_PRESENT;
     }
     else {
-        LOG_ERROR(L"AMF_FRC_MODE_TYPE hasn't \"" << value << L"\" value.");
+        LOG_ERROR(L"AMF_FRC_MODE_TYPE does not contain a \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
     }
 
@@ -936,7 +1023,7 @@ AMF_RESULT ParamConverterFRCPerformance(const std::wstring& value, amf::AMFVaria
         paramValue = FRC_MV_SEARCH_PERFORMANCE;
     }
     else {
-        LOG_ERROR(L"AMF_FRC_MV_SEARCH_MODE_TYPE hasn't \"" << value << L"\" value.");
+        LOG_ERROR(L"AMF_FRC_MV_SEARCH_MODE_TYPE does not contain a \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
     }
 
@@ -960,10 +1047,35 @@ AMF_RESULT ParamConverterFRCProfile(const std::wstring& value, amf::AMFVariant& 
         paramValue = FRC_PROFILE_SUPER;
     }
     else {
-        LOG_ERROR(L"AMF_FRC_PROFILE_TYPE hasn't \"" << value << L"\" value.");
+        LOG_ERROR(L"AMF_FRC_PROFILE_TYPE does not contain a \"" << value << L"\" value.");
         return AMF_INVALID_ARG;
     }
 
+    valueOut = amf_int64(paramValue);
+    return AMF_OK;
+}
+
+AMF_RESULT ParamConverterAccelerationType(const std::wstring& value, amf::AMFVariant& valueOut)
+{
+    AMF_VIDEO_CONVERTER_ACCELERATION_ENUM paramValue;
+    std::wstring uppValue = toUpper(value);
+    if ((uppValue == L"DEFAULT") || (uppValue == L"0"))
+    {
+        paramValue = AMF_VIDEO_CONVERTER_ACCELERATION_DEFAULT;
+    }
+    else if ((uppValue == L"COMPUTE") || (uppValue == L"1"))
+    {
+        paramValue = AMF_VIDEO_CONVERTER_ACCELERATION_COMPUTE;
+    }
+    else if ((uppValue == L"VPE_PREFERRED") || (uppValue == L"2"))
+    {
+        paramValue = AMF_VIDEO_CONVERTER_ACCELERATION_VPE_PREFERRED;
+    }
+    else
+    {
+        LOG_ERROR(L"AMF_VIDEO_CONVERTER_ACCELERATION_ENUM does not have value: \"" << value << L"\".");
+        return AMF_INVALID_ARG;
+    }
     valueOut = amf_int64(paramValue);
     return AMF_OK;
 }

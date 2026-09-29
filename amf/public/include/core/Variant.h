@@ -43,6 +43,9 @@
 #include <string.h>
 
 #if defined(__cplusplus)
+
+#include <sstream>
+
 namespace amf
 {
 #endif
@@ -873,7 +876,7 @@ namespace amf
     {
         res = AMF_OK;
         char buff[0xFF];
-        sprintf(buff, "%" AMFPRId64, value);
+        snprintf(buff, sizeof(buff), "%" AMFPRId64, value);
         return buff;
     }
     static AMF_INLINE AMFVariant::WString AMFConvertInt64ToWString(amf_int64 value, AMF_RESULT& res)
@@ -935,24 +938,40 @@ namespace amf
         res = AMF_INVALID_ARG;
         return false;
     }
+    struct AMFReadOnlyStreamBuf : public std::streambuf
+    {
+        AMFReadOnlyStreamBuf(const char* pData, amf_size size)
+        {
+            if (pData != nullptr && size > 0)
+            {
+                char* p = const_cast<char*>(pData);
+                setg(p, p, p + size);
+            }
+        }
+    };
 
     static AMF_INLINE amf_int64 AMFConvertStringToInt64(const AMFVariant::String& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         amf_int64 tmp = 0;
-        int readElements = 0;
 
         if (value.size() > 2 && ( value.c_str()[0] == '0') && ( value.c_str()[1] == 'x') )
         {
-            readElements = sscanf(value.c_str(), "0x%" AMFPRIx64, &tmp);
+            AMFReadOnlyStreamBuf buf(value.c_str() + 2, value.size() - 2);
+            std::istream iss(&buf);
+            if (iss >> std::hex >> tmp)
+            {
+                return tmp;
+            }
         }
         else if (value.size() > 0)
         {
-            readElements = sscanf(value.c_str(), "%" AMFPRId64, &tmp);
-        }
-        if (readElements)
-        {
-            return tmp;
+            AMFReadOnlyStreamBuf buf(value.c_str(), value.size());
+            std::istream iss(&buf);
+            if (iss >> tmp)
+            {
+                return tmp;
+            }
         }
         res = AMF_INVALID_ARG;
         return 0;
@@ -961,15 +980,15 @@ namespace amf
     static AMF_INLINE amf_double AMFConvertStringToDouble(const AMFVariant::String& value, AMF_RESULT& res)
     {
         res = AMF_OK;
-        amf_double tmp = 0;
-        int readElements = 0;
         if (value.size() > 0)
-        { 
-            readElements = sscanf(value.c_str(), "%lf", &tmp);
-        }
-        if (readElements)
         {
-            return tmp;
+            AMFReadOnlyStreamBuf buf(value.c_str(), value.size());
+            std::istream iss(&buf);
+            amf_double tmp = 0;
+            if (iss >> tmp)
+            {
+                return tmp;
+            }
         }
         res = AMF_INVALID_ARG;
         return 0;
@@ -977,15 +996,15 @@ namespace amf
     static AMF_INLINE amf_float AMFConvertStringToFloat(const AMFVariant::String& value, AMF_RESULT& res)
     {
         res = AMF_OK;
-        amf_float tmp = 0;
-        int readElements = 0;
         if (value.size() > 0)
         {
-            readElements = sscanf(value.c_str(), "%f", &tmp);
-        }
-        if (readElements)
-        {
-            return tmp;
+            AMFReadOnlyStreamBuf buf(value.c_str(), value.size());
+            std::istream iss(&buf);
+            amf_float tmp = 0;
+            if (iss >> tmp)
+            {
+                return tmp;
+            }
         }
         res = AMF_INVALID_ARG;
         return 0;
@@ -1157,21 +1176,21 @@ namespace amf
     {
         res = AMF_OK;
         char buff[0xFF];
-        sprintf(buff, "%d,%d,%d,%d", value.left, value.top, value.right, value.bottom);
+        snprintf(buff, sizeof(buff), "%d,%d,%d,%d", value.left, value.top, value.right, value.bottom);
         return buff;
     }
     static AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertSizeToString(const AMFSize& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         char buff[0xFF];
-        sprintf(buff, "%d,%d", value.width, value.height);
+        snprintf(buff, sizeof(buff), "%d,%d", value.width, value.height);
         return buff;
     }
     static AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertPointToString(const AMFPoint& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         char buff[0xFF];
-        sprintf(buff, "%d,%d", value.x, value.y);
+        snprintf(buff, sizeof(buff), "%d,%d", value.x, value.y);
         return buff;
     }
     static AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertFloatSizeToString(const AMFFloatSize& value, AMF_RESULT& res)
@@ -1206,21 +1225,21 @@ namespace amf
     {
         res = AMF_OK;
         char buff[0xFF];
-        sprintf(buff, "%u,%u", value.num, value.den);
+        snprintf(buff, sizeof(buff), "%u,%u", value.num, value.den);
         return buff;
     }
     static AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertRatioToString(const AMFRatio& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         char buff[0xFF];
-        sprintf(buff, "%u,%u", value.num, value.den);
+        snprintf(buff, sizeof(buff), "%u,%u", value.num, value.den);
         return buff;
     }
     static AMF_INLINE AMFVariant::String AMF_STD_CALL AMFConvertColorToString(const AMFColor& value, AMF_RESULT& res)
     {
         res = AMF_OK;
         char buff[0xFF];
-        sprintf(buff, "%u,%u,%u,%u", value.r, value.g, value.b, value.a);
+        snprintf(buff, sizeof(buff), "%u,%u,%u,%u", value.r, value.g, value.b, value.a);
         return buff;
     }
 
@@ -1228,14 +1247,18 @@ namespace amf
     {
         res = AMF_OK;
         AMFRect tmp = {};
-        int readElements = 0;
         if (value.size() > 0)
         {
-            readElements = sscanf(value.c_str(), "%d,%d,%d,%d", &tmp.left, &tmp.top, &tmp.right, &tmp.bottom);
-        }
-        if (readElements)
-        {
-            return tmp;
+            AMFReadOnlyStreamBuf buf(value.c_str(), value.size());
+            std::istream iss(&buf);
+            char c1{}, c2{}, c3{};
+            if ((iss >> tmp.left >> c1 
+                     >> tmp.top >> c2
+                     >> tmp.right >> c3
+                     >> tmp.bottom) && (c1 == ',') && (c2 == ',') && (c3 == ','))
+            {
+                return tmp;
+            }
         }
         res = AMF_INVALID_ARG;
         return tmp;
@@ -1245,21 +1268,16 @@ namespace amf
     {
         res = AMF_OK;
         AMFSize tmp = {};
-        int readElements = 0;
         if (value.size() > 0)
         {
-          if (strchr(value.c_str(), ',') != nullptr)
-          {
-            readElements = sscanf(value.c_str(), "%d,%d", &tmp.width, &tmp.height);
-          } 
-          else if (strchr(value.c_str(), 'x') != nullptr)
-          {
-            readElements = sscanf(value.c_str(), "%dx%d", &tmp.width, &tmp.height);
-          }
-        }
-        if (readElements)
-        {
-            return tmp;
+            AMFReadOnlyStreamBuf buf(value.c_str(), value.size());
+            std::istream iss(&buf);
+            char sep{};
+            if ((iss >> tmp.width >> sep
+                     >> tmp.height) && (sep == ',' || sep == 'x'))
+            {
+                return tmp;
+            }
         }
         res = AMF_INVALID_ARG;
         return tmp;
@@ -1268,14 +1286,17 @@ namespace amf
     {
         res = AMF_OK;
         AMFPoint tmp = {};
-        int readElements = 0;
         if (value.size() > 0)
         {
-            readElements = sscanf(value.c_str(), "%d,%d", &tmp.x, &tmp.y);
-        }
-        if (readElements)
-        {
-            return tmp;
+            AMFReadOnlyStreamBuf buf(value.c_str(), value.size());
+            std::istream iss(&buf);
+            char sep{};
+
+            if ((iss >> tmp.x >> sep
+                     >> tmp.y) && (sep == ','))
+            {
+                return tmp;
+            }
         }
         res = AMF_INVALID_ARG;
         return tmp;
@@ -1284,14 +1305,16 @@ namespace amf
     {
         res = AMF_OK;
         AMFFloatSize tmp = {};
-        int readElements = 0;
         if (value.size() > 0)
         {
-            readElements = sscanf(value.c_str(), "%f,%f", &tmp.width, &tmp.height);
-        }
-        if (readElements)
-        {
-            return tmp;
+            AMFReadOnlyStreamBuf buf(value.c_str(), value.size());
+            std::istream iss(&buf);
+            char sep{};
+            if ((iss >> tmp.width >> sep
+                     >> tmp.height) && (sep == ','))
+            {
+                return tmp;
+            }
         }
         res = AMF_INVALID_ARG;
         return tmp;
@@ -1300,14 +1323,16 @@ namespace amf
     {
         res = AMF_OK;
         AMFFloatPoint2D tmp = {};
-        int readElements = 0;
         if (value.size() > 0)
         {
-            readElements = sscanf(value.c_str(), "%f,%f", &tmp.x, &tmp.y);
-        }
-        if (readElements)
-        {
-            return tmp;
+            AMFReadOnlyStreamBuf buf(value.c_str(), value.size());
+            std::istream iss(&buf);
+            char sep{};
+            if ((iss >> tmp.x >> sep
+                     >> tmp.y) && (sep == ','))
+            {
+                return tmp;
+            }
         }
         res = AMF_INVALID_ARG;
         return tmp;
@@ -1316,14 +1341,17 @@ namespace amf
     {
         res = AMF_OK;
         AMFFloatPoint3D tmp = {};
-        int readElements = 0;
         if (value.size() > 0)
         {
-            readElements = sscanf(value.c_str(), "%f,%f,%f", &tmp.x, &tmp.y, &tmp.z);
-        }
-        if (readElements)
-        {
-            return tmp;
+            AMFReadOnlyStreamBuf buf(value.c_str(), value.size());
+            std::istream iss(&buf);
+            char c1{}, c2{};
+            if ((iss >> tmp.x >> c1
+                     >> tmp.y >> c2
+                     >> tmp.z) && (c1 == ',') && (c2 == ','))
+            {
+                return tmp;
+            }
         }
         res = AMF_INVALID_ARG;
         return tmp;
@@ -1332,14 +1360,18 @@ namespace amf
     {
         res = AMF_OK;
         AMFFloatVector4D tmp = {};
-        int readElements = 0;
         if (value.size() > 0)
         {
-            readElements = sscanf(value.c_str(), "%f,%f,%f,%f", &tmp.x, &tmp.y, &tmp.z, &tmp.w);
-        }
-        if (readElements)
-        {
-            return tmp;
+            AMFReadOnlyStreamBuf buf(value.c_str(), value.size());
+            std::istream iss(&buf);
+            char c1{}, c2{}, c3{};
+            if ((iss >> tmp.x >> c1
+                     >> tmp.y >> c2
+                     >> tmp.z >> c3
+                     >> tmp.w) && (c1 == ',') && (c2 == ',') && (c3 == ','))
+            {
+                return tmp;
+            }
         }
         res = AMF_INVALID_ARG;
         return tmp;
@@ -1348,14 +1380,16 @@ namespace amf
     {
         res = AMF_OK;
         AMFRate tmp = {};
-        int readElements = 0;
         if (value.size() > 0)
         {
-            readElements = sscanf(value.c_str(), "%u,%u", &tmp.num, &tmp.den);
-        }
-        if (readElements)
-        {
-            return tmp;
+            AMFReadOnlyStreamBuf buf(value.c_str(), value.size());
+            std::istream iss(&buf);
+            char sep{};
+            if ((iss >> tmp.num >> sep
+                     >> tmp.den) && (sep == ','))
+            {
+                return tmp;
+            }
         }
         res = AMF_INVALID_ARG;
         return tmp;
@@ -1364,14 +1398,16 @@ namespace amf
     {
         res = AMF_OK;
         AMFRatio tmp = {};
-        int readElements = 0;
         if (value.size() > 0)
         {
-            readElements = sscanf(value.c_str(), "%u,%u", &tmp.num, &tmp.den);
-        }
-        if (readElements)
-        {
-            return tmp;
+            AMFReadOnlyStreamBuf buf(value.c_str(), value.size());
+            std::istream iss(&buf);
+            char sep{};
+            if ((iss >> tmp.num >> sep
+                     >> tmp.den) && (sep == ','))
+            {
+                return tmp;
+            }
         }
         res = AMF_INVALID_ARG;
         return tmp;
@@ -1379,18 +1415,22 @@ namespace amf
     static AMF_INLINE AMFColor AMF_STD_CALL AMFConvertStringToColor(const AMFVariant::String& value, AMF_RESULT& res)
     {
         res = AMF_OK;
-        int readElements = 0;
-        amf_uint32 r = 0;
-        amf_uint32 g = 0;
-        amf_uint32 b = 0;
-        amf_uint32 a = 0;
+        amf_uint8 r = 0;
+        amf_uint8 g = 0;
+        amf_uint8 b = 0;
+        amf_uint8 a = 0;
         if (value.size() > 0)
-        { 
-            readElements = sscanf(value.c_str(), "%u,%u,%u,%u", &r, &g, &b, &a);
-        }
-        if (readElements)
         {
-            return AMFConstructColor((amf_uint8)r, (amf_uint8)g, (amf_uint8)b, (amf_uint8)a);
+            AMFReadOnlyStreamBuf buf(value.c_str(), value.size());
+            std::istream iss(&buf);
+            char c1{}, c2{}, c3{};
+            if ((iss >> r >> c1
+                     >> g >> c2
+                     >> b >> c3
+                     >> a) && (c1 == ',') && (c2 == ',') && (c3 == ','))
+            {
+                return AMFConstructColor(r, g, b, a);
+            }
         }
         res = AMF_INVALID_ARG;
         return AMFConstructColor(0, 0, 0, 255);
@@ -1922,16 +1962,17 @@ namespace amf
     //-------------------------------------------------------------------------------------------------
     static AMF_INLINE char* AMF_CDECL_CALL AMFVariantDuplicateString(const char* pFrom)
     {
-        char* ret = 0;
+        char* pRet = 0;
         if (pFrom)
         {
-            ret = (char*)amf_variant_alloc(sizeof(char)*(strlen(pFrom) + 1));
-            if (ret)
+            size_t len = strlen(pFrom) + 1;
+            pRet = (char*)amf_variant_alloc(sizeof(char)*len);
+            if (pRet)
             {
-                strcpy(ret, pFrom);
+                snprintf(pRet, len, "%s", pFrom);
             }
         }
-        return ret;
+        return pRet;
     }
     //-------------------------------------------------------------------------------------------------
     static AMF_INLINE void AMF_CDECL_CALL AMFVariantFreeString(char* pFrom)
@@ -1941,16 +1982,17 @@ namespace amf
     //-------------------------------------------------------------------------------------------------
     static AMF_INLINE wchar_t* AMF_CDECL_CALL AMFVariantDuplicateWString(const wchar_t* pFrom)
     {
-        wchar_t* ret = 0;
+        wchar_t* pRet = 0;
         if (pFrom)
         {
-            ret = (wchar_t*)amf_variant_alloc(sizeof(wchar_t)*(wcslen(pFrom) + 1));
-            if (ret)
+            size_t len = wcslen(pFrom) + 1;
+            pRet = (wchar_t*)amf_variant_alloc(sizeof(wchar_t)*len);
+            if (pRet)
             {
-                wcscpy(ret, pFrom);
+                swprintf(pRet, len, L"%ls", pFrom);
             }
         }
-        return ret;
+        return pRet;
     }
     //-------------------------------------------------------------------------------------------------
     static AMF_INLINE void AMF_CDECL_CALL AMFVariantFreeWString(wchar_t* pFrom)

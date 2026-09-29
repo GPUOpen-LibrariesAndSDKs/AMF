@@ -43,9 +43,7 @@
 #include "public/common/AMFFactory.h"
 #include "AMFSTL.h"
 
-#ifndef WIN32
 #include <stdarg.h>
-#endif
 #include <assert.h>
 
 //-----------------------------------

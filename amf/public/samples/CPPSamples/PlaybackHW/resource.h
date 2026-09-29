@@ -92,6 +92,9 @@
 #define ID_HQSCALER_FSR                 32802
 #define ID_OPTIONS_EXCLUSIVEFULLSCREEN  32807
 #define ID_OPTIONS_FRC                  32808
+#define ID_ACCELERATION_DEFAULT         32809
+#define ID_ACCELERATION_COMPUTE         32810
+#define ID_ACCELERATION_VPE_PREFERRED   32811
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -100,7 +103,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        131
-#define _APS_NEXT_COMMAND_VALUE         32809
+#define _APS_NEXT_COMMAND_VALUE         32812
 #define _APS_NEXT_CONTROL_VALUE         1018
 #define _APS_NEXT_SYMED_VALUE           110
 #endif

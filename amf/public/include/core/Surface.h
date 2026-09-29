@@ -9,7 +9,7 @@
 //
 // MIT license
 //
-// Copyright (c) 2018 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2026 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -75,9 +75,10 @@ namespace amf
         AMF_SURFACE_R24G8,              ///< 23 - packed 4:4 - 24-bit R; 8-bit G
         AMF_SURFACE_R32,                ///< 24 - single component float - 32 bit
         AMF_SURFACE_R16,                ///< 25 - single component float - 16 bit
+        AMF_SURFACE_R32G8X24,           ///< 26 - packed 4:4 - 32-bit R; 8-bit G - 64 bit total
 
         AMF_SURFACE_FIRST = AMF_SURFACE_NV12,
-        AMF_SURFACE_LAST = AMF_SURFACE_R16
+        AMF_SURFACE_LAST = AMF_SURFACE_R32G8X24
     } AMF_SURFACE_FORMAT;
     //----------------------------------------------------------------------------------------------
     // AMF_SURFACE_USAGE translates to D3D11_BIND_FLAG or VkImageUsageFlags
